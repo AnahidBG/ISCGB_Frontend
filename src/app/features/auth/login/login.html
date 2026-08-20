@@ -11,11 +11,9 @@
   <div class="flex items-center justify-center px-6 py-12">
     <div class="w-full max-w-md rounded-3xl bg-superficie p-8 shadow-sm sm:p-10">
       <app-formulario-login
-        [perfil]="perfil()"
         [cargando]="cargando()"
         [errorGeneral]="error()"
         (enviar)="iniciarSesion($event)"
-        (cambiarPerfil)="volverASeleccionDePerfil()"
       />
 
       <!--

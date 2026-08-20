@@ -31,9 +31,6 @@ import { CampoFormulario } from '../../../../../shared/ui/campo-formulario/campo
 export class FormularioLogin {
   private readonly fb = inject(FormBuilder);
 
-  /** Nombre del perfil elegido antes de llegar acá. Ej: "Director". */
-  readonly perfil = input<string | null>(null);
-
   /** `true` mientras se está validando contra el servidor. */
   readonly cargando = input<boolean>(false);
 
@@ -42,9 +39,6 @@ export class FormularioLogin {
 
   /** Se emite con las credenciales listas para enviar. */
   readonly enviar = output<CredencialesLogin>();
-
-  /** Se emite cuando el usuario quiere volver a elegir perfil. */
-  readonly cambiarPerfil = output<void>();
 
   /** ¿La contraseña se está mostrando en texto plano? */
   protected readonly passwordVisible = signal(false);

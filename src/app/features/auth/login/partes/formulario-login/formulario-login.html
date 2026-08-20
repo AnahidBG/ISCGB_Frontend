@@ -1,32 +1,20 @@
+<!--
+  El diseño de Figma tiene arriba un chip con el perfil ("Director") y un
+  enlace "← Cambiar perfil". No está implementado, a propósito.
+
+  Motivo: POST /api/Auth/login solo acepta { dni, password }. El rol lo
+  decide el backend y lo devuelve adentro del token. No hay forma de elegir
+  perfil al entrar, ni existe la pantalla previa para hacerlo.
+
+  Dejarlo dibujado significaría mostrar "Director" a todo el mundo (mentira)
+  y un botón que no lleva a ningún lado (peor que no tenerlo).
+
+  La idea es buena y queda pendiente: la base tiene Usuarios_roles como
+  muchos-a-muchos y Docentes.director_suplente, o sea que una persona puede
+  tener varios roles. El día que el backend devuelva la lista de roles del
+  usuario, este bloque vuelve. Ver docs/alcance-login.md
+-->
 <form [formGroup]="formulario" (ngSubmit)="alEnviar()" class="flex flex-col gap-6" novalidate>
-  <!-- Perfil elegido en el paso anterior -->
-  @if (perfil(); as nombrePerfil) {
-    <p class="flex items-center justify-between gap-4">
-      <span
-        class="inline-flex items-center gap-2 rounded-full border border-borde bg-fondo px-4 py-1.5 text-sm font-medium text-principal"
-      >
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="h-4 w-4">
-          <circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.6" />
-          <path
-            d="M5 20a7 7 0 0 1 14 0"
-            stroke="currentColor"
-            stroke-width="1.6"
-            stroke-linecap="round"
-          />
-        </svg>
-        {{ nombrePerfil }}
-      </span>
-
-      <button
-        type="button"
-        (click)="cambiarPerfil.emit()"
-        class="rounded-md text-sm text-texto-suave transition-colors hover:text-principal focus-visible:ring-2 focus-visible:ring-principal focus-visible:outline-none"
-      >
-        ← Cambiar perfil
-      </button>
-    </p>
-  }
-
   <header>
     <!-- Tipografía de contenido, no Gasoek One: ver la nota en styles.scss -->
     <h2 class="text-3xl text-principal">Bienvenido</h2>

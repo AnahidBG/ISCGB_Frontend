@@ -33,16 +33,6 @@ export class Login {
   /** Mensaje de error del último intento, o `null` si no hubo. */
   protected readonly error = signal<string | null>(null);
 
-  /**
-   * Perfil elegido en la pantalla anterior.
-   *
-   * TODO: hoy está fijo. Cuando exista la pantalla de selección de perfil,
-   * este valor va a llegar por la ruta. Antes hay que definir con el equipo
-   * qué hace el backend con el perfil elegido: el endpoint de login solo
-   * acepta { dni, password } y decide el rol por su cuenta.
-   */
-  protected readonly perfil = signal<string | null>('Director');
-
   protected iniciarSesion(credenciales: CredencialesLogin): void {
     this.cargando.set(true);
     this.error.set(null);
@@ -59,9 +49,5 @@ export class Login {
         this.error.set(fallo.message);
       },
     });
-  }
-
-  protected volverASeleccionDePerfil(): void {
-    // TODO: navegar a la pantalla de selección de perfil cuando exista.
   }
 }

@@ -34,7 +34,7 @@ preguntas:
 | Panel izquierdo | ✅ | — | — | Construido |
 | Mensajes de error | ✅ | ✅ | — | Construido |
 | ¿Olvidaste tu contraseña? | Sprint 3 | ❌ | ✅ | **Visible pero deshabilitado** |
-| Selector "Cambiar perfil" | ⚠️ | ❌ | ✅ | **Visual; falta decisión de equipo** |
+| Selector "Cambiar perfil" | ⚠️ | ❌ | ✅ | **Fuera del v1 — ver abajo** |
 | Solicitar acceso | ❌ | ❌ | ❌ | **Fuera del MVP** |
 
 ## Detalle de lo que quedó afuera
@@ -63,12 +63,31 @@ datos tiene `Usuarios_roles` como relación muchos-a-muchos y
 `Docentes.director_suplente`, o sea que una persona puede tener varios roles.
 El selector de perfil sería exactamente la forma de resolverlo.
 
+### Por qué se sacó del v1
+
+Se llegó a dibujar y después se quitó. Dejarlo tenía tres problemas:
+
+1. **El chip mentía.** Estaba escrito a mano con el texto "Director", así que
+   le decía "Director" a cualquiera que entrara, incluido un alumno.
+2. **El enlace no llevaba a ningún lado.** No existe la pantalla de selección
+   de perfil. Un botón que no hace nada es peor que no tener botón: el usuario
+   lo aprieta, no pasa nada, y concluye que el sistema está roto.
+3. **La API no lo soporta.** `POST /api/Auth/login` solo acepta
+   `{ dni, password }`.
+
+En el HTML de `formulario-login.html` quedó un comentario explicando dónde iba
+y por qué no está, para que nadie lo vuelva a agregar sin darse cuenta del
+problema.
+
+### Qué hace falta para que vuelva
+
 Pendiente de definir con el equipo:
 
 - ¿El login acepta un rol, o devuelve la lista de roles del usuario?
 - Si alguien es Docente **y** Director suplente, ¿a qué dashboard entra?
 
-Mientras tanto, el chip se muestra con un valor fijo y el enlace no navega.
+Cuando el backend devuelva los roles del usuario, la pantalla de selección de
+perfil pasa a tener sentido y el chip puede mostrar un dato real.
 
 ## Detalles de implementación que vienen del análisis
 

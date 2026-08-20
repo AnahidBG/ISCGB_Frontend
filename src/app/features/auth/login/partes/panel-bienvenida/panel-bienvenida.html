@@ -1,8 +1,10 @@
 <!--
-  El fondo es una foto del instituto tapada por un velo verde.
-  Mientras no tengamos la foto definitiva, el degradado solo ya se ve bien.
-  Para ponerla: agregar una clase de imagen de fondo a este section apuntando
-  a imagenes/instituto-aula.jpg, y dejar el velo del span encima.
+  El fondo son dos capas: la foto del instituto y, encima, un velo verde.
+
+  La foto va como <img> y no como imagen de fondo de CSS. Motivo: así el
+  navegador puede empezar a descargarla apenas lee el HTML, sin esperar a
+  procesar las hojas de estilo. En la primera pantalla que ve el usuario,
+  esos milisegundos se notan.
 
   Ojo: no escribas clases de Tailwind de ejemplo dentro de un comentario.
   Tailwind lee el archivo entero como texto plano, no entiende que esto es un
@@ -11,10 +13,24 @@
 <section
   class="relative flex h-full flex-col justify-between overflow-hidden bg-principal p-12 text-white"
 >
+  <!--
+    alt="" a propósito: la foto es decorativa y no aporta información que el
+    texto de al lado no diga ya. Poniéndolo vacío, un lector de pantalla la
+    saltea en vez de anunciar algo que no ayuda.
+
+    object-cover recorta la foto para llenar el espacio sin deformarla, como
+    hace el "rellenar" de Figma.
+  -->
+  <img
+    src="imagenes/instituto-aula.png"
+    alt=""
+    class="pointer-events-none absolute inset-0 h-full w-full object-cover"
+  />
+
   <!-- Velo de color. aria-hidden porque es decoración, no información. -->
   <span
     aria-hidden="true"
-    class="pointer-events-none absolute inset-0 bg-gradient-to-br from-principal via-principal to-principal-oscuro opacity-95"
+    class="pointer-events-none absolute inset-0 bg-gradient-to-br from-principal/95 via-principal/90 to-principal-oscuro/95"
   ></span>
 
   <!-- Marca -->
