@@ -1,0 +1,76 @@
+<!--
+  ⚠️ Gotcha de Angular: <ng-content /> proyecta el contenido UNA sola vez,
+  aunque lo escribas en dos ramas de un @if. La segunda queda vacía.
+
+  Por eso el contenido se declara una vez adentro de #contenido y se
+  reutiliza en las dos ramas con ngTemplateOutlet.
+-->
+@if (href(); as direccion) {
+  <a
+    [href]="bloqueado() ? null : direccion"
+    [target]="destino()"
+    [attr.rel]="destino() === '_blank' ? 'noopener noreferrer' : null"
+    [attr.aria-disabled]="bloqueado() ? 'true' : null"
+    [class]="clases()"
+  >
+    <ng-container [ngTemplateOutlet]="contenido" />
+  </a>
+} @else {
+  <button
+    [type]="tipo()"
+    [disabled]="bloqueado()"
+    [attr.aria-busy]="cargando() ? 'true' : null"
+    [class]="clases()"
+  >
+    <ng-container [ngTemplateOutlet]="contenido" />
+  </button>
+}
+
+<ng-template #contenido>
+  @if (cargando()) {
+    <svg aria-hidden="true" viewBox="0 0 24 24" class="h-5 w-5 shrink-0 animate-spin">
+      <circle
+        cx="12"
+        cy="12"
+        r="9"
+        stroke="currentColor"
+        stroke-width="2.5"
+        fill="none"
+        opacity="0.3"
+      />
+      <path
+        d="M21 12a9 9 0 0 0-9-9"
+        stroke="currentColor"
+        stroke-width="2.5"
+        fill="none"
+        stroke-linecap="round"
+      />
+    </svg>
+  }
+
+  <!--
+    El texto proyectado siempre se renderiza. Mientras carga se oculta con
+    `hidden` en vez de sacarlo del DOM: así el botón no cambia de ancho y la
+    pantalla no salta.
+  -->
+  <span [class.hidden]="cargando() && textoCargando() !== null">
+    <ng-content />
+  </span>
+
+  @if (cargando() && textoCargando(); as texto) {
+    <span>{{ texto }}</span>
+  }
+
+  @if (conFlecha() && !cargando()) {
+    <!-- El chevron doble del sistema de diseño. Decorativo: el texto ya dice todo. -->
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="h-4 w-4 shrink-0">
+      <path
+        d="m7 6 6 6-6 6M13 6l6 6-6 6"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+    </svg>
+  }
+</ng-template>

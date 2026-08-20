@@ -1,0 +1,71 @@
+/*
+  El logo del ISCGB es un trazo continuo cerrado. Eso permite el efecto de
+  "dibujarse solo", que funciona así:
+
+  1. `stroke-dasharray: 537` corta el contorno en un guion de 537 unidades,
+     que es EXACTAMENTE su largo total. Un solo guion, del largo del trazo.
+  2. `stroke-dashoffset` corre ese guion. En 537 queda todo fuera de vista
+     (parece que no hay nada); en 0 queda perfectamente calzado (se ve entero).
+  3. Animar el offset de 537 a 0 da la ilusión de que una mano lo dibuja.
+  4. Recién ahí aparece el relleno.
+
+  El 537 salió de medir el path con `getTotalLength()`. Si algún día cambia
+  el logo, hay que volver a medirlo — con otro número el efecto se corta o
+  arranca tarde.
+*/
+
+.logo-animado path {
+  fill: var(--color-principal);
+  stroke: var(--color-principal);
+  stroke-width: 1.5;
+  stroke-dasharray: 537;
+  animation: dibujar-logo 2.6s ease-in-out infinite;
+}
+
+@keyframes dibujar-logo {
+  0% {
+    stroke-dashoffset: 537;
+    fill-opacity: 0;
+  }
+  50% {
+    stroke-dashoffset: 0;
+    fill-opacity: 0;
+  }
+  68% {
+    fill-opacity: 1;
+  }
+  85% {
+    stroke-dashoffset: 0;
+    fill-opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: -537;
+    fill-opacity: 0;
+  }
+}
+
+/*
+  Hay gente a la que el movimiento en pantalla le produce mareo o migraña, y
+  lo configura en su sistema operativo. Respetarlo no es opcional: es parte
+  de que la interfaz sea usable para todos.
+
+  Para esas personas el logo aparece quieto, con una respiración muy suave
+  que alcanza para entender que el sistema está trabajando.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .logo-animado path {
+    stroke: none;
+    stroke-dasharray: none;
+    animation: respirar 2s ease-in-out infinite;
+  }
+
+  @keyframes respirar {
+    0%,
+    100% {
+      fill-opacity: 0.45;
+    }
+    50% {
+      fill-opacity: 1;
+    }
+  }
+}

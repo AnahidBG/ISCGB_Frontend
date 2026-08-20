@@ -1,0 +1,157 @@
+<app-encabezado />
+
+<main class="contenedor py-12 lg:py-16">
+  <h1 class="text-4xl text-principal lg:text-5xl">Sistema de diseño</h1>
+  <p class="mt-3 max-w-2xl text-texto-suave">
+    Los componentes reales, dibujados con los tokens reales. Si cambia un color en
+    <code class="font-mono text-sm">styles.scss</code>, esta página cambia sola.
+  </p>
+
+  <!-- ── Colores ──────────────────────────────────────────────────────── -->
+  <section class="mt-14">
+    <h2 class="text-2xl text-texto">Colores</h2>
+
+    <h3 class="mt-6 font-cuerpo text-sm font-semibold tracking-wide text-texto-suave uppercase">
+      Oficiales del manual de identidad
+    </h3>
+    <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      @for (color of oficiales; track color.variable) {
+        <li class="overflow-hidden rounded-xl border border-borde bg-superficie">
+          <span class="block h-20" [style.background-color]="color.hex"></span>
+          <span class="block p-4">
+            <span class="block font-medium text-texto">{{ color.nombre }}</span>
+            <code class="mt-0.5 block font-mono text-xs text-texto-suave">{{ color.hex }}</code>
+            @if (color.nota) {
+              <span class="mt-2 block text-xs text-rechazado">{{ color.nota }}</span>
+            }
+          </span>
+        </li>
+      }
+    </ul>
+
+    <h3 class="mt-10 font-cuerpo text-sm font-semibold tracking-wide text-texto-suave uppercase">
+      Derivados — no están en el manual
+    </h3>
+    <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      @for (color of derivados; track color.variable) {
+        <li class="overflow-hidden rounded-xl border border-borde bg-superficie">
+          <span class="block h-20" [style.background-color]="color.hex"></span>
+          <span class="block p-4">
+            <span class="block font-medium text-texto">{{ color.nombre }}</span>
+            <code class="mt-0.5 block font-mono text-xs text-texto-suave">{{ color.hex }}</code>
+            @if (color.nota) {
+              <span class="mt-2 block text-xs text-texto-suave">{{ color.nota }}</span>
+            }
+          </span>
+        </li>
+      }
+    </ul>
+
+    <h3 class="mt-10 font-cuerpo text-sm font-semibold tracking-wide text-texto-suave uppercase">
+      Estados de documento
+    </h3>
+    <ul class="mt-4 flex flex-wrap gap-3">
+      @for (color of estados; track color.variable) {
+        <li
+          class="flex items-center gap-2 rounded-full border border-borde bg-superficie py-2 pr-4 pl-2"
+        >
+          <span class="h-6 w-6 rounded-full" [style.background-color]="color.hex"></span>
+          <span class="text-sm text-texto">{{ color.nombre }}</span>
+          <code class="font-mono text-xs text-texto-suave">{{ color.hex }}</code>
+        </li>
+      }
+    </ul>
+  </section>
+
+  <!-- ── Tipografía ───────────────────────────────────────────────────── -->
+  <section class="mt-16">
+    <h2 class="text-2xl text-texto">Tipografía</h2>
+    <div class="mt-6 space-y-6 rounded-xl border border-borde bg-superficie p-6 lg:p-8">
+      <p>
+        <span class="block text-xs tracking-wide text-texto-suave uppercase">
+          Gasoek One · títulos
+        </span>
+        <span class="mt-1 block font-titulo text-4xl text-principal">
+          Gestión Documental
+        </span>
+      </p>
+      <p>
+        <span class="block text-xs tracking-wide text-texto-suave uppercase">
+          Geist · contenido
+        </span>
+        <span class="mt-1 block font-cuerpo text-lg text-texto">
+          Plataforma integral para docentes y administrativos.
+        </span>
+      </p>
+      <p>
+        <span class="block text-xs tracking-wide text-texto-suave uppercase">
+          Geist Mono · piezas digitales
+        </span>
+        <span class="mt-1 block font-mono text-base text-texto">
+          ISCGB_NombreyApellido_NombreDocumento
+        </span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ── Botones ──────────────────────────────────────────────────────── -->
+  <section class="mt-16">
+    <h2 class="text-2xl text-texto">Botones</h2>
+    <p class="mt-2 text-texto-suave">
+      Pasá el mouse, mantené apretado y navegá con Tab para ver los estados.
+    </p>
+
+    <div class="mt-6 grid gap-6 sm:grid-cols-3">
+      @for (nivel of ['primario', 'secundario', 'terciario']; track nivel) {
+        <div class="rounded-xl border border-borde bg-superficie p-6">
+          <h3 class="font-cuerpo text-xs tracking-wide text-texto-suave uppercase">{{ nivel }}</h3>
+          <div class="mt-4 flex flex-col items-start gap-4">
+            <app-boton [nivel]="$any(nivel)">Iniciá tu camino</app-boton>
+            <app-boton [nivel]="$any(nivel)" [deshabilitado]="true">Deshabilitado</app-boton>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ── Grilla ───────────────────────────────────────────────────────── -->
+  <section class="mt-16">
+    <h2 class="text-2xl text-texto">Grilla</h2>
+    <div class="mt-6 overflow-x-auto rounded-xl border border-borde bg-superficie">
+      <table class="w-full min-w-[34rem] text-left text-sm">
+        <thead class="border-b border-borde text-texto-suave">
+          <tr>
+            <th class="px-5 py-3 font-medium">Dispositivo</th>
+            <th class="px-5 py-3 font-medium">Columnas</th>
+            <th class="px-5 py-3 font-medium">Margen</th>
+            <th class="px-5 py-3 font-medium">Separación</th>
+            <th class="px-5 py-3 font-medium">Lienzo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-borde">
+            <td class="px-5 py-3 text-texto">Escritorio</td>
+            <td class="px-5 py-3 text-texto-suave">12</td>
+            <td class="px-5 py-3 text-texto-suave">120 px</td>
+            <td class="px-5 py-3 text-texto-suave">32 px</td>
+            <td class="px-5 py-3 text-texto-suave">1440 px</td>
+          </tr>
+          <tr>
+            <td class="px-5 py-3 text-texto">Celular</td>
+            <td class="px-5 py-3 text-texto-suave">4</td>
+            <td class="px-5 py-3 text-texto-suave">16 px</td>
+            <td class="px-5 py-3 text-texto-suave">16 px</td>
+            <td class="px-5 py-3 text-texto-suave">392 px</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="mt-4 max-w-3xl text-sm text-texto-suave">
+      El diseño está dibujado a 1440 px, pero una MacBook 16" tiene 1728 px de ancho útil y
+      un iPhone 16 Pro Max, 440 px. Por eso el contenido se limita a 1440 px y se centra, y
+      abajo estira hasta donde haga falta. El lienzo de Figma es una foto de UN tamaño; el
+      código tiene que andar en TODOS.
+    </p>
+  </section>
+</main>
