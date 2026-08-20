@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <title>ISCGB — Gestión Documental y Autogestión Académica</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Sistema de gestión documental y autogestión académica del Instituto Superior Cura Gabriel Brochero."
+    />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+    <!--
+      Tipografías institucionales.
+      Gasoek One → títulos · Geist → contenido · Geist Mono → piezas digitales.
+
+      `preconnect` le avisa al navegador que abra la conexión con Google Fonts
+      antes de necesitarla; ahorra unos cuantos milisegundos.
+      `display=swap` muestra el texto con la fuente de respaldo mientras la
+      definitiva descarga, en vez de dejar el texto invisible.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Gasoek+One&family=Geist:wght@300..700&family=Geist+Mono:wght@400..600&display=swap"
+      rel="stylesheet"
+    />
+
+    <!--
+      Pantalla de arranque.
+
+      Todo lo de acá abajo está escrito directo en el HTML, sin Angular y sin
+      Tailwind, a propósito: se ve desde el primer instante, antes de que el
+      navegador termine de descargar la aplicación. Si dependiera de Angular,
+      el usuario miraría una pantalla en blanco hasta que Angular arranque,
+      que es justo el rato que queremos cubrir.
+
+      Cuando Angular arranca, reemplaza todo lo que haya dentro de <app-root>,
+      así que este bloque desaparece solo. No hay que borrarlo por código.
+    -->
+    <style>
+      .arranque {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        height: 100dvh;
+        background: #f5f5f5;
+        font-family: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+
+      .arranque svg {
+        width: 5rem;
+        height: 5rem;
+      }
+
+      .arranque path {
+        fill: #46695f;
+        stroke: #46695f;
+        stroke-width: 1.5;
+        stroke-dasharray: 537;
+        animation: arranque-dibujar 2.6s ease-in-out infinite;
+      }
+
+      .arranque p {
+        margin: 0;
+        font-size: 0.875rem;
+        letter-spacing: 0.04em;
+        color: #666e6b;
+      }
+
+      @keyframes arranque-dibujar {
+        0% {
+          stroke-dashoffset: 537;
+          fill-opacity: 0;
+        }
+        50% {
+          stroke-dashoffset: 0;
+          fill-opacity: 0;
+        }
+        68% {
+          fill-opacity: 1;
+        }
+        85% {
+          stroke-dashoffset: 0;
+          fill-opacity: 1;
+        }
+        100% {
+          stroke-dashoffset: -537;
+          fill-opacity: 0;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .arranque path {
+          stroke: none;
+          stroke-dasharray: none;
+          animation: arranque-respirar 2s ease-in-out infinite;
+        }
+
+        @keyframes arranque-respirar {
+          0%,
+          100% {
+            fill-opacity: 0.45;
+          }
+          50% {
+            fill-opacity: 1;
+          }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <app-root>
+      <div class="arranque" role="status" aria-live="polite">
+        <svg viewBox="0 0 62 58" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path
+            d="M58.8801 50.7238C51.9197 60.0538 37.2992 58.2486 37.2803 56.9259L37.2425 52.8329C37.2236 50.4378 53.4896 55.2458 55.3432 43.5743C56.3267 37.39 51.9387 31.8134 44.4298 31.8134H16.7398C11.0277 31.8134 6.52621 36.5678 6.29924 41.2507C6.05336 46.5592 10.3279 51.7783 16.6452 51.8856C21.8276 51.9749 26.575 49.3296 27.7288 44.9148L19.5579 44.8791C18.7446 44.8791 17.1748 43.199 17.0424 42.5376C16.8343 41.5367 18.5744 38.8914 19.6525 38.9093L34.2163 39.2489C35.9185 47.2563 31.0009 53.0295 25.0808 55.9429C18.3285 59.2495 10.5171 57.8911 5.032 52.7971C-2.45793 45.8443 -1.39875 35.1022 7.33951 28.9715C0.454823 23.8418 -1.45549 16.8174 1.06007 10.6332C3.93499 3.5552 11.0656 -0.41275 19.5201 0.0340912L23.0759 0.230701C24.2486 0.284322 24.0027 5.3208 23.0759 6C19.8038 8.43082 6.88557 3.8233 6.29924 15.1731C5.99662 21.0714 10.8953 26.2726 18.0637 26.2011L45.9618 25.8973C52.1467 25.8258 55.8917 20.3386 55.4377 15.0301C55.0784 10.8476 51.4847 6.34349 45.2999 5.68217C41.1955 5.2532 35.8429 8.48833 33.8758 12.5814L43.1247 13.2248C44.6568 13.3321 44.6 18.6763 43.1247 18.7299L27.5964 18.5691C26.0076 7.91637 34.4621 0.588174 43.9002 0.159207C53.3383 -0.269761 62.4927 6.84395 61.982 16.8711C61.755 21.3931 58.1803 25.9688 54.719 29.1145C61.8685 33.9047 64.7056 42.9309 58.899 50.7238H58.8801Z"
+          />
+        </svg>
+        <p>Cargando ISCGB…</p>
+      </div>
+    </app-root>
+  </body>
+</html>

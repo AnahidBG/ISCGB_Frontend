@@ -1,0 +1,126 @@
+@use 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   SISTEMA DE DISEÑO ISCGB — fuente única de verdad.
+
+   Todo lo visual del sistema nace de acá: colores, tipografías y grilla.
+   Ningún componente escribe un hexadecimal, un nombre de fuente o un ancho
+   de columna a mano.
+
+   Origen: Manual de Identidad ICGB (Figma) + Design System.
+   Ver docs/design-system.md para el detalle y las decisiones.
+   --------------------------------------------------------------------------- */
+@theme {
+  /* ── Colores oficiales del manual de identidad ──────────────────────── */
+  --color-principal: #46695f; /* Verde grisáceo oscuro — color principal */
+  --color-acento-verde: #90c997; /* Verde claro — acento */
+  --color-acento-lima: #cfd18d; /* Amarillo verdoso suave — acento */
+  --color-menta: #cbffd1; /* Verde menta */
+  --color-humo: #f5f5f5; /* Blanco humo */
+  --color-gris-marca: #919d99; /* Gris verdoso suave */
+
+  /* ── Derivados ───────────────────────────────────────────────────────────
+     No están en el manual. Se derivaron manteniendo el matiz, por dos
+     motivos: hacen falta estados (hover, press) que el manual no define
+     como valores, y hace falta un gris de texto que cumpla accesibilidad. */
+  --color-principal-oscuro: #35504a; /* Hover / press del botón principal */
+  --color-principal-suave: #eaf0ee; /* Fondo tenue del color principal */
+  --color-acento-verde-claro: #b8ddb4; /* Botón primario en reposo */
+  --color-acento-verde-press: #7aab80; /* Botón primario presionado */
+
+  /* ⚠️ El gris de marca #919D99 sobre blanco da 2.80:1 de contraste y NO
+     alcanza el mínimo de 4.5:1 que exige WCAG AA para texto. Se usa solo
+     para trazos decorativos y bordes, nunca para texto que haya que leer.
+     Para texto secundario va este, que mantiene el matiz y da 4.81:1. */
+  --color-texto-suave: #666e6b;
+
+  /* ── Superficies, líneas y texto ─────────────────────────────────────── */
+  --color-fondo: #f5f5f5;
+  --color-superficie: #ffffff;
+  --color-borde: #e2e8e4;
+  --color-texto: #2d2d2d;
+
+  /* ── Estados de documento — regla de negocio del MVP ─────────────────── */
+  --color-aprobado: #2f8f5b; /* 🟢 Aprobado */
+  --color-pendiente: #b07d0a; /* 🟡 Pendiente */
+  --color-rechazado: #c0392b; /* 🔴 Rechazado */
+
+  /* ── Tipografía ──────────────────────────────────────────────────────── */
+  --font-titulo: 'Gasoek One', 'Arial Black', sans-serif;
+  --font-cuerpo: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  /* ── Grilla ──────────────────────────────────────────────────────────────
+     Escritorio: 12 columnas · margen 120px · separación 32px · lienzo 1440px
+     Celular:     4 columnas · margen  16px · separación 16px · lienzo  392px */
+  --spacing-margen-desktop: 120px;
+  --spacing-margen-mobile: 16px;
+  --container-lienzo: 1440px;
+}
+
+/* ---------------------------------------------------------------------------
+   Contenedor de página.
+
+   El diseño de Figma está dibujado a 1440px, pero una MacBook 16" tiene
+   1728px de ancho útil. Si estiráramos el contenido a lo que dé la pantalla,
+   las líneas de texto quedarían larguísimas e incómodas de leer.
+
+   Por eso el contenido se limita a 1440px y se centra: en pantallas más
+   grandes sobra aire a los costados, que es exactamente lo que se ve en
+   cualquier sitio bien hecho.
+   --------------------------------------------------------------------------- */
+.contenedor {
+  width: 100%;
+  max-width: var(--container-lienzo);
+  margin-inline: auto;
+  padding-inline: var(--spacing-margen-mobile);
+}
+
+@media (min-width: 1024px) {
+  .contenedor {
+    padding-inline: var(--spacing-margen-desktop);
+  }
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: var(--font-cuerpo);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------------------------------------------------------------------------
+   Tipografía de títulos — a mano, no automática.
+
+   El manual de identidad dice "Gasoek One para títulos". Pero en el diseño
+   del login, tanto el título grande como "Bienvenido" están dibujados con
+   la tipografía de contenido en negrita, no con Gasoek One.
+
+   No es un error de nadie: Gasoek One es una display muy pesada, pensada
+   para piezas de comunicación (placas, portadas, campañas). En una pantalla
+   de sistema, donde el usuario viene a hacer un trámite, resulta demasiado
+   ruidosa.
+
+   Por eso NO se fuerza `font-titulo` en todos los h1/h2/h3. Cada pantalla
+   elige, y queda explícito en su HTML:
+
+     · Piezas de marca y comunicación → class="font-titulo"
+     · Pantallas del sistema          → la tipografía de contenido (por defecto)
+
+   Pendiente: confirmarlo con el equipo de diseño y dejarlo escrito en el
+   manual, para que no se decida distinto en cada pantalla.
+   --------------------------------------------------------------------------- */
+h1,
+h2,
+h3 {
+  font-weight: 700;
+}
+
+/* Gasoek One tiene un solo peso. Pedirle negrita hace que el navegador la
+   falsifique estirando los trazos, y se ve sucia. */
+.font-titulo {
+  font-weight: 400;
+}

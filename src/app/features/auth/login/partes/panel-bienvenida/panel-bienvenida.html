@@ -1,0 +1,47 @@
+<!--
+  El fondo es una foto del instituto tapada por un velo verde.
+  Mientras no tengamos la foto definitiva, el degradado solo ya se ve bien.
+  Para ponerla: agregar una clase de imagen de fondo a este section apuntando
+  a imagenes/instituto-aula.jpg, y dejar el velo del span encima.
+
+  Ojo: no escribas clases de Tailwind de ejemplo dentro de un comentario.
+  Tailwind lee el archivo entero como texto plano, no entiende que esto es un
+  comentario, y va a intentar generar esa clase (y fallar el build).
+-->
+<section
+  class="relative flex h-full flex-col justify-between overflow-hidden bg-principal p-12 text-white"
+>
+  <!-- Velo de color. aria-hidden porque es decoración, no información. -->
+  <span
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-0 bg-gradient-to-br from-principal via-principal to-principal-oscuro opacity-95"
+  ></span>
+
+  <!-- Marca -->
+  <p class="relative flex items-center gap-3">
+    <img src="imagenes/logo-iscgb.svg" alt="" width="44" height="44" class="h-11 w-11" />
+    <span class="text-2xl font-semibold tracking-wide">ISCGB</span>
+  </p>
+
+  <!-- Mensaje principal -->
+  <div class="relative max-w-xl">
+    <h1 class="text-5xl leading-tight font-bold text-balance">
+      Gestión Documental y Autogestión Académica
+    </h1>
+    <p class="mt-6 text-lg leading-relaxed text-white/85 text-pretty">
+      Plataforma integral para docentes y administrativos del Instituto Superior Cura
+      Gabriel Brochero.
+    </p>
+  </div>
+
+  <!-- Áreas del sistema -->
+  <ul class="relative flex flex-wrap gap-4">
+    @for (area of areas; track area) {
+      <li
+        class="rounded-lg border border-white/25 bg-white/10 px-5 py-2.5 text-sm font-medium backdrop-blur-sm"
+      >
+        {{ area }}
+      </li>
+    }
+  </ul>
+</section>

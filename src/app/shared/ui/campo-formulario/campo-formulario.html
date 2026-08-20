@@ -1,0 +1,20 @@
+<p class="flex flex-col gap-1.5">
+  <span class="flex items-baseline justify-between gap-3">
+    <label [for]="idCampo()" class="text-sm font-medium text-texto">
+      {{ etiqueta() }}
+      @if (requerido()) {
+        <span aria-hidden="true" class="text-rechazado">*</span>
+        <span class="sr-only">(obligatorio)</span>
+      }
+    </label>
+    <ng-content select="[accionEtiqueta]" />
+  </span>
+
+  <ng-content />
+
+  @if (error(); as mensaje) {
+    <span [id]="idCampo() + '-error'" role="alert" class="text-sm text-rechazado">
+      {{ mensaje }}
+    </span>
+  }
+</p>

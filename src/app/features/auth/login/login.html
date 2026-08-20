@@ -1,0 +1,32 @@
+<!--
+  Dos columnas en pantallas grandes, una sola apiladas en celular.
+  En celular el panel verde se oculta: ocupa media pantalla y no aporta
+  nada al que solo quiere entrar.
+-->
+<main class="grid min-h-dvh bg-fondo lg:grid-cols-2">
+  <div class="hidden lg:block">
+    <app-panel-bienvenida />
+  </div>
+
+  <div class="flex items-center justify-center px-6 py-12">
+    <div class="w-full max-w-md rounded-3xl bg-superficie p-8 shadow-sm sm:p-10">
+      <app-formulario-login
+        [perfil]="perfil()"
+        [cargando]="cargando()"
+        [errorGeneral]="error()"
+        (enviar)="iniciarSesion($event)"
+        (cambiarPerfil)="volverASeleccionDePerfil()"
+      />
+
+      <!--
+        "Solicitar acceso" quedó fuera del MVP: no hay endpoint, no hay tabla
+        y no figura en ningún sprint. El diseño está guardado en Figma para
+        una versión futura. Ver docs/alcance-login.md
+      -->
+
+      <p class="mt-8 text-center text-xs text-texto-suave">
+        Sistema de Autenticación de Usuarios de ISCGB
+      </p>
+    </div>
+  </div>
+</main>

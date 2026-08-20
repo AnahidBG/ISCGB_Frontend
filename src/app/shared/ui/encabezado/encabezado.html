@@ -1,0 +1,131 @@
+<!--
+  <header> y <nav> no son adornos: son los puntos por donde alguien que usa
+  lector de pantalla salta directo a la navegación sin escuchar todo lo demás.
+  Un <div> no ofrece ese atajo.
+-->
+<header class="border-b border-borde bg-superficie">
+  <div class="contenedor flex items-center justify-between gap-6 py-4 lg:py-5">
+    <!-- Marca: isotipo + denominación en los tres niveles del manual -->
+    <a
+      href="https://icgb.com.ar/"
+      class="flex shrink-0 items-center gap-2.5 focus-visible:ring-2 focus-visible:ring-principal focus-visible:outline-none"
+    >
+      <img
+        src="imagenes/logo-iscgb-verde.svg"
+        alt=""
+        width="36"
+        height="34"
+        class="h-8 w-auto lg:h-9"
+      />
+      <!--
+        El nombre va como TEXTO, no como imagen. Así se puede seleccionar,
+        lo lee un lector de pantalla, lo indexa un buscador y se ve nítido
+        en cualquier pantalla. Una captura del logo no hace nada de eso.
+      -->
+      <span class="flex flex-col leading-none">
+        <span class="text-[0.6rem] font-medium text-texto lg:text-[0.65rem]">Cura Gabriel</span>
+        <span class="text-base font-bold tracking-tight text-texto lg:text-lg">BROCHERO</span>
+        <span class="text-[0.45rem] tracking-[0.14em] text-texto-suave lg:text-[0.5rem]">
+          INSTITUTO SUPERIOR
+        </span>
+      </span>
+    </a>
+
+    <!-- ── Navegación de escritorio ───────────────────────────────────── -->
+    <nav aria-label="Navegación principal" class="hidden lg:block">
+      <ul class="flex items-center gap-8">
+        @for (enlace of enlaces(); track enlace.url) {
+          <li>
+            <a
+              [href]="enlace.url"
+              [attr.aria-current]="enlace.activo ? 'page' : null"
+              class="text-sm text-texto transition-colors hover:text-principal focus-visible:ring-2 focus-visible:ring-principal focus-visible:outline-none aria-[current=page]:font-semibold aria-[current=page]:underline aria-[current=page]:underline-offset-4"
+            >
+              {{ enlace.etiqueta }}
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+
+    <!-- ── Portal de Autogestión + idioma (escritorio) ─────────────────── -->
+    <div class="hidden shrink-0 items-center gap-4 lg:flex">
+      <app-boton nivel="secundario" [href]="urlAutogestion()">Portal de Autogestión</app-boton>
+
+      <!--
+        Selector de idioma. Hoy solo existe español: se muestra deshabilitado
+        para no prometer algo que el sistema todavía no hace.
+      -->
+      <button
+        type="button"
+        disabled
+        title="Por ahora el sitio está solo en español"
+        class="flex items-center gap-1 text-sm text-texto-suave disabled:cursor-not-allowed"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="h-4 w-4">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+          <path
+            d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"
+            stroke="currentColor"
+            stroke-width="1.6"
+          />
+        </svg>
+        ES
+      </button>
+    </div>
+
+    <!-- ── Botón de menú (celular) ─────────────────────────────────────── -->
+    <button
+      type="button"
+      (click)="alternarMenu()"
+      [attr.aria-expanded]="menuAbierto()"
+      aria-controls="menu-principal"
+      [attr.aria-label]="menuAbierto() ? 'Cerrar el menú' : 'Abrir el menú'"
+      class="rounded-md p-2 text-texto focus-visible:ring-2 focus-visible:ring-principal focus-visible:outline-none lg:hidden"
+    >
+      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="h-6 w-6">
+        @if (menuAbierto()) {
+          <path
+            d="m6 6 12 12M18 6 6 18"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        } @else {
+          <path
+            d="M4 7h16M4 12h16M4 17h16"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+          />
+        }
+      </svg>
+    </button>
+  </div>
+
+  <!-- ── Menú desplegado (celular) ─────────────────────────────────────── -->
+  @if (menuAbierto()) {
+    <nav id="menu-principal" aria-label="Navegación principal" class="border-t border-borde lg:hidden">
+      <ul class="contenedor flex flex-col py-2">
+        @for (enlace of enlaces(); track enlace.url) {
+          <li class="border-b border-borde last:border-b-0">
+            <a
+              [href]="enlace.url"
+              (click)="cerrarMenu()"
+              [attr.aria-current]="enlace.activo ? 'page' : null"
+              class="block py-3.5 text-texto focus-visible:ring-2 focus-visible:ring-principal focus-visible:outline-none aria-[current=page]:font-semibold aria-[current=page]:underline aria-[current=page]:underline-offset-4"
+            >
+              {{ enlace.etiqueta }}
+            </a>
+          </li>
+        }
+      </ul>
+
+      <div class="contenedor pt-2 pb-5">
+        <app-boton nivel="secundario" [href]="urlAutogestion()" [anchoCompleto]="true">
+          Portal de Autogestión
+        </app-boton>
+      </div>
+    </nav>
+  }
+</header>

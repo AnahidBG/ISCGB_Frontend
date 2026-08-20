@@ -1,0 +1,195 @@
+<form [formGroup]="formulario" (ngSubmit)="alEnviar()" class="flex flex-col gap-6" novalidate>
+  <!-- Perfil elegido en el paso anterior -->
+  @if (perfil(); as nombrePerfil) {
+    <p class="flex items-center justify-between gap-4">
+      <span
+        class="inline-flex items-center gap-2 rounded-full border border-borde bg-fondo px-4 py-1.5 text-sm font-medium text-principal"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="h-4 w-4">
+          <circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.6" />
+          <path
+            d="M5 20a7 7 0 0 1 14 0"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+          />
+        </svg>
+        {{ nombrePerfil }}
+      </span>
+
+      <button
+        type="button"
+        (click)="cambiarPerfil.emit()"
+        class="rounded-md text-sm text-texto-suave transition-colors hover:text-principal focus-visible:ring-2 focus-visible:ring-principal focus-visible:outline-none"
+      >
+        ← Cambiar perfil
+      </button>
+    </p>
+  }
+
+  <header>
+    <!-- Tipografía de contenido, no Gasoek One: ver la nota en styles.scss -->
+    <h2 class="text-3xl text-principal">Bienvenido</h2>
+    <p class="mt-1.5 text-texto-suave">Ingresá tus credenciales para acceder al sistema.</p>
+  </header>
+
+  <!--
+    Error de autenticación. `role="alert"` hace que un lector de pantalla lo
+    anuncie apenas aparece, sin que el usuario tenga que ir a buscarlo.
+  -->
+  @if (errorGeneral(); as mensaje) {
+    <p
+      role="alert"
+      class="rounded-lg border border-rechazado/25 bg-rechazado/8 px-4 py-3 text-sm text-rechazado"
+    >
+      {{ mensaje }}
+    </p>
+  }
+
+  <!-- DNI -->
+  <app-campo-formulario etiqueta="DNI" idCampo="dni" [requerido]="true" [error]="errorDni">
+    <span class="relative flex items-center">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        fill="none"
+        class="pointer-events-none absolute left-3.5 h-5 w-5 text-texto-suave"
+      >
+        <rect
+          x="2.5"
+          y="5"
+          width="19"
+          height="14"
+          rx="2.5"
+          stroke="currentColor"
+          stroke-width="1.6"
+        />
+        <circle cx="8.5" cy="11" r="2" stroke="currentColor" stroke-width="1.6" />
+        <path
+          d="M5.5 16.2c.6-1.4 1.7-2.2 3-2.2s2.4.8 3 2.2M14.5 10h4M14.5 13.5h4"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+        />
+      </svg>
+
+      <input
+        id="dni"
+        type="text"
+        formControlName="dni"
+        inputmode="numeric"
+        autocomplete="username"
+        placeholder="43.813.379"
+        [attr.aria-invalid]="errorDni !== null"
+        [attr.aria-describedby]="errorDni ? 'dni-error' : null"
+        [class.border-rechazado]="errorDni !== null"
+        [class.border-borde]="errorDni === null"
+        class="w-full rounded-lg border bg-superficie py-3.5 pr-4 pl-11 text-texto placeholder:text-texto-suave hover:border-acento-verde focus:border-principal focus:ring-2 focus:ring-principal/20 focus:outline-none"
+      />
+    </span>
+  </app-campo-formulario>
+
+  <!-- Contraseña -->
+  <app-campo-formulario
+    etiqueta="Contraseña"
+    idCampo="password"
+    [requerido]="true"
+    [error]="errorPassword"
+  >
+    <!--
+      Este enlace va en el hueco `accionEtiqueta`, al lado de la etiqueta.
+      Queda deshabilitado hasta el Sprint 3: la base de datos ya guarda el
+      token de recuperación, pero todavía no existe el endpoint.
+    -->
+    <button
+      accionEtiqueta
+      type="button"
+      disabled
+      title="Disponible próximamente"
+      class="text-sm text-principal/50 disabled:cursor-not-allowed"
+    >
+      ¿Olvidaste tu contraseña?
+    </button>
+
+    <span class="relative flex items-center">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        fill="none"
+        class="pointer-events-none absolute left-3.5 h-5 w-5 text-texto-suave"
+      >
+        <rect
+          x="4"
+          y="10.5"
+          width="16"
+          height="10"
+          rx="2.5"
+          stroke="currentColor"
+          stroke-width="1.6"
+        />
+        <path
+          d="M8 10.5V7.5a4 4 0 1 1 8 0v3"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+        />
+      </svg>
+
+      <input
+        id="password"
+        [type]="passwordVisible() ? 'text' : 'password'"
+        formControlName="password"
+        autocomplete="current-password"
+        placeholder="••••••••••"
+        [attr.aria-invalid]="errorPassword !== null"
+        [attr.aria-describedby]="errorPassword ? 'password-error' : null"
+        [class.border-rechazado]="errorPassword !== null"
+        [class.border-borde]="errorPassword === null"
+        class="w-full rounded-lg border bg-superficie py-3.5 pr-12 pl-11 text-texto placeholder:text-texto-suave hover:border-acento-verde focus:border-principal focus:ring-2 focus:ring-principal/20 focus:outline-none"
+      />
+
+      <button
+        type="button"
+        (click)="alternarPassword()"
+        [attr.aria-label]="
+          passwordVisible() ? 'Ocultar la contraseña' : 'Mostrar la contraseña'
+        "
+        [attr.aria-pressed]="passwordVisible()"
+        class="absolute right-3 rounded-md p-1.5 text-texto-suave transition-colors hover:text-principal focus-visible:ring-2 focus-visible:ring-principal focus-visible:outline-none"
+      >
+        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="h-5 w-5">
+          <path
+            d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"
+            stroke="currentColor"
+            stroke-width="1.6"
+          />
+          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6" />
+          @if (passwordVisible()) {
+            <path
+              d="m4 20 16-16"
+              stroke="currentColor"
+              stroke-width="1.6"
+              stroke-linecap="round"
+            />
+          }
+        </svg>
+      </button>
+    </span>
+  </app-campo-formulario>
+
+  <!--
+    El botón del sistema de diseño, nivel secundario (verde institucional
+    con texto blanco), tal como está en el diseño del login.
+    Sin chevron: acá no se navega a ningún lado, se ejecuta una acción.
+  -->
+  <app-boton
+    tipo="submit"
+    nivel="secundario"
+    [cargando]="cargando()"
+    textoCargando="Verificando…"
+    [conFlecha]="false"
+    [anchoCompleto]="true"
+  >
+    Iniciar Sesión
+  </app-boton>
+</form>
