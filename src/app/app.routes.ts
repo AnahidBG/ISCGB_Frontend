@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { authGuard } from './core/auth/auth.guard';
 
 /**
  * Rutas de la aplicación.
@@ -12,6 +13,14 @@ export const routes: Routes = [
     path: 'login',
     title: 'Iniciar sesión · ISCGB',
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
+  },
+  {
+    // Destino después de iniciar sesión. Protegida: sin sesión, `authGuard`
+    // devuelve a /login antes de que la pantalla llegue a dibujarse.
+    path: 'inicio',
+    title: 'Inicio · ISCGB',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/inicio/inicio').then((m) => m.Inicio),
   },
   {
     // Herramienta interna: el muestrario de componentes y tokens.

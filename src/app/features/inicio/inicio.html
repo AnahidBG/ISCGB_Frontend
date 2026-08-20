@@ -1,0 +1,55 @@
+@if (sesion(); as datos) {
+  <main class="contenedor flex min-h-dvh flex-col justify-center py-16">
+    <div class="mx-auto w-full max-w-2xl">
+      <img
+        src="imagenes/logo-iscgb-verde.svg"
+        alt=""
+        width="56"
+        height="52"
+        class="h-14 w-auto"
+      />
+
+      <h1 class="mt-6 text-4xl text-principal">
+        Hola{{ datos.nombreCompleto ? ', ' + datos.nombreCompleto : '' }}
+      </h1>
+      <p class="mt-2 text-texto-suave">Entraste al sistema. Tu sesión está activa.</p>
+
+      <!--
+        Provisorio: mostrar los datos de la sesión sirve para comprobar que el
+        login funcionó de punta a punta. Se va cuando exista el dashboard real.
+      -->
+      <dl class="mt-10 divide-y divide-borde rounded-xl border border-borde bg-superficie">
+        <div class="flex items-baseline justify-between gap-4 px-6 py-4">
+          <dt class="text-sm text-texto-suave">DNI</dt>
+          <dd class="font-mono text-texto">{{ dniConPuntos(datos.dni) }}</dd>
+        </div>
+        <div class="flex items-baseline justify-between gap-4 px-6 py-4">
+          <dt class="text-sm text-texto-suave">Correo</dt>
+          <dd class="text-texto">{{ datos.email }}</dd>
+        </div>
+        <div class="flex items-baseline justify-between gap-4 px-6 py-4">
+          <dt class="text-sm text-texto-suave">Rol</dt>
+          <dd class="text-texto">
+            <span class="font-mono">{{ datos.idRol }}</span>
+            <span class="ml-2 text-sm text-texto-suave">(falta la equivalencia)</span>
+          </dd>
+        </div>
+        <div class="flex items-baseline justify-between gap-4 px-6 py-4">
+          <dt class="text-sm text-texto-suave">La sesión vence</dt>
+          <dd class="text-texto">{{ datos.venceEl.toLocaleString('es-AR') }}</dd>
+        </div>
+      </dl>
+
+      <div class="mt-8">
+        <app-boton nivel="terciario" [conFlecha]="false" (click)="cerrarSesion()">
+          Cerrar sesión
+        </app-boton>
+      </div>
+
+      <p class="mt-10 rounded-lg bg-menta/40 px-4 py-3 text-sm text-texto">
+        <strong>Pantalla provisoria.</strong> Se reemplaza por el dashboard de cada rol
+        cuando backend nos pase qué rol es cada número.
+      </p>
+    </div>
+  </main>
+}

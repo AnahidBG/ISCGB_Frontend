@@ -34,7 +34,14 @@
     </p>
   }
 
-  <!-- DNI -->
+  <!--
+    DNI.
+
+    El placeholder muestra el FORMATO esperado (`12.345.678`), no un número
+    que parezca de alguien. Un placeholder con pinta de dato real confunde:
+    hay gente que cree que es su propio dato ya cargado, y además expone un
+    documento que podría pertenecer a una persona de verdad.
+  -->
   <app-campo-formulario etiqueta="DNI" idCampo="dni" [requerido]="true" [error]="errorDni">
     <span class="relative flex items-center">
       <svg
@@ -67,7 +74,7 @@
         formControlName="dni"
         inputmode="numeric"
         autocomplete="username"
-        placeholder="43.813.379"
+        placeholder="12.345.678"
         [attr.aria-invalid]="errorDni !== null"
         [attr.aria-describedby]="errorDni ? 'dni-error' : null"
         [class.border-rechazado]="errorDni !== null"

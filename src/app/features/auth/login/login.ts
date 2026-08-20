@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { CredencialesLogin } from '../../../core/auth/modelos/credenciales-login';
 import { FormularioLogin } from './partes/formulario-login/formulario-login';
@@ -26,6 +27,7 @@ import { PanelBienvenida } from './partes/panel-bienvenida/panel-bienvenida';
 })
 export class Login {
   private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
 
   /** `true` mientras esperamos la respuesta del servidor. */
   protected readonly cargando = signal(false);
@@ -40,9 +42,11 @@ export class Login {
     this.auth.iniciarSesion(credenciales).subscribe({
       next: () => {
         this.cargando.set(false);
-        // TODO: redirigir al dashboard que corresponda al rol.
-        // Falta que backend nos pase la equivalencia entre el `role` del
-        // token ("1", "2", ...) y los roles reales del sistema.
+
+        // TODO: cuando backend nos pase la equivalencia entre el `role` del
+        // token ("1", "2", …) y los roles reales, acá se elige el dashboard
+        // según el rol en vez de mandar a todos al mismo lugar.
+        this.router.navigate(['/inicio']);
       },
       error: (fallo: Error) => {
         this.cargando.set(false);
