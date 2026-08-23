@@ -1,0 +1,360 @@
+<form [formGroup]="formulario" (ngSubmit)="enviar()" class="flex flex-col gap-10">
+  @if (error()) {
+    <div
+      class="rounded-lg border-l-4 border-rechazado bg-rechazado/10 px-4 py-3 text-sm text-texto"
+      role="alert"
+    >
+      <span class="font-semibold">No se pudo enviar el programa.</span>
+      <span class="ml-1">{{ error() }}</span>
+    </div>
+  }
+
+  <!-- ── Identificación ─────────────────────────────────────────────────── -->
+  <section class="flex flex-col gap-4">
+    <div>
+      <h2 class="text-lg font-bold text-texto">Identificación</h2>
+      <p class="mt-1 text-sm text-texto-suave">
+        ⚠️ Provisorio: hasta que el backend permita elegir la materia y resolver el docente
+        automáticamente desde la sesión, estos dos campos se cargan a mano.
+      </p>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <app-campo-formulario
+        etiqueta="ID Docente"
+        idCampo="idDocente"
+        [requerido]="true"
+        [error]="
+          formulario.controls.idDocente.touched && formulario.controls.idDocente.invalid
+            ? 'Ingresá el ID del docente.'
+            : null
+        "
+      >
+        <input
+          id="idDocente"
+          type="number"
+          min="1"
+          formControlName="idDocente"
+          class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+        />
+      </app-campo-formulario>
+
+      <app-campo-formulario
+        etiqueta="ID Materia"
+        idCampo="idMateria"
+        [requerido]="true"
+        [error]="
+          formulario.controls.idMateria.touched && formulario.controls.idMateria.invalid
+            ? 'Ingresá el ID de la materia.'
+            : null
+        "
+      >
+        <input
+          id="idMateria"
+          type="number"
+          min="1"
+          formControlName="idMateria"
+          class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+        />
+      </app-campo-formulario>
+
+      <app-campo-formulario etiqueta="Ciclo lectivo" idCampo="cicloLectivo" [requerido]="true">
+        <input
+          id="cicloLectivo"
+          type="text"
+          inputmode="numeric"
+          formControlName="cicloLectivo"
+          class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+        />
+      </app-campo-formulario>
+
+      <app-campo-formulario etiqueta="Condición" idCampo="condicion" [requerido]="true">
+        <select
+          id="condicion"
+          formControlName="condicion"
+          class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+        >
+          @for (opcion of opcionesCondicion; track opcion) {
+            <option [value]="opcion">{{ opcion }}</option>
+          }
+        </select>
+      </app-campo-formulario>
+
+      <app-campo-formulario
+        etiqueta="Formato curricular"
+        idCampo="formatoCurricular"
+        [requerido]="true"
+      >
+        <select
+          id="formatoCurricular"
+          formControlName="formatoCurricular"
+          class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+        >
+          @for (opcion of opcionesFormatoCurricular; track opcion) {
+            <option [value]="opcion">{{ opcion }}</option>
+          }
+        </select>
+      </app-campo-formulario>
+    </div>
+  </section>
+
+  <!-- ── Carga horaria ──────────────────────────────────────────────────── -->
+  <section class="grid gap-4 sm:grid-cols-2">
+    <app-campo-formulario
+      etiqueta="Horas semanales"
+      idCampo="horasSemanales"
+      [requerido]="true"
+    >
+      <input
+        id="horasSemanales"
+        type="text"
+        placeholder="Ej: 4 horas"
+        formControlName="horasSemanales"
+        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+      />
+    </app-campo-formulario>
+
+    <app-campo-formulario
+      etiqueta="Horas cuatrimestrales"
+      idCampo="horasCuatrimestrales"
+      [requerido]="true"
+    >
+      <input
+        id="horasCuatrimestrales"
+        type="text"
+        placeholder="Ej: 64 horas"
+        formControlName="horasCuatrimestrales"
+        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+      />
+    </app-campo-formulario>
+  </section>
+
+  <!-- ── Objetivos ──────────────────────────────────────────────────────── -->
+  <section class="flex flex-col gap-4">
+    <h2 class="text-lg font-bold text-texto">Objetivos</h2>
+
+    <app-campo-formulario
+      etiqueta="Objetivos generales"
+      idCampo="objetivosGenerales"
+      [requerido]="true"
+    >
+      <textarea
+        id="objetivosGenerales"
+        rows="3"
+        formControlName="objetivosGenerales"
+        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+      ></textarea>
+    </app-campo-formulario>
+
+    <app-campo-formulario
+      etiqueta="Objetivos específicos"
+      idCampo="objetivosEspecificos"
+      [requerido]="true"
+    >
+      <textarea
+        id="objetivosEspecificos"
+        rows="3"
+        formControlName="objetivosEspecificos"
+        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+      ></textarea>
+    </app-campo-formulario>
+  </section>
+
+  <!-- ── Unidades de contenido ─────────────────────────────────────────── -->
+  <section class="flex flex-col gap-4">
+    <div class="flex items-baseline justify-between gap-4">
+      <h2 class="text-lg font-bold text-texto">Unidades de contenido</h2>
+      <app-boton nivel="terciario" [conFlecha]="false" (click)="agregarUnidad()">
+        + Agregar unidad
+      </app-boton>
+    </div>
+
+    <div formArrayName="contenidos" class="flex flex-col gap-6">
+      @for (grupo of contenidos.controls; track grupo; let indice = $index) {
+        <div
+          [formGroupName]="indice"
+          class="flex flex-col gap-4 rounded-xl border border-borde bg-superficie p-5"
+        >
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-texto">Unidad {{ indice + 1 }}</h3>
+            @if (contenidos.length > 1) {
+              <button
+                type="button"
+                (click)="quitarUnidad(indice)"
+                class="text-sm text-texto-suave hover:text-rechazado focus-visible:text-rechazado focus-visible:underline focus-visible:outline-none"
+              >
+                Quitar
+              </button>
+            }
+          </div>
+
+          <app-campo-formulario
+            [etiqueta]="'Título de la unidad ' + (indice + 1)"
+            [idCampo]="'tituloUnidad' + indice"
+            [requerido]="true"
+          >
+            <input
+              [id]="'tituloUnidad' + indice"
+              type="text"
+              formControlName="tituloUnidad"
+              class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+            />
+          </app-campo-formulario>
+
+          <app-campo-formulario
+            etiqueta="Contenido"
+            [idCampo]="'contenido' + indice"
+            [requerido]="true"
+          >
+            <textarea
+              [id]="'contenido' + indice"
+              rows="3"
+              formControlName="contenido"
+              class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+            ></textarea>
+          </app-campo-formulario>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <app-campo-formulario
+              etiqueta="Bibliografía obligatoria"
+              [idCampo]="'bibliografiaObligatoria' + indice"
+              [requerido]="true"
+            >
+              <textarea
+                [id]="'bibliografiaObligatoria' + indice"
+                rows="2"
+                formControlName="bibliografiaObligatoria"
+                class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+              ></textarea>
+            </app-campo-formulario>
+
+            <app-campo-formulario
+              etiqueta="Bibliografía complementaria"
+              [idCampo]="'bibliografiaComplementaria' + indice"
+            >
+              <textarea
+                [id]="'bibliografiaComplementaria' + indice"
+                rows="2"
+                formControlName="bibliografiaComplementaria"
+                class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+              ></textarea>
+            </app-campo-formulario>
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- ── Metodología ────────────────────────────────────────────────────── -->
+  <section class="flex flex-col gap-4">
+    <h2 class="text-lg font-bold text-texto">Metodología</h2>
+
+    <app-campo-formulario
+      etiqueta="Estrategias metodológicas"
+      idCampo="estrategiasMetodologicas"
+      [requerido]="true"
+    >
+      <textarea
+        id="estrategiasMetodologicas"
+        rows="3"
+        formControlName="estrategiasMetodologicas"
+        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+      ></textarea>
+    </app-campo-formulario>
+
+    <app-campo-formulario
+      etiqueta="Estrategias de acompañamiento virtual / remoto"
+      idCampo="estrategiasAcompanamientoVirtualRemoto"
+    >
+      <textarea
+        id="estrategiasAcompanamientoVirtualRemoto"
+        rows="3"
+        formControlName="estrategiasAcompanamientoVirtualRemoto"
+        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+      ></textarea>
+    </app-campo-formulario>
+  </section>
+
+  <!-- ── Evaluación ─────────────────────────────────────────────────────── -->
+  <section class="flex flex-col gap-4">
+    <h2 class="text-lg font-bold text-texto">Evaluación</h2>
+
+    <app-campo-formulario etiqueta="Evaluación" idCampo="evaluacion" [requerido]="true">
+      <textarea
+        id="evaluacion"
+        rows="3"
+        formControlName="evaluacion"
+        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+      ></textarea>
+    </app-campo-formulario>
+
+    <app-campo-formulario
+      etiqueta="Criterios de evaluación"
+      idCampo="criteriosEvaluacion"
+      [requerido]="true"
+    >
+      <textarea
+        id="criteriosEvaluacion"
+        rows="3"
+        formControlName="criteriosEvaluacion"
+        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+      ></textarea>
+    </app-campo-formulario>
+
+    <div class="grid gap-4 sm:grid-cols-3">
+      <app-campo-formulario
+        etiqueta="Condición regular"
+        idCampo="condicionRegular"
+        [requerido]="true"
+      >
+        <textarea
+          id="condicionRegular"
+          rows="3"
+          formControlName="condicionRegular"
+          class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+        ></textarea>
+      </app-campo-formulario>
+
+      <app-campo-formulario
+        etiqueta="Condición promocional"
+        idCampo="condicionPromocional"
+        [requerido]="true"
+      >
+        <textarea
+          id="condicionPromocional"
+          rows="3"
+          formControlName="condicionPromocional"
+          class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+        ></textarea>
+      </app-campo-formulario>
+
+      <app-campo-formulario etiqueta="Condición libre" idCampo="condicionLibre" [requerido]="true">
+        <textarea
+          id="condicionLibre"
+          rows="3"
+          formControlName="condicionLibre"
+          class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+        ></textarea>
+      </app-campo-formulario>
+    </div>
+
+    <app-campo-formulario etiqueta="Exámenes virtuales" idCampo="examenesVirtuales">
+      <textarea
+        id="examenesVirtuales"
+        rows="2"
+        formControlName="examenesVirtuales"
+        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+      ></textarea>
+    </app-campo-formulario>
+  </section>
+
+  <app-boton
+    nivel="primario"
+    tipo="submit"
+    [anchoCompleto]="true"
+    [cargando]="enviando()"
+    textoCargando="Enviando programa..."
+  >
+    Enviar programa de materia
+  </app-boton>
+</form>

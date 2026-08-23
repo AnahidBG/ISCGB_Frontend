@@ -1,0 +1,31 @@
+<main class="contenedor flex min-h-dvh flex-col py-12">
+  <div class="mx-auto w-full max-w-3xl">
+    <h1 class="text-3xl font-bold text-principal">Entrega del programa de materia</h1>
+    <p class="mt-2 text-texto-suave">
+      Completá los datos generales, las unidades de contenido y las condiciones de aprobación.
+      Se envía todo junto en un solo paso.
+    </p>
+
+    @if (enviadoConExito()) {
+      <div class="mt-10 rounded-xl border border-borde bg-superficie p-8 text-center">
+        <p class="text-lg font-semibold text-aprobado">¡Programa enviado con éxito!</p>
+        <p class="mt-2 text-texto-suave">
+          Quedó registrado. Podés cargar el programa de otra materia si hace falta.
+        </p>
+        <div class="mt-6 flex justify-center">
+          <app-boton nivel="secundario" [conFlecha]="false" (click)="cargarOtroPrograma()">
+            Cargar otro programa
+          </app-boton>
+        </div>
+      </div>
+    } @else {
+      <div class="mt-10">
+        <app-formulario-programa-materia
+          [enviando]="enviando()"
+          [error]="error()"
+          (enviarPrograma)="manejarEnvio($event)"
+        />
+      </div>
+    }
+  </div>
+</main>

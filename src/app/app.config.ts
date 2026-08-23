@@ -5,6 +5,8 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { AuthService } from './core/auth/auth.service';
 import { AuthMockService } from './core/auth/auth-mock.service';
+import { ProgramasMateriaService } from './core/programas-materia/programas-materia.service';
+import { ProgramasMateriaMockService } from './core/programas-materia/programas-materia-mock.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -12,22 +14,8 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(withFetch()),
 
-    // ─────────────────────────────────────────────────────────────────────
-    //  ⚙️  DE DÓNDE SALEN LOS DATOS DE AUTENTICACIÓN
-    //
-    //  Esta línea es el interruptor entre trabajar con datos inventados y
-    //  trabajar contra la API de verdad.
-    //
-    //  Para desarrollar sin backend (lo que estamos haciendo hoy):
-    //      useClass: AuthMockService
-    //
-    //  Para integrar con la API de Angel (requiere tenerla levantada
-    //  en http://localhost:5231):
-    //      useClass: AuthHttpService
-    //      ...y agregar el import de arriba.
-    //
-    //  Ningún componente cambia. Solo esta línea.
-    // ─────────────────────────────────────────────────────────────────────
+    
     { provide: AuthService, useClass: AuthMockService },
+    { provide: ProgramasMateriaService, useClass: ProgramasMateriaMockService },
   ],
 };
