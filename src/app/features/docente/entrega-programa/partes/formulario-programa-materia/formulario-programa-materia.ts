@@ -7,10 +7,10 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { Boton } from '../../../shared/ui/boton/boton';
-import { CampoFormulario } from '../../../shared/ui/campo-formulario/campo-formulario';
-import { ContenidoUnidad } from '../../../core/programas-materia/modelos/contenido-unidad';
-import { ProgramaMateria } from '../../../core/programas-materia/modelos/programa-materia';
+import { Boton } from '../../../../../shared/ui/boton/boton';
+import { CampoFormulario } from '../../../../../shared/ui/campo-formulario/campo-formulario';
+import { ContenidoUnidad } from '../../../../../core/programas-materia/modelos/contenido-unidad';
+import { ProgramaMateria } from '../../../../../core/programas-materia/modelos/programa-materia';
 
 /** Los valores de "Condición" que maneja el instituto. */
 const OPCIONES_CONDICION = ['Cuatrimestral', 'Anual'] as const;

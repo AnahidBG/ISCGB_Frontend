@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { ProgramaMateria } from '../../../core/programas-materia/modelos/programa-materia';
 import { ProgramasMateriaService } from '../../../core/programas-materia/programas-materia.service';
 import { Boton } from '../../../shared/ui/boton/boton';
-import { FormularioProgramaMateria } from './formulario-programa-materia';
+import { FormularioProgramaMateria } from './partes/formulario-programa-materia/formulario-programa-materia';
 
 /**
  * Pantalla de entrega del programa de materia (Docente).
