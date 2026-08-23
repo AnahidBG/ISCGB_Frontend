@@ -23,6 +23,17 @@ export const routes: Routes = [
     loadComponent: () => import('./features/inicio/inicio').then((m) => m.Inicio),
   },
   {
+    // Entrega del programa de materia (Docente). Sprint 1 del roadmap
+    // (ver docs/ISCGB-PROJECT.md). Protegida igual que /inicio.
+    path: 'docente/entrega-programa',
+    title: 'Entregar programa de materia · ISCGB',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/docente/entrega-programa/entrega-programa').then(
+        (m) => m.EntregaPrograma,
+      ),
+  },
+  {
     // Herramienta interna: el muestrario de componentes y tokens.
     // No es parte del MVP; sirve para verificar que el código coincide
     // con Figma y para que el equipo vea qué piezas ya existen.
