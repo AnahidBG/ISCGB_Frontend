@@ -37,6 +37,36 @@
           }
         }
       }
+    },
+    {
+      // Levanta la API de .NET en http://localhost:5231.
+      //
+      // La ruta es relativa y asume que los dos repositorios están clonados
+      // uno al lado del otro:
+      //
+      //   ISCGB/
+      //     ├── ISCGB_Frontend/   ← esta carpeta
+      //     └── ISCGB_Backend/
+      //
+      // Si alguien los tiene en otro lado, ajusta esta línea.
+      "label": "API (.NET)",
+      "type": "shell",
+      "command": "dotnet",
+      "args": ["run", "--project", "${workspaceFolder}/../ISCGB_Backend/AutoGestionAPI.csproj"],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "group": "iscgb",
+        "panel": "dedicated"
+      }
+    },
+    {
+      // Arranca el frontend y la API a la vez, cada uno en su terminal.
+      "label": "Levantar todo",
+      "dependsOn": ["npm: start", "API (.NET)"],
+      "dependsOrder": "parallel",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
     }
   ]
 }
