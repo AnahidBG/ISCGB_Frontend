@@ -18,8 +18,8 @@ const CLAVE_SESION = 'iscgb.sesion';
  * Autenticación real contra la API de ISCGB.
  *
  * Su único trabajo extra es TRADUCIR: la API devuelve campos con nombres
- * inconsistentes y el rol escondido dentro del token. Acá se ordena todo
- * eso una sola vez y se entrega una `Sesion` limpia.
+ * inconsistentes y los roles repartidos entre el cuerpo y el token. Acá se
+ * ordena todo eso una sola vez y se entrega una `Sesion` limpia.
  */
 @Injectable()
 export class AuthHttpService extends AuthService {
@@ -65,7 +65,7 @@ export class AuthHttpService extends AuthService {
       nombreCompleto: respuesta.usuario.trim(),
       dni: respuesta.dni,
       email: respuesta.email,
-      idRol: payload.role,
+      roles: rolesDe(respuesta),
       venceEl: fechaDeVencimiento(payload),
     };
   }
@@ -74,6 +74,24 @@ export class AuthHttpService extends AuthService {
     this.sesionActual.set(sesion);
     sessionStorage.setItem(CLAVE_SESION, JSON.stringify(sesion));
   }
+}
+
+/**
+ * Saca los nombres de los roles de la respuesta del login.
+ *
+ * La fuente es `roles` del cuerpo, no el token: viene con id y nombre, y no
+ * hay que decodificar nada. Se descartan los nombres nulos, porque un rol sin
+ * nombre no sirve para decidir a dónde mandar a la persona.
+ *
+ * Si `roles` llegara vacío o ausente —un backend viejo, una respuesta
+ * recortada— la sesión queda sin roles y los `roleGuard` no la dejan entrar
+ * a ningún lado protegido. Es el comportamiento correcto: ante la duda, no
+ * se abre la puerta.
+ */
+function rolesDe(respuesta: RespuestaLogin): string[] {
+  return (respuesta.roles ?? [])
+    .map((rol) => rol.nombreRol)
+    .filter((nombre): nombre is string => nombre !== null && nombre.trim() !== '');
 }
 
 /**
@@ -99,7 +117,9 @@ function leerSesionGuardada(): Sesion | null {
       return null;
     }
 
-    return { ...sesion, venceEl };
+    // Una sesión guardada antes de este cambio no tiene `roles`. Sin esto,
+    // `tieneAlgunRol` reventaría al recorrer un arreglo inexistente.
+    return { ...sesion, roles: sesion.roles ?? [], venceEl };
   } catch {
     sessionStorage.removeItem(CLAVE_SESION);
     return null;
