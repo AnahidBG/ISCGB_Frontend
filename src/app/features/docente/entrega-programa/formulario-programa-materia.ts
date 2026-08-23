@@ -81,6 +81,11 @@ export class FormularioProgramaMateria {
     horasSemanales: ['', [Validators.required]],
     horasCuatrimestrales: ['', [Validators.required]],
 
+    // ── Fundamentación ───────────────────────────────────────────────────
+    // Es la sección 1 del PDF que arma el backend. Obligatoria: si va vacía,
+    // el documento sale con su primer título sin texto abajo.
+    fundamentacion: ['', [Validators.required]],
+
     // ── Objetivos ────────────────────────────────────────────────────────
     objetivosGenerales: ['', [Validators.required]],
     objetivosEspecificos: ['', [Validators.required]],
@@ -145,6 +150,7 @@ export class FormularioProgramaMateria {
       idDocente: valores.idDocente,
       idMateria: valores.idMateria,
       condicion: valores.condicion,
+      fundamentacion: valores.fundamentacion,
       objetivosEspecificos: valores.objetivosEspecificos,
       objetivosGenerales: valores.objetivosGenerales,
       horasSemanales: valores.horasSemanales,

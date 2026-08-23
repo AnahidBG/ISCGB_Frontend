@@ -129,6 +129,34 @@
     </app-campo-formulario>
   </section>
 
+  <!-- ── Fundamentación ─────────────────────────────────────────────────── -->
+  <section class="flex flex-col gap-4">
+    <div>
+      <h2 class="text-lg font-bold text-texto">Fundamentación</h2>
+      <p class="mt-1 text-sm text-texto-suave">
+        Abre el programa: es la sección 1 del PDF que genera el instituto.
+      </p>
+    </div>
+
+    <app-campo-formulario
+      etiqueta="Fundamentación de la materia"
+      idCampo="fundamentacion"
+      [requerido]="true"
+      [error]="
+        formulario.controls.fundamentacion.touched && formulario.controls.fundamentacion.invalid
+          ? 'Escribí la fundamentación de la materia.'
+          : null
+      "
+    >
+      <textarea
+        id="fundamentacion"
+        rows="5"
+        formControlName="fundamentacion"
+        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+      ></textarea>
+    </app-campo-formulario>
+  </section>
+
   <!-- ── Objetivos ──────────────────────────────────────────────────────── -->
   <section class="flex flex-col gap-4">
     <h2 class="text-lg font-bold text-texto">Objetivos</h2>
