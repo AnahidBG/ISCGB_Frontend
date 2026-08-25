@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { ControlLegajosComponent } from './pages/control-legajos/control-legajos';
 
 /**
  * Rutas de la aplicación.
@@ -9,6 +10,7 @@ import { authGuard } from './core/auth/auth.guard';
  * crezca a los cuatro dashboards.
  */
 export const routes: Routes = [
+  { path: 'control-legajos', component: ControlLegajosComponent },
   {
     path: 'login',
     title: 'Iniciar sesión · ISCGB',
@@ -50,5 +52,5 @@ export const routes: Routes = [
   {
     path: '**',
     redirectTo: 'login',
-  },
+  }
 ];

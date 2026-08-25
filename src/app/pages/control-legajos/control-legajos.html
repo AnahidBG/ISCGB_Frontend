@@ -1,0 +1,44 @@
+<div class="control-legajos-container">
+    <!-- Encabezado -->
+     <header class="section-header">
+    <h2>Control de Legajos</h2>
+    <p class="subtitle">Gestión y estado de documentación entregada por los docentes.</p>
+  </header>
+</div>
+
+<!-- Lista de tarjetas de docentes -->
+  <div class="legajos-list">
+    <div class="legajo-card" *ngFor="let docente of docentes">
+      
+      <!-- Avatar con Iniciales -->
+      <div class="avatar-circle">
+        {{ docente.iniciales }}
+      </div>
+
+      <!-- Barra de Progreso y Estado -->
+      <div class="progreso-section">
+        <ng-container *ngIf="docente.progreso === 100; else progresoIncompleto">
+          <span class="badge-completo">
+            <i class="bi bi-check-circle-fill"></i> Completo
+          </span>
+        </ng-container>
+
+        <ng-template #progresoIncompleto>
+          <div class="bar-container">
+            <span class="progreso-label">Progreso <strong>{{ docente.progreso }}%</strong></span>
+            <div class="progress-bar">
+              <div class="progress-fill" [style.width.%]="docente.progreso"></div>
+            </div>
+          </div>
+        </ng-template>
+      </div>
+
+      <!-- Botón de Acción para revisar -->
+      <div class="accion-section">
+        <button class="btn-revisar" (click)="revisarLegajo(docente.idDocente)">
+          <i class="bi bi-eye"></i> Revisar
+        </button>
+      </div>
+
+    </div>
+  </div>
