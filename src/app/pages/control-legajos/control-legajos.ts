@@ -17,29 +17,82 @@ interface DocenteLegajo {
   standalone: true,
   imports: [CommonModule],
   templateUrl: './control-legajos.html',
-  styleUrl: './control-legajos.scss'
+  styleUrls: ['./control-legajos.scss']
 })
 export class ControlLegajosComponent {
 
- //Creamos una lista ficticia (Mock) para diseñar y ver la interfaz en tiempo real sin depender del backend
   docentes: DocenteLegajo[] = [
     {
       idDocente: 1,
       nombre: 'Docente Ejemplo 1',
-      dni: '30.123.456',
-      materia: 'Materia A',
-      iniciales: 'D1',
+      dni: '32.456.789',
+      materia: 'Control de Proyectos',
+      iniciales: 'DM',
       progreso: 100,
       estado: 'Completo'
     },
     {
       idDocente: 2,
       nombre: 'Docente Ejemplo 2',
-      dni: '28.987.654',
-      materia: 'Materia B',
-      iniciales: 'D2',
+      dni: '28.123.456',
+      materia: 'Interface de Usuario',
+      iniciales: 'SM',
       progreso: 60,
       estado: 'En Proceso'
+    },
+    {
+      idDocente: 3,
+      nombre: 'Docente Ejemplo 3',
+      dni: '32.456.789',
+      materia: 'Práctica Profes. II (IDS)',
+      iniciales: 'DM',
+      progreso: 100,
+      estado: 'Completo'
+    },
+    {
+      idDocente: 4,
+      nombre: 'Docente Ejemplo 4',
+      dni: '32.456.789',
+      materia: 'Práctica Profes. III (Implementación)',
+      iniciales: 'DM',
+      progreso: 75,
+      estado: 'En Proceso'
+    },
+    {
+      idDocente: 5,
+      nombre: 'Docente Ejemplo 5',
+      dni: '33.890.123',
+      materia: 'Inglés',
+      iniciales: 'AA',
+      progreso: 100,
+      estado: 'Completo'
+    },
+    {
+      idDocente: 6,
+      nombre: 'Docente Ejemplo 6',
+      dni: '29.456.789',
+      materia: 'Ingeniería de Software',
+      iniciales: 'BA',
+      progreso: 45,
+      estado: 'En Proceso'
+    },
+    {
+      idDocente: 7,
+      nombre: 'Docente Ejemplo 7',
+      dni: '28.123.456',
+      materia: 'Programación III',
+      iniciales: 'SM',
+      progreso: 80,
+      estado: 'En Proceso'
+    },
+    {
+      idDocente: 8,
+      nombre: 'Docente Ejemplo 8',
+      dni: '33.890.123',
+      materia: 'Inglés Técnico',
+      iniciales: 'AA',
+      progreso: 100,
+      estado: 'Completo'
     }
   ];
 
