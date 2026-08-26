@@ -1,53 +1,105 @@
-<div class="control-legajos-container">
+<div class="layout-wrapper">
   
-  <header class="section-header">
-    <h2>Control de Legajos</h2>
-    <p class="subtitle">Gestión y estado de documentación entregada por los docentes.</p>
-  </header>
-
-  <div class="legajos-list">
-    <div class="legajo-card" *ngFor="let docente of docentes">
-      
-      <!-- Avatar con color dinámico -->
-      <div class="avatar-circle" [ngClass]="docente.estado === 'Completo' ? 'avatar-completo' : 'avatar-proceso'">
-        {{ docente.iniciales }}
+  <!-- Sidebar Lateral -->
+  <aside class="sidebar">
+    
+    <!-- Header / Logo -->
+    <div class="sidebar-brand">
+        <div class="iscgb-logo">
+            <svg width="24" height="24" viewBox="0 0 36 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                    d="M32.2891 34.9819C28.4721 41.4164 20.4544 40.1714 20.444 39.2593L20.4233 36.4365C20.4129 34.7847 29.333 38.1005 30.3495 30.0512C30.8888 25.7862 28.4825 21.9403 24.3647 21.9403H9.17986C6.04747 21.9403 3.57889 25.2192 3.45442 28.4488C3.31958 32.1098 5.6637 35.7092 9.128 35.7831C11.97 35.8448 14.5734 34.0204 15.2061 30.9757L10.7253 30.9511C10.2793 30.9511 9.41843 29.7924 9.34582 29.3363C9.23173 28.646 10.186 26.8217 10.7772 26.834L18.7638 27.0682C19.6973 32.5905 17.0005 36.572 13.754 38.5813C10.0511 40.8617 5.76742 39.9249 2.75949 36.4118C-1.3479 31.6167 -0.767054 24.2084 4.02489 19.9804C0.249419 16.4426 -0.798171 11.5982 0.581328 7.33322C2.1579 2.45186 6.06821 -0.284655 10.7046 0.0235112L12.6545 0.159104C13.2976 0.196084 13.1628 3.66952 12.6545 4.13793C10.8602 5.81436 3.77596 2.63676 3.45442 10.4642C3.28847 14.532 5.97486 18.119 9.90592 18.0697L25.2049 17.8602C28.5966 17.8109 30.6503 14.0266 30.4013 10.3656C30.2043 7.48114 28.2336 4.37482 24.8419 3.91873C22.5911 3.62289 19.6558 5.85402 18.5771 8.67682L23.6491 9.12058C24.4892 9.19454 24.4581 12.8802 23.6491 12.9172L15.1335 12.8063C14.2622 5.45957 18.8986 0.405637 24.0743 0.109798C29.25 -0.186042 34.2702 4.71997 33.9901 11.6352C33.8657 14.7539 31.9053 17.9095 30.0072 20.079C33.9279 23.3825 35.4837 29.6075 32.2994 34.9819H32.2891Z"
+                    fill="#384D40" />
+            </svg>
+        </div>
+      <div class="brand-info">
+        <span class="brand-title">Sistema de Gestión</span>
+        <span class="brand-sub">ISCGB</span>
       </div>
-
-      <!-- Información del Docente -->
-      <div class="docente-info">
-        <h3 class="nombre">{{ docente.nombre }} <span class="dni">• {{ docente.dni }}</span></h3>
-        <p class="materia">{{ docente.materia }}</p>
-      </div>
-
-      <!-- Barra / Estado -->
-      <div class="progreso-section">
-        <ng-container *ngIf="docente.estado === 'Completo'; else progresoIncompleto">
-          <span class="badge-completo">
-            <i class="bi bi-check-circle"></i> Completo
-          </span>
-        </ng-container>
-
-        <ng-template #progresoIncompleto>
-          <div class="bar-container">
-            <div class="label-group">
-              <span class="progreso-label">Progreso</span>
-              <span class="porcentaje-label">{{ docente.progreso }}%</span>
-            </div>
-            <div class="progress-bar">
-              <div class="progress-fill" [style.width.%]="docente.progreso"></div>
-            </div>
-          </div>
-        </ng-template>
-      </div>
-
-      <!-- Botón Revisar con Ícono -->
-      <div class="accion-section">
-        <button class="btn-revisar" (click)="revisarLegajo(docente.idDocente)">
-          <i class="bi bi-eye"></i> Revisar
-        </button>
-      </div>
-
     </div>
-  </div>
+
+    <!-- Usuario Activo -->
+    <div class="sidebar-user">
+      <div class="user-avatar">SM</div>
+      <div class="user-info">
+        <span class="user-name">Usuario Ejemplo</span>
+        <span class="user-role">Secretario</span>
+      </div>
+    </div>
+
+    <!-- Menú de Navegación -->
+    <nav class="sidebar-nav">
+      <a class="nav-item">
+        <i class="bi bi-house"></i>
+        <span>Inicio</span>
+      </a>
+      <a class="nav-item active">
+        <i class="bi bi-people"></i>
+        <span>Control de Legajos</span>
+      </a>
+      <a class="nav-item">
+        <i class="bi bi-file-earmark-text"></i>
+        <span>Reportes</span>
+      </a>
+    </nav>
+
+    <!-- Footer / Logout -->
+    <div class="sidebar-footer">
+      <a class="nav-item logout">
+        <i class="bi bi-box-arrow-right"></i>
+        <span>Cerrar Sesión</span>
+      </a>
+    </div>
+
+  </aside>
+
+  <!-- Contenido Principal -->
+  <main class="main-content">
+    <header class="section-header">
+      <h2>Control de Legajos</h2>
+      <p class="subtitle">Gestión y estado de documentación entregada por los docentes.</p>
+    </header>
+
+    <div class="legajos-list">
+      <div class="legajo-card" *ngFor="let docente of docentes">
+        
+        <div class="avatar-circle" [ngClass]="docente.estado === 'Completo' ? 'avatar-completo' : 'avatar-proceso'">
+          {{ docente.iniciales }}
+        </div>
+
+        <div class="docente-info">
+          <h3 class="nombre">{{ docente.nombre }} <span class="dni">• {{ docente.dni }}</span></h3>
+          <p class="materia">{{ docente.materia }}</p>
+        </div>
+
+        <div class="progreso-section">
+          <ng-container *ngIf="docente.estado === 'Completo'; else progresoIncompleto">
+            <span class="badge-completo">
+              <i class="bi bi-check-circle"></i> Completo
+            </span>
+          </ng-container>
+
+          <ng-template #progresoIncompleto>
+            <div class="bar-container">
+              <div class="label-group">
+                <span class="progreso-label">Progreso</span>
+                <span class="porcentaje-label">{{ docente.progreso }}%</span>
+              </div>
+              <div class="progress-bar">
+                <div class="progress-fill" [style.width.%]="docente.progreso"></div>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+
+        <div class="accion-section">
+          <button class="btn-revisar" (click)="revisarLegajo(docente.idDocente)">
+            <i class="bi bi-eye"></i> Revisar
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </main>
 
 </div>
