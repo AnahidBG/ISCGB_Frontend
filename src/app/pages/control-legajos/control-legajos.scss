@@ -1,0 +1,170 @@
+:host {
+  display: block;
+  width: 100%;
+  background-color: #F7F9F8;
+  min-height: 100vh;
+}
+
+.control-legajos-container {
+  padding: 32px;
+  max-width: 1100px;
+  margin: 0 auto;
+  font-family: 'Roboto', sans-serif;
+
+  .section-header {
+    margin-bottom: 24px;
+
+    h2 {
+      font-size: 24px;
+      font-weight: 700;
+      color: #384D40;
+      margin: 0 0 6px 0;
+    }
+
+    .subtitle {
+      color: #597764;
+      font-size: 14px;
+      margin: 0;
+    }
+  }
+
+  .legajos-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .legajo-card {
+    display: flex;
+    align-items: center;
+    background-color: #FFFFFF;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    padding: 16px 20px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+
+    /* Avatares según estado */
+    .avatar-circle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+
+      &.avatar-completo {
+        background-color: #597764;
+        color: #FFFFFF;
+      }
+
+      &.avatar-proceso {
+        background-color: #E67E22;
+        color: #FFFFFF;
+      }
+    }
+
+    .docente-info {
+      flex: 1;
+      margin-left: 16px;
+
+      .nombre {
+        font-size: 15px;
+        font-weight: 600;
+        color: #2C3E50;
+        margin: 0;
+
+        .dni {
+          font-weight: 400;
+          color: #95A5A6;
+          font-size: 13px;
+        }
+      }
+
+      .materia {
+        font-size: 13px;
+        color: #7F8C8D;
+        margin: 2px 0 0 0;
+      }
+    }
+
+    .progreso-section {
+      width: 220px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-right: 20px;
+
+      .badge-completo {
+        background-color: #E8F5E9;
+        color: #384D40;
+        padding: 6px 14px;
+        border-radius: 16px;
+        font-size: 13px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .bar-container {
+        width: 100%;
+
+        .label-group {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 4px;
+
+          .progreso-label {
+            font-size: 12px;
+            color: #7F8C8D;
+          }
+
+          .porcentaje-label {
+            font-size: 12px;
+            font-weight: 700;
+            color: #E67E22;
+          }
+        }
+
+        .progress-bar {
+          width: 100%;
+          height: 6px;
+          background-color: #FEEDDC;
+          border-radius: 3px;
+          overflow: hidden;
+
+          .progress-fill {
+            height: 100%;
+            background-color: #E67E22;
+            border-radius: 3px;
+          }
+        }
+      }
+    }
+
+    .accion-section {
+      .btn-revisar {
+        background-color: #FFFFFF;
+        border: 1px solid #384D40;
+        color: #384D40;
+        padding: 6px 16px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background-color: #384D40;
+          color: #FFFFFF;
+        }
+      }
+    }
+  }
+}
