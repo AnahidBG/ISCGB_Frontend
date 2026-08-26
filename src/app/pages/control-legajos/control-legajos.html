@@ -1,31 +1,38 @@
 <div class="control-legajos-container">
-    <!-- Encabezado -->
-     <header class="section-header">
+  
+  <header class="section-header">
     <h2>Control de Legajos</h2>
     <p class="subtitle">Gestión y estado de documentación entregada por los docentes.</p>
   </header>
-</div>
 
-<!-- Lista de tarjetas de docentes -->
   <div class="legajos-list">
     <div class="legajo-card" *ngFor="let docente of docentes">
       
-      <!-- Avatar con Iniciales -->
-      <div class="avatar-circle">
+      <!-- Avatar con color dinámico -->
+      <div class="avatar-circle" [ngClass]="docente.estado === 'Completo' ? 'avatar-completo' : 'avatar-proceso'">
         {{ docente.iniciales }}
       </div>
 
-      <!-- Barra de Progreso y Estado -->
+      <!-- Información del Docente -->
+      <div class="docente-info">
+        <h3 class="nombre">{{ docente.nombre }} <span class="dni">• {{ docente.dni }}</span></h3>
+        <p class="materia">{{ docente.materia }}</p>
+      </div>
+
+      <!-- Barra / Estado -->
       <div class="progreso-section">
-        <ng-container *ngIf="docente.progreso === 100; else progresoIncompleto">
+        <ng-container *ngIf="docente.estado === 'Completo'; else progresoIncompleto">
           <span class="badge-completo">
-            <i class="bi bi-check-circle-fill"></i> Completo
+            <i class="bi bi-check-circle"></i> Completo
           </span>
         </ng-container>
 
         <ng-template #progresoIncompleto>
           <div class="bar-container">
-            <span class="progreso-label">Progreso <strong>{{ docente.progreso }}%</strong></span>
+            <div class="label-group">
+              <span class="progreso-label">Progreso</span>
+              <span class="porcentaje-label">{{ docente.progreso }}%</span>
+            </div>
             <div class="progress-bar">
               <div class="progress-fill" [style.width.%]="docente.progreso"></div>
             </div>
@@ -33,7 +40,7 @@
         </ng-template>
       </div>
 
-      <!-- Botón de Acción para revisar -->
+      <!-- Botón Revisar con Ícono -->
       <div class="accion-section">
         <button class="btn-revisar" (click)="revisarLegajo(docente.idDocente)">
           <i class="bi bi-eye"></i> Revisar
@@ -42,3 +49,5 @@
 
     </div>
   </div>
+
+</div>
