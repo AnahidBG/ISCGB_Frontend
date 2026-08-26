@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { ControlLegajos } from './control-legajos';
+import { ControlLegajosComponent } from './control-legajos';
 
 describe('ControlLegajos', () => {
-  let component: ControlLegajos;
-  let fixture: ComponentFixture<ControlLegajos>;
+  let component: ControlLegajosComponent;
+  let fixture: ComponentFixture<ControlLegajosComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ControlLegajos],
+      imports: [ControlLegajosComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ControlLegajos);
+    fixture = TestBed.createComponent(ControlLegajosComponent);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });
