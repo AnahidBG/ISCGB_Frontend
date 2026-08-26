@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { ControlLegajosComponent } from './pages/control-legajos/control-legajos';
+import { RevisionAdministrativaComponent } from './pages/revision-administrativa/revision-administrativa';
 
 /**
  * Rutas de la aplicación.
@@ -11,6 +12,7 @@ import { ControlLegajosComponent } from './pages/control-legajos/control-legajos
  */
 export const routes: Routes = [
   { path: 'control-legajos', component: ControlLegajosComponent },
+  {path: 'revision-administrativa', component: RevisionAdministrativaComponent},
   {
     path: 'login',
     title: 'Iniciar sesión · ISCGB',
