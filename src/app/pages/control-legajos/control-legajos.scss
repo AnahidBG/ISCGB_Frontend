@@ -1,14 +1,153 @@
 :host {
   display: block;
   width: 100%;
+  min-height: 100vh;
   background-color: var(--bg-color, #F7F9F8);
+  font-family: 'Roboto', sans-serif;
+}
+
+.layout-wrapper {
+  display: flex;
   min-height: 100vh;
 }
 
-.control-legajos-container {
-  padding: 32px;
-  max-width: 1100px;
-  margin: 0 auto;
+/* --- SIDEBAR LATERAL --- */
+.sidebar {
+  width: 260px;
+  background-color: #2D312E;
+  color: #FFFFFF;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+
+  .sidebar-brand {
+    padding: 24px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+    .iscgb-logo {
+      width: 40px;
+      height: 40px;
+      background-color: #FFFFFF;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+
+      svg{
+        width: 26px;
+        height: 26px;
+      }
+    }
+
+    .brand-info {
+      display: flex;
+      flex-direction: column;
+
+      .brand-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: #E2E8F0;
+        font-style: italic;
+      }
+
+      .brand-sub {
+        font-size: 11px;
+        color: #94A3B8;
+      }
+    }
+  }
+
+  .sidebar-user {
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+
+    .user-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background-color: var(--accent-color, #597764);
+      color: #FFFFFF;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .user-info {
+      display: flex;
+      flex-direction: column;
+
+      .user-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #E2E8F0;
+        font-style: italic;
+      }
+
+      .user-role {
+        font-size: 12px;
+        color: var(--accent-color, #597764);
+      }
+    }
+  }
+
+  .sidebar-nav {
+    padding: 16px 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 24px;
+    color: #A0AEC0;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+
+    i {
+      font-size: 16px;
+    }
+
+    &.active {
+      background-color: var(--accent-color, #597764);
+      color: #FFFFFF;
+      font-style: italic;
+    }
+
+    &:hover:not(.active) {
+      background-color: rgba(255, 255, 255, 0.05);
+      color: #FFFFFF;
+    }
+  }
+
+  .sidebar-footer {
+    padding: 16px 0 24px 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+    .logout {
+      color: var(--accent-color, #597764);
+    }
+  }
+}
+
+/* --- CONTENIDO PRINCIPAL --- */
+.main-content {
+  flex: 1;
+  padding: 32px 40px;
+  background-color: var(--bg-color, #F7F9F8);
 
   .section-header {
     margin-bottom: 24px;
