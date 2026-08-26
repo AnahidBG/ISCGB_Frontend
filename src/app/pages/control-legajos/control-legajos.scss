@@ -1,7 +1,7 @@
 :host {
   display: block;
   width: 100%;
-  background-color: #F7F9F8;
+  background-color: var(--bg-color, #F7F9F8);
   min-height: 100vh;
 }
 
@@ -9,7 +9,6 @@
   padding: 32px;
   max-width: 1100px;
   margin: 0 auto;
-  font-family: 'Roboto', sans-serif;
 
   .section-header {
     margin-bottom: 24px;
@@ -17,12 +16,12 @@
     h2 {
       font-size: 24px;
       font-weight: 700;
-      color: #384D40;
+      color: var(--primary-color, #384D40);
       margin: 0 0 6px 0;
     }
 
     .subtitle {
-      color: #597764;
+      color: var(--accent-color, #597764);
       font-size: 14px;
       margin: 0;
     }
@@ -43,7 +42,6 @@
     padding: 16px 20px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 
-    /* Avatares según estado */
     .avatar-circle {
       width: 42px;
       height: 42px;
@@ -55,7 +53,7 @@
       font-size: 13px;
 
       &.avatar-completo {
-        background-color: #597764;
+        background-color: var(--primary-color, #384D40);
         color: #FFFFFF;
       }
 
@@ -84,7 +82,7 @@
 
       .materia {
         font-size: 13px;
-        color: #7F8C8D;
+        color: var(--accent-color, #597764);
         margin: 2px 0 0 0;
       }
     }
@@ -98,7 +96,7 @@
 
       .badge-completo {
         background-color: #E8F5E9;
-        color: #384D40;
+        color: var(--primary-color, #384D40);
         padding: 6px 14px;
         border-radius: 16px;
         font-size: 13px;
@@ -148,8 +146,8 @@
     .accion-section {
       .btn-revisar {
         background-color: #FFFFFF;
-        border: 1px solid #384D40;
-        color: #384D40;
+        border: 1px solid var(--primary-color, #384D40);
+        color: var(--primary-color, #384D40);
         padding: 6px 16px;
         border-radius: 6px;
         font-size: 13px;
@@ -161,7 +159,7 @@
         transition: all 0.2s ease;
 
         &:hover {
-          background-color: #384D40;
+          background-color: var(--primary-color, #384D40);
           color: #FFFFFF;
         }
       }
