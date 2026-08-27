@@ -3,28 +3,24 @@ import { Observable, delay, of, throwError } from 'rxjs';
 import { AuthService, MENSAJE_CREDENCIALES_INVALIDAS } from './auth.service';
 import { CredencialesLogin } from './modelos/credenciales-login';
 import { Sesion } from './modelos/sesion';
+import { USUARIOS_DE_PRUEBA } from './usuarios-de-prueba';
 
 /** Cuánto tarda el login falso, para ver el estado "cargando" del botón. */
 const DEMORA_SIMULADA_MS = 800;
 
-/**
- * Usuarios de mentira para desarrollar sin backend.
- *
- * Los `idRol` salen del token real que devuelve la API. Todavía no sabemos
- * qué rol es cada número — falta que backend nos pase la equivalencia.
- */
-const USUARIOS_DE_PRUEBA = [
-  { dni: '43880335', password: 'Test1234', nombre: 'Milena Previgliano', idRol: '1' },
-  { dni: '43120234', password: 'Test1234', nombre: 'Angel Silva', idRol: '2' },
-  { dni: '40555111', password: 'Test1234', nombre: 'Anahid Giaquinta', idRol: '3' },
-] as const;
+/** Los tokens del backend duran 2 horas. El mock imita eso. */
+const DURACION_SESION_MS = 2 * 60 * 60 * 1000;
 
 /**
  * Autenticación simulada.
  *
- * No toca la red: valida contra la lista de arriba y devuelve una sesión
- * armada a mano. Sirve para maquetar, para probar los estados de error y
- * para que el login siga andando los días que el backend no está levantado.
+ * No toca la red: valida contra `usuarios-de-prueba.ts` y devuelve una
+ * sesión armada a mano. Sirve para maquetar, para probar los estados de
+ * error, para verificar los `roleGuard` con todos los roles, y para que el
+ * login siga andando los días que el backend no está levantado.
+ *
+ * Para agregar o cambiar usuarios NO se toca este archivo: se edita la lista
+ * en `usuarios-de-prueba.ts`.
  *
  * Se cambia por `AuthHttpService` con una línea en `app.config.ts`.
  */
@@ -47,14 +43,16 @@ export class AuthMockService extends AuthService {
       );
     }
 
-    const venceEl = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 horas, igual que el real
+    const venceEl = new Date(Date.now() + DURACION_SESION_MS);
+    const roles = [...usuario.roles];
+
     const sesion: Sesion = {
-      token: construirTokenFalso(usuario.dni, usuario.idRol, venceEl),
+      token: construirTokenFalso(usuario.dni, roles, venceEl),
       idUsuario: USUARIOS_DE_PRUEBA.indexOf(usuario) + 1,
       nombreCompleto: usuario.nombre,
       dni: usuario.dni,
       email: `${usuario.dni}@iscgb.edu.ar`,
-      idRol: usuario.idRol,
+      roles,
       venceEl,
     };
 
@@ -70,11 +68,14 @@ export class AuthMockService extends AuthService {
 /**
  * Arma un JWT con la misma forma que el real, pero con la firma inventada.
  *
- * Sirve para que el resto del frontend (que lee el token para saber el rol)
- * funcione igual con mock que con backend real. Ningún servidor lo aceptaría,
- * y está bien: nunca sale de esta máquina.
+ * Imita hasta el detalle raro del backend: con un solo rol, `role` es texto;
+ * con varios, es un arreglo. Si el mock mandara siempre un arreglo, el día
+ * que algo lea mal ese campo el error aparecería recién contra la API real.
+ *
+ * Ningún servidor aceptaría este token, y está bien: nunca sale de esta
+ * máquina.
  */
-function construirTokenFalso(dni: string, idRol: string, venceEl: Date): string {
+function construirTokenFalso(dni: string, roles: string[], venceEl: Date): string {
   const enBase64Url = (objeto: object) =>
     btoa(JSON.stringify(objeto)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
@@ -84,7 +85,7 @@ function construirTokenFalso(dni: string, idRol: string, venceEl: Date): string 
   const contenido = {
     nameid: '1',
     DNI: dni,
-    role: idRol,
+    role: roles.length === 1 ? roles[0] : roles,
     nbf: ahoraEnSegundos,
     exp: Math.floor(venceEl.getTime() / 1000),
     iat: ahoraEnSegundos,

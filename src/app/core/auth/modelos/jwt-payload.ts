@@ -3,24 +3,31 @@
  *
  * Se obtiene decodificando la parte del medio del token. Ejemplo real:
  *
- *   { "nameid": "1", "DNI": "43880335", "role": "1",
- *     "nbf": 1787094079, "exp": 1787101279, "iat": 1787094079 }
+ *   { "nameid": "1", "DNI": "43880335", "role": "Docente",
+ *     "nbf": 1787513839, "exp": 1787521039, "iat": 1787513839 }
  *
- * ⚠️ `role` llega como el ID del rol en formato texto ("1"), no como su
- * nombre. Sin la tabla de equivalencias no sabemos si "1" es Director o
- * Alumno. Pendiente de confirmar con backend.
+ * ⚠️ `role` viene con el NOMBRE del rol, no con su ID. Y puede llegar como
+ * texto o como arreglo: el backend agrega un claim por cada rol del usuario,
+ * y cuando hay más de uno el JWT los serializa juntos en un arreglo.
  *
- * ⚠️ `role` es UNO SOLO, pero la base de datos permite varios roles por
- * usuario (tabla `Usuarios_roles`). Cuando el backend soporte múltiples
- * roles, este campo pasa a ser un arreglo.
+ *     un rol   → "role": "Docente"
+ *     dos roles→ "role": ["Docente", "Director"]
+ *
+ * Por eso el tipo es `string | string[]`. Tratarlo como `string` a secas
+ * funciona hasta que aparece la primera persona con dos roles, y ahí falla
+ * en silencio.
+ *
+ * De todos modos el frontend NO usa este campo para saber los roles: los
+ * toma de `RespuestaLogin.roles`, que llega en el cuerpo. Del token solo
+ * necesitamos `exp`.
  */
 export interface JwtPayload {
   /** ID del usuario, como texto. */
   nameid: string;
   /** DNI del usuario. */
   DNI: string;
-  /** ID del rol, como texto. */
-  role: string;
+  /** Nombre del rol, o varios si el usuario tiene más de uno. */
+  role: string | string[];
   /** No válido antes de (segundos desde 1970). */
   nbf: number;
   /** Vence el (segundos desde 1970). El token dura 2 horas. */
