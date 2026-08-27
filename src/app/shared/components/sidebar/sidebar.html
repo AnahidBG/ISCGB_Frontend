@@ -1,1 +1,44 @@
 <p>sidebar works!</p>
+<aside class="main-sidebar">
+  <!-- Brand / Logo ISCGB -->
+  <div class="sidebar-brand">
+    <div class="brand-avatar">
+      <svg width="40" height="40" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <rect width="48" height="48" fill="url(#pattern0_16_4564)"/>
+        <defs>
+          <pattern id="pattern0_16_4564" patternContentUnits="objectBoundingBox" width="1" height="1">
+            <use xlink:href="#image0_16_4564" transform="translate(0 0.0350877) scale(0.0175439)"/>
+          </pattern>
+          <image id="image0_16_4564" width="57" height="53" preserveAspectRatio="none" xlink:href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADkAAAA1CAYAAAD72kP+AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAA1YSURBVGhD7Zp5cBRXfsc/r+eSRqMDCQldICEEkrmMkawYMKzBxs46jllj7M36Zn0Uxtkrm4qDd2vLqWSTOFuUvU7Wdu2SXexAcMAJwSwGHxibGwPmFhIIHUiAkJCYGR2jmenulz+65xQSM7KdSnnzrXrVx3v9+n1/v/c73usWUkrJ1xxK/I2vI/6f5NcFfxAkxZfhePoHfLRfucK58y00X2ily30V3exWSLDqIIEplRUsnDMPu90e30UYqqbh9nq40NFOfcM5Lnd10ufzAeBKS6OooIBxRUWMLygmMz0di2KJ72IQvhBJXdc5XHeKbXt3cqKhnj6fD03X0HWJCDWSYJUGyfk1t/Dstx/B5UyL7QiQUtLlcfP+vl3sO3aEC5fb8Qf8SGk+DCBAsShIm4UJBcXMmFDBvbfdTm Dus1q5d/4dPHP/Q4wdkz9oO0JKkFIYR904j0dJQRHLljzEgptnD4qNUko0YZbQOcZRRQ4i6LDZuePm2by4/C8ozi+IqokgaU1Go775HFv2fML+U8fw9PSi6zqKGaxCmsX8oqEognRXGrOmz+Te2xZSUlA0iCDAsbpaVrz6EppiJBBI4wcMohIIRQhS7A5GZ2ezeP5dzJtZM+jfoGh8IZJSSgLBIE0XWjleX8eJulrOX75El9eDrmnYbXayMzIpzS+gsnwiVVOmUTSmYNjvmsfqannh1ZcixEzNSSDdmUZhbh6VxeOZMrGCyrIJ5GbnXPfXsy9EMhqapuHt7aHP58MfCKBLQ3sOu4P01FRcLtd1BwPQ7/NxoaM9ksxG/XVms9lwOhxkutJx2B0Jx9UvjeT/ZQw2iq8h/iBI/g9ywx74BY+6+AAAAABJRU5ErkJggg=="/>
+        </defs>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <h3>ISCGB</h3>
+      <span>Gestión Académica</span>
+    </div>
+  </div>
+
+  <!-- Menú dinámico de opciones -->
+  <nav class="sidebar-nav">
+    <a *ngFor="let item of menuItems" 
+       [routerLink]="item.routerLink" 
+       routerLinkActive="active" 
+       class="nav-item">
+      <span class="icon-wrapper" [innerHTML]="item.iconSvg"></span>
+      {{ item.label }}
+    </a>
+  </nav>
+
+  <!-- Pie de sidebar / Logout -->
+  <div class="sidebar-footer">
+    <button class="logout" (click)="onLogout()">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+        <polyline points="16 17 21 12 16 7"></polyline>
+        <line x1="21" y1="12" x2="9" y2="12"></line>
+      </svg>
+      Cerrar Sesión
+    </button>
+  </div>
+</aside>
