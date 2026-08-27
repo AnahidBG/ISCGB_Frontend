@@ -28,11 +28,10 @@
           <dd class="text-texto">{{ datos.email }}</dd>
         </div>
         <div class="flex items-baseline justify-between gap-4 px-6 py-4">
-          <dt class="text-sm text-texto-suave">Rol</dt>
-          <dd class="text-texto">
-            <span class="font-mono">{{ datos.idRol }}</span>
-            <span class="ml-2 text-sm text-texto-suave">(falta la equivalencia)</span>
-          </dd>
+          <dt class="text-sm text-texto-suave">
+            {{ datos.roles.length > 1 ? 'Roles' : 'Rol' }}
+          </dt>
+          <dd class="text-texto">{{ rolesParaMostrar() }}</dd>
         </div>
         <div class="flex items-baseline justify-between gap-4 px-6 py-4">
           <dt class="text-sm text-texto-suave">La sesión vence</dt>
@@ -40,15 +39,27 @@
         </div>
       </dl>
 
-      <div class="mt-8">
+      <div class="mt-8 flex flex-wrap gap-3">
+        @if (puedeEntregarPrograma()) {
+          <app-boton nivel="secundario" href="/docente/entrega-programa">
+            Entregar programa de materia
+          </app-boton>
+        }
         <app-boton nivel="terciario" [conFlecha]="false" (click)="cerrarSesion()">
           Cerrar sesión
         </app-boton>
       </div>
 
+      @if (!puedeEntregarPrograma()) {
+        <p class="mt-6 text-sm text-texto-suave">
+          Todavía no hay pantallas para tu rol. La entrega del programa de materia es
+          exclusiva de quienes dictan una materia.
+        </p>
+      }
+
       <p class="mt-10 rounded-lg bg-menta/40 px-4 py-3 text-sm text-texto">
         <strong>Pantalla provisoria.</strong> Se reemplaza por el dashboard de cada rol
-        cuando backend nos pase qué rol es cada número.
+        cuando esos dashboards existan.
       </p>
     </div>
   </main>

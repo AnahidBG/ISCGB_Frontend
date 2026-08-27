@@ -1,5 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { ROLES } from './core/auth/modelos/rol';
+import { roleGuard } from './core/auth/role.guard';
 
 /**
  * Rutas de la aplicación.
@@ -7,6 +9,11 @@ import { authGuard } from './core/auth/auth.guard';
  * Cada pantalla se carga con `loadComponent`: su código no se descarga hasta
  * que alguien entra a esa ruta. Así el arranque es liviano aunque el sistema
  * crezca a los cuatro dashboards.
+ *
+ * Los guards van en orden y Angular corta en el primero que no pasa:
+ *
+ *   authGuard   → ¿hay sesión?
+ *   roleGuard   → ¿esa sesión puede ver ESTA pantalla?
  */
 export const routes: Routes = [
   {
@@ -17,10 +24,29 @@ export const routes: Routes = [
   {
     // Destino después de iniciar sesión. Protegida: sin sesión, `authGuard`
     // devuelve a /login antes de que la pantalla llegue a dibujarse.
+    //
+    // Sin `roleGuard` a propósito: es la pantalla común a todos los roles, y
+    // además es a donde `roleGuard` manda a quien no puede entrar a otra.
+    // Protegerla por rol dejaría a alguien rebotando en un círculo.
     path: 'inicio',
     title: 'Inicio · ISCGB',
     canActivate: [authGuard],
     loadComponent: () => import('./features/inicio/inicio').then((m) => m.Inicio),
+  },
+  {
+    // Entrega del programa de materia. Solo Docente: es el único que dicta
+    // una materia y por lo tanto el único que entrega su programa.
+    //
+    // Un director que además da clase tiene los dos roles cargados en
+    // `Usuarios_roles`, así que entra igual — alcanza con tener UNO de los
+    // roles permitidos.
+    path: 'docente/entrega-programa',
+    title: 'Entregar programa de materia · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.docente)],
+    loadComponent: () =>
+      import('./features/docente/entrega-programa/entrega-programa').then(
+        (m) => m.EntregaPrograma,
+      ),
   },
   {
     // Herramienta interna: el muestrario de componentes y tokens.

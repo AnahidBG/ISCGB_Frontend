@@ -1,0 +1,52 @@
+<main class="contenedor flex min-h-dvh flex-col py-12">
+  <div class="mx-auto w-full max-w-3xl">
+    <h1 class="text-3xl font-bold text-principal">Entrega del programa de materia</h1>
+    <p class="mt-2 text-texto-suave">
+      Completá los datos generales, las unidades de contenido y las condiciones de aprobación.
+      Se envía todo junto en un solo paso.
+    </p>
+
+    @if (enviadoConExito()) {
+      <div class="mt-10 rounded-xl border border-borde bg-superficie p-8 text-center">
+        <p class="text-lg font-semibold text-aprobado">¡Programa enviado con éxito!</p>
+        <p class="mt-2 text-texto-suave">
+          Quedó registrado con el número {{ idPrograma() }}. Ya podés descargar el PDF
+          o cargar el programa de otra materia.
+        </p>
+
+        @if (errorPdf()) {
+          <div
+            class="mt-6 rounded-lg border-l-4 border-rechazado bg-rechazado/10 px-4 py-3 text-left text-sm text-texto"
+            role="alert"
+          >
+            {{ errorPdf() }}
+          </div>
+        }
+
+        <div class="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+          <app-boton
+            nivel="primario"
+            [conFlecha]="false"
+            [cargando]="descargandoPdf()"
+            textoCargando="Generando PDF…"
+            (click)="descargarPdf()"
+          >
+            Descargar PDF
+          </app-boton>
+
+          <app-boton nivel="secundario" [conFlecha]="false" (click)="cargarOtroPrograma()">
+            Cargar otro programa
+          </app-boton>
+        </div>
+      </div>
+    } @else {
+      <div class="mt-10">
+        <app-formulario-programa-materia
+          [enviando]="enviando()"
+          [error]="error()"
+          (enviarPrograma)="manejarEnvio($event)"
+        />
+      </div>
+    }
+  </div>
+</main>
