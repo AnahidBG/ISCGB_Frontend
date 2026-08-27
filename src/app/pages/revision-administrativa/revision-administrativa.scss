@@ -4,6 +4,86 @@
   background-color: #F8F9FA;
 }
 
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-bar {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 16px 32px;
+  background-color: #FFFFFF;
+  border-bottom: 1px solid #E5E7EB;
+
+  .user-notifications {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .btn-bell {
+      position: relative;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: #688075;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px;
+
+      .badge-dot {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 8px;
+        height: 8px;
+        background-color: #EF4444;
+        border-radius: 50%;
+      }
+    }
+
+    .divider {
+      width: 1px;
+      height: 24px;
+      background-color: #E5E7EB;
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+        text-align: right;
+
+        .user-name {
+          font-weight: 700;
+          font-size: 14px;
+          color: #2D312E;
+        }
+
+        .user-role {
+          font-size: 12px;
+          color: #8C948F;
+        }
+      }
+
+      .user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-color: #EAECEB;
+        object-fit: cover;
+      }
+    }
+  }
+}
+
 .main-sidebar {
   width: 260px;
   background-color: #FFFFFF;
@@ -83,19 +163,20 @@
     padding-top: 16px;
 
     .logout {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        white-space: no-wrap; 
-        font-size: 14px;
-        color: #688075;
-        text-decoration: none;
-        padding: 10px 12px;
-        border-radius: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      white-space: nowrap;
+      font-size: 14px;
+      color: #688075;
+      text-decoration: none;
+      padding: 10px 12px;
+      border-radius: 8px;
 
-        svg{
-            flex-shrink: 0;
-        }
+      svg {
+        flex-shrink: 0;
+      }
+
       &:hover {
         background-color: #FEE2E2;
         color: #EF4444;
