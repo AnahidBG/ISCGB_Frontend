@@ -1,3 +1,5 @@
+import { RolApi } from './rol';
+
 /**
  * Lo que el backend devuelve cuando el login sale bien (HTTP 200).
  *
@@ -9,8 +11,6 @@
  *
  * Este es el ÚNICO lugar del frontend donde se tolera esa inconsistencia.
  * De acá para adentro trabajamos con `Sesion`, que ya está ordenada.
- *
- * ⚠️ El ROL no viene en esta respuesta: viaja adentro del `token`.
  */
 export interface RespuestaLogin {
   token: string;
@@ -24,6 +24,17 @@ export interface RespuestaLogin {
   direccion: string | null;
   email: string;
   idUsuario: number;
+  /**
+   * Los roles del usuario, con id y nombre.
+   *
+   * Antes había que sacarlos del token, porque no venían en el cuerpo. Hoy
+   * vienen acá y con su nombre, así que esta es la fuente que usamos: el
+   * token queda solo para la fecha de vencimiento.
+   *
+   * Es un arreglo porque la base permite varios roles por persona
+   * (tabla `Usuarios_roles`), aunque hoy la mayoría tenga uno solo.
+   */
+  roles: RolApi[];
 }
 
 /**
