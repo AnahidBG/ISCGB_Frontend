@@ -40,15 +40,100 @@
   --color-borde: #e2e8e4;
   --color-texto: #2d2d2d;
 
+  /* Fondo de los paneles internos del sistema.
+     En el Figma del dashboard el fondo no es el blanco humo frío del manual
+     (#F5F5F5) sino uno cálido, apenas amarillento, que hace que las tarjetas
+     blancas se despeguen sin necesidad de sombra. Es el mismo "hueso" que
+     define el Brochero Design System. Se agrega como token aparte en vez de
+     cambiar `--color-fondo`: ese sigue siendo el del manual y lo usa el sitio
+     público. */
+  --color-fondo-panel: #faf9f5;
+
+  /* Azul apagado para la tarjeta de "totales" del dashboard.
+     ⚠️ NO está en el manual de identidad — se derivó para seguir el Figma,
+     donde el total se distingue de los tres estados del semáforo por color.
+     Usar verde ahí lo confundiría con "Aprobados". Está bajado en saturación
+     y llevado hacia el gris verdoso de la marca para que no cante al lado del
+     resto. Si diseño define uno oficial, se reemplaza acá y listo. */
+  --color-info: #4a6fa5;
+
   /* ── Estados de documento — regla de negocio del MVP ─────────────────── */
   --color-aprobado: #2f8f5b; /* 🟢 Aprobado */
   --color-pendiente: #b07d0a; /* 🟡 Pendiente */
   --color-rechazado: #c0392b; /* 🔴 Rechazado */
 
+  /* ── Escala completa de "principal" / "acento-lima" / "gris-marca" ─────
+     Agregado el 27/08/2026 al incorporar el "Brochero Design System"
+     (generado en otra sesión a partir del isotipo y la lockup — ver
+     docs/design-system.md, sección "Brochero Design System"). Sus tres
+     colores de marca son EXACTAMENTE estos tres — mismo hex, confirmado
+     dígito por dígito — así que lo que aporta de nuevo no es el color, es
+     la ESCALA: 9 tonos por color en vez de uno solo más un par de
+     derivados sueltos. Son tokens NUEVOS y ADITIVOS: nada de lo que ya
+     usaba `principal`, `acento-lima` o `gris-marca` cambia.
+     100 ≈ "-suave", 600 ≈ "-oscuro" — pensados para reemplazar a esos
+     derivados ad-hoc el día que se audite `boton.ts` y el resto de
+     `shared/ui/`, no reemplazados automáticamente acá. */
+  --color-principal-50: #eef2f0;
+  --color-principal-100: #dae3df;
+  --color-principal-200: #b5c6bf;
+  --color-principal-300: #8fa9a0;
+  --color-principal-400: #6a8c80;
+  --color-principal-500: #46695f; /* = --color-principal */
+  --color-principal-600: #3a5850;
+  --color-principal-700: #2e4640;
+  --color-principal-800: #223530;
+  --color-principal-900: #16231f;
+
+  --color-acento-lima-50: #fafbef;
+  --color-acento-lima-100: #f2f4dc;
+  --color-acento-lima-200: #e7e8c6;
+  --color-acento-lima-300: #dcdfaa;
+  --color-acento-lima-400: #cfd18d; /* = --color-acento-lima */
+  --color-acento-lima-500: #bcbf6d;
+  --color-acento-lima-600: #9ea152;
+  --color-acento-lima-700: #7b7d40;
+  --color-acento-lima-800: #56582e;
+  --color-acento-lima-900: #33351b;
+
+  --color-gris-marca-50: #f4f6f5;
+  --color-gris-marca-100: #e8eceb;
+  --color-gris-marca-200: #ccd3d1;
+  --color-gris-marca-300: #aebab6;
+  --color-gris-marca-400: #919d99; /* = --color-gris-marca */
+  --color-gris-marca-500: #76837e;
+  --color-gris-marca-600: #5e6a65;
+  --color-gris-marca-700: #47514d;
+  --color-gris-marca-800: #303734;
+  --color-gris-marca-900: #1b1f1d;
+
+  /* ── Radio y sombra de marca — del Brochero Design System ───────────────
+     Tokens NUEVOS con nombre propio (`rounded-tarjeta`, `rounded-control`,
+     `shadow-marca-*`): no pisan la escala de Tailwind (`rounded-lg`,
+     `shadow-md`, etc.), así que no cambian nada que ya esté dibujado.
+     `rounded-control` es lo mismo que `rounded-full`, que `<app-boton>` ya
+     usa — queda documentado acá como alternativa con nombre semántico. */
+  --radius-tarjeta: 20px;
+  --radius-control: 9999px;
+  --shadow-marca-sm: 0 2px 6px color-mix(in oklab, #16231f 8%, transparent);
+  --shadow-marca-md: 0 6px 18px color-mix(in oklab, #16231f 10%, transparent);
+  --shadow-marca-lg: 0 18px 44px color-mix(in oklab, #16231f 12%, transparent);
+
   /* ── Tipografía ──────────────────────────────────────────────────────── */
   --font-titulo: 'Gasoek One', 'Arial Black', sans-serif;
   --font-cuerpo: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, 'Cascadia Code', monospace;
+
+  /* ⚠️ El "Brochero Design System" recomienda Barlow / Barlow Semi
+     Condensed / Barlow Condensed en vez de Gasoek One / Geist — pero lo
+     dice como SUSTITUCIÓN A FALTA DE DATO: a esa sesión solo le llegaron
+     4 imágenes de marca, sin tipografía real ("No font binaries were
+     provided... please send the real font files"). Gasoek One/Geist, en
+     cambio, están confirmados acá arriba desde el Figma real del Design
+     System (ver docs/design-system.md, "Tipografía"). Por eso NO se
+     reemplazaron: adoptar Barlow sería cambiar un dato confirmado por una
+     adivinanza. Si en algún momento se decide que Barlow es lo correcto
+     de verdad, es un cambio de una sola línea acá. */
 
   /* ── Grilla ──────────────────────────────────────────────────────────────
      Escritorio: 12 columnas · margen 120px · separación 32px · lienzo 1440px

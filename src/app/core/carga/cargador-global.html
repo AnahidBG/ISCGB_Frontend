@@ -1,0 +1,26 @@
+@if (carga.visible()) {
+  <!--
+    El fondo semitransparente con desenfoque deja entrever la pantalla de
+    atrás: da la sensación de que la app sigue ahí y está trabajando, en vez
+    de que se fue a otro lado.
+
+    `aria-busy` en el contenedor le dice a un lector de pantalla que lo que
+    hay debajo está en curso; el anuncio del texto lo hace
+    `<app-pantalla-carga>`, que ya trae `role="status"`.
+  -->
+  <div
+    aria-busy="true"
+    class="fixed inset-0 z-50 flex items-center justify-center bg-fondo/85 backdrop-blur-sm"
+  >
+    <!--
+      `--carga-fondo: transparent` deja pasar el desenfoque de atrás. Sin
+      esto, `<app-pantalla-carga>` pintaría su propio fondo opaco encima y el
+      efecto se perdería.
+    -->
+    <app-pantalla-carga
+      tamano="completo"
+      mensaje="Cargando…"
+      style="--carga-fondo: transparent"
+    />
+  </div>
+}

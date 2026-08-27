@@ -1,0 +1,239 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Subir Documento"
+  subtitulo="Añadí nuevos archivos a tu legajo institucional."
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <div class="mx-auto max-w-3xl">
+    @if (exito()) {
+      <!-- Pantalla de confirmación: reemplaza al formulario, no se suma abajo. -->
+      <div class="rounded-2xl border border-borde bg-superficie px-5 py-10 text-center sm:px-8 sm:py-12">
+        <span
+          class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-aprobado/10 text-aprobado"
+        >
+          <app-icono nombre="aprobado" class="h-8 w-8" />
+        </span>
+
+        <h2 class="mt-5 text-xl font-bold text-principal">Documento enviado</h2>
+        <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-texto-suave">
+          Queda en estado <strong>Pendiente</strong> hasta que Secretaría lo revise. Vas a
+          poder seguir su estado desde tu panel.
+        </p>
+
+        <div class="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
+          <button
+            type="button"
+            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro"
+            (click)="volverAlPanel()"
+          >
+            Volver al panel
+          </button>
+          <button
+            type="button"
+            class="rounded-full border border-principal px-6 py-3 text-sm font-semibold text-principal transition-colors hover:bg-principal-suave"
+            (click)="subirOtro()"
+          >
+            Subir otro documento
+          </button>
+        </div>
+      </div>
+    } @else {
+      <form
+class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
+        (submit)="$event.preventDefault(); enviar()"
+      >
+        @if (error(); as mensaje) {
+          <p class="mb-6 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+            {{ mensaje }}
+          </p>
+        }
+
+        <div class="grid gap-6 sm:grid-cols-2">
+          <div>
+            <label for="tipo" class="block text-sm font-semibold text-texto">
+              Tipo de Documento <span class="text-rechazado">*</span>
+            </label>
+
+            @if (cargandoTipos()) {
+              <p class="mt-2 text-sm text-texto-suave">Cargando los tipos disponibles…</p>
+            } @else {
+              <select
+                id="tipo"
+                required
+                class="mt-2 w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+                (change)="alElegirTipo($event)"
+              >
+                <option value="">Elegí un tipo…</option>
+                @for (tipo of tiposDisponibles(); track tipo.idTipoDoc) {
+                  <option [value]="tipo.idTipoDoc" [selected]="tipo.idTipoDoc === idTipoElegido()">
+                    {{ tipo.nombreDocumento }}@if (!tipo.obligatorio) { (opcional) }
+                  </option>
+                }
+                @empty {
+                  <option value="" disabled>No hay tipos configurados para tu rol</option>
+                }
+              </select>
+            }
+          </div>
+
+          <div>
+            <label for="descripcion" class="block text-sm font-semibold text-texto">
+              Nombre / Descripción <span class="text-rechazado">*</span>
+            </label>
+            <input
+              id="descripcion"
+              type="text"
+              required
+              maxlength="80"
+              placeholder="Ej. Título de Profesorado en Historia"
+              [value]="descripcion()"
+              class="mt-2 w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+              (input)="alEscribirDescripcion($event)"
+            />
+          </div>
+        </div>
+
+        <!--
+          La fecha solo aparece para los documentos que vencen. Pedírsela a un
+          título de grado, que no vence nunca, sería hacer trabajar de más.
+        -->
+        @if (pideVencimiento()) {
+          <div class="mt-6">
+            <label for="vencimiento" class="block text-sm font-semibold text-texto">
+              Fecha de vencimiento
+            </label>
+            <p class="mt-1 text-xs text-texto-suave">
+              Este documento es anual: hay que renovarlo cada año.
+            </p>
+            <input
+              id="vencimiento"
+              type="date"
+              [value]="fechaVencimiento()"
+              class="mt-2 w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none sm:w-64"
+              (change)="alElegirFecha($event)"
+            />
+          </div>
+        }
+
+        <div class="mt-6">
+          <span class="block text-sm font-semibold text-texto">
+            Archivo <span class="text-rechazado">*</span>
+          </span>
+
+          @if (archivo(); as elegido) {
+            <!-- Con archivo elegido: la zona muestra cuál es, y deja sacarlo. -->
+            <div
+class="mt-2 flex items-center gap-3 rounded-2xl border border-borde bg-fondo-panel px-4 py-4 sm:gap-4 sm:px-5"
+            >
+              <span
+class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-aprobado/10 text-aprobado sm:flex"
+              >
+                <app-icono nombre="documento" class="h-5 w-5" />
+              </span>
+              <div class="min-w-0 flex-1">
+                <p class="truncate text-sm font-semibold text-texto">{{ elegido.name }}</p>
+                <p class="text-xs text-texto-suave">{{ tamanoLegible(elegido) }}</p>
+              </div>
+              <button
+                type="button"
+                class="shrink-0 rounded-full px-4 py-2 text-sm font-medium text-rechazado transition-colors hover:bg-rechazado/10"
+                (click)="quitarArchivo()"
+              >
+                Quitar
+              </button>
+            </div>
+          } @else {
+            <!--
+              Zona de arrastre. El <label> envuelve al input escondido: así
+              tocar cualquier parte de la caja abre el explorador de archivos,
+              y además funciona con teclado sin agregar nada.
+            -->
+            <label
+              class="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-8 text-center transition-colors sm:px-6 sm:py-12"
+              [class.border-borde]="!arrastrando()"
+              [class.border-principal]="arrastrando()"
+              [class.bg-principal-suave]="arrastrando()"
+              (dragover)="alArrastrarEncima($event)"
+              (dragleave)="alSalirDeLaZona($event)"
+              (drop)="alSoltar($event)"
+            >
+              <span
+                class="flex h-14 w-14 items-center justify-center rounded-full bg-principal-suave text-principal sm:h-16 sm:w-16"
+              >
+                <app-icono nombre="subir" class="h-7 w-7 sm:h-8 sm:w-8" />
+              </span>
+
+              <!--
+                En un celular no se arrastra nada: se toca. Por eso el texto
+                cambia según el tamaño de pantalla, en vez de pedir un gesto
+                que en ese dispositivo no existe.
+              -->
+              <span class="mt-4 text-base font-bold text-texto sm:mt-5">
+                <span class="hidden sm:inline">Arrastrá tu archivo acá</span>
+                <span class="sm:hidden">Elegí tu archivo</span>
+              </span>
+
+              <!--
+                Solo PDF: es la regla de negocio #1 del MVP. El Figma dice
+                "PDF, JPG, PNG" — hay que corregirlo ahí.
+              -->
+              <span class="mt-1 text-sm text-texto-suave">
+                Solo archivos PDF. Tamaño máximo: 10 MB.
+              </span>
+
+              <span
+class="mt-5 rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white sm:mt-6"
+              >
+                Examinar archivos
+              </span>
+
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                class="sr-only"
+                (change)="alSeleccionarArchivo($event)"
+              />
+            </label>
+          }
+        </div>
+
+        <label class="mt-6 flex items-start gap-3">
+          <input
+            type="checkbox"
+            [checked]="presentadoFisico()"
+            class="mt-0.5 h-4 w-4 rounded border-borde accent-principal"
+            (change)="alMarcarFisico($event)"
+          />
+          <span class="text-sm text-texto-suave">
+            También entregué este documento en papel en Secretaría.
+          </span>
+        </label>
+
+        <div class="mt-8 flex flex-col-reverse items-stretch gap-3 border-t border-borde pt-6 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            class="rounded-full px-6 py-3 text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel"
+            (click)="volverAlPanel()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            [disabled]="!puedeEnviar()"
+            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            @if (enviando()) {
+              Subiendo…
+            } @else {
+              Subir documento
+            }
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</app-estructura-panel>

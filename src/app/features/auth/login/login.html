@@ -3,12 +3,12 @@
   En celular el panel verde se oculta: ocupa media pantalla y no aporta
   nada al que solo quiere entrar.
 -->
-<main class="grid min-h-dvh bg-fondo lg:grid-cols-2">
-  <div class="hidden lg:block">
+<main class="relative min-h-dvh bg-fondo lg:grid lg:grid-cols-2">
+  <div class="absolute inset-0 lg:relative lg:block">
     <app-panel-bienvenida />
   </div>
 
-  <div class="flex items-center justify-center px-6 py-12">
+  <div class="relative z-10 flex min-h-dvh items-center justify-center px-6 py-12 lg:min-h-0">
     <div class="w-full max-w-md rounded-3xl bg-superficie p-8 shadow-sm sm:p-10">
       <app-formulario-login
         [cargando]="cargando()"

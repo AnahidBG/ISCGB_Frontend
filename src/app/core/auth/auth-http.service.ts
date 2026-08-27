@@ -66,6 +66,9 @@ export class AuthHttpService extends AuthService {
       dni: respuesta.dni,
       email: respuesta.email,
       roles: rolesDe(respuesta),
+      // Los mismos roles, pero con su id además del nombre. Hace falta para
+      // los endpoints que piden número y no texto — ver `Sesion.rolesConId`.
+      rolesConId: respuesta.roles ?? [],
       venceEl: fechaDeVencimiento(payload),
     };
   }
