@@ -93,18 +93,21 @@
   >
     <!--
       Este enlace va en el hueco `accionEtiqueta`, al lado de la etiqueta.
-      Queda deshabilitado hasta el Sprint 3: la base de datos ya guarda el
-      token de recuperación, pero todavía no existe el endpoint.
+      Lleva a una pantalla PROVISORIA con datos falsos (no manda ningún
+      correo real): el endpoint de recuperación todavía no existe (Sprint
+      3), pero dejarlo roto o deshabilitado para siempre es peor. Ver
+      docs/alcance-login.md y features/recuperar-contrasena/.
+
+      Es <a>, no <app-boton> ni <button>: lleva a otra pantalla, no ejecuta
+      una acción acá — la misma distinción que ya explica design-system.md.
     -->
-    <button
+    <a
       accionEtiqueta
-      type="button"
-      disabled
-      title="Disponible próximamente"
-      class="text-sm text-principal/50 disabled:cursor-not-allowed"
+      routerLink="/recuperar-contrasena"
+      class="text-sm text-principal hover:underline focus-visible:underline focus-visible:outline-none"
     >
       ¿Olvidaste tu contraseña?
-    </button>
+    </a>
 
     <span class="relative flex items-center">
       <svg

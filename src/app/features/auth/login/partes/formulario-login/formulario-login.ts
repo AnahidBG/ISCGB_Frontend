@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { esDniValido, normalizarDni } from '../../../../../core/auth/dni';
 import { CredencialesLogin } from '../../../../../core/auth/modelos/credenciales-login';
 import { Boton } from '../../../../../shared/ui/boton/boton';
@@ -24,7 +25,7 @@ import { CampoFormulario } from '../../../../../shared/ui/campo-formulario/campo
  */
 @Component({
   selector: 'app-formulario-login',
-  imports: [ReactiveFormsModule, CampoFormulario, Boton],
+  imports: [ReactiveFormsModule, CampoFormulario, Boton, RouterLink],
   templateUrl: './formulario-login.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

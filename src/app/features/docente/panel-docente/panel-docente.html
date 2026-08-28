@@ -1,0 +1,93 @@
+<app-estructura-panel
+  [enlaces]="enlaces"
+  [accionPrincipal]="accion"
+  tituloPagina="Panel del Docente"
+  subtitulo="Acá está el resumen de tu estado académico y legajo."
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  rolPrincipal="Docente"
+  [notificaciones]="notificaciones()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
+    <app-tarjeta-metrica etiqueta="Documentos Totales" [valor]="resumen().total" tono="neutro" />
+    <app-tarjeta-metrica etiqueta="Aprobados" [valor]="resumen().aprobados" tono="aprobado" />
+    <app-tarjeta-metrica etiqueta="Pendientes" [valor]="resumen().pendientes" tono="pendiente" />
+    <app-tarjeta-metrica etiqueta="Rechazados" [valor]="resumen().rechazados" tono="rechazado" />
+  </div>
+
+  <div class="mt-5 grid gap-5 sm:mt-6 sm:gap-6 xl:grid-cols-3">
+    <section class="rounded-2xl border border-borde bg-superficie xl:col-span-2">
+      <header class="flex flex-wrap items-center justify-between gap-2 border-b border-borde px-5 py-4 sm:px-6 sm:py-5">
+        <h2 class="text-lg font-bold text-principal">Actividad Reciente</h2>
+
+        <!-- Progreso del legajo: el mismo dato, en una línea, sin ocupar una tarjeta. -->
+        <span class="text-sm text-texto-suave">{{ progreso() }}% aprobado</span>
+      </header>
+
+      <ul class="divide-y divide-borde">
+        @for (documento of actividadReciente(); track documento.id) {
+          <li class="flex items-center gap-3 px-5 py-4 sm:gap-4 sm:px-6">
+            <span
+              class="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-fondo-panel text-texto-suave sm:flex"
+            >
+              <app-icono nombre="documento" class="h-5 w-5" />
+            </span>
+
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-semibold text-texto">{{ documento.nombre }}</p>
+              <p class="mt-0.5 flex items-center gap-1.5 text-xs text-texto-suave">
+                <app-icono nombre="reloj" class="h-3.5 w-3.5" />
+                Subido el {{ documento.fechaSubida | date: 'dd/MM/yyyy' }}
+              </p>
+            </div>
+
+            <app-insignia-estado class="shrink-0" [estado]="documento.estado" />
+          </li>
+        } @empty {
+          <li class="px-5 py-10 text-center text-sm text-texto-suave sm:px-6">
+            Todavía no hay documentos en tu legajo.
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="rounded-2xl border border-borde bg-superficie">
+      <header class="border-b border-borde px-5 py-4 sm:px-6 sm:py-5">
+        <h2 class="text-lg font-bold text-principal">Próximos Pasos</h2>
+      </header>
+
+      <!--
+        Línea de tiempo: los círculos van unidos por una línea vertical que se
+        dibuja con el borde izquierdo de cada item, salvo en el último
+        (last:before:hidden). Así no hace falta un elemento extra para la
+        línea ni calcular alturas.
+      -->
+      <ul class="flex flex-col px-5 py-5 sm:px-6">
+        @for (paso of proximosPasos(); track paso.titulo) {
+          <li class="relative flex gap-4 pb-6 last:pb-0">
+            <span
+              aria-hidden="true"
+              class="absolute bottom-0 left-[13px] top-7 w-px bg-borde"
+              [class.hidden]="$last"
+            ></span>
+
+            <span
+              class="relative z-10 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-superficie"
+              [class.text-aprobado]="paso.tono === 'aprobado'"
+              [class.text-pendiente]="paso.tono === 'pendiente'"
+              [class.text-rechazado]="paso.tono === 'rechazado'"
+            >
+              <app-icono [nombre]="paso.tono" class="h-6 w-6" />
+            </span>
+
+            <div class="min-w-0">
+              <p class="text-sm font-semibold text-texto">{{ paso.titulo }}</p>
+              <p class="mt-1 text-sm leading-relaxed text-texto-suave">{{ paso.detalle }}</p>
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  </div>
+</app-estructura-panel>

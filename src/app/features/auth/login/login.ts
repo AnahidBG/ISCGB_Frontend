@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { CredencialesLogin } from '../../../core/auth/modelos/credenciales-login';
 import { FormularioLogin } from './partes/formulario-login/formulario-login';
 import { PanelBienvenida } from './partes/panel-bienvenida/panel-bienvenida';
@@ -18,6 +19,10 @@ import { PanelBienvenida } from './partes/panel-bienvenida/panel-bienvenida';
  * La ventaja de partirlo así: los dos hijos se pueden mirar, probar y
  * rediseñar sin tocar nada de autenticación. Y toda la lógica de la pantalla
  * vive en un archivo solo, en vez de estar desparramada.
+ *
+ * A dónde va cada persona después de entrar lo decide `destinoSegunRoles`,
+ * que vive en `core/auth/` porque la pantalla de 404 necesita responder esa
+ * misma pregunta.
  */
 @Component({
   selector: 'app-login',
@@ -40,13 +45,9 @@ export class Login {
     this.error.set(null);
 
     this.auth.iniciarSesion(credenciales).subscribe({
-      next: () => {
+      next: (sesion) => {
         this.cargando.set(false);
-
-        // TODO: cuando backend nos pase la equivalencia entre el `role` del
-        // token ("1", "2", …) y los roles reales, acá se elige el dashboard
-        // según el rol en vez de mandar a todos al mismo lugar.
-        this.router.navigate(['/inicio']);
+        this.router.navigate([destinoSegunRoles(sesion)]);
       },
       error: (fallo: Error) => {
         this.cargando.set(false);

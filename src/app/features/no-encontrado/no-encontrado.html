@@ -1,0 +1,60 @@
+<main class="flex min-h-dvh flex-col items-center justify-center bg-fondo-panel px-6 py-16">
+  <!--
+    El isotipo del instituto son dos eslabones entrelazados. Acá se separan y
+    se vuelven a enganchar: un enlace roto, contado con la propia marca.
+    `aria-hidden` porque el texto de abajo ya dice lo mismo.
+  -->
+  <svg
+    aria-hidden="true"
+    viewBox="263.6 235.3 312.1 354.8"
+    class="eslabones h-28 w-auto text-principal sm:h-40"
+  >
+    <path
+      class="eslabones__superior"
+      fill="currentColor"
+      d="M351.172 235.414H387.752V271.468H351.172C320.735 271.468 295.992 299.09 295.992 333.067C295.992 367.043 320.735 394.665 351.172 394.665H488.192C518.628 394.665 543.372 367.043 543.372 333.067C543.372 299.09 518.628 271.468 488.192 271.468C463.392 271.468 442.368 289.84 435.435 315.008H488.192V351.062H400.716V333.004C400.716 279.144 439.944 235.352 488.192 235.352C536.439 235.352 575.668 279.144 575.668 333.004C575.668 386.863 536.439 430.656 488.192 430.656H351.172C302.924 430.656 263.695 386.863 263.695 333.004C263.695 279.144 302.924 235.352 351.172 235.352V235.414Z"
+    />
+    <path
+      class="eslabones__inferior"
+      fill="currentColor"
+      d="M488.192 589.944H451.612V553.891H488.192C518.628 553.891 543.372 526.269 543.372 492.292C543.372 458.315 518.628 430.693 488.192 430.693H351.172C320.735 430.693 295.992 458.315 295.992 492.292C295.992 526.269 320.735 553.891 351.172 553.891C375.972 553.891 396.995 535.518 403.928 510.35H351.172V474.297H438.648V492.355C438.648 546.215 399.419 590.007 351.172 590.007C302.924 590.007 263.695 546.215 263.695 492.355C263.695 438.496 302.924 394.703 351.172 394.703H488.192C536.439 394.703 575.668 438.496 575.668 492.355C575.668 546.215 536.439 590.007 488.192 590.007V589.944Z"
+    />
+  </svg>
+
+  <p class="mt-8 text-xs font-medium uppercase tracking-[0.14em] text-gris-marca sm:mt-10">
+    Error 404
+  </p>
+
+  <h1 class="mt-3 text-center text-3xl font-bold text-principal sm:text-4xl">
+    Se cortó el enlace
+  </h1>
+
+  <p class="mt-4 max-w-md text-center text-base leading-relaxed text-texto-suave">
+    La página que buscabas no existe o cambió de dirección. Puede que el enlace esté
+    viejo, o que se haya colado un error al escribirla.
+  </p>
+
+  <div class="mt-8 flex w-full max-w-xs flex-col items-stretch gap-3 sm:mt-9 sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:justify-center">
+    <button
+      type="button"
+      class="rounded-full bg-principal px-7 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro"
+      (click)="irAlDestino()"
+    >
+      {{ etiquetaPrincipal() }}
+    </button>
+
+    @if (puedeVolverAtras) {
+      <button
+        type="button"
+        class="rounded-full border border-principal px-7 py-3.5 text-sm font-semibold text-principal transition-colors hover:bg-principal-suave"
+        (click)="volverAtras()"
+      >
+        Volver atrás
+      </button>
+    }
+  </div>
+
+  <p class="mt-10 text-xs text-gris-marca">
+    Instituto Superior Cura Gabriel Brochero
+  </p>
+</main>

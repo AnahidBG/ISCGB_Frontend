@@ -1,0 +1,47 @@
+<main class="flex min-h-dvh items-center justify-center bg-fondo px-6 py-12">
+  <div class="w-full max-w-md rounded-3xl bg-superficie p-8 shadow-sm sm:p-10">
+    @if (!enviado()) {
+      <h1 class="text-2xl font-bold text-texto">¿Olvidaste tu contraseña?</h1>
+      <p class="mt-2 text-sm text-texto-suave">
+        Ingresá tu DNI y te vamos a enviar instrucciones para recuperarla.
+      </p>
+
+      <form class="mt-8 flex flex-col gap-5" (submit)="$event.preventDefault(); enviar()">
+        <app-campo-formulario etiqueta="DNI" idCampo="dni-recuperacion">
+          <input
+            id="dni-recuperacion"
+            type="text"
+            inputmode="numeric"
+            autocomplete="off"
+            class="w-full rounded-lg border border-borde px-4 py-2.5 text-texto"
+            [value]="dni()"
+            (input)="actualizarDni($any($event.target).value)"
+          />
+        </app-campo-formulario>
+
+        <app-boton nivel="primario" tipo="submit" [cargando]="enviando()" [conFlecha]="false">
+          Enviar instrucciones
+        </app-boton>
+
+        <app-boton nivel="terciario" href="/login" [conFlecha]="false">
+          Volver a iniciar sesión
+        </app-boton>
+      </form>
+    } @else {
+      <h1 class="text-2xl font-bold text-texto">Revisá tu correo</h1>
+      <p class="mt-2 text-sm text-texto-suave">
+        Si el DNI existe en el sistema, vas a recibir un correo con instrucciones para
+        recuperar tu contraseña.
+      </p>
+
+      <p class="mt-6 rounded-lg bg-menta/40 px-4 py-3 text-sm text-texto">
+        <strong>Pantalla provisoria.</strong> Todavía no envía ningún correo real — falta
+        el endpoint del backend (Sprint 3).
+      </p>
+
+      <app-boton nivel="secundario" href="/login" [conFlecha]="false" class="mt-8 block">
+        Volver a iniciar sesión
+      </app-boton>
+    }
+  </div>
+</main>
