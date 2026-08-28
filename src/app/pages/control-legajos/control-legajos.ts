@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
+import { SidebarComponent, MenuItem } from '../../shared/components/sidebar/sidebar';
 
 interface DocenteLegajo {
   idDocente: number;
@@ -15,11 +16,17 @@ interface DocenteLegajo {
 @Component({
   selector: 'app-control-legajos',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, SidebarComponent],
   templateUrl: './control-legajos.html',
   styleUrls: ['./control-legajos.scss']
 })
 export class ControlLegajosComponent {
+
+  menuItems: MenuItem[] = [
+  { label: 'Inicio', routerLink: '/inicio', icon: 'inicio' },
+  { label: 'Control de Legajos', routerLink: '/control-legajos', icon: 'control-legajos' },
+  { label: 'Reportes', routerLink: '/reportes', icon: 'reportes' }
+];
 
   docentes: DocenteLegajo[] = [
     {

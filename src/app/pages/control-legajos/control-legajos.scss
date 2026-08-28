@@ -2,8 +2,8 @@
   display: block;
   width: 100%;
   min-height: 100vh;
-  background-color: var(--bg-color, #F7F9F8);
-  font-family: 'Roboto', sans-serif;
+  background-color: #F8F9FA;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .layout-wrapper {
@@ -11,156 +11,103 @@
   min-height: 100vh;
 }
 
-/* --- SIDEBAR LATERAL --- */
-.sidebar {
-  width: 260px;
-  background-color: #2D312E;
-  color: #FFFFFF;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
-
-  .sidebar-brand {
-    padding: 24px 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-
-    .iscgb-logo {
-      width: 40px;
-      height: 40px;
-      background-color: #FFFFFF;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-
-      svg{
-        width: 26px;
-        height: 26px;
-      }
-    }
-
-    .brand-info {
-      display: flex;
-      flex-direction: column;
-
-      .brand-title {
-        font-size: 14px;
-        font-weight: 500;
-        color: #E2E8F0;
-        font-style: italic;
-      }
-
-      .brand-sub {
-        font-size: 11px;
-        color: #94A3B8;
-      }
-    }
-  }
-
-  .sidebar-user {
-    padding: 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-
-    .user-avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background-color: var(--accent-color, #597764);
-      color: #FFFFFF;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      font-size: 13px;
-    }
-
-    .user-info {
-      display: flex;
-      flex-direction: column;
-
-      .user-name {
-        font-size: 14px;
-        font-weight: 500;
-        color: #E2E8F0;
-        font-style: italic;
-      }
-
-      .user-role {
-        font-size: 12px;
-        color: var(--accent-color, #597764);
-      }
-    }
-  }
-
-  .sidebar-nav {
-    padding: 16px 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 24px;
-    color: #A0AEC0;
-    text-decoration: none;
-    font-size: 14px;
-    cursor: pointer;
-
-    i {
-      font-size: 16px;
-    }
-
-    &.active {
-      background-color: var(--accent-color, #597764);
-      color: #FFFFFF;
-      font-style: italic;
-    }
-
-    &:hover:not(.active) {
-      background-color: rgba(255, 255, 255, 0.05);
-      color: #FFFFFF;
-    }
-  }
-
-  .sidebar-footer {
-    padding: 16px 0 24px 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-
-    .logout {
-      color: var(--accent-color, #597764);
-    }
-  }
-}
-
 /* --- CONTENIDO PRINCIPAL --- */
 .main-content {
   flex: 1;
-  padding: 32px 40px;
-  background-color: var(--bg-color, #F7F9F8);
+  display: flex;
+  flex-direction: column;
+  background-color: #F8F9FA;
+
+  .top-bar {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 16px 32px;
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #E5E7EB;
+
+    .user-notifications {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+
+      .btn-bell {
+        position: relative;
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: #688075;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px;
+
+        .badge-dot {
+          position: absolute;
+          top: 4px;
+          right: 4px;
+          width: 8px;
+          height: 8px;
+          background-color: #EF4444;
+          border-radius: 50%;
+        }
+      }
+
+      .divider {
+        width: 1px;
+        height: 24px;
+        background-color: #E5E7EB;
+      }
+
+      .user-profile {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+
+        .user-info {
+          display: flex;
+          flex-direction: column;
+          text-align: right;
+
+          .user-name {
+            font-weight: 700;
+            font-size: 14px;
+            color: #2D312E;
+          }
+
+          .user-role {
+            font-size: 12px;
+            color: #8C948F;
+          }
+        }
+
+        .user-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background-color: #EAECEB;
+          object-fit: cover;
+        }
+      }
+    }
+  }
+
+  .content-body {
+    padding: 24px 32px;
+  }
 
   .section-header {
     margin-bottom: 24px;
 
     h2 {
-      font-size: 24px;
+      font-size: 20px;
       font-weight: 700;
-      color: var(--primary-color, #384D40);
-      margin: 0 0 6px 0;
+      color: #2D312E;
+      margin: 0 0 4px 0;
     }
 
     .subtitle {
-      color: var(--accent-color, #597764);
+      color: #8C948F;
       font-size: 14px;
       margin: 0;
     }
@@ -176,10 +123,14 @@
     display: flex;
     align-items: center;
     background-color: #FFFFFF;
-    border: 1px solid #E0E0E0;
-    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+    border-radius: 12px;
     padding: 16px 20px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: #456A60;
+    }
 
     .avatar-circle {
       width: 42px;
@@ -188,17 +139,18 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 600;
-      font-size: 13px;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
 
       &.avatar-completo {
-        background-color: var(--primary-color, #384D40);
-        color: #FFFFFF;
+        background-color: #E2EBE6;
+        color: #2D433C;
       }
 
       &.avatar-proceso {
-        background-color: #E67E22;
-        color: #FFFFFF;
+        background-color: #FEF3C7;
+        color: #D97706;
       }
     }
 
@@ -208,20 +160,20 @@
 
       .nombre {
         font-size: 15px;
-        font-weight: 600;
-        color: #2C3E50;
+        font-weight: 700;
+        color: #2D312E;
         margin: 0;
 
         .dni {
           font-weight: 400;
-          color: #95A5A6;
+          color: #8C948F;
           font-size: 13px;
         }
       }
 
       .materia {
         font-size: 13px;
-        color: var(--accent-color, #597764);
+        color: #688075;
         margin: 2px 0 0 0;
       }
     }
@@ -235,14 +187,14 @@
 
       .badge-completo {
         background-color: #E8F5E9;
-        color: var(--primary-color, #384D40);
-        padding: 6px 14px;
-        border-radius: 16px;
-        font-size: 13px;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 6px;
+          color: #2E7D32;
+          padding: 6px 14px;
+          border-radius: 16px;
+          font-size: 13px;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 6px;
       }
 
       .bar-container {
@@ -256,26 +208,26 @@
 
           .progreso-label {
             font-size: 12px;
-            color: #7F8C8D;
+            color: #8C948F;
           }
 
           .porcentaje-label {
             font-size: 12px;
             font-weight: 700;
-            color: #E67E22;
+            color: #D97706;
           }
         }
 
         .progress-bar {
           width: 100%;
           height: 6px;
-          background-color: #FEEDDC;
+          background-color: #FEF3C7;
           border-radius: 3px;
           overflow: hidden;
 
           .progress-fill {
             height: 100%;
-            background-color: #E67E22;
+            background-color: #D97706;
             border-radius: 3px;
           }
         }
@@ -285,12 +237,12 @@
     .accion-section {
       .btn-revisar {
         background-color: #FFFFFF;
-        border: 1px solid var(--primary-color, #384D40);
-        color: var(--primary-color, #384D40);
+        border: 1px solid #456A60;
+        color: #456A60;
         padding: 6px 16px;
-        border-radius: 6px;
+        border-radius: 8px;
         font-size: 13px;
-        font-weight: 500;
+        font-weight: 600;
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -298,7 +250,7 @@
         transition: all 0.2s ease;
 
         &:hover {
-          background-color: var(--primary-color, #384D40);
+          background-color: #456A60;
           color: #FFFFFF;
         }
       }
