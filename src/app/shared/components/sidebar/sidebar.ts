@@ -4,7 +4,7 @@ import { RouterModule } from '@angular/router';
 
 export interface MenuItem {
   label: string;
-  iconSvg: string; // SVG del ícono en texto puro o identificador
+  icon: 'inicio' | 'control-legajos' | 'reportes' | 'dashboard' | 'legajo' | 'subir' | 'revision';
   routerLink: string;
 }
 
@@ -13,13 +13,12 @@ export interface MenuItem {
   standalone: true,
   imports: [CommonModule, RouterModule],
   templateUrl: './sidebar.html',
-  styleUrls: ['./sidebar.scss']
+  styleUrl: './sidebar.scss'
 })
 export class SidebarComponent {
   @Input() menuItems: MenuItem[] = [];
 
   onLogout(): void {
-    // Lógica o evento de cierre de sesión
     console.log('Cerrando sesión...');
   }
 }

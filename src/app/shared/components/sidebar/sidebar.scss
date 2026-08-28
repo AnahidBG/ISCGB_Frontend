@@ -67,17 +67,27 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        color: #688075;
       }
 
       &:hover {
         background-color: #F4F6F5;
         color: #3B5D53;
+
+        .icon-wrapper {
+          color: #3B5D53;
+        }
       }
 
       &.active {
         background-color: #E2EBE6;
         color: #2D433C;
         font-weight: 600;
+        font-style: italic;
+
+        .icon-wrapper {
+          color: #2D433C;
+        }
       }
     }
   }
