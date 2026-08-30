@@ -1,18 +1,20 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { ROLES } from '../../../core/auth/modelos/rol';
-import { idDeRol, tieneAlgunRol } from '../../../core/auth/modelos/sesion';
+import { tieneAlgunRol } from '../../../core/auth/modelos/sesion';
+import { aNombreDeArchivo } from '../../../core/comun/archivos';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
+import { idRolDocumental } from '../../../core/legajos/rol-documental';
+import { ENLACES_COMUNES } from '../../../shared/ui/estructura-panel/enlaces-comunes';
 import {
   EnlacePanel,
   EstructuraPanel,
 } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Icono } from '../../../shared/ui/icono/icono';
-
-/** 10 MB, el mismo tope que muestra el diseño. */
-const TAMANO_MAXIMO_BYTES = 10 * 1024 * 1024;
+import { ZonaArchivo } from '../../../shared/ui/zona-archivo/zona-archivo';
 
 /**
  * Subir un documento al legajo propio.
@@ -43,7 +45,7 @@ const TAMANO_MAXIMO_BYTES = 10 * 1024 * 1024;
  */
 @Component({
   selector: 'app-subir-documento',
-  imports: [EstructuraPanel, Icono],
+  imports: [EstructuraPanel, Icono, ZonaArchivo],
   templateUrl: './subir-documento.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -57,6 +59,17 @@ export class SubirDocumento {
   /** El primer rol de la sesión, para mostrarlo debajo del nombre. */
   protected readonly rolPrincipal = computed(() => this.sesion()?.roles[0] ?? '');
 
+  /**
+   * A dónde vuelve el "‹ Volver" (y el botón "Cancelar" del formulario).
+   *
+   * Reusa `destinoSegunRoles`: la misma pregunta que ya resuelve el login
+   * ("¿a qué panel corresponde esta sesión?"), aplicada acá al camino de
+   * vuelta. Antes esto elegía a mano entre `/alumno/panel` y `/docente/panel`,
+   * lo cual mandaba mal a alguien con doble rol Director + Docente (lo
+   * devolvía a Docente en vez de a Director).
+   */
+  protected readonly rutaPanel = computed(() => destinoSegunRoles(this.sesion()));
+
   protected readonly tiposDisponibles = signal<DocumentoRequerido[]>([]);
   protected readonly cargandoTipos = signal(true);
 
@@ -66,17 +79,13 @@ export class SubirDocumento {
   protected readonly fechaVencimiento = signal('');
   protected readonly presentadoFisico = signal(false);
 
-  protected readonly arrastrando = signal(false);
   protected readonly enviando = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly exito = signal(false);
 
   protected readonly enlaces = computed<EnlacePanel[]>(() => {
-    const esAlumno = tieneAlgunRol(this.sesion(), [ROLES.alumno]);
-    const panel = esAlumno ? '/alumno/panel' : '/docente/panel';
-
     const enlaces: EnlacePanel[] = [
-      { etiqueta: 'Dashboard', url: panel, icono: 'panel' },
+      { etiqueta: 'Dashboard', url: this.rutaPanel(), icono: 'panel' },
       { etiqueta: 'Subir Documento', url: '/legajo/subir-documento', icono: 'subir' },
     ];
 
@@ -88,6 +97,7 @@ export class SubirDocumento {
       });
     }
 
+    enlaces.push(...ENLACES_COMUNES);
     return enlaces;
   });
 
@@ -132,27 +142,9 @@ export class SubirDocumento {
     this.presentadoFisico.set((evento.target as HTMLInputElement).checked);
   }
 
-  protected alSeleccionarArchivo(evento: Event): void {
-    const elegido = (evento.target as HTMLInputElement).files?.[0] ?? null;
-    this.tomarArchivo(elegido);
-  }
-
-  protected alArrastrarEncima(evento: DragEvent): void {
-    // Sin esto el navegador abre el PDF en una pestaña nueva en vez de
-    // dejárnoslo a nosotros.
-    evento.preventDefault();
-    this.arrastrando.set(true);
-  }
-
-  protected alSalirDeLaZona(evento: DragEvent): void {
-    evento.preventDefault();
-    this.arrastrando.set(false);
-  }
-
-  protected alSoltar(evento: DragEvent): void {
-    evento.preventDefault();
-    this.arrastrando.set(false);
-    this.tomarArchivo(evento.dataTransfer?.files?.[0] ?? null);
+  protected alElegirArchivo(archivo: File): void {
+    this.archivo.set(archivo);
+    this.error.set(null);
   }
 
   protected quitarArchivo(): void {
@@ -203,48 +195,12 @@ export class SubirDocumento {
   }
 
   protected volverAlPanel(): void {
-    const esAlumno = tieneAlgunRol(this.sesion(), [ROLES.alumno]);
-    this.router.navigate([esAlumno ? '/alumno/panel' : '/docente/panel']);
+    this.router.navigate([this.rutaPanel()]);
   }
 
   protected cerrarSesion(): void {
     this.auth.cerrarSesion();
     this.router.navigate(['/login']);
-  }
-
-  /** Tamaño legible, para mostrarlo al lado del nombre del archivo. */
-  protected tamanoLegible(archivo: File): string {
-    const mb = archivo.size / (1024 * 1024);
-    return mb < 1 ? `${Math.round(archivo.size / 1024)} KB` : `${mb.toFixed(1)} MB`;
-  }
-
-  private tomarArchivo(elegido: File | null): void {
-    if (elegido === null) {
-      return;
-    }
-
-    // Se mira la extensión Y el tipo declarado. Ninguna de las dos cosas es
-    // seguridad —las dos las controla quien sube el archivo— pero atajan el
-    // error honesto, que es el caso normal: alguien que eligió el archivo
-    // equivocado.
-    const esPdf =
-      elegido.name.toLowerCase().endsWith('.pdf') &&
-      (elegido.type === 'application/pdf' || elegido.type === '');
-
-    if (!esPdf) {
-      this.error.set('El legajo solo acepta archivos PDF. Convertí el documento y volvé a intentar.');
-      this.archivo.set(null);
-      return;
-    }
-
-    if (elegido.size > TAMANO_MAXIMO_BYTES) {
-      this.error.set('El archivo supera los 10 MB. Probá comprimirlo o escanearlo con menos calidad.');
-      this.archivo.set(null);
-      return;
-    }
-
-    this.error.set(null);
-    this.archivo.set(elegido);
   }
 
   /**
@@ -263,12 +219,7 @@ export class SubirDocumento {
    * última parte.
    */
   private archivoConNombre(original: File): File {
-    const limpio = this.descripcion()
-      .trim()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-zA-Z0-9 _-]/g, '')
-      .replace(/\s+/g, '_');
+    const limpio = aNombreDeArchivo(this.descripcion());
 
     if (limpio === '') {
       return original;
@@ -288,14 +239,10 @@ export class SubirDocumento {
   private cargarTipos(): void {
     const sesion = this.sesion();
 
-    // Qué documentos le pedimos a esta persona depende de su rol. Con más de
-    // uno se usa el de mayor exigencia documental que tenga: un director que
-    // además da clase presenta lo de Docente.
-    const idRol =
-      idDeRol(sesion, ROLES.docente) ??
-      idDeRol(sesion, ROLES.alumno) ??
-      idDeRol(sesion, ROLES.secretario) ??
-      idDeRol(sesion, ROLES.director);
+    // Qué documentos le pedimos a esta persona depende de su rol. La regla
+    // de cuál elegir cuando tiene varios vive en `idRolDocumental` — la misma
+    // que usan los paneles de Docente y Alumno para calcular el progreso.
+    const idRol = idRolDocumental(sesion);
 
     if (idRol === null) {
       this.cargandoTipos.set(false);

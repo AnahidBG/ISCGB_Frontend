@@ -24,9 +24,28 @@ export const RUTAS_API = {
   documentosRequeridosPorRol: (idRol: number) =>
     `${URL_BASE_API}/api/Legajos/requeridos-por-rol/${idRol}`,
 
+  /**
+   * Todos los legajos agrupados por usuario. Incluye a los que no subieron
+   * nada (`documentos: []`).
+   */
+  legajosResumenEstado: `${URL_BASE_API}/api/Legajos/resumen-estado`,
+
+  /**
+   * Documentos pendientes de todo el instituto, con nombre de la persona y
+   * del tipo de documento. Devuelve `[]` y no 404 cuando no hay ninguno.
+   */
+  legajosPendientes: `${URL_BASE_API}/api/Legajos/pendientes`,
+
   // --- Usuarios (ISCGB_Backend/Controllers/UsuarioController.cs) ---
 
-  /** Listado paginado. Acepta `?rol=&estado=&pagina=&registrosPorPagina=`. */
+  /**
+   * Listado paginado (GET) y alta de un usuario (POST).
+   *
+   * ⚠️ El POST TODAVÍA NO EXISTE: `UsuariosController` solo tiene los dos GET.
+   * La URL está acá porque es donde corresponde que viva el alta, y porque
+   * así el día que el backend la implemente no hay que tocar nada del
+   * frontend. Ver docs/contrato-alta-usuario.md.
+   */
   usuarios: `${URL_BASE_API}/api/Usuarios`,
 
   /** Detalle de un usuario. */
@@ -49,17 +68,10 @@ export const RUTAS_API = {
  * Arma la URL para abrir un archivo subido, a partir de la ruta que guarda
  * el backend.
  *
- * Hace falta porque los dos controladores guardan la ruta con formatos
- * distintos: `LegajosController` devuelve `uploads/xxx.pdf` (sin barra
- * inicial) y `JustificativosController` devuelve `/uploads/justificativos/
- * xxx.pdf` (con barra). Concatenar a lo bruto daría `...5231uploads/...` en
- * un caso y funcionaría en el otro.
- *
- * ⚠️ Hoy estas URLs devuelven 404 aunque el archivo exista en disco:
- * `Program.cs` del backend no llama a `app.UseStaticFiles()`, así que la
- * carpeta `wwwroot/uploads` no se sirve por HTTP. Está reportado en
- * docs/verificacion-backend.md → punto 3. La función ya arma bien la URL:
- * cuando agreguen esa línea, los enlaces empiezan a funcionar solos.
+ * Las rutas guardadas no tienen un formato único: las nuevas vienen con
+ * barra inicial (`/uploads/legajos/x.pdf`) pero las cargadas antes quedaron
+ * sin ella, y concatenar a lo bruto daría `...5231uploads/...`. Esto
+ * normaliza los dos casos.
  */
 export function urlArchivoSubido(rutaArchivo: string | null): string | null {
   if (rutaArchivo === null || rutaArchivo.trim() === '') {

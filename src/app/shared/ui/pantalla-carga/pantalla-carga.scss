@@ -93,7 +93,14 @@
   stroke: currentColor;
   stroke-width: 1.5;
   stroke-dasharray: 537;
-  animation: dibujar-logo 2.6s ease-in-out infinite;
+  /*
+    3.4s y no las 2.6s originales: a Milena le pareció muy rápida, sobre todo
+    en el splash de arranque, donde el logo apenas alcanza a insinuarse antes
+    de desaparecer. Más lenta, el trazo se alcanza a leer como un trazo y no
+    como un parpadeo — sigue siendo la misma animación en todos lados (acá se
+    define una sola vez, ver el comentario de arriba del archivo).
+  */
+  animation: dibujar-logo 3.4s ease-in-out infinite;
 }
 
 .pantalla-carga__mensaje {

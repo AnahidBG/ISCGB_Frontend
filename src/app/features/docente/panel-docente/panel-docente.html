@@ -18,11 +18,38 @@
 
   <div class="mt-5 grid gap-5 sm:mt-6 sm:gap-6 xl:grid-cols-3">
     <section class="rounded-2xl border border-borde bg-superficie xl:col-span-2">
-      <header class="flex flex-wrap items-center justify-between gap-2 border-b border-borde px-5 py-4 sm:px-6 sm:py-5">
-        <h2 class="text-lg font-bold text-principal">Actividad Reciente</h2>
+      <header class="border-b border-borde px-5 py-4 sm:px-6 sm:py-5">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="text-lg font-bold text-principal">Actividad Reciente</h2>
 
-        <!-- Progreso del legajo: el mismo dato, en una línea, sin ocupar una tarjeta. -->
-        <span class="text-sm text-texto-suave">{{ progreso() }}% aprobado</span>
+          <!--
+            Progreso del legajo: el mismo dato, en una línea, sin ocupar una
+            tarjeta. Dice "3 de 8" y no solo el porcentaje porque el número
+            solo no deja ver cuánto falta.
+          -->
+          <span class="text-sm text-texto-suave">
+            @if (progreso().estimado) {
+              {{ progreso().porcentaje }}% aprobado (aproximado)
+            } @else {
+              {{ progreso().aprobados }} de {{ progreso().total }} obligatorios ·
+              {{ progreso().porcentaje }}%
+            }
+          </span>
+        </div>
+
+        <div
+          class="mt-3 h-1.5 overflow-hidden rounded-full bg-fondo-panel"
+          role="progressbar"
+          aria-label="Progreso del legajo"
+          [attr.aria-valuenow]="progreso().porcentaje"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <div
+            class="h-full rounded-full bg-acento-verde transition-[width] duration-500 ease-out"
+            [style.width.%]="progreso().porcentaje"
+          ></div>
+        </div>
       </header>
 
       <ul class="divide-y divide-borde">

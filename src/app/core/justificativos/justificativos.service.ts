@@ -16,6 +16,10 @@ export const MENSAJE_ERROR_AUDITORIA =
 export const MENSAJE_ERROR_CARGA =
   'No pudimos cargar el justificativo. Revisá que el archivo sea un PDF.';
 
+/** Por si el backend contesta 200 sin `message`. Dice lo mismo que el suyo. */
+export const MENSAJE_CARGA_POR_DEFECTO =
+  'Acordate de llevar el certificado en papel el día que te reincorpores.';
+
 /**
  * Justificativos de inasistencia.
  *
@@ -44,6 +48,9 @@ export abstract class JustificativosService {
     idUsuarioAuditor: number,
   ): Observable<void>;
 
-  /** Cargar un justificativo nuevo. */
-  abstract cargar(justificativo: NuevoJustificativo): Observable<void>;
+  /**
+   * Cargar un justificativo nuevo. Devuelve el `message` del backend porque
+   * ahí viene la instrucción de llevar el certificado en papel.
+   */
+  abstract cargar(justificativo: NuevoJustificativo): Observable<string>;
 }

@@ -1,0 +1,207 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Justificar Inasistencia"
+  subtitulo="Completá el formulario y adjuntá tu respaldo documental."
+  [volverUrl]="rutaPanel()"
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <div class="mx-auto max-w-3xl">
+    @if (mensajeExito(); as mensaje) {
+      <!-- Reemplaza al formulario, no se suma abajo. -->
+      <div
+        class="rounded-2xl border border-borde bg-superficie px-5 py-10 text-center sm:px-8 sm:py-12"
+      >
+        <span
+          class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-aprobado/10 text-aprobado"
+        >
+          <app-icono nombre="aprobado" class="h-8 w-8" />
+        </span>
+
+        <h2 class="mt-5 text-xl font-bold text-principal">Justificación enviada</h2>
+        <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-texto-suave">
+          Queda en estado <strong>Pendiente</strong> hasta que Secretaría la revise.
+        </p>
+
+        <!-- Viene del backend, así que si lo cambian se actualiza solo. -->
+        <p
+          class="mx-auto mt-5 max-w-md rounded-xl bg-pendiente/10 px-4 py-3 text-sm leading-relaxed text-texto"
+        >
+          {{ mensaje }}
+        </p>
+
+        <div class="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
+          <button
+            type="button"
+            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro"
+            (click)="volverAlPanel()"
+          >
+            Volver al panel
+          </button>
+          <button
+            type="button"
+            class="rounded-full border border-principal px-6 py-3 text-sm font-semibold text-principal transition-colors hover:bg-principal-suave"
+            (click)="cargarOtro()"
+          >
+            Cargar otra justificación
+          </button>
+        </div>
+      </div>
+    } @else {
+      <form
+        class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
+        (submit)="$event.preventDefault(); enviar()"
+      >
+        @if (error(); as mensaje) {
+          <p
+            class="mb-6 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado"
+            role="alert"
+          >
+            {{ mensaje }}
+          </p>
+        }
+
+        <div>
+          <label for="motivo" class="block text-sm font-semibold text-texto">
+            Motivo de la inasistencia <span class="text-rechazado">*</span>
+          </label>
+          <select
+            id="motivo"
+            required
+            class="mt-2 w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+            (change)="alElegirTipo($event)"
+          >
+            <option value="">Elegí un motivo…</option>
+            @for (tipo of tipos; track tipo.valor) {
+              <option [value]="tipo.valor" [selected]="tipo.valor === tipoElegido()">
+                {{ tipo.etiqueta }}
+              </option>
+            }
+          </select>
+
+          @if (ayudaDelTipo(); as ayuda) {
+            <p class="mt-2 text-xs text-texto-suave">{{ ayuda }}</p>
+          }
+        </div>
+
+        <!-- Las fechas no están en el Figma, las agregué (ver el .ts). -->
+        <div class="mt-6 grid gap-6 sm:grid-cols-2">
+          <div>
+            <label for="desde" class="block text-sm font-semibold text-texto">
+              Faltaste desde <span class="text-rechazado">*</span>
+            </label>
+            <input
+              id="desde"
+              type="date"
+              required
+              [value]="fechaInicio()"
+              class="mt-2 w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+              (change)="alElegirInicio($event)"
+            />
+          </div>
+
+          <div>
+            <label for="hasta" class="block text-sm font-semibold text-texto">Hasta</label>
+            <p class="mt-1 text-xs text-texto-suave">
+              Si faltaste un solo día, dejá la misma fecha.
+            </p>
+            <input
+              id="hasta"
+              type="date"
+              [value]="fechaFin()"
+              [attr.min]="fechaInicio()"
+              class="mt-2 w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+              (change)="alElegirFin($event)"
+            />
+          </div>
+        </div>
+
+        <div class="mt-6">
+          <div class="flex items-baseline justify-between gap-3">
+            <label for="nota" class="block text-sm font-semibold text-texto">
+              Nota aclaratoria
+            </label>
+            <span
+              class="text-xs"
+              [class.text-texto-suave]="caracteresRestantes() >= 0"
+              [class.text-rechazado]="caracteresRestantes() < 0"
+            >
+              {{ nota().length }}/{{ maximoNota }}
+            </span>
+          </div>
+
+          <textarea
+            id="nota"
+            rows="4"
+            [attr.maxlength]="maximoNota"
+            [value]="nota()"
+            placeholder="Describí brevemente las circunstancias de la inasistencia."
+            class="mt-2 w-full resize-y rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+            (input)="alEscribirNota($event)"
+          ></textarea>
+        </div>
+
+        <div class="mt-6">
+          <span class="block text-sm font-semibold text-texto">
+            Certificado o respaldo documental
+            @if (pideComprobante()) {
+              <span class="text-rechazado">*</span>
+            } @else {
+              <span class="font-normal text-texto-suave">(opcional para este motivo)</span>
+            }
+          </span>
+
+          <app-zona-archivo
+            class="mt-2 block"
+            [archivo]="archivo()"
+            textoArrastrar="Arrastrá el certificado acá"
+            textoTocar="Elegí el certificado"
+            (elegido)="alElegirArchivo($event)"
+            (quitado)="quitarArchivo()"
+            (rechazado)="error.set($event)"
+          />
+        </div>
+
+        <p class="mt-6 rounded-xl bg-fondo-panel px-4 py-3 text-sm text-texto-suave">
+          La solicitud queda visible para Secretaría y Dirección, que la revisan y
+          definen si se aprueba.
+        </p>
+
+        <div
+          class="mt-8 flex flex-col-reverse items-stretch gap-3 border-t border-borde pt-6 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <!-- Por qué está deshabilitado el botón. -->
+          <p class="text-sm text-texto-suave sm:min-h-5">
+            @if (faltante(); as motivo) {
+              {{ motivo }}
+            }
+          </p>
+
+          <div class="flex flex-col-reverse items-stretch gap-3 sm:flex-row">
+            <button
+              type="button"
+              class="rounded-full px-6 py-3 text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel"
+              (click)="volverAlPanel()"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              [disabled]="!puedeEnviar()"
+              class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              @if (enviando()) {
+                Enviando…
+              } @else {
+                Enviar justificación
+              }
+            </button>
+          </div>
+        </div>
+      </form>
+    }
+  </div>
+</app-estructura-panel>

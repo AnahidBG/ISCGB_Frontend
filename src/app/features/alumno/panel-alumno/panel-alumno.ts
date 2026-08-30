@@ -2,8 +2,13 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { LegajoService } from '../../../core/legajos/legajo.service';
+import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
+import { calcularProgresoLegajo } from '../../../core/legajos/progreso-legajo';
+import { idRolDocumental } from '../../../core/legajos/rol-documental';
+import { ENLACES_COMUNES } from '../../../shared/ui/estructura-panel/enlaces-comunes';
 import {
   AccionPanel,
   EnlacePanel,
@@ -14,6 +19,7 @@ import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-esta
 const ENLACES_ALUMNO: EnlacePanel[] = [
   { etiqueta: 'Dashboard', url: '/alumno/panel', icono: 'panel' },
   { etiqueta: 'Subir Documento', url: '/legajo/subir-documento', icono: 'subir' },
+  ...ENLACES_COMUNES,
 ];
 
 const ACCION_ALUMNO: AccionPanel = {
@@ -55,15 +61,20 @@ export class PanelAlumno {
     initialValue: [],
   });
 
-  /** Misma simplificación que en `PanelDocente` — ver el comentario ahí. */
-  protected readonly progreso = computed(() => {
-    const documentos = this.documentos();
-    if (documentos.length === 0) {
-      return 0;
-    }
-    const aprobados = documentos.filter((documento) => documento.estado === 'Aprobado').length;
-    return Math.round((aprobados / documentos.length) * 100);
-  });
+  /** El denominador del progreso. Ver el comentario en `PanelDocente`. */
+  private readonly idRol = idRolDocumental(this.auth.sesion());
+
+  protected readonly requeridos = toSignal(
+    this.idRol === null
+      ? of<DocumentoRequerido[]>([])
+      : this.legajoService.documentosRequeridos(this.idRol),
+    { initialValue: [] as DocumentoRequerido[] },
+  );
+
+  /** Misma fórmula que en `PanelDocente`: aprobados / obligatorios del rol. */
+  protected readonly progreso = computed(() =>
+    calcularProgresoLegajo(this.documentos(), this.requeridos()),
+  );
 
   protected cerrarSesion(): void {
     this.auth.cerrarSesion();

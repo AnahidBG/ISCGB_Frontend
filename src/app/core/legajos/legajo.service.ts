@@ -4,6 +4,7 @@ import {
   DocumentoRequerido,
   NuevoDocumentoLegajo,
 } from './modelos/documento-requerido';
+import { LegajoResumenUsuario } from './modelos/legajo-resumen';
 
 /** Los dos únicos veredictos posibles. Ver CLAUDE.md, regla de negocio #3. */
 export type VeredictoLegajo = 'Aprobado' | 'Rechazado';
@@ -20,17 +21,9 @@ export const MENSAJE_ERROR_AUDITORIA_LEGAJO =
 /**
  * Contrato de legajos: los documentos que cada persona tiene que presentar.
  *
- * Cubre las cuatro operaciones que expone `LegajosController`:
- *
- *   · `obtenerLegajoPropio`     — "¿cómo está MI legajo?" (Docente, Alumno)
- *   · `documentosRequeridos`    — "¿qué documentos me piden por mi rol?"
- *   · `subirDocumento`          — cargar un PDF
- *   · `auditar`                 — aprobar/rechazar (Secretario, Director)
- *
- * Falta una quinta que el backend NO tiene: listar los documentos pendientes
- * de revisión de TODO el instituto. Hoy solo se puede pedir de a un usuario
- * por vez, así que `listarParaRevision()` sigue simulado — está anotado en la
- * implementación y en docs/alcance-paneles-roles.md.
+ * Cubre las seis operaciones de `LegajosController`. Las dos últimas
+ * (`listarParaRevision` y `obtenerResumenInstitucional`) son las que usa
+ * Control de Legajos.
  */
 export abstract class LegajoService {
   /** El legajo de la persona que tiene la sesión abierta. */
@@ -69,10 +62,21 @@ export abstract class LegajoService {
   ): Observable<void>;
 
   /**
-   * Documentos de todo el instituto pendientes de revisión.
+   * Documentos de todo el instituto esperando revisión.
+   * `GET /api/Legajos/pendientes`.
    *
-   * ⚠️ SIGUE SIMULADO. No existe endpoint para esto — ver el comentario de
-   * arriba. No usarlo para nada que dé a entender que son datos reales.
+   * Además de listar, es la única fuente que dice cómo se llama cada tipo de
+   * documento (ver `tipos-documento.ts`).
    */
   abstract listarParaRevision(): Observable<DocumentoLegajo[]>;
+
+  /**
+   * Legajos de todo el instituto agrupados por usuario, que es lo que dibuja
+   * Control de Legajos. `GET /api/Legajos/resumen-estado`.
+   *
+   * A diferencia de `listarParaRevision()` trae todos los documentos y no
+   * solo los pendientes, pero no manda el nombre del tipo de documento. Por
+   * eso las dos se usan juntas.
+   */
+  abstract obtenerResumenInstitucional(): Observable<LegajoResumenUsuario[]>;
 }

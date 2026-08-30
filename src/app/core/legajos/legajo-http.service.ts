@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, delay, map, of, throwError } from 'rxjs';
+import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { RUTAS_API } from '../configuracion/api';
 import { DocumentoLegajo } from './modelos/documento-legajo';
@@ -8,6 +8,7 @@ import {
   DocumentoRequerido,
   NuevoDocumentoLegajo,
 } from './modelos/documento-requerido';
+import { LegajoResumenUsuario } from './modelos/legajo-resumen';
 import {
   LegajoService,
   MENSAJE_ERROR_AUDITORIA_LEGAJO,
@@ -16,14 +17,10 @@ import {
   VeredictoLegajo,
 } from './legajo.service';
 
-/** Cuánto tarda "documentos para revisión", que sigue simulado. */
-const DEMORA_SIMULADA_MS = 500;
+export const MENSAJE_ERROR_RESUMEN_INSTITUCIONAL =
+  'No pudimos traer los legajos del instituto. Intentá de nuevo en un momento.';
 
-/**
- * Forma real de un elemento del legajo, tal como lo arma
- * `GetLegajosPorUsuario` (proyección con `Select`, no la entidad cruda).
- * Verificado contra el código fuente del backend el 27/08/2026.
- */
+/** Lo que devuelve `GetLegajosPorUsuario` (`LegajoDetalleDto`). */
 interface LegajoApi {
   idLegajo: number;
   idUsuario: number;
@@ -43,19 +40,23 @@ interface RequeridosApi {
   documentos: DocumentoRequerido[];
 }
 
+/** Lo que devuelve `GET /api/Legajos/pendientes` (`LegajoPendienteDto`). */
+interface LegajoPendienteApi {
+  idLegajo: number;
+  nombreUsuario: string;
+  tipoDocumento: string;
+  rutaArchivo: string | null;
+  fechaCarga: string;
+  presentadoFisico: boolean | null;
+}
+
 /**
- * Legajos contra la API real.
+ * Legajos contra la API real. Las seis operaciones son reales, ya no queda
+ * nada simulado acá.
  *
- * Cuatro de las cinco operaciones son reales. `listarParaRevision()` sigue
- * simulado porque el backend no tiene un endpoint que junte documentos de
- * TODO el instituto — solo puede traer los de un usuario por vez. Está
- * marcado abajo y en docs/alcance-paneles-roles.md.
- *
- * Un detalle que se repite en dos métodos: los endpoints de Legajos devuelven
- * **404 cuando no hay resultados**, no una lista vacía. Un 404 acá significa
- * "todavía no hay nada", no "algo falló", así que se traduce a `[]`. Si no se
- * hiciera, un docente sin documentos cargados vería un error en vez de su
- * legajo vacío.
+ * Ojo con los 404: casi todos estos endpoints devuelven 404 cuando no hay
+ * resultados en vez de una lista vacía, así que lo traduzco a `[]`. Si no, un
+ * docente sin documentos vería un error en vez de su legajo vacío.
  */
 @Injectable()
 export class LegajoHttpService extends LegajoService {
@@ -149,8 +150,42 @@ export class LegajoHttpService extends LegajoService {
       );
   }
 
+  /**
+   * Pendientes de todo el instituto, aplanados al `DocumentoLegajo` que usa
+   * el resto de la app. El `estado` va fijo en 'Pendiente' porque el DTO no
+   * lo manda pero el endpoint filtra por eso.
+   */
   listarParaRevision(): Observable<DocumentoLegajo[]> {
-    return of([...DOCUMENTOS_PARA_REVISION_SIMULADOS]).pipe(delay(DEMORA_SIMULADA_MS));
+    return this.http.get<LegajoPendienteApi[]>(RUTAS_API.legajosPendientes).pipe(
+      map((pendientes) => pendientes.map(aDocumentoPendiente)),
+      catchError((error: HttpErrorResponse) => {
+        // Este devuelve 200 con [] cuando no hay nada, pero contemplo el 404
+        // igual por las dudas.
+        if (error.status === 404) {
+          return of([]);
+        }
+        console.error('Error al traer los documentos pendientes:', error);
+        return throwError(() => new Error(MENSAJE_ERROR_LEGAJO));
+      }),
+    );
+  }
+
+  /**
+   * Todos los legajos agrupados por persona. La respuesta ya coincide con
+   * `LegajoResumenUsuario`, pero igual pasa por el mapper para normalizar los
+   * huecos (nombre vacío, `documentos` ausente).
+   */
+  obtenerResumenInstitucional(): Observable<LegajoResumenUsuario[]> {
+    return this.http.get<LegajoResumenUsuario[]>(RUTAS_API.legajosResumenEstado).pipe(
+      map((resumen) => resumen.map(aLegajoResumenUsuario)),
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 404) {
+          return of([]);
+        }
+        console.error('Error al traer el resumen institucional de legajos:', error);
+        return throwError(() => new Error(MENSAJE_ERROR_RESUMEN_INSTITUCIONAL));
+      }),
+    );
   }
 }
 
@@ -160,37 +195,39 @@ function aDocumentoLegajo(legajo: LegajoApi): DocumentoLegajo {
     nombre: legajo.tipoDocumento ?? 'Documento sin nombre',
     estado: legajo.estado,
     fechaSubida: new Date(legajo.fechaCarga),
+    comentario: legajo.comentario,
+    fechaVencimiento:
+      legajo.fechaVencimiento === null ? null : new Date(legajo.fechaVencimiento),
+  };
+}
+
+function aDocumentoPendiente(pendiente: LegajoPendienteApi): DocumentoLegajo {
+  return {
+    id: pendiente.idLegajo,
+    nombre: pendiente.tipoDocumento ?? 'Documento sin nombre',
+    propietario: pendiente.nombreUsuario,
+    estado: 'Pendiente',
+    fechaSubida: new Date(pendiente.fechaCarga),
+    // `/pendientes` no manda ninguno de los dos.
+    comentario: null,
+    fechaVencimiento: null,
   };
 }
 
 /**
- * ⚠️ Datos inventados — lo único simulado que queda en esta clase.
- *
- * El backend no tiene un endpoint que liste documentos de todo el instituto.
- * Ningún panel los muestra hoy: el del Secretario pasó a mostrar
- * justificativos reales. Quedan acá para que `listarParaRevision()` siga
- * cumpliendo el contrato mientras el endpoint no exista.
+ * Normaliza una fila de `resumen-estado`. `nombreCompleto` puede llegar como
+ * " " porque el backend concatena dos campos anulables.
  */
-const DOCUMENTOS_PARA_REVISION_SIMULADOS: readonly DocumentoLegajo[] = [
-  {
-    id: 101,
-    nombre: 'Certificado Pepito.pdf',
-    propietario: 'Dolores Docente',
-    estado: 'Aprobado',
-    fechaSubida: new Date('2026-08-20'),
-  },
-  {
-    id: 102,
-    nombre: 'Titulo Profesorado.pdf',
-    propietario: 'Ramiro Rearte',
-    estado: 'Pendiente',
-    fechaSubida: new Date('2026-08-22'),
-  },
-  {
-    id: 103,
-    nombre: 'Curso TIC 2025.pdf',
-    propietario: 'Martín Morales',
-    estado: 'Rechazado',
-    fechaSubida: new Date('2026-08-18'),
-  },
-];
+function aLegajoResumenUsuario(usuario: LegajoResumenUsuario): LegajoResumenUsuario {
+  return {
+    idUsuario: usuario.idUsuario,
+    nombreCompleto: usuario.nombreCompleto?.trim() || 'Persona sin nombre cargado',
+    dni: usuario.dni ?? '',
+    documentos: (usuario.documentos ?? []).map((documento) => ({
+      idLegajo: documento.idLegajo,
+      idTipoDoc: documento.idTipoDoc ?? null,
+      estado: documento.estado,
+      rutaArchivo: documento.rutaArchivo,
+    })),
+  };
+}

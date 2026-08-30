@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { inicialesDe } from '../../../core/comun/texto';
 import { Icono, NombreIcono } from '../icono/icono';
 
 /** Un enlace del menú lateral de un panel. */
@@ -17,6 +18,9 @@ export interface AccionPanel {
   icono?: NombreIcono;
 }
 
+/** Dónde se guarda si la persona prefiere el menú colapsado. Ver `leerPreferenciaColapso`. */
+const CLAVE_COLAPSADO = 'iscgb.panel.colapsado';
+
 /**
  * Estructura común a los paneles de cada rol: barra lateral + encabezado
  * superior, con el contenido de la pantalla proyectado por `<ng-content>`.
@@ -28,6 +32,16 @@ export interface AccionPanel {
  * No sabe nada de autenticación ni de datos: recibe todo por `input()` y
  * avisa por `output()`. Así sirve para Director, Secretario, Docente y Alumno
  * por igual.
+ *
+ * ── Colapsar / expandir (agregado 27/08/2026) ─────────────────────────────
+ * En escritorio la barra se puede achicar a una franja de solo íconos con el
+ * botón de flecha de la marca — más ancho para las tablas y listas de cada
+ * panel. La preferencia se guarda en `localStorage` (del NAVEGADOR, no de la
+ * cuenta: cerrar sesión no la borra) para no repetir el gesto en cada visita.
+ * En celular esta noción no existe: el menú sigue siendo un cajón que se abre
+ * y se cierra entero — colapsarlo A MEDIAS en una pantalla chica no tendría
+ * sentido, y por eso el botón de colapsar está oculto ahí (`hidden lg:flex`
+ * en el HTML).
  */
 @Component({
   selector: 'app-estructura-panel',
@@ -57,6 +71,17 @@ export class EstructuraPanel {
 
   /** La línea gris debajo del título. */
   readonly subtitulo = input<string>('');
+
+  /**
+   * Con esta ruta, aparece un "‹ Volver" arriba del título.
+   *
+   * Sin esto no se dibuja nada — la mayoría de las pantallas SON el destino
+   * (los cuatro dashboards), no hay "atrás" al que volver desde ahí. Tiene
+   * sentido en pantallas que hacen una cosa puntual y dependen de dónde
+   * viniste: "Subir Documento" vuelve al panel de quien lo abrió, y las
+   * pantallas "Próximamente" (Calendario, Configuración) también.
+   */
+  readonly volverUrl = input<string | null>(null);
 
   readonly encabezado = input<'saludo' | 'titulo'>('saludo');
 
@@ -88,6 +113,9 @@ export class EstructuraPanel {
   /** `true` con el menú de la persona (el que sale de la foto) desplegado. */
   protected readonly menuPerfilAbierto = signal(false);
 
+  /** `true` con la barra lateral reducida a solo íconos. Ver el comentario de arriba. */
+  protected readonly colapsado = signal(leerPreferenciaColapso());
+
   protected readonly hayNotificaciones = computed(() => this.notificaciones() > 0);
 
   protected readonly mostrarSaludo = computed(
@@ -116,15 +144,7 @@ export class EstructuraPanel {
    * iniciales, que es mejor que un ícono genérico de persona: identifica de
    * un vistazo a quién pertenece la sesión.
    */
-  protected readonly iniciales = computed(() => {
-    const partes = this.nombreUsuario().trim().split(/\s+/).filter(Boolean);
-    if (partes.length === 0) {
-      return '';
-    }
-    const primera = partes[0].charAt(0);
-    const ultima = partes.length > 1 ? partes[partes.length - 1].charAt(0) : '';
-    return (primera + ultima).toUpperCase();
-  });
+  protected readonly iniciales = computed(() => inicialesDe(this.nombreUsuario()));
 
   /** Solo el nombre de pila, que es como saluda el encabezado del Figma. */
   protected readonly primerNombre = computed(
@@ -150,5 +170,36 @@ export class EstructuraPanel {
 
   protected cerrarMenuPerfil(): void {
     this.menuPerfilAbierto.set(false);
+  }
+
+  protected alternarColapso(): void {
+    this.colapsado.update((valor) => {
+      const nuevo = !valor;
+      guardarPreferenciaColapso(nuevo);
+      return nuevo;
+    });
+  }
+}
+
+/**
+ * Lee la preferencia guardada. Si `localStorage` no está disponible (modo
+ * privado estricto de Safari, por ejemplo) o no hay nada guardado todavía,
+ * arranca expandida — es el comportamiento de siempre, así que nadie nota la
+ * diferencia la primera vez que entra.
+ */
+function leerPreferenciaColapso(): boolean {
+  try {
+    return localStorage.getItem(CLAVE_COLAPSADO) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** Si falla el guardado, la preferencia simplemente no persiste — no es un error fatal. */
+function guardarPreferenciaColapso(colapsado: boolean): void {
+  try {
+    localStorage.setItem(CLAVE_COLAPSADO, colapsado ? '1' : '0');
+  } catch {
+    // Ídem `leerPreferenciaColapso`: modo privado u otra restricción del navegador.
   }
 }
