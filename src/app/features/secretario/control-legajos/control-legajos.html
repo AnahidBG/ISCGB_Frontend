@@ -1,0 +1,161 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  tituloPagina="Control de Legajos"
+  subtitulo="Documentos de todo el instituto, agrupados por persona."
+  encabezado="titulo"
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  rolPrincipal="Secretario"
+  [notificaciones]="totalPendientes()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  @if (errorAuditoria(); as mensaje) {
+    <div class="mb-6 rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado" role="alert">
+      {{ mensaje }}
+      <button type="button" class="ml-2 underline" (click)="errorAuditoria.set(null)">
+        Cerrar
+      </button>
+    </div>
+  }
+
+  @if (error(); as mensaje) {
+    <div class="mb-6 rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado" role="alert">
+      {{ mensaje }}
+      <button type="button" class="ml-2 underline" (click)="cargar()">Reintentar</button>
+    </div>
+  }
+
+  <!-- Rechazar guarda el motivo pero todavía no manda el mail (regla #4). -->
+  <div class="mb-6 rounded-lg bg-pendiente/10 px-4 py-3 text-sm text-texto">
+    Al rechazar un documento se guarda el motivo, pero el
+    <strong>aviso automático por correo todavía no está implementado</strong>
+    en el sistema: por ahora hay que avisarle a la persona por otro medio.
+  </div>
+
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div>
+      <h2 class="text-base font-semibold text-texto">Legajos por persona</h2>
+      <p class="text-sm text-texto-suave">
+        {{ usuariosFiltrados().length }} de {{ resumen().length }}
+        {{ resumen().length === 1 ? 'persona' : 'personas' }}
+        @if (totalPendientes() > 0) {
+          · {{ totalPendientes() }}
+          {{ totalPendientes() === 1 ? 'documento espera' : 'documentos esperan' }} revisión
+        }
+      </p>
+    </div>
+
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <label class="flex cursor-pointer items-center gap-2 text-sm text-texto">
+        <input
+          type="checkbox"
+          [checked]="soloPendientes()"
+          (change)="alternarSoloPendientes()"
+          class="h-4 w-4 rounded border-borde accent-principal"
+        />
+        Solo con pendientes
+      </label>
+
+      <label class="relative block sm:w-64">
+        <span class="sr-only">Buscar por nombre o DNI</span>
+        <input
+          type="search"
+          [value]="busqueda()"
+          (input)="busqueda.set($any($event.target).value)"
+          placeholder="Buscar por nombre o DNI…"
+          class="w-full rounded-full border border-borde bg-superficie px-4 py-2 text-sm text-texto placeholder:text-texto-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+        />
+      </label>
+    </div>
+  </div>
+
+  @if (cargando()) {
+    <app-pantalla-carga tamano="md" mensaje="Cargando legajos del instituto…" />
+  } @else {
+    <ul class="mt-5 flex flex-col gap-4 sm:mt-6">
+      @for (usuario of usuariosFiltrados(); track usuario.idUsuario) {
+        @let conteo = conteos(usuario);
+
+        <li class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
+          <div
+            class="flex flex-wrap items-center justify-between gap-3 pb-4"
+            [class.border-b]="conteo.total > 0"
+            [class.border-borde]="conteo.total > 0"
+          >
+            <div class="flex items-center gap-3">
+              <span
+                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-principal-suave text-sm font-semibold text-principal"
+                aria-hidden="true"
+              >
+                {{ iniciales(usuario.nombreCompleto) }}
+              </span>
+              <div>
+                <p class="text-sm font-semibold text-texto">{{ usuario.nombreCompleto }}</p>
+                <p class="text-xs text-texto-suave">DNI {{ usuario.dni }}</p>
+              </div>
+            </div>
+
+            <!-- Primero lo que hay que hacer, después lo ya resuelto. -->
+            <div class="flex flex-wrap items-center gap-2 text-xs font-medium">
+             <button
+               type="button"
+               class="rounded-full border border-principal px-3 py-1.5 text-xs font-semibold text-principal transition-colors hover:bg-principal-suave"
+               [routerLink]="['/legajo/usuario', usuario.idUsuario]"
+             >
+               Ver legajo
+             </button>
+
+             @if (conteo.pendientes > 0) {
+               <span class="rounded-full bg-pendiente/10 px-2.5 py-1 text-pendiente">
+                 {{ conteo.pendientes }} pendiente{{ conteo.pendientes === 1 ? '' : 's' }}
+               </span>
+             }
+             @if (conteo.rechazados > 0) {
+               <span class="rounded-full bg-rechazado/10 px-2.5 py-1 text-rechazado">
+                 {{ conteo.rechazados }} rechazado{{ conteo.rechazados === 1 ? '' : 's' }}
+               </span>
+             }
+             @if (conteo.aprobados > 0) {
+               <span class="rounded-full bg-aprobado/10 px-2.5 py-1 text-aprobado">
+                 {{ conteo.aprobados }} aprobado{{ conteo.aprobados === 1 ? '' : 's' }}
+               </span>
+             }
+             @if (conteo.otros > 0) {
+               <span class="rounded-full bg-humo px-2.5 py-1 text-texto-suave">
+                 {{ conteo.otros }} sin estado
+               </span>
+             }
+            </div>
+          </div>
+
+          @if (conteo.total > 0) {
+            <ul class="divide-y divide-borde">
+              @for (documento of usuario.documentos; track documento.idLegajo) {
+                <app-fila-documento-legajo
+                  [documento]="documento"
+                  [nombre]="nombreDelDocumento(documento)"
+                  [guardando]="estaGuardando(documento.idLegajo)"
+                  (auditar)="onAuditar(usuario, documento, $event)"
+                />
+              }
+            </ul>
+          } @else {
+            <p class="text-sm text-texto-suave">Todavía no subió ningún documento.</p>
+          }
+        </li>
+      } @empty {
+        <li
+          class="rounded-2xl border border-borde bg-superficie px-5 py-10 text-center text-sm text-texto-suave"
+        >
+          @if (busqueda() !== '') {
+            Nadie coincide con "{{ busqueda() }}".
+          } @else if (soloPendientes()) {
+            No hay ningún documento esperando revisión. Está todo al día.
+          } @else {
+            Todavía no hay legajos cargados en el instituto.
+          }
+        </li>
+      }
+    </ul>
+  }
+</app-estructura-panel>

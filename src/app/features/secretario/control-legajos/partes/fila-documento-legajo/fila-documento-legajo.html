@@ -1,0 +1,110 @@
+<li class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+  <div class="min-w-0 flex-1">
+    <div class="flex flex-wrap items-center gap-2">
+      <p class="text-sm font-medium text-texto">{{ nombre() }}</p>
+      <app-insignia-estado [estado]="documento().estado" />
+    </div>
+
+    @if (urlArchivo(); as url) {
+      <a
+        [href]="url"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="mt-1 inline-block text-xs text-principal underline"
+      >
+        Ver el archivo
+      </a>
+    } @else {
+      <p class="mt-1 text-xs text-texto-suave">Sin archivo adjunto.</p>
+    }
+  </div>
+
+  <div class="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+    <div class="flex gap-2">
+      <button
+        type="button"
+        [class]="clasesAprobar()"
+        [disabled]="guardando() || yaAprobado()"
+        [attr.aria-pressed]="yaAprobado()"
+        (click)="iniciarAprobacion()"
+      >
+        @if (yaAprobado()) {
+          Aprobado
+        } @else {
+          Aprobar
+        }
+      </button>
+
+      <button
+        type="button"
+        [class]="clasesRechazar()"
+        [disabled]="guardando() || yaRechazado()"
+        [attr.aria-pressed]="yaRechazado()"
+        (click)="iniciarRechazo()"
+      >
+        @if (yaRechazado()) {
+          Rechazado
+        } @else {
+          Rechazar
+        }
+      </button>
+    </div>
+
+    @if (confirmandoAprobacion()) {
+      <div class="w-full rounded-lg border border-aprobado/40 bg-aprobado/5 p-3 sm:w-72">
+        <p class="text-xs text-texto">
+          ¿Aprobás <strong>{{ nombre() }}</strong>? Se le avisa a la persona y el
+          documento queda como presentado.
+        </p>
+        <div class="mt-2 flex justify-end gap-2">
+          <button
+            type="button"
+            class="rounded-full px-3 py-1 text-xs text-texto-suave hover:text-texto"
+            (click)="cancelarAprobacion()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="rounded-full bg-aprobado px-3 py-1 text-xs font-semibold text-white hover:brightness-90"
+            (click)="confirmarAprobacion()"
+          >
+            Sí, aprobar
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (mostrandoMotivo()) {
+      <div class="w-full rounded-lg border border-borde bg-fondo-panel p-3 sm:w-72">
+        <label class="text-xs font-medium text-texto-suave" [attr.for]="'motivo-' + documento().idLegajo">
+          Motivo del rechazo (lo va a ver la persona)
+        </label>
+        <textarea
+          [id]="'motivo-' + documento().idLegajo"
+          [value]="motivo()"
+          (input)="motivo.set($any($event.target).value)"
+          rows="2"
+          class="mt-1 w-full resize-none rounded-md border border-borde bg-superficie px-2 py-1.5 text-sm text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rechazado"
+          placeholder="Ej: el certificado está vencido, subí uno emitido este año."
+        ></textarea>
+        <div class="mt-2 flex justify-end gap-2">
+          <button
+            type="button"
+            class="rounded-full px-3 py-1 text-xs text-texto-suave hover:text-texto"
+            (click)="cancelarRechazo()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            class="rounded-full bg-rechazado px-3 py-1 text-xs font-semibold text-white hover:brightness-90"
+            (click)="confirmarRechazo()"
+          >
+            Confirmar rechazo
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+</li>

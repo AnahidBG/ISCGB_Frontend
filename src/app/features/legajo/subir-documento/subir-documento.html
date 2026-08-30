@@ -1,0 +1,172 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Subir Documento"
+  subtitulo="Añadí nuevos archivos a tu legajo institucional."
+  [volverUrl]="rutaPanel()"
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <div class="mx-auto max-w-3xl">
+    @if (exito()) {
+      <!-- Pantalla de confirmación: reemplaza al formulario, no se suma abajo. -->
+      <div class="rounded-2xl border border-borde bg-superficie px-5 py-10 text-center sm:px-8 sm:py-12">
+        <span
+          class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-aprobado/10 text-aprobado"
+        >
+          <app-icono nombre="aprobado" class="h-8 w-8" />
+        </span>
+
+        <h2 class="mt-5 text-xl font-bold text-principal">Documento enviado</h2>
+        <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-texto-suave">
+          Queda en estado <strong>Pendiente</strong> hasta que Secretaría lo revise. Vas a
+          poder seguir su estado desde tu panel.
+        </p>
+
+        <div class="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
+          <button
+            type="button"
+            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro"
+            (click)="volverAlPanel()"
+          >
+            Volver al panel
+          </button>
+          <button
+            type="button"
+            class="rounded-full border border-principal px-6 py-3 text-sm font-semibold text-principal transition-colors hover:bg-principal-suave"
+            (click)="subirOtro()"
+          >
+            Subir otro documento
+          </button>
+        </div>
+      </div>
+    } @else {
+      <form
+class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
+        (submit)="$event.preventDefault(); enviar()"
+      >
+        @if (error(); as mensaje) {
+          <p class="mb-6 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+            {{ mensaje }}
+          </p>
+        }
+
+        <div class="grid gap-6 sm:grid-cols-2">
+          <div>
+            <label for="tipo" class="block text-sm font-semibold text-texto">
+              Tipo de Documento <span class="text-rechazado">*</span>
+            </label>
+
+            @if (cargandoTipos()) {
+              <p class="mt-2 text-sm text-texto-suave">Cargando los tipos disponibles…</p>
+            } @else {
+              <select
+                id="tipo"
+                required
+                class="mt-2 w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+                (change)="alElegirTipo($event)"
+              >
+                <option value="">Elegí un tipo…</option>
+                @for (tipo of tiposDisponibles(); track tipo.idTipoDoc) {
+                  <option [value]="tipo.idTipoDoc" [selected]="tipo.idTipoDoc === idTipoElegido()">
+                    {{ tipo.nombreDocumento }}@if (!tipo.obligatorio) { (opcional) }
+                  </option>
+                }
+                @empty {
+                  <option value="" disabled>No hay tipos configurados para tu rol</option>
+                }
+              </select>
+            }
+          </div>
+
+          <div>
+            <label for="descripcion" class="block text-sm font-semibold text-texto">
+              Nombre / Descripción <span class="text-rechazado">*</span>
+            </label>
+            <input
+              id="descripcion"
+              type="text"
+              required
+              maxlength="80"
+              placeholder="Ej. Título de Profesorado en Historia"
+              [value]="descripcion()"
+              class="mt-2 w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+              (input)="alEscribirDescripcion($event)"
+            />
+          </div>
+        </div>
+
+        <!--
+          La fecha solo aparece para los documentos que vencen. Pedírsela a un
+          título de grado, que no vence nunca, sería hacer trabajar de más.
+        -->
+        @if (pideVencimiento()) {
+          <div class="mt-6">
+            <label for="vencimiento" class="block text-sm font-semibold text-texto">
+              Fecha de vencimiento
+            </label>
+            <p class="mt-1 text-xs text-texto-suave">
+              Este documento es anual: hay que renovarlo cada año.
+            </p>
+            <input
+              id="vencimiento"
+              type="date"
+              [value]="fechaVencimiento()"
+              class="mt-2 w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none sm:w-64"
+              (change)="alElegirFecha($event)"
+            />
+          </div>
+        }
+
+        <div class="mt-6">
+          <span class="block text-sm font-semibold text-texto">
+            Archivo <span class="text-rechazado">*</span>
+          </span>
+
+          <app-zona-archivo
+            class="mt-2 block"
+            [archivo]="archivo()"
+            (elegido)="alElegirArchivo($event)"
+            (quitado)="quitarArchivo()"
+            (rechazado)="error.set($event)"
+          />
+        </div>
+
+        <label class="mt-6 flex items-start gap-3">
+          <input
+            type="checkbox"
+            [checked]="presentadoFisico()"
+            class="mt-0.5 h-4 w-4 rounded border-borde accent-principal"
+            (change)="alMarcarFisico($event)"
+          />
+          <span class="text-sm text-texto-suave">
+            También entregué este documento en papel en Secretaría.
+          </span>
+        </label>
+
+        <div class="mt-8 flex flex-col-reverse items-stretch gap-3 border-t border-borde pt-6 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            class="rounded-full px-6 py-3 text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel"
+            (click)="volverAlPanel()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            [disabled]="!puedeEnviar()"
+            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            @if (enviando()) {
+              Subiendo…
+            } @else {
+              Subir documento
+            }
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</app-estructura-panel>

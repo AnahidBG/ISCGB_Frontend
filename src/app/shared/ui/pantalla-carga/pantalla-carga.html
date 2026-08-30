@@ -1,21 +1,19 @@
 <!--
-  role="status" + aria-live="polite" hacen que un lector de pantalla anuncie
-  el mensaje sin interrumpir lo que esté leyendo. El SVG va con aria-hidden
-  porque el texto ya dice lo mismo: si no, se escucharía dos veces.
+  El SVG va con aria-hidden porque el texto de abajo ya dice lo mismo: si no,
+  un lector de pantalla lo anunciaría dos veces. El `role="status"` y el
+  `aria-live="polite"` están en el host (ver el @Component), así que anuncian
+  el mensaje sin interrumpir lo que la persona esté leyendo.
 -->
 <div
-  role="status"
-  aria-live="polite"
-  class="flex flex-col items-center justify-center gap-6 bg-fondo"
+  [class]="clases()"
   [class.fixed]="pantallaCompleta()"
   [class.inset-0]="pantallaCompleta()"
   [class.z-50]="pantallaCompleta()"
-  [class.py-16]="!pantallaCompleta()"
 >
   <svg
     aria-hidden="true"
     viewBox="0 0 62 58"
-    class="logo-animado h-20 w-20"
+    class="pantalla-carga__logo"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
   >
@@ -24,5 +22,7 @@
     />
   </svg>
 
-  <p class="text-sm tracking-wide text-texto-suave">{{ mensaje() }}</p>
+  @if (mensaje(); as texto) {
+    <p class="pantalla-carga__mensaje">{{ texto }}</p>
+  }
 </div>

@@ -1,0 +1,67 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  [accionPrincipal]="accion"
+  tituloPagina="Panel del Director"
+  subtitulo="Todo el instituto y el estado de su documentación."
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  rolPrincipal="Director"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <!--
+    El listado ya es real (GET /api/Usuarios). Lo que falta es el estado del
+    legajo por persona, que ese endpoint todavía no devuelve — por eso la
+    columna se ve vacía. Ver docs/alcance-dashboard-director.md.
+  -->
+  <p class="mb-5 rounded-xl bg-menta/40 px-4 py-3 text-sm leading-relaxed text-texto sm:mb-6">
+    <strong>El estado del legajo todavía no llega desde el sistema.</strong>
+    Por eso esa columna aparece vacía: preferimos mostrar el hueco antes que
+    inventar un color.
+  </p>
+
+  <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+    <div class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
+      <p class="text-sm text-texto-suave">Usuarios totales</p>
+      <p class="mt-1 text-2xl font-semibold text-texto sm:text-3xl">{{ resumen().total }}</p>
+    </div>
+    <div class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
+      <p class="text-sm text-texto-suave">Legajos aprobados</p>
+      <p class="mt-1 text-3xl font-semibold text-aprobado">{{ resumen().aprobados }}</p>
+    </div>
+    <div class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
+      <p class="text-sm text-texto-suave">Pendientes</p>
+      <p class="mt-1 text-3xl font-semibold text-pendiente">{{ resumen().pendientes }}</p>
+    </div>
+    <div class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
+      <p class="text-sm text-texto-suave">Rechazados</p>
+      <p class="mt-1 text-3xl font-semibold text-rechazado">{{ resumen().rechazados }}</p>
+    </div>
+  </div>
+
+  <div class="mt-6 overflow-x-auto rounded-2xl border border-borde bg-superficie sm:mt-8">
+    <table class="w-full min-w-[34rem] text-left text-sm">
+      <thead class="border-b border-borde text-texto-suave">
+        <tr>
+          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Nombre</th>
+          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">DNI</th>
+          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Rol</th>
+          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Legajo</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-borde">
+        @for (usuario of listadoUsuarios(); track usuario.idUsuario) {
+          <tr>
+            <td class="whitespace-nowrap px-5 py-3 text-texto sm:px-6">{{ usuario.nombreCompleto }}</td>
+            <td class="whitespace-nowrap px-5 py-3 font-mono text-texto-suave sm:px-6">{{ usuario.dni }}</td>
+            <td class="whitespace-nowrap px-5 py-3 text-texto-suave sm:px-6">
+              {{ usuario.roles.join(' · ') || 'Sin rol asignado' }}
+            </td>
+            <td class="px-5 py-3 sm:px-6">
+              <app-insignia-estado [estado]="usuario.estadoLegajo" />
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</app-estructura-panel>

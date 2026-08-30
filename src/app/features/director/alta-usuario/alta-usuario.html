@@ -1,0 +1,357 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Nuevo Usuario"
+  subtitulo="Dar de alta a una persona del instituto y asignarle sus permisos."
+  volverUrl="/director/panel"
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  rolPrincipal="Director"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <div class="mx-auto max-w-3xl">
+    @if (recienCreado(); as nombre) {
+      <!-- Confirmación: reemplaza al formulario, no se suma abajo. -->
+      <div
+        class="rounded-2xl border border-borde bg-superficie px-5 py-10 text-center sm:px-8 sm:py-12"
+      >
+        <span
+          class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-aprobado/10 text-aprobado"
+        >
+          <app-icono nombre="aprobado" class="h-8 w-8" />
+        </span>
+
+        <h2 class="mt-5 text-xl font-bold text-principal">Usuario creado</h2>
+        <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-texto-suave">
+          <strong>{{ nombre }}</strong> ya puede iniciar sesión con su DNI y la contraseña que
+          le pusiste. Acordate de pasársela por un medio seguro: todavía no hay pantalla de
+          cambio de contraseña, así que no la puede modificar por su cuenta.
+        </p>
+
+        <div class="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
+          <button
+            type="button"
+            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro"
+            (click)="volverAlPanel()"
+          >
+            Volver al panel
+          </button>
+          <button
+            type="button"
+            class="rounded-full border border-principal px-6 py-3 text-sm font-semibold text-principal transition-colors hover:bg-principal-suave"
+            (click)="cargarOtro()"
+          >
+            Cargar otro usuario
+          </button>
+        </div>
+      </div>
+    } @else {
+      <form
+        class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
+        [formGroup]="formulario"
+        (submit)="$event.preventDefault(); enviar()"
+      >
+        @if (error(); as mensaje) {
+          <p
+            role="alert"
+            class="mb-6 rounded-xl bg-rechazado/10 px-4 py-3 text-sm leading-relaxed text-rechazado"
+          >
+            {{ mensaje }}
+          </p>
+        }
+
+        <!-- ── Datos de la persona ─────────────────────────────────────── -->
+        <fieldset>
+          <legend class="text-base font-bold text-principal">Datos de la persona</legend>
+
+          <div class="mt-4 grid gap-5 sm:grid-cols-2">
+            <p class="flex flex-col gap-1.5">
+              <label for="nombre" class="text-sm font-medium text-texto">
+                Nombre <span aria-hidden="true" class="text-rechazado">*</span>
+                <span class="sr-only">(obligatorio)</span>
+              </label>
+              <input
+                id="nombre"
+                type="text"
+                formControlName="nombre"
+                autocomplete="off"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+                placeholder="Ej. María"
+              />
+              @if (errorNombre; as mensaje) {
+                <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+              }
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="apellido" class="text-sm font-medium text-texto">
+                Apellido <span aria-hidden="true" class="text-rechazado">*</span>
+                <span class="sr-only">(obligatorio)</span>
+              </label>
+              <input
+                id="apellido"
+                type="text"
+                formControlName="apellido"
+                autocomplete="off"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+                placeholder="Ej. Gómez"
+              />
+              @if (errorApellido; as mensaje) {
+                <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+              }
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="dni" class="text-sm font-medium text-texto">
+                DNI <span aria-hidden="true" class="text-rechazado">*</span>
+                <span class="sr-only">(obligatorio)</span>
+              </label>
+              <input
+                id="dni"
+                type="text"
+                inputmode="numeric"
+                formControlName="dni"
+                autocomplete="off"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+                placeholder="43.880.335"
+              />
+              <!-- Con o sin puntos da igual: `normalizarDni` los saca antes de enviar. -->
+              <span class="text-xs text-texto-suave">Con esto va a iniciar sesión.</span>
+              @if (errorDni; as mensaje) {
+                <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+              }
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="email" class="text-sm font-medium text-texto">
+                Correo electrónico <span aria-hidden="true" class="text-rechazado">*</span>
+                <span class="sr-only">(obligatorio)</span>
+              </label>
+              <input
+                id="email"
+                type="email"
+                formControlName="email"
+                autocomplete="off"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+                placeholder="nombre@ejemplo.com"
+              />
+              <span class="text-xs text-texto-suave">
+                Ahí llegan los avisos de documentación rechazada.
+              </span>
+              @if (errorEmail; as mensaje) {
+                <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+              }
+            </p>
+          </div>
+        </fieldset>
+
+        <!-- ── Roles ───────────────────────────────────────────────────── -->
+        <fieldset class="mt-8 border-t border-borde pt-6">
+          <legend class="text-base font-bold text-principal">
+            Permisos <span aria-hidden="true" class="text-rechazado">*</span>
+            <span class="sr-only">(obligatorio)</span>
+          </legend>
+          <p class="mt-1 text-sm text-texto-suave">
+            Se puede elegir más de uno: en el instituto hay quien dirige y además da clase.
+          </p>
+
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            @for (opcion of opcionesDeRol; track opcion.rol) {
+              <label
+                class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors"
+                [class.border-principal]="estaElegido(opcion.rol)"
+                [class.bg-principal-suave]="estaElegido(opcion.rol)"
+                [class.border-borde]="!estaElegido(opcion.rol)"
+                [class.hover:bg-fondo-panel]="!estaElegido(opcion.rol)"
+              >
+                <input
+                  type="checkbox"
+                  class="mt-0.5 h-4 w-4 shrink-0 rounded border-borde accent-principal"
+                  [checked]="estaElegido(opcion.rol)"
+                  (change)="alternarRol(opcion.rol)"
+                />
+                <span class="min-w-0">
+                  <span class="block text-sm font-semibold text-texto">{{ opcion.rol }}</span>
+                  <span class="mt-0.5 block text-xs leading-relaxed text-texto-suave">
+                    {{ opcion.descripcion }}
+                  </span>
+                </span>
+              </label>
+            }
+          </div>
+
+          @if (errorRoles; as mensaje) {
+            <p role="alert" class="mt-3 text-sm text-rechazado">{{ mensaje }}</p>
+          }
+        </fieldset>
+
+        <!-- ── Acceso ──────────────────────────────────────────────────── -->
+        <fieldset class="mt-8 border-t border-borde pt-6">
+          <legend class="text-base font-bold text-principal">Acceso</legend>
+
+          <div class="mt-4 grid gap-5 sm:grid-cols-2">
+            <p class="flex flex-col gap-1.5">
+              <span class="flex items-baseline justify-between gap-3">
+                <label for="password" class="text-sm font-medium text-texto">
+                  Contraseña inicial <span aria-hidden="true" class="text-rechazado">*</span>
+                  <span class="sr-only">(obligatorio)</span>
+                </label>
+                <button
+                  type="button"
+                  class="text-xs font-medium text-principal hover:underline"
+                  (click)="alternarPassword()"
+                >
+                  {{ passwordVisible() ? 'Ocultar' : 'Mostrar' }}
+                </button>
+              </span>
+              <input
+                id="password"
+                [type]="passwordVisible() ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="new-password"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+                [placeholder]="'Mínimo ' + largoMinimoPassword + ' caracteres'"
+              />
+              <app-requisitos-password
+                [password]="passwordEscrita()"
+                [dni]="dniEscrito()"
+              />
+              <span class="text-xs leading-relaxed text-texto-suave">
+                Pasásela por un medio seguro. Todavía no existe la pantalla de cambio de
+                contraseña, así que no la va a poder modificar sola.
+              </span>
+              @if (errorPassword; as mensaje) {
+                <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+              }
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <span class="text-sm font-medium text-texto">Estado</span>
+              <label class="flex items-start gap-3 rounded-xl border border-borde p-4">
+                <input
+                  type="checkbox"
+                  formControlName="activo"
+                  class="mt-0.5 h-4 w-4 shrink-0 rounded border-borde accent-principal"
+                />
+                <span class="min-w-0">
+                  <span class="block text-sm font-semibold text-texto">Puede iniciar sesión</span>
+                  <span class="mt-0.5 block text-xs leading-relaxed text-texto-suave">
+                    Destildalo para dejar la cuenta creada pero bloqueada.
+                  </span>
+                </span>
+              </label>
+            </p>
+          </div>
+        </fieldset>
+
+        <!-- ── Ficha personal (opcional) ───────────────────────────────── -->
+        <fieldset class="mt-8 border-t border-borde pt-6">
+          <legend class="text-base font-bold text-principal">Ficha personal</legend>
+          <p class="mt-1 text-sm text-texto-suave">
+            Todo lo de acá abajo es opcional: se puede completar más adelante.
+          </p>
+
+          <div class="mt-4 grid gap-5 sm:grid-cols-2">
+            <p class="flex flex-col gap-1.5">
+              <label for="telefono" class="text-sm font-medium text-texto">Teléfono</label>
+              <input
+                id="telefono"
+                type="tel"
+                formControlName="telefono"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+              />
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="fechaNacimiento" class="text-sm font-medium text-texto">
+                Fecha de nacimiento
+              </label>
+              <input
+                id="fechaNacimiento"
+                type="date"
+                formControlName="fechaNacimiento"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+              />
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="direccion" class="text-sm font-medium text-texto">Dirección</label>
+              <input
+                id="direccion"
+                type="text"
+                formControlName="direccion"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+              />
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="lugarNacimiento" class="text-sm font-medium text-texto">
+                Lugar de nacimiento
+              </label>
+              <input
+                id="lugarNacimiento"
+                type="text"
+                formControlName="lugarNacimiento"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+              />
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="contactoEmergencia" class="text-sm font-medium text-texto">
+                Contacto de emergencia
+              </label>
+              <input
+                id="contactoEmergencia"
+                type="text"
+                formControlName="contactoEmergencia"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+                placeholder="Nombre de la persona"
+              />
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="telefonoEmergencia" class="text-sm font-medium text-texto">
+                Teléfono de emergencia
+              </label>
+              <input
+                id="telefonoEmergencia"
+                type="tel"
+                formControlName="telefonoEmergencia"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+              />
+            </p>
+          </div>
+
+          <!--
+            La provincia está en la tabla `Usuarios` (`id_provincia`) pero no
+            se pide acá: apunta a otra tabla y no hay endpoint que liste las
+            provincias, así que un campo de texto libre ensuciaría el dato.
+          -->
+        </fieldset>
+
+        <div
+          class="mt-8 flex flex-col-reverse items-stretch gap-3 border-t border-borde pt-6 sm:flex-row sm:justify-end"
+        >
+          <button
+            type="button"
+            class="rounded-full px-6 py-3 text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel"
+            (click)="volverAlPanel()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            [disabled]="enviando()"
+            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            @if (enviando()) {
+              Creando…
+            } @else {
+              Crear usuario
+            }
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</app-estructura-panel>

@@ -1,0 +1,356 @@
+<div class="flex min-h-dvh bg-fondo-panel">
+  <!--
+    Barra lateral. En celular vive fuera de pantalla (-translate-x-full) y se
+    muestra encima del contenido al abrir el menú; en escritorio (lg:) queda
+    siempre visible y en flujo, como en el Figma.
+  -->
+  <aside
+    class="fixed inset-y-0 left-0 z-40 flex w-[260px] max-w-[85vw] flex-col overflow-y-auto border-r border-borde bg-superficie transition-[width,transform] duration-200 ease-in-out lg:static lg:max-w-none lg:translate-x-0"
+    [class.-translate-x-full]="!menuAbierto()"
+    [class.lg:w-20]="colapsado()"
+    [class.lg:w-64]="!colapsado()"
+  >
+    <!--
+      Marca: el isotipo en su pastilla verde + el nombre del sistema, y el
+      botón para colapsar/expandir. Colapsada, la marca se apila en columna
+      (isotipo arriba, botón abajo) porque los 80px de ancho no alcanzan para
+      los dos lado a lado.
+    -->
+    <div
+      class="flex items-center gap-3 px-6 py-6"
+      [class.lg:flex-col]="colapsado()"
+      [class.lg:gap-2]="colapsado()"
+      [class.lg:px-2]="colapsado()"
+    >
+      <!--
+        El isotipo va dibujado en línea y no como <img>: así hereda el color
+        (blanco acá, verde en otro lado) y no depende de que exista un archivo
+        con el nombre justo en public/.
+      -->
+      <span
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-principal text-white"
+      >
+        <svg aria-hidden="true" viewBox="0 0 62 58" class="h-6 w-6">
+          <path
+            fill="currentColor"
+            d="M58.8801 50.7238C51.9197 60.0538 37.2992 58.2486 37.2803 56.9259L37.2425 52.8329C37.2236 50.4378 53.4896 55.2458 55.3432 43.5743C56.3267 37.39 51.9387 31.8134 44.4298 31.8134H16.7398C11.0277 31.8134 6.52621 36.5678 6.29924 41.2507C6.05336 46.5592 10.3279 51.7783 16.6452 51.8856C21.8276 51.9749 26.575 49.3296 27.7288 44.9148L19.5579 44.8791C18.7446 44.8791 17.1748 43.199 17.0424 42.5376C16.8343 41.5367 18.5744 38.8914 19.6525 38.9093L34.2163 39.2489C35.9185 47.2563 31.0009 53.0295 25.0808 55.9429C18.3285 59.2495 10.5171 57.8911 5.032 52.7971C-2.45793 45.8443 -1.39875 35.1022 7.33951 28.9715C0.454823 23.8418 -1.45549 16.8174 1.06007 10.6332C3.93499 3.5552 11.0656 -0.41275 19.5201 0.0340912L23.0759 0.230701C24.2486 0.284322 24.0027 5.3208 23.0759 6C19.8038 8.43082 6.88557 3.8233 6.29924 15.1731C5.99662 21.0714 10.8953 26.2726 18.0637 26.2011L45.9618 25.8973C52.1467 25.8258 55.8917 20.3386 55.4377 15.0301C55.0784 10.8476 51.4847 6.34349 45.2999 5.68217C41.1955 5.2532 35.8429 8.48833 33.8758 12.5814L43.1247 13.2248C44.6568 13.3321 44.6 18.6763 43.1247 18.7299L27.5964 18.5691C26.0076 7.91637 34.4621 0.588174 43.9002 0.159207C53.3383 -0.269761 62.4927 6.84395 61.982 16.8711C61.755 21.3931 58.1803 25.9688 54.719 29.1145C61.8685 33.9047 64.7056 42.9309 58.899 50.7238H58.8801Z"
+          />
+        </svg>
+      </span>
+      <span class="flex flex-1 flex-col leading-tight" [class.lg:hidden]="colapsado()">
+        <span class="text-xl font-bold text-principal">ISCGB</span>
+        <span class="text-xs text-texto-suave">Gestión Académica</span>
+      </span>
+
+      <!--
+        Colapsar/expandir. Solo tiene sentido en escritorio: en celular el
+        menú es un cajón que se abre entero, no hay "franja de íconos" a la
+        que reducirlo — por eso `hidden lg:inline-flex`.
+      -->
+      <button
+        type="button"
+        class="hidden shrink-0 rounded-lg border border-borde p-1.5 text-texto-suave transition-colors hover:bg-fondo-panel hover:text-texto lg:inline-flex"
+        [attr.aria-label]="colapsado() ? 'Expandir menú' : 'Colapsar menú'"
+        [attr.aria-expanded]="!colapsado()"
+        (click)="alternarColapso()"
+      >
+        <app-icono
+          nombre="colapsar"
+          class="h-4 w-4 transition-transform duration-200"
+          [class.rotate-180]="colapsado()"
+        />
+      </button>
+    </div>
+
+    <nav
+      class="flex flex-1 flex-col gap-1 px-4 pt-2"
+      [class.lg:px-2]="colapsado()"
+      aria-label="Menú principal"
+    >
+      @for (enlace of enlaces(); track enlace.url) {
+        <a
+          [routerLink]="enlace.url"
+          routerLinkActive="!bg-principal-suave !text-principal font-semibold"
+          [routerLinkActiveOptions]="{ exact: true }"
+          ariaCurrentWhenActive="page"
+          class="group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+          [class.lg:justify-center]="colapsado()"
+          [class.lg:gap-0]="colapsado()"
+          [class.lg:px-3]="colapsado()"
+          (click)="cerrarMenu()"
+        >
+          @if (enlace.icono; as icono) {
+            <app-icono [nombre]="icono" class="h-5 w-5 shrink-0" />
+          }
+          <span [class.lg:hidden]="colapsado()">{{ enlace.etiqueta }}</span>
+
+          <!--
+            Tooltip para cuando está colapsado: sin texto visible, alguien
+            navegando por teclado o con el mouse necesita saber a dónde va
+            cada ícono. `hidden lg:block` (agregado solo si colapsado()) para
+            que en celular, donde el texto siempre está, nunca aparezca.
+          -->
+          <span
+            role="tooltip"
+            class="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-texto px-2.5 py-1.5 text-xs font-medium text-superficie opacity-0 shadow-marca-md transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+            [class.lg:block]="colapsado()"
+          >
+            {{ enlace.etiqueta }}
+          </span>
+        </a>
+      }
+    </nav>
+
+    <!--
+      Cerrar sesión queda separado del resto por una línea: no es una sección
+      más del menú, es salir. Mezclarlo con las otras invita a apretarlo sin
+      querer.
+    -->
+    <div class="border-t border-borde px-4 py-4" [class.lg:px-2]="colapsado()">
+      <button
+        type="button"
+        class="group relative flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+        [class.lg:justify-center]="colapsado()"
+        [class.lg:gap-0]="colapsado()"
+        [class.lg:px-3]="colapsado()"
+        (click)="cerrarSesion.emit()"
+      >
+        <app-icono nombre="salir" class="h-5 w-5 shrink-0" />
+        <span [class.lg:hidden]="colapsado()">Cerrar Sesión</span>
+
+        <span
+          role="tooltip"
+          class="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-texto px-2.5 py-1.5 text-xs font-medium text-superficie opacity-0 shadow-marca-md transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+          [class.lg:block]="colapsado()"
+        >
+          Cerrar sesión
+        </span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Fondo oscuro detrás del menú de celular. Cerrarlo con un toque afuera. -->
+  @if (menuAbierto()) {
+    <button
+      type="button"
+      aria-label="Cerrar menú"
+      class="fixed inset-0 z-30 bg-texto/40 lg:hidden"
+      (click)="cerrarMenu()"
+    ></button>
+  }
+
+  <div class="flex min-h-dvh flex-1 flex-col">
+    <header
+      class="flex items-center gap-4 border-b border-borde bg-superficie px-6 py-3.5"
+    >
+      <button
+        type="button"
+        class="rounded-lg p-2 text-texto-suave hover:bg-fondo-panel lg:hidden"
+        aria-label="Abrir menú"
+        (click)="alternarMenu()"
+      >
+        <app-icono nombre="menu" class="h-5 w-5" />
+      </button>
+
+      <!--
+        Buscador. Todavía no busca nada: no hay endpoint de búsqueda en el
+        backend. Por eso está deshabilitado y lo dice — un campo que acepta
+        texto y no hace nada al escribir es peor que uno que avisa que
+        todavía no está.
+      -->
+      <div class="relative hidden max-w-md flex-1 md:block">
+        <span
+          class="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-gris-marca"
+        >
+          <app-icono nombre="buscar" class="h-4 w-4" />
+        </span>
+        <input
+          type="search"
+          disabled
+          placeholder="Buscar documentos, docentes…"
+          title="La búsqueda todavía no está disponible"
+          class="w-full rounded-full border border-borde bg-superficie py-2.5 pl-10 pr-4 text-sm text-texto placeholder:text-gris-marca disabled:cursor-not-allowed"
+        />
+      </div>
+
+      <div class="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
+        <!--
+          Campana. El puntito rojo se enciende solo cuando `notificaciones()`
+          es mayor que cero, y ese número lo calcula cada panel de sus propios
+          datos. Ver el comentario del input en estructura-panel.ts.
+        -->
+        <button
+          type="button"
+          class="relative rounded-full p-2 text-texto-suave transition-colors hover:bg-fondo-panel"
+          [attr.aria-label]="etiquetaNotificaciones()"
+        >
+          <app-icono nombre="campana" class="h-5 w-5" />
+          @if (hayNotificaciones()) {
+            <span
+              aria-hidden="true"
+              class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rechazado ring-2 ring-superficie"
+            ></span>
+          }
+        </button>
+
+        <span aria-hidden="true" class="hidden h-8 w-px bg-borde sm:block"></span>
+
+        @if (nombreUsuario()) {
+          <!--
+            El bloque de la persona. Al tocarlo se abre su menú.
+            `relative` acá es lo que ancla el desplegable a este bloque.
+          -->
+          <div class="relative">
+            <button
+              type="button"
+              class="flex items-center gap-3 rounded-full py-1 pl-3 pr-1 transition-colors hover:bg-fondo-panel"
+              [attr.aria-expanded]="menuPerfilAbierto()"
+              aria-haspopup="menu"
+              [attr.aria-label]="'Menú de ' + nombreUsuario()"
+              (click)="alternarMenuPerfil($event)"
+            >
+              <span class="hidden flex-col items-end leading-tight sm:flex">
+                <span class="text-sm font-semibold text-texto">{{ primerNombre() }}</span>
+                @if (rolPrincipal()) {
+                  <span class="text-xs text-texto-suave">{{ rolPrincipal() }}</span>
+                }
+              </span>
+
+              <!--
+                La foto de perfil. El backend todavía no guarda ninguna imagen
+                (el modelo Usuario no tiene campo de foto), así que por ahora
+                el círculo muestra las iniciales.
+              -->
+              <span
+                class="flex h-10 w-10 items-center justify-center rounded-full border border-borde bg-principal-suave text-sm font-semibold text-principal"
+              >
+                {{ iniciales() }}
+              </span>
+            </button>
+
+            @if (menuPerfilAbierto()) {
+              <!--
+                `stopPropagation` para que tocar adentro del menú no lo cierre:
+                el clic llegaría al document, que es quien lo cierra.
+              -->
+              <div
+                role="menu"
+                class="absolute right-0 top-full z-50 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-borde bg-superficie shadow-marca-lg"
+                (click)="$event.stopPropagation()"
+              >
+                <div class="flex items-center gap-3 border-b border-borde px-4 py-4">
+                  <span
+                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-principal-suave text-base font-semibold text-principal"
+                  >
+                    {{ iniciales() }}
+                  </span>
+                  <div class="min-w-0">
+                    <p class="truncate text-sm font-semibold text-texto">{{ nombreUsuario() }}</p>
+                    @if (rolPrincipal()) {
+                      <p class="text-xs text-texto-suave">{{ rolPrincipal() }}</p>
+                    }
+                    @if (emailUsuario()) {
+                      <p class="truncate text-xs text-texto-suave">{{ emailUsuario() }}</p>
+                    }
+                  </div>
+                </div>
+
+                <!--
+                  Editar el perfil y cambiar la foto están deshabilitados
+                  porque el backend no tiene con qué: no hay endpoint para
+                  modificar un usuario, ni columna donde guardar una imagen.
+                  Se muestran igual, apagados y con el motivo, en vez de
+                  esconderlos: así se ve que están previstos, y nadie los
+                  aprieta esperando que pase algo.
+                -->
+                <div class="flex flex-col py-2">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled
+                    title="Todavía no disponible: falta el endpoint en el sistema"
+                    class="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-texto-suave opacity-50"
+                  >
+                    <app-icono nombre="revision" class="h-4 w-4" />
+                    Editar perfil
+                  </button>
+
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled
+                    title="Todavía no disponible: falta el endpoint en el sistema"
+                    class="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-texto-suave opacity-50"
+                  >
+                    <app-icono nombre="subir" class="h-4 w-4" />
+                    Cambiar foto
+                  </button>
+
+                  <p class="px-4 pb-2 pt-1 text-xs leading-relaxed text-texto-suave">
+                    Editar el perfil y cambiar la foto todavía no están disponibles.
+                  </p>
+                </div>
+
+                <div class="border-t border-borde py-2">
+                  <button
+                    type="button"
+                    role="menuitem"
+                    class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-rechazado transition-colors hover:bg-rechazado/10"
+                    (click)="cerrarMenuPerfil(); cerrarSesion.emit()"
+                  >
+                    <app-icono nombre="salir" class="h-4 w-4" />
+                    Cerrar sesión
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </header>
+
+    <main class="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+      <!--
+        Encabezado de la pantalla: el saludo y la acción principal. Va acá y
+        no en cada panel para que todos queden iguales, como en el Figma.
+      -->
+      <div class="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+        <div>
+          @if (volverUrl(); as destino) {
+            <a
+              [routerLink]="destino"
+              class="mb-2 inline-flex items-center gap-1 text-sm font-medium text-texto-suave transition-colors hover:text-principal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+            >
+              <app-icono nombre="volver" class="h-4 w-4" />
+              Volver
+            </a>
+          }
+          <h1 class="text-2xl font-bold text-principal sm:text-3xl">
+            @if (mostrarSaludo()) {
+              Hola, {{ primerNombre() }}
+            } @else {
+              {{ tituloPagina() }}
+            }
+          </h1>
+          @if (subtitulo(); as texto) {
+            <p class="mt-1 text-sm text-texto-suave">{{ texto }}</p>
+          }
+        </div>
+
+        @if (accionPrincipal(); as accion) {
+          <a
+            [routerLink]="accion.url"
+class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro sm:w-auto"
+          >
+            @if (accion.icono; as icono) {
+              <app-icono [nombre]="icono" class="h-5 w-5" />
+            }
+            {{ accion.etiqueta }}
+          </a>
+        }
+      </div>
+
+      <ng-content />
+    </main>
+  </div>
+</div>

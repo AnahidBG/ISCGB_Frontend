@@ -1,0 +1,91 @@
+/*
+  Los dos eslabones del isotipo separándose y volviendo a engancharse.
+
+  Cómo funciona, y por qué así:
+
+  · `transform-box: fill-box` + `transform-origin: center` hacen que cada
+    eslabón rote sobre SU propio centro y no sobre el origen del SVG, que
+    está lejos y arriba a la izquierda. Sin esto, en vez de girar sobre sí
+    mismos salen disparados en un arco.
+
+  · Los dos usan la MISMA duración y el mismo `ease`, en direcciones
+    opuestas: así se separan y se juntan a la vez, como una sola pieza que
+    se abre. Si tuvieran tiempos distintos, la vuelta a engancharse se vería
+    desprolija.
+
+  · El movimiento es chico (7% de su alto y 3 grados). El isotipo tiene que
+    seguir leyéndose como el logo del instituto: si se separan demasiado
+    dejan de ser una marca y pasan a ser dos figuras sueltas.
+
+  · La curva `cubic-bezier(.65,0,.35,1)` es la del sistema (`--loader-ease`
+    del Brochero Design System): arranca y termina lento, con el recorrido
+    rápido en el medio. Da la sensación de peso, no de rebote.
+
+  El ciclo tiene una pausa en cada extremo (los tramos 45%-60% y 100%) para
+  que se lea el momento "separado" — que es lo que la pantalla está contando —
+  en vez de ser un vaivén constante que marea.
+*/
+
+.eslabones path {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.eslabones__superior {
+  animation: separar-arriba 3.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+.eslabones__inferior {
+  animation: separar-abajo 3.6s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+@keyframes separar-arriba {
+  0%,
+  12% {
+    transform: translateY(0) rotate(0deg);
+  }
+  45%,
+  60% {
+    transform: translateY(-7%) rotate(-3deg);
+  }
+  93%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+@keyframes separar-abajo {
+  0%,
+  12% {
+    transform: translateY(0) rotate(0deg);
+  }
+  45%,
+  60% {
+    transform: translateY(7%) rotate(3deg);
+  }
+  93%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+/*
+  A quien pidió menos movimiento en su sistema operativo no le mostramos la
+  animación, pero SÍ los eslabones separados: esa separación es parte del
+  mensaje de la pantalla, no un adorno. Quitarla dejaría el logo entero,
+  que es justo lo contrario de lo que pasó.
+*/
+@media (prefers-reduced-motion: reduce) {
+  .eslabones__superior,
+  .eslabones__inferior {
+    animation: none;
+  }
+
+  .eslabones__superior {
+    transform: translateY(-7%) rotate(-3deg);
+  }
+
+  .eslabones__inferior {
+    transform: translateY(7%) rotate(3deg);
+  }
+}

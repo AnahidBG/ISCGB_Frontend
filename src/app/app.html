@@ -1,1 +1,8 @@
+<!--
+  El cargador global va acá y en ningún otro lado: se monta una sola vez para
+  toda la aplicación. Ninguna pantalla necesita incluirlo — para mostrarlo
+  alcanza con `CargaService.mostrar()`, y las llamadas HTTP ya lo disparan
+  solas vía `cargaInterceptor`.
+-->
+<app-cargador-global />
 <router-outlet />

@@ -14,12 +14,99 @@
   arranca tarde.
 */
 
-.logo-animado path {
-  fill: var(--color-principal);
-  stroke: var(--color-principal);
+.pantalla-carga {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+
+  /* Un loader LOCAL se centra en la caja que lo contiene. El overlay global
+     agrega `fixed inset-0` desde el template y esto sigue valiendo. */
+  width: 100%;
+  height: 100%;
+  min-height: var(--carga-alto-minimo, 0);
+}
+
+/*
+  El tamaño vive en una sola variable. Cambiarla mueve el logo y nada más:
+  el texto no depende de ella, así que un `sm` adentro de una fila no
+  descoloca la fila.
+*/
+.pantalla-carga--sm {
+  --carga-tamano: 1.5rem; /* 24px */
+  --carga-alto-minimo: 0;
+  gap: 0.5rem;
+}
+
+.pantalla-carga--md {
+  --carga-tamano: 3rem; /* 48px */
+  --carga-alto-minimo: 8rem;
+}
+
+.pantalla-carga--lg {
+  --carga-tamano: 6rem; /* 96px */
+  --carga-alto-minimo: 14rem;
+}
+
+.pantalla-carga--completo {
+  --carga-tamano: 8.75rem; /* 140px */
+  --carga-alto-minimo: 0;
+}
+
+/*
+  Los dos tonos que pidió el diseño.
+
+  `claro`: logo verde sobre fondo claro — el caso normal.
+  `verde`: logo blanco sobre el verde institucional — para el splash de
+  arranque, donde la pantalla entera es la marca.
+
+  Ninguno de los dos toca el SVG: el path usa `currentColor`, así que alcanza
+  con cambiar `color` en el contenedor. Por eso este componente no necesita
+  saber nada de temas — hereda el color de quien lo envuelva.
+*/
+.pantalla-carga--claro {
+  color: var(--color-principal);
+  background-color: var(--carga-fondo, var(--color-fondo));
+
+  .pantalla-carga__mensaje {
+    color: var(--color-texto-suave);
+  }
+}
+
+.pantalla-carga--verde {
+  color: #ffffff;
+  background-color: var(--carga-fondo, var(--color-principal));
+
+  .pantalla-carga__mensaje {
+    color: rgb(255 255 255 / 0.85);
+  }
+}
+
+.pantalla-carga__logo {
+  width: var(--carga-tamano);
+  height: var(--carga-tamano);
+}
+
+.pantalla-carga__logo path {
+  fill: currentColor;
+  stroke: currentColor;
   stroke-width: 1.5;
   stroke-dasharray: 537;
-  animation: dibujar-logo 2.6s ease-in-out infinite;
+  /*
+    3.4s y no las 2.6s originales: a Milena le pareció muy rápida, sobre todo
+    en el splash de arranque, donde el logo apenas alcanza a insinuarse antes
+    de desaparecer. Más lenta, el trazo se alcanza a leer como un trazo y no
+    como un parpadeo — sigue siendo la misma animación en todos lados (acá se
+    define una sola vez, ver el comentario de arriba del archivo).
+  */
+  animation: dibujar-logo 3.4s ease-in-out infinite;
+}
+
+.pantalla-carga__mensaje {
+  margin: 0;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
 }
 
 @keyframes dibujar-logo {
@@ -49,13 +136,14 @@
   lo configura en su sistema operativo. Respetarlo no es opcional: es parte
   de que la interfaz sea usable para todos.
 
-  Para esas personas el logo aparece quieto, con una respiración muy suave
-  que alcanza para entender que el sistema está trabajando.
+  Para esas personas el logo aparece quieto y sólido, con una respiración muy
+  suave que alcanza para entender que el sistema está trabajando.
 */
 @media (prefers-reduced-motion: reduce) {
-  .logo-animado path {
+  .pantalla-carga__logo path {
     stroke: none;
     stroke-dasharray: none;
+    fill-opacity: 1;
     animation: respirar 2s ease-in-out infinite;
   }
 

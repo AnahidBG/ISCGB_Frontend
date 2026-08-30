@@ -2,6 +2,7 @@
 
 Origen: Manual de Identidad ICGB y Design System (Figma).
 Implementado en `src/styles.scss` y `src/app/shared/ui/`.
+Actualizado: **27/08/2026** — ver "Brochero Design System" al final.
 
 **Muestrario en vivo:** `/sistema-diseno` — dibuja los componentes reales con
 los tokens reales. Si cambia un color en `styles.scss`, esa página cambia sola.
@@ -183,6 +184,67 @@ sitio, este lleva a entrar a un sistema.
 ### `<app-campo-formulario>` · `<app-pantalla-carga>`
 
 Ver el muestrario en `/sistema-diseno`.
+
+---
+
+## Brochero Design System (27/08/2026)
+
+Milena compartió un design system generado en otra sesión de Claude
+("Brochero Design System.zip" + un link a un Design Canvas), a partir de
+cuatro imágenes de marca (la lockup en sus tres colores y el isotipo). Se
+incorporó a `styles.scss` lo que aporta de nuevo sin pisar nada confirmado.
+
+### Lo que confirmó
+
+Sus tres colores de marca son **exactamente** los tres colores oficiales de
+acá arriba — mismo hex: `#46695F` (principal), `#CFD18D` (acento-lima),
+`#919D99` (gris-marca). Dos sistemas de diseño hechos en sesiones distintas,
+a partir de fuentes distintas, llegaron al mismo número. Eso es una buena
+señal de que esos tres colores están bien.
+
+### Lo que se sumó a `styles.scss`
+
+- **Escala completa de los tres colores compartidos** (`principal-50` a
+  `principal-900`, y lo mismo para `acento-lima` y `gris-marca`) — 9 tonos
+  por color en vez de uno solo más un par de derivados sueltos
+  (`principal-oscuro`, `acento-verde-claro`...). Son tokens nuevos y
+  aditivos: no reemplazan ni tocan los que ya existían.
+- **`radius-tarjeta`** (20px) y **`radius-control`** (pastilla) — con nombre
+  propio, no pisan la escala de Tailwind (`rounded-lg`, etc.).
+- **`shadow-marca-sm/md/lg`** — sombras con tinte verde en vez de negro
+  neutro, que es como las dibuja el Brochero Design System.
+
+### Lo que NO se tocó, y por qué
+
+- **Tipografía.** El Brochero Design System recomienda Barlow / Barlow Semi
+  Condensed / Barlow Condensed — pero lo dice como sustitución a falta de
+  dato: a esa sesión solo le llegaron 4 imágenes, sin archivos de fuente
+  ("no font binaries were provided"). Acá arriba, en cambio, Gasoek One y
+  Geist están confirmados desde el Figma real. Adoptar Barlow habría sido
+  cambiar un dato confirmado por una adivinanza de otra sesión que tenía
+  menos información. Queda comentado en `styles.scss` como una línea para
+  el día que se decida lo contrario.
+- **`acento-verde` (#90C997) y `menta` (#CBFFD1).** El Brochero Design
+  System no los tiene — su fuente (4 imágenes de marca) no incluía la
+  diapositiva del manual que sí tenía estos dos colores. No se sacaron de
+  `styles.scss`: son oficiales acá y no hay motivo para dudar de ellos por
+  la ausencia en un sistema con menos información de partida.
+- **`SiteHeader`, `SiteFooter`, `LogoLoader` y `ui_kits/sitio/`.** El
+  `readme.md` del Brochero Design System dice explícitamente que se generó
+  para *"una animación de carga del logo para mi página web"* — el sitio
+  público institucional, no el sistema de gestión académica que es este
+  repositorio. Son proyectos distintos con la misma marca. No se importó
+  nada de esos componentes acá.
+
+### Pendiente
+
+1. Si el instituto confirma la tipografía real de la lockup (o si Milena
+   decide que Barlow está bien igual), es un cambio de una línea en
+   `--font-titulo` / `--font-cuerpo`.
+2. Auditar `boton.ts` y el resto de `shared/ui/` para decidir si conviene
+   migrar los derivados ad-hoc (`principal-oscuro`, `acento-verde-claro`...)
+   a la escala nueva (`principal-600`, etc.) — no se hizo automáticamente
+   para no tocar visualmente nada que ya esté funcionando sin pedirlo.
 
 ---
 
