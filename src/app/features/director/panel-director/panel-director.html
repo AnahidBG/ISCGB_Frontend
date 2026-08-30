@@ -6,6 +6,7 @@
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
   rolPrincipal="Director"
+  [notificaciones]="notificaciones()"
   (cerrarSesion)="cerrarSesion()"
 >
   <!--

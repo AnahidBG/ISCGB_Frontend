@@ -2,8 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
-import { ROLES } from '../../../core/auth/modelos/rol';
-import { tieneAlgunRol } from '../../../core/auth/modelos/sesion';
 import { inicialesDe, normalizarTexto } from '../../../core/comun/texto';
 import { LegajoService, VeredictoLegajo } from '../../../core/legajos/legajo.service';
 import {
@@ -15,8 +13,9 @@ import {
   aprenderNombresDeTipos,
   nombreTipoDocumento,
 } from '../../../core/legajos/tipos-documento';
-import { ENLACES_COMUNES } from '../../../shared/ui/estructura-panel/enlaces-comunes';
-import { EnlacePanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
+import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
+import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
+import { Icono } from '../../../shared/ui/icono/icono';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 import {
   AuditoriaDocumentoEvento,
@@ -50,9 +49,15 @@ interface ConteoEstados {
  */
 @Component({
   selector: 'app-control-legajos',
-  imports: [EstructuraPanel, PantallaCarga, FilaDocumentoLegajo, RouterLink],
+  imports: [EstructuraPanel, PantallaCarga, FilaDocumentoLegajo, RouterLink, Icono],
   templateUrl: './control-legajos.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    // Mismo criterio que el menú de perfil de `EstructuraPanel`: un clic en
+    // cualquier lado (o Escape) cierra el desplegable de "Vista del Panel".
+    '(document:click)': 'cerrarMenuVista()',
+    '(document:keydown.escape)': 'cerrarMenuVista()',
+  },
 })
 export class ControlLegajos {
   private readonly auth = inject(AuthService);
@@ -80,19 +85,33 @@ export class ControlLegajos {
   /** `true` esconde a quien no tenga ningún documento esperando revisión. */
   protected readonly soloPendientes = signal(false);
 
-  protected readonly enlaces = computed<EnlacePanel[]>(() => {
-    const esDirector = tieneAlgunRol(this.sesion(), [ROLES.director]);
+  protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
-    return [
-      {
-        etiqueta: 'Dashboard',
-        url: esDirector ? '/director/panel' : '/secretario/panel',
-        icono: 'panel',
-      },
-      { etiqueta: 'Control de Legajos', url: '/secretario/control-legajos', icono: 'legajo' },
-      ...ENLACES_COMUNES,
-    ];
-  });
+  /**
+   * Cómo se dibuja la lista de personas: tabla, tarjetas (el detalle con
+   * cada documento, como siempre) o compacto (una línea por persona).
+   *
+   * Igual que `colapsado` en `EstructuraPanel`: se guarda en `localStorage`
+   * del navegador para no repetir la elección cada vez que se entra acá.
+   */
+  protected readonly vistaPanel = signal<VistaPanel>(leerVistaPanelGuardada());
+  protected readonly vistas = VISTAS_PANEL;
+  protected readonly menuVistaAbierto = signal(false);
+
+  protected elegirVista(vista: VistaPanel): void {
+    this.vistaPanel.set(vista);
+    guardarVistaPanel(vista);
+    this.menuVistaAbierto.set(false);
+  }
+
+  protected alternarMenuVista(evento: Event): void {
+    evento.stopPropagation();
+    this.menuVistaAbierto.update((abierto) => !abierto);
+  }
+
+  protected cerrarMenuVista(): void {
+    this.menuVistaAbierto.set(false);
+  }
 
   /** Cuántos documentos hay esperando revisión en todo el instituto. */
   protected readonly totalPendientes = computed(() =>
@@ -269,3 +288,41 @@ export class ControlLegajos {
   }
 }
 
+/** Cómo se dibuja la lista de personas en Control de Legajos. */
+export type VistaPanel = 'tabla' | 'cards' | 'compacto';
+
+export const VISTAS_PANEL: readonly { valor: VistaPanel; etiqueta: string }[] = [
+  { valor: 'tabla', etiqueta: 'Tabla' },
+  { valor: 'cards', etiqueta: 'Cards' },
+  { valor: 'compacto', etiqueta: 'Compacto' },
+];
+
+/** Dónde se guarda la preferencia de vista. Ver el comentario de `vistaPanel`. */
+const CLAVE_VISTA_PANEL = 'iscgb.controlLegajos.vista';
+
+function esVistaPanelValida(valor: string | null): valor is VistaPanel {
+  return valor === 'tabla' || valor === 'cards' || valor === 'compacto';
+}
+
+/**
+ * Lee la vista guardada. Si `localStorage` no está disponible o no hay nada
+ * guardado, arranca en "cards" — el detalle completo por persona, que es el
+ * comportamiento de siempre.
+ */
+function leerVistaPanelGuardada(): VistaPanel {
+  try {
+    const valor = localStorage.getItem(CLAVE_VISTA_PANEL);
+    return esVistaPanelValida(valor) ? valor : 'cards';
+  } catch {
+    return 'cards';
+  }
+}
+
+function guardarVistaPanel(vista: VistaPanel): void {
+  try {
+    localStorage.setItem(CLAVE_VISTA_PANEL, vista);
+  } catch {
+    // Modo privado u otra restricción del navegador: la preferencia no
+    // persiste, pero no es un error fatal.
+  }
+}

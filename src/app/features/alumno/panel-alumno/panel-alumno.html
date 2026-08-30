@@ -1,11 +1,12 @@
 <app-estructura-panel
-  [enlaces]="enlaces"
+  [enlaces]="enlaces()"
   [accionPrincipal]="accion"
   tituloPagina="Mi legajo"
   subtitulo="Acá está el estado de tu documentación."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
   rolPrincipal="Alumno"
+  [notificaciones]="notificaciones()"
   (cerrarSesion)="cerrarSesion()"
 >
   <!--

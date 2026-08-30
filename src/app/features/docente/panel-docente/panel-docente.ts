@@ -8,22 +8,11 @@ import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import { calcularProgresoLegajo } from '../../../core/legajos/progreso-legajo';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
-import { ENLACES_COMUNES } from '../../../shared/ui/estructura-panel/enlaces-comunes';
-import {
-  AccionPanel,
-  EnlacePanel,
-  EstructuraPanel,
-} from '../../../shared/ui/estructura-panel/estructura-panel';
+import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
+import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { TarjetaMetrica } from '../../../shared/ui/tarjeta-metrica/tarjeta-metrica';
-
-const ENLACES_DOCENTE: EnlacePanel[] = [
-  { etiqueta: 'Dashboard', url: '/docente/panel', icono: 'panel' },
-  { etiqueta: 'Subir Documento', url: '/legajo/subir-documento', icono: 'subir' },
-  { etiqueta: 'Entregar programa de materia', url: '/docente/entrega-programa', icono: 'legajo' },
-  ...ENLACES_COMUNES,
-];
 
 const ACCION_DOCENTE: AccionPanel = {
   etiqueta: 'Nuevo Documento',
@@ -56,7 +45,7 @@ export class PanelDocente {
   private readonly router = inject(Router);
 
   protected readonly sesion = this.auth.sesion;
-  protected readonly enlaces = ENLACES_DOCENTE;
+  protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
   protected readonly accion = ACCION_DOCENTE;
 
   protected readonly documentos = toSignal(this.legajoService.obtenerLegajoPropio(), {

@@ -2,19 +2,14 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
-import { ROLES } from '../../../core/auth/modelos/rol';
-import { tieneAlgunRol } from '../../../core/auth/modelos/sesion';
 import { urlArchivoSubido } from '../../../core/configuracion/api';
 import { JustificativoPendiente } from '../../../core/justificativos/modelos/justificativo-pendiente';
 import {
   JustificativosService,
   VeredictoAuditoria,
 } from '../../../core/justificativos/justificativos.service';
-import { ENLACES_COMUNES } from '../../../shared/ui/estructura-panel/enlaces-comunes';
-import {
-  EnlacePanel,
-  EstructuraPanel,
-} from '../../../shared/ui/estructura-panel/estructura-panel';
+import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
+import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 
 /**
@@ -62,28 +57,15 @@ export class PanelSecretario {
     veredicto: VeredictoAuditoria;
   } | null>(null);
 
-  protected readonly enlaces = computed<EnlacePanel[]>(() => {
-    const enlaces: EnlacePanel[] = [
-      { etiqueta: 'Dashboard', url: '/secretario/panel', icono: 'panel' },
-    ];
+  protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
-    enlaces.push({
-      etiqueta: 'Control de Legajos',
-      url: '/secretario/control-legajos',
-      icono: 'legajo',
-    });
-
-    if (tieneAlgunRol(this.sesion(), [ROLES.docente])) {
-      enlaces.push({
-        etiqueta: 'Entregar programa de materia',
-        url: '/docente/entrega-programa',
-        icono: 'legajo',
-      });
-    }
-
-    enlaces.push(...ENLACES_COMUNES);
-    return enlaces;
-  });
+  /**
+   * Enciende el puntito rojo de la campana: cuántos justificativos están
+   * esperando que Secretaría los revise. Antes esta pantalla no le pasaba
+   * ningún número a `EstructuraPanel`, así que la campana nunca se
+   * encendía acá aunque hubiera pendientes reales.
+   */
+  protected readonly notificaciones = computed(() => this.pendientes().length);
 
   constructor() {
     this.cargar();

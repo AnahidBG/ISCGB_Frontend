@@ -36,7 +36,10 @@ export type NombreIcono =
   | 'colapsar'
   | 'volver'
   | 'calendario'
-  | 'configuracion';
+  | 'configuracion'
+  | 'tabla'
+  | 'tarjetas'
+  | 'compacto';
 
 /**
  * Un ícono del sistema, dibujado en SVG inline.
