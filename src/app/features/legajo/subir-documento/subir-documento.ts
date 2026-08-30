@@ -2,17 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
-import { ROLES } from '../../../core/auth/modelos/rol';
-import { tieneAlgunRol } from '../../../core/auth/modelos/sesion';
 import { aNombreDeArchivo } from '../../../core/comun/archivos';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
-import { ENLACES_COMUNES } from '../../../shared/ui/estructura-panel/enlaces-comunes';
-import {
-  EnlacePanel,
-  EstructuraPanel,
-} from '../../../shared/ui/estructura-panel/estructura-panel';
+import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
+import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { ZonaArchivo } from '../../../shared/ui/zona-archivo/zona-archivo';
 
@@ -83,23 +78,7 @@ export class SubirDocumento {
   protected readonly error = signal<string | null>(null);
   protected readonly exito = signal(false);
 
-  protected readonly enlaces = computed<EnlacePanel[]>(() => {
-    const enlaces: EnlacePanel[] = [
-      { etiqueta: 'Dashboard', url: this.rutaPanel(), icono: 'panel' },
-      { etiqueta: 'Subir Documento', url: '/legajo/subir-documento', icono: 'subir' },
-    ];
-
-    if (tieneAlgunRol(this.sesion(), [ROLES.docente])) {
-      enlaces.push({
-        etiqueta: 'Entregar programa de materia',
-        url: '/docente/entrega-programa',
-        icono: 'legajo',
-      });
-    }
-
-    enlaces.push(...ENLACES_COMUNES);
-    return enlaces;
-  });
+  protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
   /** El tipo elegido, completo. Sirve para saber si vence o no. */
   protected readonly tipoElegido = computed(() =>

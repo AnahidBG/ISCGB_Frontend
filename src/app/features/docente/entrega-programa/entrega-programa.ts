@@ -1,6 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
+import { AuthService } from '../../../core/auth/auth.service';
+import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { ProgramaMateria } from '../../../core/programas-materia/modelos/programa-materia';
 import { ProgramasMateriaService } from '../../../core/programas-materia/programas-materia.service';
+import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
+import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Boton } from '../../../shared/ui/boton/boton';
 import { FormularioProgramaMateria } from './partes/formulario-programa-materia/formulario-programa-materia';
 
@@ -18,15 +23,31 @@ import { FormularioProgramaMateria } from './partes/formulario-programa-materia/
  * El envío tiene dos pasos y el segundo depende del primero: el `POST`
  * devuelve el `idPrograma` que asignó el backend, y sin ese id no se puede
  * pedir el PDF. Por eso el id se guarda al recibirlo en vez de descartarlo.
+ *
+ * Usa `EstructuraPanel` (barra lateral + encabezado), igual que el resto de
+ * las pantallas del Docente — antes esta pantalla era un `<main>` suelto sin
+ * el shell común, por eso no se veía como las demás y no tenía "‹ Volver".
  */
 @Component({
   selector: 'app-entrega-programa',
-  imports: [Boton, FormularioProgramaMateria],
+  imports: [EstructuraPanel, Boton, FormularioProgramaMateria],
   templateUrl: './entrega-programa.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EntregaPrograma {
+  private readonly auth = inject(AuthService);
+  private readonly router = inject(Router);
   private readonly programasMateria = inject(ProgramasMateriaService);
+
+  protected readonly sesion = this.auth.sesion;
+
+  /** El primer rol de la sesión, para mostrarlo debajo del nombre. */
+  protected readonly rolPrincipal = computed(() => this.sesion()?.roles[0] ?? '');
+
+  /** A dónde vuelve el "‹ Volver": el panel que le corresponde a esta sesión. */
+  protected readonly rutaPanel = computed(() => destinoSegunRoles(this.sesion()));
+
+  protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
   /** `true` mientras esperamos la respuesta del servidor. */
   protected readonly enviando = signal(false);
@@ -89,6 +110,11 @@ export class EntregaPrograma {
     this.enviadoConExito.set(false);
     this.idPrograma.set(null);
     this.errorPdf.set(null);
+  }
+
+  protected cerrarSesion(): void {
+    this.auth.cerrarSesion();
+    this.router.navigate(['/login']);
   }
 }
 

@@ -1,11 +1,15 @@
-<main class="contenedor flex min-h-dvh flex-col py-12">
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Entrega del programa de materia"
+  subtitulo="Completá los datos generales, las unidades de contenido y las condiciones de aprobación. Se envía todo junto en un solo paso."
+  [volverUrl]="rutaPanel()"
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  (cerrarSesion)="cerrarSesion()"
+>
   <div class="mx-auto w-full max-w-3xl">
-    <h1 class="text-3xl font-bold text-principal">Entrega del programa de materia</h1>
-    <p class="mt-2 text-texto-suave">
-      Completá los datos generales, las unidades de contenido y las condiciones de aprobación.
-      Se envía todo junto en un solo paso.
-    </p>
-
     @if (enviadoConExito()) {
       <div class="mt-10 rounded-xl border border-borde bg-superficie p-8 text-center">
         <p class="text-lg font-semibold text-aprobado">¡Programa enviado con éxito!</p>
@@ -49,4 +53,4 @@
       </div>
     }
   </div>
-</main>
+</app-estructura-panel>

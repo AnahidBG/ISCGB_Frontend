@@ -8,19 +8,9 @@ import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import { calcularProgresoLegajo } from '../../../core/legajos/progreso-legajo';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
-import { ENLACES_COMUNES } from '../../../shared/ui/estructura-panel/enlaces-comunes';
-import {
-  AccionPanel,
-  EnlacePanel,
-  EstructuraPanel,
-} from '../../../shared/ui/estructura-panel/estructura-panel';
+import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
+import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
-
-const ENLACES_ALUMNO: EnlacePanel[] = [
-  { etiqueta: 'Dashboard', url: '/alumno/panel', icono: 'panel' },
-  { etiqueta: 'Subir Documento', url: '/legajo/subir-documento', icono: 'subir' },
-  ...ENLACES_COMUNES,
-];
 
 const ACCION_ALUMNO: AccionPanel = {
   etiqueta: 'Nuevo Documento',
@@ -54,12 +44,23 @@ export class PanelAlumno {
   private readonly router = inject(Router);
 
   protected readonly sesion = this.auth.sesion;
-  protected readonly enlaces = ENLACES_ALUMNO;
+  protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
   protected readonly accion = ACCION_ALUMNO;
 
   protected readonly documentos = toSignal(this.legajoService.obtenerLegajoPropio(), {
     initialValue: [],
   });
+
+  /**
+   * Enciende el puntito rojo de la campana. Mismo criterio que
+   * `PanelDocente.notificaciones`: un documento rechazado es algo que esta
+   * persona tiene que resolver, los pendientes no (están en manos de
+   * Secretaría). Antes esta pantalla no le pasaba ningún número a
+   * `EstructuraPanel`, así que la campana nunca se encendía acá.
+   */
+  protected readonly notificaciones = computed(
+    () => this.documentos().filter((documento) => documento.estado === 'Rechazado').length,
+  );
 
   /** El denominador del progreso. Ver el comentario en `PanelDocente`. */
   private readonly idRol = idRolDocumental(this.auth.sesion());

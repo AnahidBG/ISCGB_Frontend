@@ -2,10 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { destinoSegunRoles } from '../../core/auth/destino-por-rol';
-import { ROLES } from '../../core/auth/modelos/rol';
-import { tieneAlgunRol } from '../../core/auth/modelos/sesion';
-import { ENLACES_COMUNES } from '../../shared/ui/estructura-panel/enlaces-comunes';
-import { EnlacePanel, EstructuraPanel } from '../../shared/ui/estructura-panel/estructura-panel';
+import { enlacesPorSesion } from '../../shared/ui/estructura-panel/enlaces-por-rol';
+import { EstructuraPanel } from '../../shared/ui/estructura-panel/estructura-panel';
 import { Icono, NombreIcono } from '../../shared/ui/icono/icono';
 
 /** Lo que cada ruta le pasa a esta pantalla por `data` — ver `app.routes.ts`. */
@@ -62,43 +60,11 @@ export class Proximamente {
   /**
    * El mismo menú que vería esta persona en su propio panel, para que ir y
    * volver de "Próximamente" no le cambie el resto de las opciones bajo los
-   * pies. Repite la lógica de armado que ya tiene cada panel (ver
-   * `PanelDocente`, `PanelAlumno`, etc.) porque no hay todavía un lugar único
-   * de donde salga: eso es una limpieza para otra tanda, no para esta.
+   * pies. Sale de `enlacesPorSesion`, la misma función que usa cada panel —
+   * así el menú de acá nunca puede desincronizarse del resto (ver el
+   * comentario de esa función para el porqué).
    */
-  protected readonly enlaces = computed<EnlacePanel[]>(() => {
-    const sesion = this.sesion();
-    const enlaces: EnlacePanel[] = [
-      { etiqueta: 'Dashboard', url: destinoSegunRoles(sesion), icono: 'panel' },
-    ];
-
-    if (tieneAlgunRol(sesion, [ROLES.docente, ROLES.alumno])) {
-      enlaces.push({
-        etiqueta: 'Subir Documento',
-        url: '/legajo/subir-documento',
-        icono: 'subir',
-      });
-    }
-
-    if (tieneAlgunRol(sesion, [ROLES.director, ROLES.secretario])) {
-      enlaces.push({
-        etiqueta: 'Control de Legajos',
-        url: '/secretario/control-legajos',
-        icono: 'legajo',
-      });
-    }
-
-    if (tieneAlgunRol(sesion, [ROLES.docente])) {
-      enlaces.push({
-        etiqueta: 'Entregar programa de materia',
-        url: '/docente/entrega-programa',
-        icono: 'legajo',
-      });
-    }
-
-    enlaces.push(...ENLACES_COMUNES);
-    return enlaces;
-  });
+  protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
   protected cerrarSesion(): void {
     this.auth.cerrarSesion();

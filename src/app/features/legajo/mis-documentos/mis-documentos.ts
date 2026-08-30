@@ -5,8 +5,6 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map, of, switchAll } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
-import { ROLES } from '../../../core/auth/modelos/rol';
-import { tieneAlgunRol } from '../../../core/auth/modelos/sesion';
 import { normalizarTexto } from '../../../core/comun/texto';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoLegajo } from '../../../core/legajos/modelos/documento-legajo';
@@ -16,11 +14,8 @@ import {
   documentosSinCargar,
 } from '../../../core/legajos/progreso-legajo';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
-import { ENLACES_COMUNES } from '../../../shared/ui/estructura-panel/enlaces-comunes';
-import {
-  EnlacePanel,
-  EstructuraPanel,
-} from '../../../shared/ui/estructura-panel/estructura-panel';
+import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
+import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { TarjetaMetrica } from '../../../shared/ui/tarjeta-metrica/tarjeta-metrica';
@@ -108,6 +103,22 @@ export class MisDocumentos {
       : 'Tu documentación institucional y en qué estado está cada cosa.',
   );
 
+  /**
+   * A dónde vuelve el "‹ Volver" de arriba del título.
+   *
+   * Antes esto SIEMPRE mandaba al dashboard propio (`rutaPanel()`), incluso
+   * revisando el legajo de otra persona — así que Secretaría o Dirección,
+   * después de entrar desde Control de Legajos, volvía a su Panel y no al
+   * listado del que había partido: tenía que hacer un clic de más (o usar
+   * "atrás" del navegador) para seguir revisando a la siguiente persona.
+   * Ahora, con legajo ajeno, vuelve a Control de Legajos — de donde
+   * realmente se llega a esta pantalla (ver `ControlLegajos`, botón
+   * "Ver legajo").
+   */
+  protected readonly volverUrl = computed(() =>
+    this.esLegajoAjeno() ? '/secretario/control-legajos' : this.rutaPanel(),
+  );
+
   protected readonly filtros = FILTROS;
   protected readonly filtro = signal<Filtro>('todos');
 
@@ -142,37 +153,9 @@ export class MisDocumentos {
     { initialValue: [] as DocumentoRequerido[] },
   );
 
-  protected readonly enlaces = computed<EnlacePanel[]>(() => {
-    const enlaces: EnlacePanel[] = [
-      { etiqueta: 'Dashboard', url: this.rutaPanel(), icono: 'panel' },
-    ];
-
-    if (this.esLegajoAjeno()) {
-      enlaces.push({
-        etiqueta: 'Control de Legajos',
-        url: '/secretario/control-legajos',
-        icono: 'legajo',
-      });
-    } else {
-      enlaces.push({
-        etiqueta: 'Mis Documentos',
-        url: '/legajo/mis-documentos',
-        icono: 'legajo',
-      });
-      enlaces.push({ etiqueta: 'Subir Documento', url: '/legajo/subir-documento', icono: 'subir' });
-    }
-
-    if (tieneAlgunRol(this.sesion(), [ROLES.docente])) {
-      enlaces.push({
-        etiqueta: 'Entregar programa de materia',
-        url: '/docente/entrega-programa',
-        icono: 'legajo',
-      });
-    }
-
-    enlaces.push(...ENLACES_COMUNES);
-    return enlaces;
-  });
+  protected readonly enlaces = computed(() =>
+    enlacesPorSesion(this.sesion(), { legajoAjeno: this.esLegajoAjeno() }),
+  );
 
   protected readonly progreso = computed(() =>
     calcularProgresoLegajo(this.documentos(), this.requeridos()),

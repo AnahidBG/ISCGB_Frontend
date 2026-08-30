@@ -9,6 +9,52 @@
   [notificaciones]="totalPendientes()"
   (cerrarSesion)="cerrarSesion()"
 >
+  <!-- Selector de "Vista del Panel": Tabla, Cards (el detalle de siempre) o Compacto. -->
+  <div class="mb-5 flex justify-end sm:mb-6">
+    <div class="relative">
+      <button
+        type="button"
+        class="flex items-center gap-2 rounded-full border border-borde bg-superficie px-4 py-2 text-sm font-medium text-texto transition-colors hover:bg-fondo-panel"
+        aria-haspopup="menu"
+        [attr.aria-expanded]="menuVistaAbierto()"
+        (click)="alternarMenuVista($event)"
+      >
+        <app-icono [nombre]="vistaPanel() === 'tabla' ? 'tabla' : vistaPanel() === 'compacto' ? 'compacto' : 'tarjetas'" class="h-4 w-4" />
+        Vista del Panel
+        <app-icono nombre="colapsar" class="h-3.5 w-3.5 -rotate-90" />
+      </button>
+
+      @if (menuVistaAbierto()) {
+        <div
+          role="menu"
+          aria-label="Vista del Panel"
+          class="absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-2xl border border-borde bg-superficie shadow-marca-lg"
+          (click)="$event.stopPropagation()"
+        >
+          @for (opcion of vistas; track opcion.valor) {
+            <button
+              type="button"
+              role="menuitemradio"
+              [attr.aria-checked]="vistaPanel() === opcion.valor"
+              class="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium transition-colors"
+              [class.bg-principal-suave]="vistaPanel() === opcion.valor"
+              [class.text-principal]="vistaPanel() === opcion.valor"
+              [class.text-texto]="vistaPanel() !== opcion.valor"
+              [class.hover:bg-fondo-panel]="vistaPanel() !== opcion.valor"
+              (click)="elegirVista(opcion.valor)"
+            >
+              <app-icono
+                [nombre]="opcion.valor === 'tabla' ? 'tabla' : opcion.valor === 'compacto' ? 'compacto' : 'tarjetas'"
+                class="h-4 w-4"
+              />
+              {{ opcion.etiqueta }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
   @if (errorAuditoria(); as mensaje) {
     <div class="mb-6 rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado" role="alert">
       {{ mensaje }}
@@ -71,7 +117,137 @@
 
   @if (cargando()) {
     <app-pantalla-carga tamano="md" mensaje="Cargando legajos del instituto…" />
+  } @else if (usuariosFiltrados().length === 0) {
+    <p
+      class="mt-5 rounded-2xl border border-borde bg-superficie px-5 py-10 text-center text-sm text-texto-suave sm:mt-6"
+    >
+      @if (busqueda() !== '') {
+        Nadie coincide con "{{ busqueda() }}".
+      } @else if (soloPendientes()) {
+        No hay ningún documento esperando revisión. Está todo al día.
+      } @else {
+        Todavía no hay legajos cargados en el instituto.
+      }
+    </p>
+  } @else if (vistaPanel() === 'tabla') {
+    <!-- Vista Tabla: una fila por persona, para escanear el instituto entero de un vistazo. -->
+    <div class="mt-5 overflow-x-auto rounded-2xl border border-borde bg-superficie sm:mt-6">
+      <table class="w-full min-w-[38rem] text-left text-sm">
+        <thead class="border-b border-borde text-texto-suave">
+          <tr>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Persona</th>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">DNI</th>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Pendientes</th>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Rechazados</th>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Aprobados</th>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-borde">
+          @for (usuario of usuariosFiltrados(); track usuario.idUsuario) {
+            @let conteo = conteos(usuario);
+            <tr>
+              <td class="px-5 py-3 sm:px-6">
+                <div class="flex items-center gap-3">
+                  <span
+                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-principal-suave text-xs font-semibold text-principal"
+                    aria-hidden="true"
+                  >
+                    {{ iniciales(usuario.nombreCompleto) }}
+                  </span>
+                  <span class="font-medium text-texto">{{ usuario.nombreCompleto }}</span>
+                </div>
+              </td>
+              <td class="whitespace-nowrap px-5 py-3 text-texto-suave sm:px-6">{{ usuario.dni }}</td>
+              <td class="whitespace-nowrap px-5 py-3 sm:px-6">
+                @if (conteo.pendientes > 0) {
+                  <span class="rounded-full bg-pendiente/10 px-2.5 py-1 text-xs font-medium text-pendiente">
+                    {{ conteo.pendientes }}
+                  </span>
+                } @else {
+                  <span class="text-texto-suave">—</span>
+                }
+              </td>
+              <td class="whitespace-nowrap px-5 py-3 sm:px-6">
+                @if (conteo.rechazados > 0) {
+                  <span class="rounded-full bg-rechazado/10 px-2.5 py-1 text-xs font-medium text-rechazado">
+                    {{ conteo.rechazados }}
+                  </span>
+                } @else {
+                  <span class="text-texto-suave">—</span>
+                }
+              </td>
+              <td class="whitespace-nowrap px-5 py-3 sm:px-6">
+                @if (conteo.aprobados > 0) {
+                  <span class="rounded-full bg-aprobado/10 px-2.5 py-1 text-xs font-medium text-aprobado">
+                    {{ conteo.aprobados }}
+                  </span>
+                } @else {
+                  <span class="text-texto-suave">—</span>
+                }
+              </td>
+              <td class="whitespace-nowrap px-5 py-3 text-right sm:px-6">
+                <button
+                  type="button"
+                  class="rounded-full border border-principal px-3 py-1.5 text-xs font-semibold text-principal transition-colors hover:bg-principal-suave"
+                  [routerLink]="['/legajo/usuario', usuario.idUsuario]"
+                >
+                  Ver legajo
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  } @else if (vistaPanel() === 'compacto') {
+    <!-- Vista Compacto: una línea por persona, sin el detalle de cada documento. -->
+    <ul class="mt-5 flex flex-col divide-y divide-borde overflow-hidden rounded-2xl border border-borde bg-superficie sm:mt-6">
+      @for (usuario of usuariosFiltrados(); track usuario.idUsuario) {
+        @let conteo = conteos(usuario);
+        <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
+          <div class="flex min-w-0 items-center gap-3">
+            <span
+              class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-principal-suave text-xs font-semibold text-principal"
+              aria-hidden="true"
+            >
+              {{ iniciales(usuario.nombreCompleto) }}
+            </span>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-medium text-texto">{{ usuario.nombreCompleto }}</p>
+              <p class="text-xs text-texto-suave">DNI {{ usuario.dni }}</p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2 text-xs font-medium">
+            @if (conteo.pendientes > 0) {
+              <span class="rounded-full bg-pendiente/10 px-2.5 py-1 text-pendiente">
+                {{ conteo.pendientes }} pend.
+              </span>
+            }
+            @if (conteo.rechazados > 0) {
+              <span class="rounded-full bg-rechazado/10 px-2.5 py-1 text-rechazado">
+                {{ conteo.rechazados }} rech.
+              </span>
+            }
+            @if (conteo.aprobados > 0) {
+              <span class="rounded-full bg-aprobado/10 px-2.5 py-1 text-aprobado">
+                {{ conteo.aprobados }} aprob.
+              </span>
+            }
+            <button
+              type="button"
+              class="rounded-full border border-principal px-3 py-1 text-xs font-semibold text-principal transition-colors hover:bg-principal-suave"
+              [routerLink]="['/legajo/usuario', usuario.idUsuario]"
+            >
+              Ver legajo
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
   } @else {
+    <!-- Vista Cards (default): el detalle completo, documento por documento. -->
     <ul class="mt-5 flex flex-col gap-4 sm:mt-6">
       @for (usuario of usuariosFiltrados(); track usuario.idUsuario) {
         @let conteo = conteos(usuario);
@@ -141,18 +317,6 @@
             </ul>
           } @else {
             <p class="text-sm text-texto-suave">Todavía no subió ningún documento.</p>
-          }
-        </li>
-      } @empty {
-        <li
-          class="rounded-2xl border border-borde bg-superficie px-5 py-10 text-center text-sm text-texto-suave"
-        >
-          @if (busqueda() !== '') {
-            Nadie coincide con "{{ busqueda() }}".
-          } @else if (soloPendientes()) {
-            No hay ningún documento esperando revisión. Está todo al día.
-          } @else {
-            Todavía no hay legajos cargados en el instituto.
           }
         </li>
       }
