@@ -201,6 +201,10 @@ export class LegajoMockService extends LegajoService {
     return of([...documentos]).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
+  obtenerLegajoDeUsuario(_idUsuario: number): Observable<DocumentoLegajo[]> {
+    return this.obtenerLegajoPropio();
+  }
+
   documentosRequeridos(_idRol: number): Observable<DocumentoRequerido[]> {
     return of([...REQUERIDOS_INVENTADOS]).pipe(delay(DEMORA_SIMULADA_MS));
   }

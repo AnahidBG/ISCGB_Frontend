@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ROLES } from '../../../core/auth/modelos/rol';
@@ -50,7 +50,7 @@ interface ConteoEstados {
  */
 @Component({
   selector: 'app-control-legajos',
-  imports: [EstructuraPanel, PantallaCarga, FilaDocumentoLegajo],
+  imports: [EstructuraPanel, PantallaCarga, FilaDocumentoLegajo, RouterLink],
   templateUrl: './control-legajos.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -1,8 +1,8 @@
 <app-estructura-panel
   [enlaces]="enlaces()"
   encabezado="titulo"
-  tituloPagina="Mis Documentos"
-  subtitulo="Tu documentación institucional y en qué estado está cada cosa."
+  [tituloPagina]="tituloLegajo()"
+  [subtitulo]="subtituloLegajo()"
   [volverUrl]="rutaPanel()"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
@@ -121,7 +121,7 @@
           <div class="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end">
             <app-insignia-estado [estado]="fila.estado" />
 
-            @if (fila.faltante || fila.estado === 'Rechazado' || estaVencido(fila)) {
+            @if (!esLegajoAjeno() && (fila.faltante || fila.estado === 'Rechazado' || estaVencido(fila))) {
               <button
                 type="button"
                 class="rounded-full border border-principal px-4 py-1.5 text-sm font-medium text-principal transition-colors hover:bg-principal-suave"

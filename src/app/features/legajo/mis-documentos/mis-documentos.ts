@@ -1,8 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
-import { of } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { map, of, switchAll } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { ROLES } from '../../../core/auth/modelos/rol';
@@ -75,33 +75,92 @@ export class MisDocumentos {
   private readonly auth = inject(AuthService);
   private readonly legajos = inject(LegajoService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly rolPrincipal = computed(() => this.sesion()?.roles[0] ?? '');
   protected readonly rutaPanel = computed(() => destinoSegunRoles(this.sesion()));
+  protected readonly idUsuarioSeleccionado = toSignal(
+    this.route.paramMap.pipe(
+      map((params) => {
+        const valor = params.get('idUsuario');
+        if (valor === null) {
+          return null;
+        }
+
+        const id = Number(valor);
+        return Number.isFinite(id) && id > 0 ? id : null;
+      }),
+    ),
+    { initialValue: null as number | null },
+  );
+  protected readonly esLegajoAjeno = computed(
+    () =>
+      this.idUsuarioSeleccionado() !== null &&
+      this.idUsuarioSeleccionado() !== this.sesion()?.idUsuario,
+  );
+  protected readonly tituloLegajo = computed(() =>
+    this.esLegajoAjeno() ? 'Legajo del usuario' : 'Mis Documentos',
+  );
+  protected readonly subtituloLegajo = computed(() =>
+    this.esLegajoAjeno()
+      ? 'Documentación del usuario y el estado actual de cada documento.'
+      : 'Tu documentación institucional y en qué estado está cada cosa.',
+  );
 
   protected readonly filtros = FILTROS;
   protected readonly filtro = signal<Filtro>('todos');
 
   private readonly idRol = idRolDocumental(this.auth.sesion());
 
-  protected readonly documentos = toSignal(this.legajos.obtenerLegajoPropio(), {
-    initialValue: [] as DocumentoLegajo[],
-  });
+  protected readonly documentos = toSignal(
+    this.route.paramMap.pipe(
+      map((params) => {
+        const valor = params.get('idUsuario');
+        if (valor === null) {
+          return this.legajos.obtenerLegajoPropio();
+        }
+
+        const id = Number(valor);
+        if (!Number.isFinite(id) || id <= 0) {
+          return this.legajos.obtenerLegajoPropio();
+        }
+
+        return this.legajos.obtenerLegajoDeUsuario(id);
+      }),
+      switchAll(),
+    ),
+    { initialValue: [] as DocumentoLegajo[] },
+  );
 
   protected readonly requeridos = toSignal(
-    this.idRol === null
+    this.esLegajoAjeno()
       ? of<DocumentoRequerido[]>([])
-      : this.legajos.documentosRequeridos(this.idRol),
+      : this.idRol === null
+        ? of<DocumentoRequerido[]>([])
+        : this.legajos.documentosRequeridos(this.idRol),
     { initialValue: [] as DocumentoRequerido[] },
   );
 
   protected readonly enlaces = computed<EnlacePanel[]>(() => {
     const enlaces: EnlacePanel[] = [
       { etiqueta: 'Dashboard', url: this.rutaPanel(), icono: 'panel' },
-      { etiqueta: 'Mis Documentos', url: '/legajo/mis-documentos', icono: 'legajo' },
-      { etiqueta: 'Subir Documento', url: '/legajo/subir-documento', icono: 'subir' },
     ];
+
+    if (this.esLegajoAjeno()) {
+      enlaces.push({
+        etiqueta: 'Control de Legajos',
+        url: '/secretario/control-legajos',
+        icono: 'legajo',
+      });
+    } else {
+      enlaces.push({
+        etiqueta: 'Mis Documentos',
+        url: '/legajo/mis-documentos',
+        icono: 'legajo',
+      });
+      enlaces.push({ etiqueta: 'Subir Documento', url: '/legajo/subir-documento', icono: 'subir' });
+    }
 
     if (tieneAlgunRol(this.sesion(), [ROLES.docente])) {
       enlaces.push({
