@@ -80,6 +80,14 @@ export class Proximamente {
       });
     }
 
+    if (tieneAlgunRol(sesion, [ROLES.director, ROLES.secretario])) {
+      enlaces.push({
+        etiqueta: 'Control de Legajos',
+        url: '/secretario/control-legajos',
+        icono: 'legajo',
+      });
+    }
+
     if (tieneAlgunRol(sesion, [ROLES.docente])) {
       enlaces.push({
         etiqueta: 'Entregar programa de materia',

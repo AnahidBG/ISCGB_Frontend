@@ -74,6 +74,14 @@ export class PanelDirector {
       { etiqueta: 'Nuevo usuario', url: '/director/usuarios/nuevo', icono: 'usuarios' },
     ];
 
+    if (tieneAlgunRol(this.sesion(), [ROLES.secretario, ROLES.director])) {
+      enlaces.push({
+        etiqueta: 'Control de Legajos',
+        url: '/secretario/control-legajos',
+        icono: 'legajo',
+      });
+    }
+
     if (tieneAlgunRol(this.sesion(), [ROLES.docente])) {
       enlaces.push({
         etiqueta: 'Entregar programa de materia',

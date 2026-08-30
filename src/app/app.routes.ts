@@ -141,6 +141,14 @@ export const routes: Routes = [
       import('./features/legajo/mis-documentos/mis-documentos').then((m) => m.MisDocumentos),
   },
   {
+    // El legajo de otra persona para revisión por parte de Secretaría o Dirección.
+    path: 'legajo/usuario/:idUsuario',
+    title: 'Legajo del usuario · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.secretario, ROLES.director)],
+    loadComponent: () =>
+      import('./features/legajo/mis-documentos/mis-documentos').then((m) => m.MisDocumentos),
+  },
+  {
     // Sin roleGuard a propósito: los cuatro roles cargan justificativos, así
     // que filtrar por rol sería escribir "cualquiera con sesión" al pedo.
     path: 'justificativos/cargar',

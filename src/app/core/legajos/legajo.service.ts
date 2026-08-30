@@ -29,6 +29,9 @@ export abstract class LegajoService {
   /** El legajo de la persona que tiene la sesión abierta. */
   abstract obtenerLegajoPropio(): Observable<DocumentoLegajo[]>;
 
+  /** El legajo de un usuario concreto, para revisión por parte de Secretaría o Dirección. */
+  abstract obtenerLegajoDeUsuario(idUsuario: number): Observable<DocumentoLegajo[]>;
+
   /**
    * Qué documentos le corresponden a un rol.
    *

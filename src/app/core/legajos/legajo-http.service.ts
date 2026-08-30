@@ -72,6 +72,10 @@ export class LegajoHttpService extends LegajoService {
       return of([]);
     }
 
+    return this.obtenerLegajoDeUsuario(idUsuario);
+  }
+
+  obtenerLegajoDeUsuario(idUsuario: number): Observable<DocumentoLegajo[]> {
     return this.http.get<LegajoApi[]>(RUTAS_API.legajosPorUsuario(idUsuario)).pipe(
       map((legajos) => legajos.map(aDocumentoLegajo)),
       catchError((error: HttpErrorResponse) => {
