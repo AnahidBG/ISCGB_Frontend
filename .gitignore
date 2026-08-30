@@ -43,3 +43,4 @@ __screenshots__/
 .DS_Store
 Thumbs.db
 .hintrc
+node_modules

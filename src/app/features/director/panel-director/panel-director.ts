@@ -5,11 +5,24 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { ROLES } from '../../../core/auth/modelos/rol';
 import { tieneAlgunRol } from '../../../core/auth/modelos/sesion';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
+import { ENLACES_COMUNES } from '../../../shared/ui/estructura-panel/enlaces-comunes';
 import {
+  AccionPanel,
   EnlacePanel,
   EstructuraPanel,
 } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
+
+/**
+ * El botón verde del encabezado. Dar de alta a alguien es LA acción del
+ * Director (ISCGB-PROJECT.md → Sprint 2), así que va acá arriba y no
+ * escondida en el menú.
+ */
+const ACCION_DIRECTOR: AccionPanel = {
+  etiqueta: 'Nuevo Usuario',
+  url: '/director/usuarios/nuevo',
+  icono: 'usuarios',
+};
 
 /**
  * Panel del Director.
@@ -53,16 +66,23 @@ export class PanelDirector {
     initialValue: [],
   });
 
+  protected readonly accion = ACCION_DIRECTOR;
+
   protected readonly enlaces = computed<EnlacePanel[]>(() => {
-    const enlaces: EnlacePanel[] = [{ etiqueta: 'Dashboard', url: '/director/panel' }];
+    const enlaces: EnlacePanel[] = [
+      { etiqueta: 'Dashboard', url: '/director/panel', icono: 'panel' },
+      { etiqueta: 'Nuevo usuario', url: '/director/usuarios/nuevo', icono: 'usuarios' },
+    ];
 
     if (tieneAlgunRol(this.sesion(), [ROLES.docente])) {
       enlaces.push({
         etiqueta: 'Entregar programa de materia',
         url: '/docente/entrega-programa',
+        icono: 'legajo',
       });
     }
 
+    enlaces.push(...ENLACES_COMUNES);
     return enlaces;
   });
 

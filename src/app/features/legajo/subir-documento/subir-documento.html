@@ -3,6 +3,7 @@
   encabezado="titulo"
   tituloPagina="Subir Documento"
   subtitulo="Añadí nuevos archivos a tu legajo institucional."
+  [volverUrl]="rutaPanel()"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
@@ -124,81 +125,13 @@ class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
             Archivo <span class="text-rechazado">*</span>
           </span>
 
-          @if (archivo(); as elegido) {
-            <!-- Con archivo elegido: la zona muestra cuál es, y deja sacarlo. -->
-            <div
-class="mt-2 flex items-center gap-3 rounded-2xl border border-borde bg-fondo-panel px-4 py-4 sm:gap-4 sm:px-5"
-            >
-              <span
-class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-aprobado/10 text-aprobado sm:flex"
-              >
-                <app-icono nombre="documento" class="h-5 w-5" />
-              </span>
-              <div class="min-w-0 flex-1">
-                <p class="truncate text-sm font-semibold text-texto">{{ elegido.name }}</p>
-                <p class="text-xs text-texto-suave">{{ tamanoLegible(elegido) }}</p>
-              </div>
-              <button
-                type="button"
-                class="shrink-0 rounded-full px-4 py-2 text-sm font-medium text-rechazado transition-colors hover:bg-rechazado/10"
-                (click)="quitarArchivo()"
-              >
-                Quitar
-              </button>
-            </div>
-          } @else {
-            <!--
-              Zona de arrastre. El <label> envuelve al input escondido: así
-              tocar cualquier parte de la caja abre el explorador de archivos,
-              y además funciona con teclado sin agregar nada.
-            -->
-            <label
-              class="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-5 py-8 text-center transition-colors sm:px-6 sm:py-12"
-              [class.border-borde]="!arrastrando()"
-              [class.border-principal]="arrastrando()"
-              [class.bg-principal-suave]="arrastrando()"
-              (dragover)="alArrastrarEncima($event)"
-              (dragleave)="alSalirDeLaZona($event)"
-              (drop)="alSoltar($event)"
-            >
-              <span
-                class="flex h-14 w-14 items-center justify-center rounded-full bg-principal-suave text-principal sm:h-16 sm:w-16"
-              >
-                <app-icono nombre="subir" class="h-7 w-7 sm:h-8 sm:w-8" />
-              </span>
-
-              <!--
-                En un celular no se arrastra nada: se toca. Por eso el texto
-                cambia según el tamaño de pantalla, en vez de pedir un gesto
-                que en ese dispositivo no existe.
-              -->
-              <span class="mt-4 text-base font-bold text-texto sm:mt-5">
-                <span class="hidden sm:inline">Arrastrá tu archivo acá</span>
-                <span class="sm:hidden">Elegí tu archivo</span>
-              </span>
-
-              <!--
-                Solo PDF: es la regla de negocio #1 del MVP. El Figma dice
-                "PDF, JPG, PNG" — hay que corregirlo ahí.
-              -->
-              <span class="mt-1 text-sm text-texto-suave">
-                Solo archivos PDF. Tamaño máximo: 10 MB.
-              </span>
-
-              <span
-class="mt-5 rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white sm:mt-6"
-              >
-                Examinar archivos
-              </span>
-
-              <input
-                type="file"
-                accept="application/pdf,.pdf"
-                class="sr-only"
-                (change)="alSeleccionarArchivo($event)"
-              />
-            </label>
-          }
+          <app-zona-archivo
+            class="mt-2 block"
+            [archivo]="archivo()"
+            (elegido)="alElegirArchivo($event)"
+            (quitado)="quitarArchivo()"
+            (rechazado)="error.set($event)"
+          />
         </div>
 
         <label class="mt-6 flex items-start gap-3">

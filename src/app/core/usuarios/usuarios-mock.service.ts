@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
-import { Observable, delay, of } from 'rxjs';
+import { Observable, delay, of, throwError } from 'rxjs';
 import { ROLES } from '../auth/modelos/rol';
+import { NuevoUsuario } from './modelos/nuevo-usuario';
 import { UsuarioInstitucional } from './modelos/usuario-institucional';
-import { UsuariosService } from './usuarios.service';
+import { MENSAJE_USUARIO_DUPLICADO, UsuariosService } from './usuarios.service';
 
 /** Cuánto tarda el listado falso, para ver el estado de carga en pantalla. */
 const DEMORA_SIMULADA_MS = 500;
@@ -81,7 +82,40 @@ const USUARIOS_INVENTADOS: readonly UsuarioInstitucional[] = [
 
 @Injectable()
 export class UsuariosMockService extends UsuariosService {
+  /** Los que se dieron de alta en esta sesión, para verlos aparecer en el listado. */
+  private readonly agregados: UsuarioInstitucional[] = [];
+
   listar(): Observable<UsuarioInstitucional[]> {
-    return of([...USUARIOS_INVENTADOS]).pipe(delay(DEMORA_SIMULADA_MS));
+    return of([...USUARIOS_INVENTADOS, ...this.agregados]).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  /**
+   * Alta simulada. Sirve para probar la pantalla de punta a punta —incluido
+   * el caso de DNI repetido— sin depender de que el backend tenga el endpoint.
+   *
+   * Se guarda en memoria y nada más: al recargar la página desaparece. Es a
+   * propósito, para que a nadie se le confunda con datos reales.
+   */
+  crear(usuario: NuevoUsuario): Observable<void> {
+    const yaExiste = [...USUARIOS_INVENTADOS, ...this.agregados].some(
+      (existente) => existente.dni === usuario.dni,
+    );
+
+    if (yaExiste) {
+      return throwError(() => new Error(MENSAJE_USUARIO_DUPLICADO)).pipe(
+        delay(DEMORA_SIMULADA_MS),
+      );
+    }
+
+    this.agregados.push({
+      idUsuario: Date.now(),
+      nombreCompleto: `${usuario.nombre} ${usuario.apellido}`.trim(),
+      dni: usuario.dni,
+      roles: [...usuario.roles],
+      // Recién dado de alta: todavía no presentó nada.
+      estadoLegajo: null,
+    });
+
+    return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
   }
 }

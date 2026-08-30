@@ -47,9 +47,13 @@ export const appConfig: ApplicationConfig = {
     // completo (con estadoLegajo falso pero visible): UsuariosMockService.
     { provide: UsuariosService, useClass: UsuariosHttpService },
 
-    // LegajoHttpService: cuatro de las cinco operaciones son reales. La que
-    // falta es listarParaRevision() —documentos de TODO el instituto—, que
-    // el backend no expone todavía. Ningún panel la usa hoy.
+    // LegajoHttpService: desde el 30/08/2026 las SEIS operaciones pegan
+    // contra la API real — no le queda ni un dato inventado. Las dos últimas
+    // en llegar fueron `GET /api/Legajos/pendientes` y
+    // `GET /api/Legajos/resumen-estado`, que son las que usa "Control de
+    // Legajos". Para trabajar con el backend caído: cambiar SOLO esta línea
+    // a `useClass: LegajoMockService` (importarlo de
+    // `./core/legajos/legajo-mock.service`).
     { provide: LegajoService, useClass: LegajoHttpService },
   ],
 };

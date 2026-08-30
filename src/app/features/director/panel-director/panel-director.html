@@ -1,7 +1,10 @@
 <app-estructura-panel
   [enlaces]="enlaces()"
+  [accionPrincipal]="accion"
   tituloPagina="Panel del Director"
+  subtitulo="Todo el instituto y el estado de su documentación."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
   rolPrincipal="Director"
   (cerrarSesion)="cerrarSesion()"
 >

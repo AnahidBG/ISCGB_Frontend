@@ -8,11 +8,17 @@ import {
 } from './modelos/justificativo-pendiente';
 import {
   JustificativosService,
+  MENSAJE_CARGA_POR_DEFECTO,
   MENSAJE_ERROR_AUDITORIA,
   MENSAJE_ERROR_CARGA,
   MENSAJE_ERROR_JUSTIFICATIVOS,
   VeredictoAuditoria,
 } from './justificativos.service';
+
+/** Lo único que devuelve `POST /api/Justificativos/cargar` en un 200. */
+interface RespuestaCargaApi {
+  message?: string;
+}
 
 /**
  * Forma cruda de `GET /api/Justificativos/pendientes`.
@@ -65,7 +71,7 @@ export class JustificativosHttpService extends JustificativosService {
       );
   }
 
-  cargar(justificativo: NuevoJustificativo): Observable<void> {
+  cargar(justificativo: NuevoJustificativo): Observable<string> {
     const cuerpo = new FormData();
 
     // Los nombres tienen que coincidir con las propiedades de
@@ -92,11 +98,13 @@ export class JustificativosHttpService extends JustificativosService {
 
     // Sin `Content-Type` a propósito: el navegador lo pone solo, con el
     // `boundary` que necesita multipart. Ponerlo a mano rompe la subida.
-    return this.http.post(RUTAS_API.cargarJustificativo, cuerpo).pipe(
-      map(() => undefined),
+    return this.http.post<RespuestaCargaApi>(RUTAS_API.cargarJustificativo, cuerpo).pipe(
+      map((respuesta) => respuesta?.message?.trim() || MENSAJE_CARGA_POR_DEFECTO),
       catchError((error: HttpErrorResponse) => {
+        // El 400 del backend explica qué corregir, así que es mejor que el nuestro.
+        const motivo = typeof error.error?.message === 'string' ? error.error.message : null;
         console.error('Error al cargar el justificativo:', error);
-        return throwError(() => new Error(MENSAJE_ERROR_CARGA));
+        return throwError(() => new Error(motivo ?? MENSAJE_ERROR_CARGA));
       }),
     );
   }

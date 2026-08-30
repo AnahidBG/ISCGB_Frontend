@@ -5,18 +5,30 @@
     siempre visible y en flujo, como en el Figma.
   -->
   <aside
-    class="fixed inset-y-0 left-0 z-40 flex w-[260px] max-w-[85vw] flex-col overflow-y-auto border-r border-borde bg-superficie transition-transform duration-200 lg:static lg:max-w-none lg:translate-x-0"
+    class="fixed inset-y-0 left-0 z-40 flex w-[260px] max-w-[85vw] flex-col overflow-y-auto border-r border-borde bg-superficie transition-[width,transform] duration-200 ease-in-out lg:static lg:max-w-none lg:translate-x-0"
     [class.-translate-x-full]="!menuAbierto()"
+    [class.lg:w-20]="colapsado()"
+    [class.lg:w-64]="!colapsado()"
   >
-    <!-- Marca: el isotipo en su pastilla verde + el nombre del sistema. -->
-    <div class="flex items-center gap-3 px-6 py-6">
+    <!--
+      Marca: el isotipo en su pastilla verde + el nombre del sistema, y el
+      botón para colapsar/expandir. Colapsada, la marca se apila en columna
+      (isotipo arriba, botón abajo) porque los 80px de ancho no alcanzan para
+      los dos lado a lado.
+    -->
+    <div
+      class="flex items-center gap-3 px-6 py-6"
+      [class.lg:flex-col]="colapsado()"
+      [class.lg:gap-2]="colapsado()"
+      [class.lg:px-2]="colapsado()"
+    >
       <!--
         El isotipo va dibujado en línea y no como <img>: así hereda el color
         (blanco acá, verde en otro lado) y no depende de que exista un archivo
         con el nombre justo en public/.
       -->
       <span
-        class="flex h-11 w-11 items-center justify-center rounded-2xl bg-principal text-white"
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-principal text-white"
       >
         <svg aria-hidden="true" viewBox="0 0 62 58" class="h-6 w-6">
           <path
@@ -25,25 +37,66 @@
           />
         </svg>
       </span>
-      <span class="flex flex-col leading-tight">
+      <span class="flex flex-1 flex-col leading-tight" [class.lg:hidden]="colapsado()">
         <span class="text-xl font-bold text-principal">ISCGB</span>
         <span class="text-xs text-texto-suave">Gestión Académica</span>
       </span>
+
+      <!--
+        Colapsar/expandir. Solo tiene sentido en escritorio: en celular el
+        menú es un cajón que se abre entero, no hay "franja de íconos" a la
+        que reducirlo — por eso `hidden lg:inline-flex`.
+      -->
+      <button
+        type="button"
+        class="hidden shrink-0 rounded-lg border border-borde p-1.5 text-texto-suave transition-colors hover:bg-fondo-panel hover:text-texto lg:inline-flex"
+        [attr.aria-label]="colapsado() ? 'Expandir menú' : 'Colapsar menú'"
+        [attr.aria-expanded]="!colapsado()"
+        (click)="alternarColapso()"
+      >
+        <app-icono
+          nombre="colapsar"
+          class="h-4 w-4 transition-transform duration-200"
+          [class.rotate-180]="colapsado()"
+        />
+      </button>
     </div>
 
-    <nav class="flex flex-1 flex-col gap-1 px-4 pt-2">
+    <nav
+      class="flex flex-1 flex-col gap-1 px-4 pt-2"
+      [class.lg:px-2]="colapsado()"
+      aria-label="Menú principal"
+    >
       @for (enlace of enlaces(); track enlace.url) {
         <a
           [routerLink]="enlace.url"
           routerLinkActive="!bg-principal-suave !text-principal font-semibold"
           [routerLinkActiveOptions]="{ exact: true }"
-          class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel"
+          ariaCurrentWhenActive="page"
+          class="group relative flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+          [class.lg:justify-center]="colapsado()"
+          [class.lg:gap-0]="colapsado()"
+          [class.lg:px-3]="colapsado()"
           (click)="cerrarMenu()"
         >
           @if (enlace.icono; as icono) {
-            <app-icono [nombre]="icono" class="h-5 w-5" />
+            <app-icono [nombre]="icono" class="h-5 w-5 shrink-0" />
           }
-          <span>{{ enlace.etiqueta }}</span>
+          <span [class.lg:hidden]="colapsado()">{{ enlace.etiqueta }}</span>
+
+          <!--
+            Tooltip para cuando está colapsado: sin texto visible, alguien
+            navegando por teclado o con el mouse necesita saber a dónde va
+            cada ícono. `hidden lg:block` (agregado solo si colapsado()) para
+            que en celular, donde el texto siempre está, nunca aparezca.
+          -->
+          <span
+            role="tooltip"
+            class="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-texto px-2.5 py-1.5 text-xs font-medium text-superficie opacity-0 shadow-marca-md transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+            [class.lg:block]="colapsado()"
+          >
+            {{ enlace.etiqueta }}
+          </span>
         </a>
       }
     </nav>
@@ -53,14 +106,25 @@
       más del menú, es salir. Mezclarlo con las otras invita a apretarlo sin
       querer.
     -->
-    <div class="border-t border-borde px-4 py-4">
+    <div class="border-t border-borde px-4 py-4" [class.lg:px-2]="colapsado()">
       <button
         type="button"
-        class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel"
+        class="group relative flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+        [class.lg:justify-center]="colapsado()"
+        [class.lg:gap-0]="colapsado()"
+        [class.lg:px-3]="colapsado()"
         (click)="cerrarSesion.emit()"
       >
-        <app-icono nombre="salir" class="h-5 w-5" />
-        <span>Cerrar Sesión</span>
+        <app-icono nombre="salir" class="h-5 w-5 shrink-0" />
+        <span [class.lg:hidden]="colapsado()">Cerrar Sesión</span>
+
+        <span
+          role="tooltip"
+          class="pointer-events-none absolute left-full top-1/2 z-50 ml-3 hidden -translate-y-1/2 whitespace-nowrap rounded-md bg-texto px-2.5 py-1.5 text-xs font-medium text-superficie opacity-0 shadow-marca-md transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+          [class.lg:block]="colapsado()"
+        >
+          Cerrar sesión
+        </span>
       </button>
     </div>
   </aside>
@@ -252,6 +316,15 @@
       -->
       <div class="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
         <div>
+          @if (volverUrl(); as destino) {
+            <a
+              [routerLink]="destino"
+              class="mb-2 inline-flex items-center gap-1 text-sm font-medium text-texto-suave transition-colors hover:text-principal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+            >
+              <app-icono nombre="volver" class="h-4 w-4" />
+              Volver
+            </a>
+          }
           <h1 class="text-2xl font-bold text-principal sm:text-3xl">
             @if (mostrarSaludo()) {
               Hola, {{ primerNombre() }}

@@ -1,0 +1,165 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Mis Documentos"
+  subtitulo="Tu documentación institucional y en qué estado está cada cosa."
+  [volverUrl]="rutaPanel()"
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="resumen().rechazados"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <div class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
+    <div class="flex flex-wrap items-baseline justify-between gap-2">
+      <h2 class="text-base font-semibold text-texto">Documentos aprobados</h2>
+      <span class="text-sm text-texto-suave">
+        @if (progreso().estimado) {
+          {{ progreso().porcentaje }}% aprobado (aproximado)
+        } @else {
+          {{ progreso().aprobados }} / {{ progreso().total }} ({{ progreso().porcentaje }}%)
+        }
+      </span>
+    </div>
+
+    <div
+      class="mt-3 h-2 overflow-hidden rounded-full bg-fondo-panel"
+      role="progressbar"
+      aria-label="Progreso del legajo"
+      [attr.aria-valuenow]="progreso().porcentaje"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      <div
+        class="h-full rounded-full bg-acento-verde transition-[width] duration-500 ease-out"
+        [style.width.%]="progreso().porcentaje"
+      ></div>
+    </div>
+
+    @if (progreso().estimado) {
+      <p class="mt-2 text-xs text-texto-suave">
+        Todavía no sabemos qué documentos te pide el instituto, así que este número
+        cuenta solo lo que subiste.
+      </p>
+    }
+  </div>
+
+  <div class="mt-5 grid grid-cols-2 gap-4 sm:mt-6 sm:gap-5 xl:grid-cols-4">
+    <app-tarjeta-metrica etiqueta="Aprobados" [valor]="resumen().aprobados" tono="aprobado" />
+    <app-tarjeta-metrica etiqueta="En revisión" [valor]="resumen().pendientes" tono="pendiente" />
+    <app-tarjeta-metrica etiqueta="Rechazados" [valor]="resumen().rechazados" tono="rechazado" />
+    <app-tarjeta-metrica etiqueta="Sin cargar" [valor]="resumen().sinCargar" tono="neutro" />
+  </div>
+
+  <div class="mt-5 flex flex-wrap gap-2 sm:mt-6">
+    @for (opcion of filtros; track opcion.valor) {
+      <button
+        type="button"
+        class="rounded-full border px-4 py-1.5 text-sm transition-colors"
+        [class]="
+          filtro() === opcion.valor
+            ? 'border-principal bg-principal text-white'
+            : 'border-borde text-texto-suave hover:bg-fondo-panel'
+        "
+        (click)="cambiarFiltro(opcion.valor)"
+      >
+        {{ opcion.etiqueta }}
+      </button>
+    }
+  </div>
+
+  <ul class="mt-4 flex flex-col gap-3">
+    @for (fila of filasVisibles(); track fila.clave) {
+      <li class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div class="flex min-w-0 gap-3 sm:gap-4">
+            <span
+              class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-fondo-panel text-texto-suave sm:flex"
+            >
+              <app-icono nombre="documento" class="h-5 w-5" />
+            </span>
+
+            <div class="min-w-0">
+              <div class="flex flex-wrap items-center gap-2">
+                <p class="text-sm font-semibold text-texto">{{ fila.nombre }}</p>
+                @if (fila.obligatorio) {
+                  <span class="rounded-full bg-humo px-2 py-0.5 text-xs text-texto-suave">
+                    Obligatorio
+                  </span>
+                }
+              </div>
+
+              @if (fila.faltante) {
+                <p class="mt-1 text-xs text-texto-suave">Todavía no lo presentaste.</p>
+              } @else {
+                <p class="mt-1 flex items-center gap-1.5 text-xs text-texto-suave">
+                  <app-icono nombre="reloj" class="h-3.5 w-3.5" />
+                  Subido el {{ fila.fechaSubida | date: 'dd/MM/yyyy' }}
+                  @if (fila.intentosPrevios > 0) {
+                    · {{ fila.intentosPrevios }}
+                    {{ fila.intentosPrevios === 1 ? 'versión anterior' : 'versiones anteriores' }}
+                  }
+                </p>
+              }
+
+              @if (fila.fechaVencimiento; as vence) {
+                <p
+                  class="mt-1 text-xs"
+                  [class.text-texto-suave]="!estaVencido(fila)"
+                  [class.text-rechazado]="estaVencido(fila)"
+                >
+                  @if (estaVencido(fila)) {
+                    Venció el {{ vence | date: 'dd/MM/yyyy' }}: hay que volver a presentarlo.
+                  } @else {
+                    Vence el {{ vence | date: 'dd/MM/yyyy' }}
+                  }
+                </p>
+              }
+            </div>
+          </div>
+
+          <div class="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end">
+            <app-insignia-estado [estado]="fila.estado" />
+
+            @if (fila.faltante || fila.estado === 'Rechazado' || estaVencido(fila)) {
+              <button
+                type="button"
+                class="rounded-full border border-principal px-4 py-1.5 text-sm font-medium text-principal transition-colors hover:bg-principal-suave"
+                (click)="irASubir()"
+              >
+                @if (fila.faltante) {
+                  Cargar
+                } @else {
+                  Resubir
+                }
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- El motivo del rechazo es lo único que dice qué hay que corregir. -->
+        @if (fila.comentario; as comentario) {
+          @if (fila.estado === 'Rechazado') {
+            <p class="mt-3 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-texto">
+              <strong>Motivo del rechazo:</strong> {{ comentario }}
+            </p>
+          } @else {
+            <p class="mt-3 rounded-xl bg-fondo-panel px-4 py-3 text-sm text-texto-suave">
+              {{ comentario }}
+            </p>
+          }
+        }
+      </li>
+    } @empty {
+      <li
+        class="rounded-2xl border border-borde bg-superficie px-5 py-10 text-center text-sm text-texto-suave"
+      >
+        @if (filtro() === 'todos') {
+          Todavía no hay nada en tu legajo.
+        } @else {
+          No hay documentos en este estado.
+        }
+      </li>
+    }
+  </ul>
+</app-estructura-panel>

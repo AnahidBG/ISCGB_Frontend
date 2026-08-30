@@ -10,6 +10,7 @@ import {
   JustificativosService,
   VeredictoAuditoria,
 } from '../../../core/justificativos/justificativos.service';
+import { ENLACES_COMUNES } from '../../../shared/ui/estructura-panel/enlaces-comunes';
 import {
   EnlacePanel,
   EstructuraPanel,
@@ -62,15 +63,25 @@ export class PanelSecretario {
   } | null>(null);
 
   protected readonly enlaces = computed<EnlacePanel[]>(() => {
-    const enlaces: EnlacePanel[] = [{ etiqueta: 'Dashboard', url: '/secretario/panel' }];
+    const enlaces: EnlacePanel[] = [
+      { etiqueta: 'Dashboard', url: '/secretario/panel', icono: 'panel' },
+    ];
+
+    enlaces.push({
+      etiqueta: 'Control de Legajos',
+      url: '/secretario/control-legajos',
+      icono: 'legajo',
+    });
 
     if (tieneAlgunRol(this.sesion(), [ROLES.docente])) {
       enlaces.push({
         etiqueta: 'Entregar programa de materia',
         url: '/docente/entrega-programa',
+        icono: 'legajo',
       });
     }
 
+    enlaces.push(...ENLACES_COMUNES);
     return enlaces;
   });
 

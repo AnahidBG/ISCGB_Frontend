@@ -8,15 +8,47 @@
   rolPrincipal="Alumno"
   (cerrarSesion)="cerrarSesion()"
 >
+  <!--
+    El progreso se muestra con su contexto ("3 de 8 documentos obligatorios")
+    y no solo como porcentaje: un "37%" pelado no le dice a nadie cuánto le
+    falta ni de qué. Ver `calcularProgresoLegajo`.
+  -->
   <div class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
-    <div class="flex items-baseline justify-between">
+    <div class="flex flex-wrap items-baseline justify-between gap-2">
       <h2 class="text-base font-semibold text-texto">Progreso del legajo</h2>
-      <span class="text-sm font-medium text-principal">{{ progreso() }}%</span>
+      <span class="text-sm font-medium text-principal">{{ progreso().porcentaje }}%</span>
     </div>
 
-    <div class="mt-3 h-2 overflow-hidden rounded-full bg-fondo">
-      <div class="h-full rounded-full bg-acento-verde" [style.width.%]="progreso()"></div>
+    <div
+      class="mt-3 h-2 overflow-hidden rounded-full bg-fondo"
+      role="progressbar"
+      aria-label="Progreso del legajo"
+      [attr.aria-valuenow]="progreso().porcentaje"
+      aria-valuemin="0"
+      aria-valuemax="100"
+    >
+      <div
+        class="h-full rounded-full bg-acento-verde transition-[width] duration-500 ease-out"
+        [style.width.%]="progreso().porcentaje"
+      ></div>
     </div>
+
+    @if (progreso().estimado) {
+      <!--
+        Sin la lista de documentos obligatorios de su rol, el denominador es
+        "lo que subió" y el número queda optimista. Decirlo es obligatorio:
+        alguien que ve "100%" sin esta aclaración se va tranquilo con el
+        legajo a medio entregar.
+      -->
+      <p class="mt-3 text-xs leading-relaxed text-texto-suave">
+        Este porcentaje es aproximado: se calcula sobre los documentos que ya subiste, porque
+        todavía no está cargada la lista de documentación obligatoria de tu rol.
+      </p>
+    } @else {
+      <p class="mt-3 text-sm text-texto-suave">
+        {{ progreso().aprobados }} de {{ progreso().total }} documentos obligatorios aprobados.
+      </p>
+    }
   </div>
 
   <div class="mt-5 overflow-x-auto rounded-2xl border border-borde bg-superficie sm:mt-6">

@@ -6,6 +6,7 @@ import {
   DocumentoRequerido,
   NuevoDocumentoLegajo,
 } from './modelos/documento-requerido';
+import { LegajoResumenUsuario } from './modelos/legajo-resumen';
 import { LegajoService, VeredictoLegajo } from './legajo.service';
 
 /** Cuánto tarda el legajo falso, para ver el estado de carga en pantalla. */
@@ -29,21 +30,21 @@ const LEGAJOS_POR_DNI: Readonly<Record<string, readonly DocumentoLegajo[]>> = {
       id: 1,
       nombre: 'Título de Grado - Analítico',
       estado: 'Aprobado',
-      fechaSubida: new Date('2026-05-12'),
+      fechaSubida: new Date('2026-05-12'), comentario: null, fechaVencimiento: null
     },
     {
       id: 2,
       nombre: 'DNI Copia Actualizada',
       estado: 'Pendiente',
-      fechaSubida: new Date('2026-05-10'),
+      fechaSubida: new Date('2026-05-10'), comentario: null, fechaVencimiento: null
     },
     {
       id: 3,
       nombre: 'Certificado de Salud',
       estado: 'Aprobado',
-      fechaSubida: new Date('2026-04-30'),
+      fechaSubida: new Date('2026-04-30'), comentario: null, fechaVencimiento: null
     },
-    { id: 4, nombre: 'Curso TIC 2025', estado: 'Rechazado', fechaSubida: new Date('2026-05-08') },
+    { id: 4, nombre: 'Curso TIC 2025', estado: 'Rechazado', fechaSubida: new Date('2026-05-08'), comentario: null, fechaVencimiento: null },
   ],
   // Alberto Alumno
   '22222222': [
@@ -51,9 +52,9 @@ const LEGAJOS_POR_DNI: Readonly<Record<string, readonly DocumentoLegajo[]>> = {
       id: 5,
       nombre: 'DNI Copia Actualizada',
       estado: 'Aprobado',
-      fechaSubida: new Date('2026-03-02'),
+      fechaSubida: new Date('2026-03-02'), comentario: null, fechaVencimiento: null
     },
-    { id: 6, nombre: 'Apto Físico', estado: 'Pendiente', fechaSubida: new Date('2026-05-15') },
+    { id: 6, nombre: 'Apto Físico', estado: 'Pendiente', fechaSubida: new Date('2026-05-15'), comentario: null, fechaVencimiento: null },
   ],
   // Dora Directora y Docente
   '55555555': [
@@ -61,13 +62,13 @@ const LEGAJOS_POR_DNI: Readonly<Record<string, readonly DocumentoLegajo[]>> = {
       id: 7,
       nombre: 'Título de Grado - Analítico',
       estado: 'Aprobado',
-      fechaSubida: new Date('2026-02-20'),
+      fechaSubida: new Date('2026-02-20'), comentario: null, fechaVencimiento: null
     },
     {
       id: 8,
       nombre: 'Certificado de Salud',
       estado: 'Pendiente',
-      fechaSubida: new Date('2026-05-20'),
+      fechaSubida: new Date('2026-05-20'), comentario: null, fechaVencimiento: null
     },
   ],
 };
@@ -75,28 +76,98 @@ const LEGAJOS_POR_DNI: Readonly<Record<string, readonly DocumentoLegajo[]>> = {
 /** Para cualquier DNI sin legajo inventado — nadie tiene documentos cargados. */
 const LEGAJO_POR_DEFECTO: readonly DocumentoLegajo[] = [];
 
-/** Documentos de todo el instituto, pendientes de que Secretaría los revise. */
-const DOCUMENTOS_PARA_REVISION: readonly DocumentoLegajo[] = [
+/**
+ * Resumen institucional inventado, con la misma forma que
+ * `GET /api/Legajos/resumen-estado` (ya real desde el 30/08/2026). Sirve para
+ * seguir viendo "Control de Legajos" con el backend caído.
+ *
+ * Incluye a propósito a alguien SIN documentos: el endpoint real devuelve
+ * todos los usuarios, no solo los que subieron algo, y la pantalla tiene que
+ * verse bien igual.
+ */
+const RESUMEN_INSTITUCIONAL_INVENTADO: readonly LegajoResumenUsuario[] = [
   {
-    id: 101,
-    nombre: 'Certificado Pepito.pdf',
-    propietario: 'Dolores Docente',
-    estado: 'Aprobado',
-    fechaSubida: new Date('2026-08-20'),
+    idUsuario: 5,
+    nombreCompleto: 'Angel Silva',
+    dni: '41833479',
+    documentos: [
+      { idLegajo: 3, idTipoDoc: 1, estado: 'Aprobado', rutaArchivo: 'uploads/transferencia-titulos.pdf' },
+      { idLegajo: 4, idTipoDoc: 2, estado: 'Pendiente', rutaArchivo: 'uploads/doc-336.pdf' },
+    ],
   },
   {
-    id: 102,
-    nombre: 'Titulo Profesorado.pdf',
-    propietario: 'Ramiro Rearte',
+    idUsuario: 4,
+    nombreCompleto: 'Ana García',
+    dni: '11111111',
+    documentos: [
+      { idLegajo: 5, idTipoDoc: 2, estado: 'Pendiente', rutaArchivo: 'uploads/ana-titulo.pdf' },
+      { idLegajo: 6, idTipoDoc: 6, estado: 'Rechazado', rutaArchivo: 'uploads/ana-cuil.pdf' },
+    ],
+  },
+  {
+    idUsuario: 2,
+    nombreCompleto: 'Dolores Díaz',
+    dni: '30222333',
+    documentos: [
+      { idLegajo: 1, idTipoDoc: 2, estado: 'Aprobado', rutaArchivo: 'uploads/ejemplo-titulo.pdf' },
+      { idLegajo: 2, idTipoDoc: 1, estado: 'Pendiente', rutaArchivo: 'uploads/ejemplo-dni.pdf' },
+      {
+        idLegajo: 7,
+        idTipoDoc: 3,
+        estado: 'Rechazado',
+        rutaArchivo: 'uploads/ejemplo-salud.pdf',
+      },
+    ],
+  },
+  {
+    idUsuario: 4001,
+    nombreCompleto: 'Alberto Ávila',
+    dni: '30444555',
+    documentos: [
+      { idLegajo: 8, idTipoDoc: 8, estado: 'Aprobado', rutaArchivo: '/uploads/legajos/AlbertoAvila_AnaliticoSecundario_20260302.pdf' },
+      { idLegajo: 9, idTipoDoc: 4, estado: null, rutaArchivo: null },
+    ],
+  },
+  {
+    // Alguien dado de alta que todavía no subió nada. El endpoint real
+    // devuelve TODOS los usuarios, así que este caso existe de verdad.
+    idUsuario: 7,
+    nombreCompleto: 'Fernando Reyes',
+    dni: '30111222',
+    documentos: [],
+  },
+];
+
+/**
+ * Pendientes inventados, con la forma de `GET /api/Legajos/pendientes`.
+ *
+ * Los `id` coinciden a propósito con los `idLegajo` en estado 'Pendiente' de
+ * `RESUMEN_INSTITUCIONAL_INVENTADO`: así el cruce que hace
+ * `aprenderNombresDeTipos()` tiene con qué trabajar y la pantalla de prueba
+ * muestra los nombres reales de los tipos de documento, igual que contra la
+ * API real.
+ */
+const PENDIENTES_INVENTADOS: readonly DocumentoLegajo[] = [
+  {
+    id: 4,
+    nombre: 'Título de Grado - Analítico',
+    propietario: 'Angel Silva',
     estado: 'Pendiente',
-    fechaSubida: new Date('2026-08-22'),
+    fechaSubida: new Date('2026-08-22'), comentario: null, fechaVencimiento: null
   },
   {
-    id: 103,
-    nombre: 'Curso TIC 2025.pdf',
-    propietario: 'Martín Morales',
-    estado: 'Rechazado',
-    fechaSubida: new Date('2026-08-18'),
+    id: 5,
+    nombre: 'Título de Grado - Analítico',
+    propietario: 'Ana García',
+    estado: 'Pendiente',
+    fechaSubida: new Date('2026-08-21'), comentario: null, fechaVencimiento: null
+  },
+  {
+    id: 2,
+    nombre: 'DNI Copia Actualizada',
+    propietario: 'Dolores Díaz',
+    estado: 'Pendiente',
+    fechaSubida: new Date('2026-05-10'), comentario: null, fechaVencimiento: null
   },
 ];
 
@@ -135,7 +206,13 @@ export class LegajoMockService extends LegajoService {
   }
 
   listarParaRevision(): Observable<DocumentoLegajo[]> {
-    return of([...DOCUMENTOS_PARA_REVISION]).pipe(delay(DEMORA_SIMULADA_MS));
+    return of([...PENDIENTES_INVENTADOS]).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  obtenerResumenInstitucional(): Observable<LegajoResumenUsuario[]> {
+    return of(RESUMEN_INSTITUCIONAL_INVENTADO.map((usuario) => ({ ...usuario }))).pipe(
+      delay(DEMORA_SIMULADA_MS),
+    );
   }
 
   subirDocumento(_documento: NuevoDocumentoLegajo): Observable<void> {

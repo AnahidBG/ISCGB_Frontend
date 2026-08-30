@@ -1,54 +1,57 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 
 /**
- * Los íconos que usa el sistema. Agregar uno acá es agregar un `@case` en el
- * template — no hay más lugares que tocar.
+ * Los íconos que el sistema sabe dibujar.
+ *
+ * El Design System todavía no define un set de íconos para el menú lateral
+ * (ver docs/design-system.md #4, comentario en `EstructuraPanel`). Mientras
+ * tanto, este es un set mínimo y prestado del estilo "stroke" que ya usaba
+ * el ícono de hamburguesa de `EstructuraPanel` y el chevron de `Boton`
+ * (`stroke="currentColor"`, trazo 1.75-1.8, esquinas redondeadas) — para que
+ * no desentonen el día que se reemplacen por los oficiales.
+ *
+ * Agregar uno nuevo: sumar el nombre acá y el `@case` correspondiente en
+ * `icono.html`. Nada más se toca.
+ *
+ * `colapsar` se agregó el 27/08/2026 junto con el menú lateral desplegable
+ * de `EstructuraPanel` — es el único de este set que no sale de ningún
+ * dato ni estado del sistema, es puramente de navegación (el chevron del
+ * botón que colapsa/expande la barra).
  */
 export type NombreIcono =
   | 'panel'
+  | 'usuarios'
+  | 'documento'
   | 'legajo'
   | 'subir'
-  | 'revision'
   | 'salir'
+  | 'menu'
   | 'buscar'
   | 'campana'
-  | 'menu'
-  | 'reloj'
+  | 'revision'
   | 'aprobado'
   | 'pendiente'
   | 'rechazado'
-  | 'documento'
-  | 'flecha';
+  | 'reloj'
+  | 'colapsar'
+  | 'volver'
+  | 'calendario'
+  | 'configuracion';
 
 /**
- * Ícono del sistema, dibujado como SVG en línea.
+ * Un ícono del sistema, dibujado en SVG inline.
  *
- *   <app-icono nombre="campana" class="h-5 w-5" />
- *
- * Cierra el pendiente #4 de docs/design-system.md ("el Design System define
- * íconos, todavía no están en código").
- *
- * Son SVG en línea y no una fuente de íconos ni imágenes por dos motivos que
- * importan acá: heredan el color con `currentColor` (así el mismo ícono sirve
- * en el menú gris y en la tarjeta verde sin duplicarlo), y no agregan una
- * descarga más ni una dependencia externa.
- *
- * Todos comparten la misma geometría: grilla de 24, trazo de 1.8, puntas y
- * uniones redondeadas, sin relleno. Esa constancia es lo que hace que un
- * conjunto de íconos se vea como un conjunto y no como una bolsa de dibujos
- * juntados de distintos lados.
- *
- * El tamaño NO viene de acá: se pasa por clase (`h-5 w-5`), como cualquier
- * otro elemento. Es `aria-hidden` siempre — un ícono decorativo al lado de
- * su texto no debe leerse dos veces. Si alguna vez hace falta uno que sea la
- * ÚNICA información de un control, ese control necesita su propio
- * `aria-label`.
+ * Por qué SVG inline y no una fuente de íconos o una librería (lucide,
+ * heroicons...): el proyecto no tiene ninguna instalada todavía, y sumar una
+ * dependencia nueva solo para un puñado de íconos del menú es más costo que
+ * beneficio en esta etapa. Si el equipo adopta una librería de íconos más
+ * adelante, este componente es el único lugar que hay que tocar — nadie más
+ * dibuja SVGs de íconos a mano.
  */
 @Component({
   selector: 'app-icono',
   templateUrl: './icono.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { class: 'inline-flex shrink-0' },
 })
 export class Icono {
   readonly nombre = input.required<NombreIcono>();
