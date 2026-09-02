@@ -2,9 +2,15 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
-import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
+import {
+  AccionPanel,
+  EstructuraPanel,
+  NotificacionPanel,
+} from '../../../shared/ui/estructura-panel/estructura-panel';
+import { MAXIMO_NOTIFICACIONES } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 
 /**
@@ -50,6 +56,11 @@ export class PanelDirector {
 
   protected readonly sesion = this.auth.sesion;
 
+
+  /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
+
+  protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
+
   /**
    * `toSignal`: el listado se pide una sola vez, al entrar a la pantalla, y
    * no hace falta manejar la suscripción a mano ni un `ngOnInit`. Mientras
@@ -81,6 +92,22 @@ export class PanelDirector {
    * `EstructuraPanel`, así que la campana nunca se encendía acá.
    */
   protected readonly notificaciones = computed(() => this.resumen().pendientes);
+
+  /**
+   * El detalle que se despliega al tocar la campana: qué personas tienen el
+   * legajo esperando revisión. Cada fila lleva a Control de Legajos, que es
+   * donde se resuelve.
+   */
+  protected readonly notificacionesDetalle = computed<NotificacionPanel[]>(() =>
+    this.listadoUsuarios()
+      .filter((usuario) => usuario.estadoLegajo === 'Pendiente')
+      .slice(0, MAXIMO_NOTIFICACIONES)
+      .map((usuario) => ({
+        titulo: `El legajo de ${usuario.nombreCompleto} espera revisión`,
+        url: '/secretario/control-legajos',
+        tono: 'pendiente' as const,
+      })),
+  );
 
   protected cerrarSesion(): void {
     this.auth.cerrarSesion();

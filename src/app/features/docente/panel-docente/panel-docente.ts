@@ -4,12 +4,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import { calcularProgresoLegajo } from '../../../core/legajos/progreso-legajo';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
+import { notificacionesPorRechazos } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { TarjetaMetrica } from '../../../shared/ui/tarjeta-metrica/tarjeta-metrica';
@@ -45,6 +47,11 @@ export class PanelDocente {
   private readonly router = inject(Router);
 
   protected readonly sesion = this.auth.sesion;
+
+
+  /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
+
+  protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
   protected readonly accion = ACCION_DOCENTE;
 
@@ -101,6 +108,11 @@ export class PanelDocente {
    * es entrenarla para ignorar la campana.
    */
   protected readonly notificaciones = computed(() => this.resumen().rechazados);
+
+  /** El detalle que se despliega al tocar la campana: qué le rechazaron y por qué. */
+  protected readonly notificacionesDetalle = computed(() =>
+    notificacionesPorRechazos(this.documentos(), { url: '/legajo/mis-documentos' }),
+  );
 
   /**
    * El progreso del legajo, con la fórmula del MVP: documentos aprobados

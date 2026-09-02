@@ -5,8 +5,9 @@
   subtitulo="Todo el instituto y el estado de su documentación."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
-  rolPrincipal="Director"
+  [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
   <!--

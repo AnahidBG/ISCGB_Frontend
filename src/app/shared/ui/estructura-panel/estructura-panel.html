@@ -1,12 +1,19 @@
 <div class="flex min-h-dvh bg-fondo-panel">
   <!--
-    Barra lateral. En celular vive fuera de pantalla (-translate-x-full) y se
-    muestra encima del contenido al abrir el menú; en escritorio (lg:) queda
-    siempre visible y en flujo, como en el Figma.
+    Barra lateral de ESCRITORIO. En celular no existe (`hidden lg:flex`): ahí
+    el menú es el cajón desplegable que se arma más abajo.
+
+    Antes esta misma barra hacía las dos cosas — vivía `fixed` fuera de
+    pantalla con `-translate-x-full` y entraba deslizándose al abrir el menú.
+    Esa clase negativa solo aparecía dentro de un `[class.…]` de Angular, así
+    que Tailwind no siempre la generaba al compilar y la barra quedaba mal
+    posicionada en celular: el menú "no salía". Separar los dos casos —
+    escritorio con `hidden lg:flex`, celular con un bloque `@if` propio de
+    clases fijas — saca el problema de raíz en vez de depender de que el
+    compilador de CSS adivine una clase escondida en un binding.
   -->
   <aside
-    class="fixed inset-y-0 left-0 z-40 flex w-[260px] max-w-[85vw] flex-col overflow-y-auto border-r border-borde bg-superficie transition-[width,transform] duration-200 ease-in-out lg:static lg:max-w-none lg:translate-x-0"
-    [class.-translate-x-full]="!menuAbierto()"
+    class="hidden flex-col overflow-y-auto border-r border-borde bg-superficie transition-[width] duration-200 ease-in-out lg:flex"
     [class.lg:w-20]="colapsado()"
     [class.lg:w-64]="!colapsado()"
   >
@@ -129,28 +136,130 @@
     </div>
   </aside>
 
-  <!-- Fondo oscuro detrás del menú de celular. Cerrarlo con un toque afuera. -->
+  <!--
+    ── Menú de celular ───────────────────────────────────────────────────
+    Un cajón que se abre desde la izquierda con los MISMOS enlaces que la
+    barra de escritorio (los dos leen `enlaces()`), más "Cerrar sesión".
+
+    Se dibuja solo cuando está abierto y con clases fijas — sin transformadas
+    ni utilidades condicionales — para que no dependa de nada que Tailwind
+    tenga que deducir. Sin colapsar ni tooltips: en una pantalla chica el
+    menú se abre entero o no se abre.
+  -->
   @if (menuAbierto()) {
-    <button
-      type="button"
-      aria-label="Cerrar menú"
-      class="fixed inset-0 z-30 bg-texto/40 lg:hidden"
-      (click)="cerrarMenu()"
-    ></button>
+    <div class="lg:hidden">
+      <!-- Fondo oscuro: un toque afuera cierra el menú. -->
+      <button
+        type="button"
+        aria-label="Cerrar menú"
+        class="fixed inset-0 z-40 bg-texto/50"
+        (click)="cerrarMenu()"
+      ></button>
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menú principal"
+        class="fixed inset-y-0 left-0 z-50 flex w-[280px] max-w-[85vw] flex-col overflow-y-auto border-r border-borde bg-superficie shadow-marca-lg"
+      >
+        <div class="flex items-center gap-3 border-b border-borde px-5 py-4">
+          <span
+            class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-principal text-white"
+          >
+            <svg aria-hidden="true" viewBox="0 0 62 58" class="h-5 w-5">
+              <path fill="currentColor" d="M58.8801 50.7238C51.9197 60.0538 37.2992 58.2486 37.2803 56.9259L37.2425 52.8329C37.2236 50.4378 53.4896 55.2458 55.3432 43.5743C56.3267 37.39 51.9387 31.8134 44.4298 31.8134H16.7398C11.0277 31.8134 6.52621 36.5678 6.29924 41.2507C6.05336 46.5592 10.3279 51.7783 16.6452 51.8856C21.8276 51.9749 26.575 49.3296 27.7288 44.9148L19.5579 44.8791C18.7446 44.8791 17.1748 43.199 17.0424 42.5376C16.8343 41.5367 18.5744 38.8914 19.6525 38.9093L34.2163 39.2489C35.9185 47.2563 31.0009 53.0295 25.0808 55.9429C18.3285 59.2495 10.5171 57.8911 5.032 52.7971C-2.45793 45.8443 -1.39875 35.1022 7.33951 28.9715C0.454823 23.8418 -1.45549 16.8174 1.06007 10.6332C3.93499 3.5552 11.0656 -0.41275 19.5201 0.0340912L23.0759 0.230701C24.2486 0.284322 24.0027 5.3208 23.0759 6C19.8038 8.43082 6.88557 3.8233 6.29924 15.1731C5.99662 21.0714 10.8953 26.2726 18.0637 26.2011L45.9618 25.8973C52.1467 25.8258 55.8917 20.3386 55.4377 15.0301C55.0784 10.8476 51.4847 6.34349 45.2999 5.68217C41.1955 5.2532 35.8429 8.48833 33.8758 12.5814L43.1247 13.2248C44.6568 13.3321 44.6 18.6763 43.1247 18.7299L27.5964 18.5691C26.0076 7.91637 34.4621 0.588174 43.9002 0.159207C53.3383 -0.269761 62.4927 6.84395 61.982 16.8711C61.755 21.3931 58.1803 25.9688 54.719 29.1145C61.8685 33.9047 64.7056 42.9309 58.899 50.7238H58.8801Z" />
+            </svg>
+          </span>
+          <span class="flex flex-1 flex-col leading-tight">
+            <span class="text-lg font-bold text-principal">ISCGB</span>
+            <span class="text-xs text-texto-suave">Gestión Académica</span>
+          </span>
+
+          <button
+            type="button"
+            class="shrink-0 rounded-lg border border-borde p-1.5 text-texto-suave transition-colors hover:bg-fondo-panel hover:text-texto"
+            aria-label="Cerrar menú"
+            (click)="cerrarMenu()"
+          >
+            <app-icono nombre="cerrar" class="h-4 w-4" />
+          </button>
+        </div>
+
+        <nav class="flex flex-1 flex-col gap-1 px-4 py-3" aria-label="Menú principal">
+          @for (enlace of enlaces(); track enlace.url) {
+            <a
+              [routerLink]="enlace.url"
+              routerLinkActive="bg-principal-suave text-principal font-semibold"
+              [routerLinkActiveOptions]="{ exact: true }"
+              ariaCurrentWhenActive="page"
+              class="flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+              (click)="cerrarMenu()"
+            >
+              @if (enlace.icono; as icono) {
+                <app-icono [nombre]="icono" class="h-5 w-5 shrink-0" />
+              }
+              {{ enlace.etiqueta }}
+            </a>
+          }
+        </nav>
+
+        <div class="border-t border-borde px-4 py-4">
+          <button
+            type="button"
+            class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-medium text-rechazado transition-colors hover:bg-rechazado/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rechazado"
+            (click)="cerrarMenu(); cerrarSesion.emit()"
+          >
+            <app-icono nombre="salir" class="h-5 w-5 shrink-0" />
+            Cerrar Sesión
+          </button>
+        </div>
+      </div>
+    </div>
   }
 
   <div class="flex min-h-dvh flex-1 flex-col">
     <header
       class="flex items-center gap-4 border-b border-borde bg-superficie px-6 py-3.5"
     >
+      <!--
+        Hamburguesa. El `shrink-0` no es decorativo: sin él este botón era el
+        ÚNICO hijo encogible del header (la marca, el buscador y el bloque de
+        la persona ya lo tenían), así que en pantallas angostas el navegador
+        lo achicaba hasta hacerlo desaparecer y el menú quedaba inalcanzable
+        en celular — el bug reportado en la demo del 02/09/2026.
+      -->
       <button
         type="button"
-        class="rounded-lg p-2 text-texto-suave hover:bg-fondo-panel lg:hidden"
+        class="shrink-0 rounded-lg p-2 text-texto-suave hover:bg-fondo-panel lg:hidden"
         aria-label="Abrir menú"
+        [attr.aria-expanded]="menuAbierto()"
+        aria-haspopup="menu"
         (click)="alternarMenu()"
       >
-        <app-icono nombre="menu" class="h-5 w-5" />
+        <app-icono nombre="menu" class="h-5 w-5 shrink-0" />
       </button>
+
+      <!--
+        Marca en el header de celular. En escritorio no hace falta (`lg:hidden`):
+        la marca ya está siempre visible en la barra lateral. En celular, en
+        cambio, la barra lateral vive fuera de pantalla hasta que se abre el
+        menú (ver el comentario de `-translate-x-full` más arriba), así que sin
+        esto el header de celular quedaba sin ningún logo — el bug reportado de
+        "el logo no se muestra en mobile".
+      -->
+      <span class="flex shrink-0 items-center gap-2 lg:hidden" aria-hidden="true">
+        <span
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-principal text-white"
+        >
+          <svg viewBox="0 0 62 58" class="h-4.5 w-4.5">
+            <path
+              fill="currentColor"
+              d="M58.8801 50.7238C51.9197 60.0538 37.2992 58.2486 37.2803 56.9259L37.2425 52.8329C37.2236 50.4378 53.4896 55.2458 55.3432 43.5743C56.3267 37.39 51.9387 31.8134 44.4298 31.8134H16.7398C11.0277 31.8134 6.52621 36.5678 6.29924 41.2507C6.05336 46.5592 10.3279 51.7783 16.6452 51.8856C21.8276 51.9749 26.575 49.3296 27.7288 44.9148L19.5579 44.8791C18.7446 44.8791 17.1748 43.199 17.0424 42.5376C16.8343 41.5367 18.5744 38.8914 19.6525 38.9093L34.2163 39.2489C35.9185 47.2563 31.0009 53.0295 25.0808 55.9429C18.3285 59.2495 10.5171 57.8911 5.032 52.7971C-2.45793 45.8443 -1.39875 35.1022 7.33951 28.9715C0.454823 23.8418 -1.45549 16.8174 1.06007 10.6332C3.93499 3.5552 11.0656 -0.41275 19.5201 0.0340912L23.0759 0.230701C24.2486 0.284322 24.0027 5.3208 23.0759 6C19.8038 8.43082 6.88557 3.8233 6.29924 15.1731C5.99662 21.0714 10.8953 26.2726 18.0637 26.2011L45.9618 25.8973C52.1467 25.8258 55.8917 20.3386 55.4377 15.0301C55.0784 10.8476 51.4847 6.34349 45.2999 5.68217C41.1955 5.2532 35.8429 8.48833 33.8758 12.5814L43.1247 13.2248C44.6568 13.3321 44.6 18.6763 43.1247 18.7299L27.5964 18.5691C26.0076 7.91637 34.4621 0.588174 43.9002 0.159207C53.3383 -0.269761 62.4927 6.84395 61.982 16.8711C61.755 21.3931 58.1803 25.9688 54.719 29.1145C61.8685 33.9047 64.7056 42.9309 58.899 50.7238H58.8801Z"
+            />
+          </svg>
+        </span>
+        <span class="text-base font-bold text-principal">ISCGB</span>
+      </span>
 
       <!--
         Buscador. Todavía no busca nada: no hay endpoint de búsqueda en el
@@ -175,23 +284,141 @@
 
       <div class="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
         <!--
-          Campana. El puntito rojo se enciende solo cuando `notificaciones()`
-          es mayor que cero, y ese número lo calcula cada panel de sus propios
-          datos. Ver el comentario del input en estructura-panel.ts.
+          Campana. El puntito rojo se enciende solo cuando hay algo que
+          revisar, y eso lo calcula cada panel de sus propios datos (ver el
+          comentario de los inputs en estructura-panel.ts). Al tocarla se
+          despliega el panelcito con el detalle.
+
+          `relative` acá es lo que ancla ese desplegable a la campana.
         -->
-        <button
-          type="button"
-          class="relative rounded-full p-2 text-texto-suave transition-colors hover:bg-fondo-panel"
-          [attr.aria-label]="etiquetaNotificaciones()"
-        >
-          <app-icono nombre="campana" class="h-5 w-5" />
-          @if (hayNotificaciones()) {
-            <span
-              aria-hidden="true"
-              class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rechazado ring-2 ring-superficie"
-            ></span>
+        <div class="relative">
+          <button
+            type="button"
+            class="relative rounded-full p-2 text-texto-suave transition-colors hover:bg-fondo-panel"
+            [attr.aria-label]="etiquetaNotificaciones()"
+            [attr.aria-expanded]="menuNotificacionesAbierto()"
+            aria-haspopup="menu"
+            (click)="alternarMenuNotificaciones($event)"
+          >
+            <app-icono nombre="campana" class="h-5 w-5" />
+            @if (hayNotificaciones()) {
+              <span
+                aria-hidden="true"
+                class="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-rechazado ring-2 ring-superficie"
+              ></span>
+            }
+          </button>
+
+          @if (menuNotificacionesAbierto()) {
+            <!-- Ídem el menú de la persona: tocar adentro no lo cierra. -->
+            <div
+              role="menu"
+              aria-label="Notificaciones"
+              class="absolute right-0 top-full z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-borde bg-superficie shadow-marca-lg"
+              (click)="$event.stopPropagation()"
+            >
+              <div class="flex items-center justify-between gap-3 border-b border-borde px-4 py-3">
+                <p class="text-sm font-semibold text-texto">Notificaciones</p>
+                @if (hayNotificaciones()) {
+                  <span
+                    class="rounded-full bg-rechazado/10 px-2.5 py-0.5 text-xs font-semibold text-rechazado"
+                  >
+                    {{ cantidadNotificaciones() }}
+                  </span>
+                }
+              </div>
+
+              @if (notificacionesDetalle().length > 0) {
+                <ul class="max-h-80 divide-y divide-borde overflow-y-auto">
+                  @for (novedad of notificacionesDetalle(); track $index) {
+                    <li>
+                      <!--
+                        Con `url` la fila lleva a algún lado; sin `url` es solo
+                        el aviso. Se dibujan igual para que la lista se lea
+                        pareja.
+                      -->
+                      @if (novedad.url; as destino) {
+                        <a
+                          role="menuitem"
+                          [routerLink]="destino"
+                          class="flex gap-3 px-4 py-3 transition-colors hover:bg-fondo-panel"
+                          (click)="cerrarMenuNotificaciones()"
+                        >
+                          <span
+                            aria-hidden="true"
+                            class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                            [class]="
+                              novedad.tono === 'rechazado'
+                                ? 'bg-rechazado'
+                                : novedad.tono === 'aprobado'
+                                  ? 'bg-aprobado'
+                                  : 'bg-pendiente'
+                            "
+                          ></span>
+                          <span class="min-w-0">
+                            <span class="block text-sm font-medium text-texto">
+                              {{ novedad.titulo }}
+                            </span>
+                            @if (novedad.detalle) {
+                              <span class="mt-0.5 block text-xs text-texto-suave">
+                                {{ novedad.detalle }}
+                              </span>
+                            }
+                          </span>
+                        </a>
+                      } @else {
+                        <div class="flex gap-3 px-4 py-3">
+                          <span
+                            aria-hidden="true"
+                            class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                            [class]="
+                              novedad.tono === 'rechazado'
+                                ? 'bg-rechazado'
+                                : novedad.tono === 'aprobado'
+                                  ? 'bg-aprobado'
+                                  : 'bg-pendiente'
+                            "
+                          ></span>
+                          <span class="min-w-0">
+                            <span class="block text-sm font-medium text-texto">
+                              {{ novedad.titulo }}
+                            </span>
+                            @if (novedad.detalle) {
+                              <span class="mt-0.5 block text-xs text-texto-suave">
+                                {{ novedad.detalle }}
+                              </span>
+                            }
+                          </span>
+                        </div>
+                      }
+                    </li>
+                  }
+                </ul>
+
+                @if (notificacionesNoListadas() > 0) {
+                  <p class="border-t border-borde px-4 py-2.5 text-xs text-texto-suave">
+                    Y {{ notificacionesNoListadas() }}
+                    {{ notificacionesNoListadas() === 1 ? 'novedad más' : 'novedades más' }}.
+                  </p>
+                }
+              } @else if (hayNotificaciones()) {
+                <!--
+                  El panel encendió la campana pero todavía no arma el detalle:
+                  se dice lo que se sabe, que es cuántas cosas hay.
+                -->
+                <p class="px-4 py-6 text-center text-sm text-texto-suave">
+                  Tenés {{ cantidadNotificaciones() }}
+                  {{ cantidadNotificaciones() === 1 ? 'cosa' : 'cosas' }} para revisar en esta
+                  sección.
+                </p>
+              } @else {
+                <p class="px-4 py-6 text-center text-sm text-texto-suave">
+                  No hay novedades. Está todo al día.
+                </p>
+              }
+            </div>
           }
-        </button>
+        </div>
 
         <span aria-hidden="true" class="hidden h-8 w-px bg-borde sm:block"></span>
 

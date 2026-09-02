@@ -24,4 +24,11 @@ export interface DocumentoLegajo {
    * personas; en "mi legajo" ya se sabe de quién es.
    */
   propietario?: string;
+
+  /**
+   * El PDF, para poder abrirlo antes de aprobar o rechazar. Opcional porque
+   * `/pendientes` no lo manda (ver `aDocumentoPendiente`) y los datos de
+   * prueba tampoco lo tienen cargado.
+   */
+  rutaArchivo?: string | null;
 }

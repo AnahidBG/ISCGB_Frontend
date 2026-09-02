@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { rolPrincipalDe } from '../../core/auth/rol-principal';
 import { destinoSegunRoles } from '../../core/auth/destino-por-rol';
 import { enlacesPorSesion } from '../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../shared/ui/estructura-panel/estructura-panel';
@@ -54,7 +55,7 @@ export class Proximamente {
    */
   protected readonly datos = this.route.snapshot.data as DatosProximamente;
 
-  protected readonly rolPrincipal = computed(() => this.sesion()?.roles[0] ?? '');
+  protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
   protected readonly rutaPanel = computed(() => destinoSegunRoles(this.sesion()));
 
   /**

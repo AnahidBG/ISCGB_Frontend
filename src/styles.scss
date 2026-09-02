@@ -1,6 +1,21 @@
 @use 'tailwindcss';
 
 /* ---------------------------------------------------------------------------
+   SAFELIST — clases que Tailwind no ve escritas "sueltas".
+
+   Tailwind v4 arma el CSS leyendo el texto de los archivos: si una utilidad
+   no aparece literalmente en ningún lado, no la genera. Las que se aplican
+   con un binding de Angular (`[class.lg:w-20]="colapsado()"`) quedan pegadas
+   al `class.` del binding y pueden no reconocerse, y entonces la clase existe
+   en el HTML pero no tiene ninguna regla CSS detrás — el síntoma es un
+   elemento que "no reacciona" (fue el caso del menú lateral en celular).
+
+   Declararlas acá las genera siempre. Si una utilidad deja de usarse en un
+   binding, se saca de esta lista.
+   --------------------------------------------------------------------------- */
+@source inline("lg:w-20 lg:w-64 lg:hidden lg:block lg:flex-col lg:gap-0 lg:gap-2 lg:px-2 lg:px-3 lg:justify-center rotate-180");
+
+/* ---------------------------------------------------------------------------
    SISTEMA DE DISEÑO ISCGB — fuente única de verdad.
 
    Todo lo visual del sistema nace de acá: colores, tipografías y grilla.

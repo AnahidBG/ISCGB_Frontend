@@ -18,6 +18,28 @@ export interface AccionPanel {
   icono?: NombreIcono;
 }
 
+/**
+ * Una novedad de las que se despliegan al tocar la campana.
+ *
+ * Cada panel arma las suyas de sus propios datos: son cosas que YA pasaron y
+ * que esta persona puede resolver (un documento rechazado, un justificativo
+ * esperando revisión), no avisos genéricos. Ver `notificacionesPorRechazos`
+ * para el caso más repetido.
+ */
+export interface NotificacionPanel {
+  /** Qué pasó, en una línea. */
+  titulo: string;
+
+  /** La aclaración de abajo: el motivo, la fecha, de quién es. */
+  detalle?: string;
+
+  /** A dónde lleva al tocarla. Sin esto la fila no es un enlace. */
+  url?: string;
+
+  /** Colorea el puntito de la izquierda. Por defecto, `pendiente`. */
+  tono?: 'aprobado' | 'pendiente' | 'rechazado';
+}
+
 /** Dónde se guarda si la persona prefiere el menú colapsado. Ver `leerPreferenciaColapso`. */
 const CLAVE_COLAPSADO = 'iscgb.panel.colapsado';
 
@@ -49,11 +71,12 @@ const CLAVE_COLAPSADO = 'iscgb.panel.colapsado';
   templateUrl: './estructura-panel.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    // Un clic en cualquier lado cierra el menú de la persona, y Escape
-    // también. Es lo que cualquiera espera de un menú desplegable: si no,
-    // queda abierto tapando cosas hasta que se vuelve a tocar el avatar.
-    '(document:click)': 'cerrarMenuPerfil()',
-    '(document:keydown.escape)': 'cerrarMenuPerfil()',
+    // Un clic en cualquier lado cierra los desplegables del encabezado (el de
+    // la persona y el de la campana), y Escape también. Es lo que cualquiera
+    // espera de un menú desplegable: si no, queda abierto tapando cosas hasta
+    // que se vuelve a tocar el botón que lo abrió.
+    '(document:click)': 'cerrarMenusFlotantes()',
+    '(document:keydown.escape)': 'cerrarMenusFlotantes()',
   },
 })
 export class EstructuraPanel {
@@ -105,6 +128,21 @@ export class EstructuraPanel {
    */
   readonly notificaciones = input<number>(0);
 
+  /**
+   * Qué son esas novedades, una por una: lo que se despliega al tocar la
+   * campana.
+   *
+   * Es opcional. Sin esto la campana sigue funcionando: se abre igual y dice
+   * cuántas cosas hay, solo que sin el detalle. Así ningún panel que todavía
+   * no arme la lista queda con un botón que no hace nada.
+   *
+   * Puede traer MENOS ítems que `notificaciones()` — un panel que tiene
+   * cuarenta pendientes no debería volcar cuarenta filas acá. En ese caso el
+   * panelcito muestra los que le pasaron y avisa cuántos quedan afuera (ver
+   * `notificacionesNoListadas`).
+   */
+  readonly notificacionesDetalle = input<NotificacionPanel[]>([]);
+
   readonly cerrarSesion = output<void>();
 
   /** `true` con el menú de celular abierto. En escritorio siempre está visible. */
@@ -116,7 +154,24 @@ export class EstructuraPanel {
   /** `true` con la barra lateral reducida a solo íconos. Ver el comentario de arriba. */
   protected readonly colapsado = signal(leerPreferenciaColapso());
 
-  protected readonly hayNotificaciones = computed(() => this.notificaciones() > 0);
+  /** `true` con el panelcito de la campana desplegado. */
+  protected readonly menuNotificacionesAbierto = signal(false);
+
+  /**
+   * Cuántas novedades hay: el número que manda el panel o, si no mandó
+   * ninguno pero sí la lista, cuántos ítems tiene esa lista. Así un panel
+   * puede pasar solo `notificacionesDetalle` y la campana igual se enciende.
+   */
+  protected readonly cantidadNotificaciones = computed(() =>
+    this.notificaciones() > 0 ? this.notificaciones() : this.notificacionesDetalle().length,
+  );
+
+  protected readonly hayNotificaciones = computed(() => this.cantidadNotificaciones() > 0);
+
+  /** Cuántas novedades quedaron afuera de la lista del panelcito. */
+  protected readonly notificacionesNoListadas = computed(() =>
+    Math.max(0, this.cantidadNotificaciones() - this.notificacionesDetalle().length),
+  );
 
   protected readonly mostrarSaludo = computed(
     () => this.encabezado() === 'saludo' && this.primerNombre() !== '',
@@ -129,7 +184,7 @@ export class EstructuraPanel {
    * no se entera de que hay algo pendiente.
    */
   protected readonly etiquetaNotificaciones = computed(() => {
-    const cantidad = this.notificaciones();
+    const cantidad = this.cantidadNotificaciones();
     if (cantidad === 0) {
       return 'Notificaciones. No hay novedades.';
     }
@@ -162,14 +217,35 @@ export class EstructuraPanel {
   /**
    * `stopPropagation` para que este mismo clic no llegue al `document` y
    * cierre el menú que se acaba de abrir.
+   *
+   * Abrir uno cierra el otro: los dos desplegables salen de la misma esquina
+   * y superpuestos taparían medio encabezado.
    */
   protected alternarMenuPerfil(evento: Event): void {
     evento.stopPropagation();
+    this.menuNotificacionesAbierto.set(false);
     this.menuPerfilAbierto.update((abierto) => !abierto);
   }
 
   protected cerrarMenuPerfil(): void {
     this.menuPerfilAbierto.set(false);
+  }
+
+  /** Ídem `alternarMenuPerfil`, del otro lado. */
+  protected alternarMenuNotificaciones(evento: Event): void {
+    evento.stopPropagation();
+    this.menuPerfilAbierto.set(false);
+    this.menuNotificacionesAbierto.update((abierto) => !abierto);
+  }
+
+  protected cerrarMenuNotificaciones(): void {
+    this.menuNotificacionesAbierto.set(false);
+  }
+
+  /** Un clic afuera (o Escape) cierra cualquiera de los dos desplegables. */
+  protected cerrarMenusFlotantes(): void {
+    this.menuPerfilAbierto.set(false);
+    this.menuNotificacionesAbierto.set(false);
   }
 
   protected alternarColapso(): void {

@@ -2,6 +2,7 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { urlArchivoSubido } from '../../../core/configuracion/api';
 import { JustificativoPendiente } from '../../../core/justificativos/modelos/justificativo-pendiente';
 import {
@@ -9,7 +10,11 @@ import {
   VeredictoAuditoria,
 } from '../../../core/justificativos/justificativos.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
-import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
+import {
+  EstructuraPanel,
+  NotificacionPanel,
+} from '../../../shared/ui/estructura-panel/estructura-panel';
+import { MAXIMO_NOTIFICACIONES } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 
 /**
@@ -44,6 +49,11 @@ export class PanelSecretario {
 
   protected readonly sesion = this.auth.sesion;
 
+
+  /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
+
+  protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
+
   protected readonly pendientes = signal<JustificativoPendiente[]>([]);
   protected readonly cargando = signal(true);
   protected readonly error = signal<string | null>(null);
@@ -66,6 +76,24 @@ export class PanelSecretario {
    * encendía acá aunque hubiera pendientes reales.
    */
   protected readonly notificaciones = computed(() => this.pendientes().length);
+
+  /**
+   * El detalle que se despliega al tocar la campana: quién pidió justificar
+   * y por qué motivo.
+   *
+   * Sin `url`: los justificativos se revisan en ESTA misma pantalla, así que
+   * un enlace no llevaría a ningún lado nuevo. Se muestran los primeros
+   * `MAXIMO_NOTIFICACIONES` y el panelcito avisa solo cuántos quedan.
+   */
+  protected readonly notificacionesDetalle = computed<NotificacionPanel[]>(() =>
+    this.pendientes()
+      .slice(0, MAXIMO_NOTIFICACIONES)
+      .map((justificativo) => ({
+        titulo: `${justificativo.nombreDocente} pidió justificar una inasistencia`,
+        detalle: justificativo.tipoInasistencia,
+        tono: 'pendiente' as const,
+      })),
+  );
 
   constructor() {
     this.cargar();

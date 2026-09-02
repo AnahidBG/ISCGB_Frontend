@@ -39,7 +39,11 @@ export type NombreIcono =
   | 'configuracion'
   | 'tabla'
   | 'tarjetas'
-  | 'compacto';
+  | 'compacto'
+  // Agregados el 02/09/2026: la X que cierra el menú de celular y el signo
+  // de exclamación del recordatorio de entrega en Secretaría.
+  | 'cerrar'
+  | 'alerta';
 
 /**
  * Un ícono del sistema, dibujado en SVG inline.

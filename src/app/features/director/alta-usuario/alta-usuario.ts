@@ -3,20 +3,17 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { esDniValido, normalizarDni } from '../../../core/auth/dni';
 import {
   LARGO_MINIMO_PASSWORD,
   validadorPassword,
 } from '../../../core/auth/password';
-import { ROLES, Rol } from '../../../core/auth/modelos/rol';
-import { tieneAlgunRol } from '../../../core/auth/modelos/sesion';
+import { Rol } from '../../../core/auth/modelos/rol';
 import { OPCIONES_DE_ROL } from '../../../core/usuarios/modelos/nuevo-usuario';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
-import { ENLACES_COMUNES } from '../../../shared/ui/estructura-panel/enlaces-comunes';
-import {
-  EnlacePanel,
-  EstructuraPanel,
-} from '../../../shared/ui/estructura-panel/estructura-panel';
+import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
+import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { RequisitosPassword } from '../../../shared/ui/requisitos-password/requisitos-password';
 
@@ -58,6 +55,11 @@ export class AltaUsuario {
   private readonly fb = inject(FormBuilder);
 
   protected readonly sesion = this.auth.sesion;
+
+
+  /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
+
+  protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
   protected readonly opcionesDeRol = OPCIONES_DE_ROL;
   protected readonly largoMinimoPassword = LARGO_MINIMO_PASSWORD;
 
@@ -109,23 +111,15 @@ export class AltaUsuario {
     initialValue: '',
   });
 
-  protected readonly enlaces = computed<EnlacePanel[]>(() => {
-    const enlaces: EnlacePanel[] = [
-      { etiqueta: 'Dashboard', url: '/director/panel', icono: 'panel' },
-      { etiqueta: 'Nuevo usuario', url: '/director/usuarios/nuevo', icono: 'usuarios' },
-    ];
-
-    if (tieneAlgunRol(this.sesion(), [ROLES.docente])) {
-      enlaces.push({
-        etiqueta: 'Entregar programa de materia',
-        url: '/docente/entrega-programa',
-        icono: 'legajo',
-      });
-    }
-
-    enlaces.push(...ENLACES_COMUNES);
-    return enlaces;
-  });
+  /**
+   * ⚠️ Antes esta pantalla armaba su propia lista a mano (Dashboard + Nuevo
+   * Usuario + Entregar programa, nada más) y por eso a un Director le
+   * desaparecían acá "Control de Legajos", "Mi Legajo" o "Subir Documento"
+   * apenas entraba a Alta de Usuario — exactamente el bug que
+   * `enlacesPorSesion()` se creó para evitar (ver el comentario de esa
+   * función). Ahora usa la misma fuente única que el resto de los paneles.
+   */
+  protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
   protected estaElegido(rol: Rol): boolean {
     return this.rolesElegidos().has(rol);

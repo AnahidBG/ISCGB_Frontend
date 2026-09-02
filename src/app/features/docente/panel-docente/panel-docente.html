@@ -5,8 +5,9 @@
   subtitulo="Acá está el resumen de tu estado académico y legajo."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
-  rolPrincipal="Docente"
+  [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">

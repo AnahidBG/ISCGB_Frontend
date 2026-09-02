@@ -10,6 +10,10 @@ import {
 import { Boton } from '../../../../../shared/ui/boton/boton';
 import { CampoFormulario } from '../../../../../shared/ui/campo-formulario/campo-formulario';
 import { ContenidoUnidad } from '../../../../../core/programas-materia/modelos/contenido-unidad';
+import {
+  MateriaACargo,
+  etiquetaDeMateria,
+} from '../../../../../core/programas-materia/modelos/contexto-docente';
 import { ProgramaMateria } from '../../../../../core/programas-materia/modelos/programa-materia';
 
 /** Los valores de "Condición" que maneja el instituto. */
@@ -42,12 +46,17 @@ type GrupoUnidad = FormGroup<{
  * es una fuente de errores (unidades salteadas o repetidas) que no aporta
  * nada — el orden de la lista ya lo dice.
  *
- * ⚠️ `idDocente` e `idMateria` son campos numéricos manuales por ahora.
- * Lo correcto sería resolver `idDocente` a partir de la sesión activa y
- * elegir `idMateria` de una lista de materias a cargo del docente, pero
- * ninguna de las dos cosas tiene todavía un endpoint en el backend (no
- * existe `GET /api/Docentes/por-usuario/{idUsuario}` ni `GET /api/Materias`).
- * Hasta que existan, se cargan a mano.
+ * ── Los ids salieron del formulario (01/09/2026) ──────────────────────────
+ * Antes esta pantalla pedía "ID Docente" e "ID Materia" como dos campos
+ * numéricos a mano. Nadie sabe de memoria su id en la tabla `docentes`, y
+ * escribir el número equivocado guardaba el programa a nombre de otra
+ * persona sin que nada avisara: el backend solo valida que el id EXISTA, no
+ * que sea el tuyo.
+ *
+ * Ahora los dos salen de `GET /api/ProgramasMateria/contexto-docente/{id}`,
+ * que los resuelve desde la sesión: el `idDocente` llega ya resuelto por
+ * `input` y la materia se elige por nombre de una lista. Ver
+ * `ContextoDocente`.
  */
 @Component({
   selector: 'app-formulario-programa-materia',
@@ -64,14 +73,25 @@ export class FormularioProgramaMateria {
   /** Mensaje de error del último intento de envío, o `null` si no hubo. */
   readonly error = input<string | null>(null);
 
+  /**
+   * El docente que firma el programa, ya resuelto desde la sesión por el
+   * contenedor. No se pide ni se muestra: la persona no elige quién es.
+   */
+  readonly idDocente = input.required<number>();
+
+  /** Las materias que puede elegir. El contenedor garantiza que no viene vacía. */
+  readonly materias = input.required<MateriaACargo[]>();
+
   @Output() readonly enviarPrograma = new EventEmitter<ProgramaMateria>();
 
   protected readonly opcionesCondicion = OPCIONES_CONDICION;
   protected readonly opcionesFormatoCurricular = OPCIONES_FORMATO_CURRICULAR;
+  protected readonly etiquetaDeMateria = etiquetaDeMateria;
 
   protected readonly formulario = this.fb.nonNullable.group({
     // ── Identificación ──────────────────────────────────────────────────
-    idDocente: [0, [Validators.required, Validators.min(1)]],
+    // `idDocente` ya no está acá: lo pone `enviar()` desde el input. Lo
+    // único que se elige es la materia, y por nombre.
     idMateria: [0, [Validators.required, Validators.min(1)]],
     cicloLectivo: [String(new Date().getFullYear()), [Validators.required]],
     condicion: [OPCIONES_CONDICION[0] as string, [Validators.required]],
@@ -147,8 +167,10 @@ export class FormularioProgramaMateria {
     }));
 
     const programa: ProgramaMateria = {
-      idDocente: valores.idDocente,
-      idMateria: valores.idMateria,
+      idDocente: this.idDocente(),
+      // El `<select>` devuelve el valor como texto aunque las opciones sean
+      // números: sin `Number(...)` el backend recibe "7" y falla el binding.
+      idMateria: Number(valores.idMateria),
       condicion: valores.condicion,
       fundamentacion: valores.fundamentacion,
       objetivosEspecificos: valores.objetivosEspecificos,

@@ -1,15 +1,16 @@
 <app-estructura-panel
   [enlaces]="enlaces()"
   tituloPagina="Control de Legajos"
-  subtitulo="Documentos de todo el instituto, agrupados por persona."
+  subtitulo="Personas del instituto y sus documentos por estado. Abrí un perfil para ver el detalle."
   encabezado="titulo"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
-  rolPrincipal="Secretario"
+  [rolPrincipal]="rolPrincipal()"
   [notificaciones]="totalPendientes()"
+  [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
-  <!-- Selector de "Vista del Panel": Tabla, Cards (el detalle de siempre) o Compacto. -->
+  <!-- Selector de "Vista del Panel": Tabla, Cards o Compacto — las tres listan personas, cambia solo la densidad. -->
   <div class="mb-5 flex justify-end sm:mb-6">
     <div class="relative">
       <button
@@ -55,28 +56,12 @@
     </div>
   </div>
 
-  @if (errorAuditoria(); as mensaje) {
-    <div class="mb-6 rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado" role="alert">
-      {{ mensaje }}
-      <button type="button" class="ml-2 underline" (click)="errorAuditoria.set(null)">
-        Cerrar
-      </button>
-    </div>
-  }
-
   @if (error(); as mensaje) {
     <div class="mb-6 rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado" role="alert">
       {{ mensaje }}
       <button type="button" class="ml-2 underline" (click)="cargar()">Reintentar</button>
     </div>
   }
-
-  <!-- Rechazar guarda el motivo pero todavía no manda el mail (regla #4). -->
-  <div class="mb-6 rounded-lg bg-pendiente/10 px-4 py-3 text-sm text-texto">
-    Al rechazar un documento se guarda el motivo, pero el
-    <strong>aviso automático por correo todavía no está implementado</strong>
-    en el sistema: por ahora hay que avisarle a la persona por otro medio.
-  </div>
 
   <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
     <div>
@@ -145,7 +130,6 @@
         </thead>
         <tbody class="divide-y divide-borde">
           @for (usuario of usuariosFiltrados(); track usuario.idUsuario) {
-            @let conteo = conteos(usuario);
             <tr>
               <td class="px-5 py-3 sm:px-6">
                 <div class="flex items-center gap-3">
@@ -160,27 +144,27 @@
               </td>
               <td class="whitespace-nowrap px-5 py-3 text-texto-suave sm:px-6">{{ usuario.dni }}</td>
               <td class="whitespace-nowrap px-5 py-3 sm:px-6">
-                @if (conteo.pendientes > 0) {
+                @if (usuario.pendientes > 0) {
                   <span class="rounded-full bg-pendiente/10 px-2.5 py-1 text-xs font-medium text-pendiente">
-                    {{ conteo.pendientes }}
+                    {{ usuario.pendientes }}
                   </span>
                 } @else {
                   <span class="text-texto-suave">—</span>
                 }
               </td>
               <td class="whitespace-nowrap px-5 py-3 sm:px-6">
-                @if (conteo.rechazados > 0) {
+                @if (usuario.rechazados > 0) {
                   <span class="rounded-full bg-rechazado/10 px-2.5 py-1 text-xs font-medium text-rechazado">
-                    {{ conteo.rechazados }}
+                    {{ usuario.rechazados }}
                   </span>
                 } @else {
                   <span class="text-texto-suave">—</span>
                 }
               </td>
               <td class="whitespace-nowrap px-5 py-3 sm:px-6">
-                @if (conteo.aprobados > 0) {
+                @if (usuario.aprobados > 0) {
                   <span class="rounded-full bg-aprobado/10 px-2.5 py-1 text-xs font-medium text-aprobado">
-                    {{ conteo.aprobados }}
+                    {{ usuario.aprobados }}
                   </span>
                 } @else {
                   <span class="text-texto-suave">—</span>
@@ -204,7 +188,6 @@
     <!-- Vista Compacto: una línea por persona, sin el detalle de cada documento. -->
     <ul class="mt-5 flex flex-col divide-y divide-borde overflow-hidden rounded-2xl border border-borde bg-superficie sm:mt-6">
       @for (usuario of usuariosFiltrados(); track usuario.idUsuario) {
-        @let conteo = conteos(usuario);
         <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-5">
           <div class="flex min-w-0 items-center gap-3">
             <span
@@ -220,19 +203,19 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-2 text-xs font-medium">
-            @if (conteo.pendientes > 0) {
+            @if (usuario.pendientes > 0) {
               <span class="rounded-full bg-pendiente/10 px-2.5 py-1 text-pendiente">
-                {{ conteo.pendientes }} pend.
+                {{ usuario.pendientes }} pend.
               </span>
             }
-            @if (conteo.rechazados > 0) {
+            @if (usuario.rechazados > 0) {
               <span class="rounded-full bg-rechazado/10 px-2.5 py-1 text-rechazado">
-                {{ conteo.rechazados }} rech.
+                {{ usuario.rechazados }} rech.
               </span>
             }
-            @if (conteo.aprobados > 0) {
+            @if (usuario.aprobados > 0) {
               <span class="rounded-full bg-aprobado/10 px-2.5 py-1 text-aprobado">
-                {{ conteo.aprobados }} aprob.
+                {{ usuario.aprobados }} aprob.
               </span>
             }
             <button
@@ -247,77 +230,60 @@
       }
     </ul>
   } @else {
-    <!-- Vista Cards (default): el detalle completo, documento por documento. -->
-    <ul class="mt-5 flex flex-col gap-4 sm:mt-6">
+    <!-- Vista Cards (default): una tarjeta por persona con sus conteos, sin -->
+    <!-- documentos sueltos — ver el detalle documento por documento abre el -->
+    <!-- perfil individual (botón "Ver legajo"). -->
+    <ul class="mt-5 grid grid-cols-1 gap-4 sm:mt-6 sm:grid-cols-2 lg:grid-cols-3">
       @for (usuario of usuariosFiltrados(); track usuario.idUsuario) {
-        @let conteo = conteos(usuario);
-
-        <li class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
-          <div
-            class="flex flex-wrap items-center justify-between gap-3 pb-4"
-            [class.border-b]="conteo.total > 0"
-            [class.border-borde]="conteo.total > 0"
-          >
-            <div class="flex items-center gap-3">
-              <span
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-principal-suave text-sm font-semibold text-principal"
-                aria-hidden="true"
-              >
-                {{ iniciales(usuario.nombreCompleto) }}
-              </span>
-              <div>
-                <p class="text-sm font-semibold text-texto">{{ usuario.nombreCompleto }}</p>
-                <p class="text-xs text-texto-suave">DNI {{ usuario.dni }}</p>
-              </div>
-            </div>
-
-            <!-- Primero lo que hay que hacer, después lo ya resuelto. -->
-            <div class="flex flex-wrap items-center gap-2 text-xs font-medium">
-             <button
-               type="button"
-               class="rounded-full border border-principal px-3 py-1.5 text-xs font-semibold text-principal transition-colors hover:bg-principal-suave"
-               [routerLink]="['/legajo/usuario', usuario.idUsuario]"
-             >
-               Ver legajo
-             </button>
-
-             @if (conteo.pendientes > 0) {
-               <span class="rounded-full bg-pendiente/10 px-2.5 py-1 text-pendiente">
-                 {{ conteo.pendientes }} pendiente{{ conteo.pendientes === 1 ? '' : 's' }}
-               </span>
-             }
-             @if (conteo.rechazados > 0) {
-               <span class="rounded-full bg-rechazado/10 px-2.5 py-1 text-rechazado">
-                 {{ conteo.rechazados }} rechazado{{ conteo.rechazados === 1 ? '' : 's' }}
-               </span>
-             }
-             @if (conteo.aprobados > 0) {
-               <span class="rounded-full bg-aprobado/10 px-2.5 py-1 text-aprobado">
-                 {{ conteo.aprobados }} aprobado{{ conteo.aprobados === 1 ? '' : 's' }}
-               </span>
-             }
-             @if (conteo.otros > 0) {
-               <span class="rounded-full bg-humo px-2.5 py-1 text-texto-suave">
-                 {{ conteo.otros }} sin estado
-               </span>
-             }
+        <li class="flex flex-col gap-4 rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
+          <div class="flex items-center gap-3">
+            <span
+              class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-principal-suave text-sm font-semibold text-principal"
+              aria-hidden="true"
+            >
+              {{ iniciales(usuario.nombreCompleto) }}
+            </span>
+            <div class="min-w-0">
+              <p class="truncate text-sm font-semibold text-texto">{{ usuario.nombreCompleto }}</p>
+              <p class="text-xs text-texto-suave">DNI {{ usuario.dni }}</p>
             </div>
           </div>
 
-          @if (conteo.total > 0) {
-            <ul class="divide-y divide-borde">
-              @for (documento of usuario.documentos; track documento.idLegajo) {
-                <app-fila-documento-legajo
-                  [documento]="documento"
-                  [nombre]="nombreDelDocumento(documento)"
-                  [guardando]="estaGuardando(documento.idLegajo)"
-                  (auditar)="onAuditar(usuario, documento, $event)"
-                />
+          @if (usuario.total > 0) {
+            <!-- Primero lo que hay que hacer, después lo ya resuelto. -->
+            <div class="flex flex-wrap items-center gap-2 text-xs font-medium">
+              @if (usuario.pendientes > 0) {
+                <span class="rounded-full bg-pendiente/10 px-2.5 py-1 text-pendiente">
+                  {{ usuario.pendientes }} pendiente{{ usuario.pendientes === 1 ? '' : 's' }}
+                </span>
               }
-            </ul>
+              @if (usuario.rechazados > 0) {
+                <span class="rounded-full bg-rechazado/10 px-2.5 py-1 text-rechazado">
+                  {{ usuario.rechazados }} rechazado{{ usuario.rechazados === 1 ? '' : 's' }}
+                </span>
+              }
+              @if (usuario.aprobados > 0) {
+                <span class="rounded-full bg-aprobado/10 px-2.5 py-1 text-aprobado">
+                  {{ usuario.aprobados }} aprobado{{ usuario.aprobados === 1 ? '' : 's' }}
+                </span>
+              }
+              @if (usuario.otros > 0) {
+                <span class="rounded-full bg-humo px-2.5 py-1 text-texto-suave">
+                  {{ usuario.otros }} sin estado
+                </span>
+              }
+            </div>
           } @else {
             <p class="text-sm text-texto-suave">Todavía no subió ningún documento.</p>
           }
+
+          <button
+            type="button"
+            class="mt-auto self-start rounded-full border border-principal px-3 py-1.5 text-xs font-semibold text-principal transition-colors hover:bg-principal-suave"
+            [routerLink]="['/legajo/usuario', usuario.idUsuario]"
+          >
+            Ver legajo
+          </button>
         </li>
       }
     </ul>

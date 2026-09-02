@@ -5,8 +5,9 @@
   subtitulo="Acá está el estado de tu documentación."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
-  rolPrincipal="Alumno"
+  [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
   <!--

@@ -6,7 +6,7 @@
   volverUrl="/director/panel"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
-  rolPrincipal="Director"
+  [rolPrincipal]="rolPrincipal()"
   (cerrarSesion)="cerrarSesion()"
 >
   <div class="mx-auto max-w-3xl">

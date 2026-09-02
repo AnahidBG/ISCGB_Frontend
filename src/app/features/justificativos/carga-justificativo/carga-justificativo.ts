@@ -1,19 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
-import { ROLES } from '../../../core/auth/modelos/rol';
-import { tieneAlgunRol } from '../../../core/auth/modelos/sesion';
 import { JustificativosService } from '../../../core/justificativos/justificativos.service';
 import {
   TIPOS_INASISTENCIA,
   exigeComprobante,
 } from '../../../core/justificativos/modelos/tipo-inasistencia';
-import { ENLACES_COMUNES } from '../../../shared/ui/estructura-panel/enlaces-comunes';
-import {
-  EnlacePanel,
-  EstructuraPanel,
-} from '../../../shared/ui/estructura-panel/estructura-panel';
+import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
+import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { ZonaArchivo } from '../../../shared/ui/zona-archivo/zona-archivo';
 
@@ -46,7 +42,7 @@ export class CargaJustificativo {
   protected readonly tipos = TIPOS_INASISTENCIA;
   protected readonly maximoNota = MAXIMO_NOTA;
 
-  protected readonly rolPrincipal = computed(() => this.sesion()?.roles[0] ?? '');
+  protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
   protected readonly rutaPanel = computed(() => destinoSegunRoles(this.sesion()));
 
   protected readonly tipoElegido = signal('');
@@ -61,31 +57,15 @@ export class CargaJustificativo {
   /** Mensaje que devolvió el backend. `null` = todavía no se envió. */
   protected readonly mensajeExito = signal<string | null>(null);
 
-  protected readonly enlaces = computed<EnlacePanel[]>(() => {
-    const enlaces: EnlacePanel[] = [
-      { etiqueta: 'Dashboard', url: this.rutaPanel(), icono: 'panel' },
-    ];
-
-    // Solo quien presenta documentación propia ve el acceso a subirla.
-    if (tieneAlgunRol(this.sesion(), [ROLES.docente, ROLES.alumno])) {
-      enlaces.push({
-        etiqueta: 'Subir Documento',
-        url: '/legajo/subir-documento',
-        icono: 'subir',
-      });
-    }
-
-    if (tieneAlgunRol(this.sesion(), [ROLES.secretario, ROLES.director])) {
-      enlaces.push({
-        etiqueta: 'Control de Legajos',
-        url: '/secretario/control-legajos',
-        icono: 'legajo',
-      });
-    }
-
-    enlaces.push(...ENLACES_COMUNES);
-    return enlaces;
-  });
+  /**
+   * ⚠️ Antes esta pantalla armaba su propia lista a mano y le faltaban "Mi
+   * Legajo", "Nuevo Usuario" y "Entregar programa de materia" — por eso esos
+   * enlaces "desaparecían" del menú apenas alguien entraba a Justificar
+   * Inasistencia, exactamente el bug que `enlacesPorSesion()` se creó para
+   * evitar (ver el comentario de esa función). Ahora usa la misma fuente
+   * única que el resto de los paneles.
+   */
+  protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
   /** `true` cuando el motivo elegido obliga a adjuntar el PDF. */
   protected readonly pideComprobante = computed(

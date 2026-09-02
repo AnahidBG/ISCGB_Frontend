@@ -7,6 +7,12 @@ export const RUTAS_API = {
   pdfPrograma: (idPrograma: number) =>
     `${URL_BASE_API}/api/ProgramasMateria/${idPrograma}/pdf`,
 
+  // Quién es el docente (su IdDocente) y qué materias dicta. Lo pide el
+  // formulario de entrega del programa al abrirse, para no tener que pedir
+  // el "ID Docente" y el "ID Materia" a mano. Ver `ContextoDocente`.
+  contextoDocente: (idUsuario: number) =>
+    `${URL_BASE_API}/api/ProgramasMateria/contexto-docente/${idUsuario}`,
+
   // --- Legajos (ISCGB_Backend/Controllers/LegajoController.cs) ---
   // Confirmado leyendo el código fuente real del backend el 27/08/2026.
 
@@ -29,6 +35,14 @@ export const RUTAS_API = {
    * nada (`documentos: []`).
    */
   legajosResumenEstado: `${URL_BASE_API}/api/Legajos/resumen-estado`,
+
+  /**
+   * Todos los usuarios con conteos por estado (aprobados/pendientes/
+   * rechazados/otros), SIN la lista de documentos — la versión liviana que
+   * usa "Ver Legajos" para listar personas sin traer el legajo completo del
+   * instituto de entrada. Agregado 01/09/2026 (ver `LegajoController.cs`).
+   */
+  legajosResumenUsuarios: `${URL_BASE_API}/api/Legajos/resumen-usuarios`,
 
   /**
    * Documentos pendientes de todo el instituto, con nombre de la persona y

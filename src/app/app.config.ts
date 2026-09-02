@@ -26,10 +26,7 @@ export const appConfig: ApplicationConfig = {
     // el header puesto; `cargaInterceptor` envuelve el resultado para mostrar
     // el logo de espera. Una llamada puntual puede quedar afuera del loader
     // marcándola con SIN_CARGA_GLOBAL — ver core/carga/carga.interceptor.ts.
-    provideHttpClient(
-      withFetch(),
-      withInterceptors([tokenInterceptor, cargaInterceptor]),
-    ),
+    provideHttpClient(withFetch(), withInterceptors([tokenInterceptor, cargaInterceptor])),
 
     // ── Todo contra la API real en http://localhost:5231 ──────────────────
     // Cada uno de estos tiene una versión con datos falsos al lado

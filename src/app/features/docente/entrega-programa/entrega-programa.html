@@ -43,9 +43,45 @@
           </app-boton>
         </div>
       </div>
+    } @else if (cargandoContexto()) {
+      <app-pantalla-carga tamano="md" mensaje="Buscando tus materias…" />
+    } @else if (errorContexto(); as mensaje) {
+      <div class="mt-10 rounded-xl border border-borde bg-superficie p-8 text-center">
+        <p class="text-sm text-texto">{{ mensaje }}</p>
+        <div class="mt-6 flex justify-center">
+          <app-boton nivel="secundario" [conFlecha]="false" (click)="cargarContexto()">
+            Reintentar
+          </app-boton>
+        </div>
+      </div>
+    } @else if (noEsDocente()) {
+      <!--
+        La sesión no tiene fila en `docentes`. El programa de materia lo
+        entrega el docente que la dicta, así que acá no hay nada que
+        completar — y decirlo es más útil que mostrar un formulario que va a
+        fallar recién al enviarlo.
+      -->
+      <div class="mt-10 rounded-xl border border-borde bg-superficie p-8 text-center">
+        <p class="font-semibold text-texto">Esta sección es para docentes.</p>
+        <p class="mt-2 text-sm text-texto-suave">
+          Tu usuario no figura como docente del instituto, así que no tenés materias de
+          las que entregar un programa. Si creés que es un error, avisale a Secretaría.
+        </p>
+      </div>
+    } @else if (!puedeCargarPrograma()) {
+      <!-- Es docente, pero nadie le asignó materias todavía (docentes_materias vacío). -->
+      <div class="mt-10 rounded-xl border border-borde bg-superficie p-8 text-center">
+        <p class="font-semibold text-texto">Todavía no tenés materias asignadas.</p>
+        <p class="mt-2 text-sm text-texto-suave">
+          El programa se entrega por materia, así que necesitamos saber cuáles dictás.
+          Pedile a Secretaría que te asigne tus materias y volvé a entrar.
+        </p>
+      </div>
     } @else {
       <div class="mt-10">
         <app-formulario-programa-materia
+          [idDocente]="contexto()!.idDocente"
+          [materias]="contexto()!.materias"
           [enviando]="enviando()"
           [error]="error()"
           (enviarPrograma)="manejarEnvio($event)"

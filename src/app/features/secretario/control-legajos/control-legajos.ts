@@ -1,55 +1,53 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { forkJoin } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { inicialesDe, normalizarTexto } from '../../../core/comun/texto';
-import { LegajoService, VeredictoLegajo } from '../../../core/legajos/legajo.service';
-import {
-  DocumentoResumenLegajo,
-  LegajoResumenUsuario,
-} from '../../../core/legajos/modelos/legajo-resumen';
-import {
-  MapaTiposDocumento,
-  aprenderNombresDeTipos,
-  nombreTipoDocumento,
-} from '../../../core/legajos/tipos-documento';
+import { LegajoService } from '../../../core/legajos/legajo.service';
+import { ResumenUsuarioLegajo } from '../../../core/legajos/modelos/resumen-usuario-legajo';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
-import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
+import {
+  EstructuraPanel,
+  NotificacionPanel,
+} from '../../../shared/ui/estructura-panel/estructura-panel';
+import { MAXIMO_NOTIFICACIONES } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
-import {
-  AuditoriaDocumentoEvento,
-  FilaDocumentoLegajo,
-} from './partes/fila-documento-legajo/fila-documento-legajo';
-
-/** Conteo por estado de un usuario, para el resumen de su tarjeta. */
-interface ConteoEstados {
-  aprobados: number;
-  pendientes: number;
-  rechazados: number;
-  /** Cualquier valor que no sea uno de los tres del semáforo — incluye `null`. */
-  otros: number;
-  total: number;
-}
 
 /**
- * Control de Legajos: los documentos de todo el instituto agrupados por
- * persona, para que Secretaría o Dirección los apruebe o rechace.
+ * Control de Legajos → "Ver Legajos": la lista de PERSONAS del instituto,
+ * para que Secretaría o Dirección encuentre a alguien puntual sin tener que
+ * revisar una lista plana de documentos sueltos.
  *
- * Contenedor: es el único que conoce `LegajoService`; las filas son
- * presentacionales.
+ * ── Reestructuración del 01/09/2026 ────────────────────────────────────────
+ * Antes esta pantalla mostraba, en la vista "Cards" (la que arrancaba por
+ * defecto), el detalle documento por documento de TODAS las personas del
+ * instituto al mismo tiempo — con los botones de aprobar/rechazar ahí mismo.
+ * Eso generaba justo la sobrecarga visual que pidieron resolver: decenas de
+ * documentos de distintas personas mezclados en la misma pantalla.
  *
- * Hace dos llamadas porque `resumen-estado` trae la estructura pero manda
- * `idTipoDoc` sin el nombre, y `pendientes` sí trae el nombre. Cruzándolas
- * por `idLegajo` se saca qué nombre va con cada id (ver `tipos-documento.ts`).
+ * Ahora esta vista SOLO lista personas (nombre, DNI, conteos por estado). La
+ * revisión — ver cada documento, aprobar, rechazar — pasó al perfil
+ * individual (`/legajo/usuario/:idUsuario`, componente `MisDocumentos`, ver
+ * el comentario "Auditoría" ahí). Ningún documento aprobado o rechazado
+ * desapareció: siguen existiendo y siguen siendo consultables, solo cambió
+ * DÓNDE se muestran.
  *
- * No pongo barra de progreso porque `resumen-estado` no manda el rol de cada
- * persona, y sin eso no sé cuántos documentos le corresponden. Muestro los
- * conteos y listo, mejor que inventar un porcentaje.
+ * También cambió de dónde sale la lista: antes usaba
+ * `obtenerResumenInstitucional()` (`GET /api/Legajos/resumen-estado`), que
+ * manda la lista COMPLETA de documentos de TODOS los usuarios solo para
+ * poder contar cuántos están aprobados/pendientes/rechazados acá. Ahora usa
+ * `obtenerResumenUsuarios()` (`GET /api/Legajos/resumen-usuarios`), que ya
+ * viene con los conteos calculados y no trae ni un documento — la carga de
+ * esta pantalla es liviana, y el legajo completo de una persona se pide
+ * recién al abrir su perfil.
+ *
+ * Contenedor: es el único que conoce `LegajoService`; no le queda ninguna
+ * lógica de auditoría — esa vive en `MisDocumentos` ahora.
  */
 @Component({
   selector: 'app-control-legajos',
-  imports: [EstructuraPanel, PantallaCarga, FilaDocumentoLegajo, RouterLink, Icono],
+  imports: [EstructuraPanel, PantallaCarga, RouterLink, Icono],
   templateUrl: './control-legajos.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -66,18 +64,14 @@ export class ControlLegajos {
 
   protected readonly sesion = this.auth.sesion;
 
-  protected readonly resumen = signal<LegajoResumenUsuario[]>([]);
+
+  /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
+
+  protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
+
+  protected readonly resumen = signal<ResumenUsuarioLegajo[]>([]);
   protected readonly cargando = signal(true);
   protected readonly error = signal<string | null>(null);
-
-  /** Nombres de tipo de documento aprendidos del cruce con `/pendientes`. */
-  protected readonly nombresDeTipos = signal<MapaTiposDocumento>(new Map());
-
-  /** Error de la última auditoría que falló, sin tapar la pantalla entera. */
-  protected readonly errorAuditoria = signal<string | null>(null);
-
-  /** `idLegajo` de los documentos con un pedido de auditoría en curso. */
-  protected readonly guardando = signal<ReadonlySet<number>>(new Set());
 
   /** Filtro de texto: nombre o DNI. Vacío muestra todo. */
   protected readonly busqueda = signal('');
@@ -88,8 +82,9 @@ export class ControlLegajos {
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
   /**
-   * Cómo se dibuja la lista de personas: tabla, tarjetas (el detalle con
-   * cada documento, como siempre) o compacto (una línea por persona).
+   * Cómo se dibuja la lista de personas: tabla, tarjetas o compacto. Las tres
+   * vistas muestran lo mismo (persona + conteos, sin documentos sueltos);
+   * cambia solo la densidad.
    *
    * Igual que `colapsado` en `EstructuraPanel`: se guarda en `localStorage`
    * del navegador para no repetir la elección cada vez que se entra acá.
@@ -115,11 +110,27 @@ export class ControlLegajos {
 
   /** Cuántos documentos hay esperando revisión en todo el instituto. */
   protected readonly totalPendientes = computed(() =>
-    this.resumen().reduce(
-      (total, usuario) =>
-        total + usuario.documentos.filter((d) => d.estado === 'Pendiente').length,
-      0,
-    ),
+    this.resumen().reduce((total, usuario) => total + usuario.pendientes, 0),
+  );
+
+  /**
+   * El detalle que se despliega al tocar la campana: quiénes tienen
+   * documentos esperando revisión, de mayor a menor. Cada fila abre el perfil
+   * de esa persona, que es donde ahora se aprueba o se rechaza.
+   */
+  protected readonly notificacionesDetalle = computed<NotificacionPanel[]>(() =>
+    [...this.resumen()]
+      .filter((usuario) => usuario.pendientes > 0)
+      .sort((a, b) => b.pendientes - a.pendientes)
+      .slice(0, MAXIMO_NOTIFICACIONES)
+      .map((usuario) => ({
+        titulo: usuario.nombreCompleto,
+        detalle: `${usuario.pendientes} ${
+          usuario.pendientes === 1 ? 'documento espera' : 'documentos esperan'
+        } revisión`,
+        url: `/legajo/usuario/${usuario.idUsuario}`,
+        tono: 'pendiente' as const,
+      })),
   );
 
   /**
@@ -131,7 +142,7 @@ export class ControlLegajos {
     const soloPendientes = this.soloPendientes();
 
     const filtrados = this.resumen().filter((usuario) => {
-      if (soloPendientes && !this.tienePendientes(usuario)) {
+      if (soloPendientes && usuario.pendientes === 0) {
         return false;
       }
       if (texto === '') {
@@ -143,16 +154,13 @@ export class ControlLegajos {
     });
 
     return [...filtrados].sort((a, b) => {
-      const pendientesA = this.conteos(a).pendientes;
-      const pendientesB = this.conteos(b).pendientes;
-
       // 1° quien tiene documentos esperando revisión (y quien tiene más).
-      if (pendientesA !== pendientesB) {
-        return pendientesB - pendientesA;
+      if (a.pendientes !== b.pendientes) {
+        return b.pendientes - a.pendientes;
       }
       // 2° quien al menos subió algo, antes que las fichas vacías.
-      if (a.documentos.length !== b.documentos.length) {
-        return b.documentos.length - a.documentos.length;
+      if (a.total !== b.total) {
+        return b.total - a.total;
       }
       // 3° alfabético, para que el orden sea estable y predecible.
       return a.nombreCompleto.localeCompare(b.nombreCompleto, 'es');
@@ -167,16 +175,9 @@ export class ControlLegajos {
     this.cargando.set(true);
     this.error.set(null);
 
-    // En paralelo, no dependen entre sí. Si una falla, forkJoin corta: sin
-    // el resumen no hay nada que dibujar, y sin los pendientes los nombres
-    // salen del mapa hardcodeado sin que nadie se entere.
-    forkJoin({
-      resumen: this.legajoService.obtenerResumenInstitucional(),
-      pendientes: this.legajoService.listarParaRevision(),
-    }).subscribe({
-      next: ({ resumen, pendientes }) => {
+    this.legajoService.obtenerResumenUsuarios().subscribe({
+      next: (resumen) => {
         this.resumen.set(resumen);
-        this.nombresDeTipos.set(aprenderNombresDeTipos(resumen, pendientes));
         this.cargando.set(false);
       },
       error: (fallo: Error) => {
@@ -186,100 +187,10 @@ export class ControlLegajos {
     });
   }
 
-  protected nombreDelDocumento(documento: DocumentoResumenLegajo): string {
-    return nombreTipoDocumento(documento.idTipoDoc, this.nombresDeTipos());
-  }
-
   protected readonly iniciales = inicialesDe;
-
-  protected conteos(usuario: LegajoResumenUsuario): ConteoEstados {
-    const documentos = usuario.documentos;
-    const aprobados = documentos.filter((d) => d.estado === 'Aprobado').length;
-    const pendientes = documentos.filter((d) => d.estado === 'Pendiente').length;
-    const rechazados = documentos.filter((d) => d.estado === 'Rechazado').length;
-    const total = documentos.length;
-
-    return {
-      aprobados,
-      pendientes,
-      rechazados,
-      otros: total - aprobados - pendientes - rechazados,
-      total,
-    };
-  }
-
-  protected tienePendientes(usuario: LegajoResumenUsuario): boolean {
-    return usuario.documentos.some((documento) => documento.estado === 'Pendiente');
-  }
-
-  protected estaGuardando(idLegajo: number): boolean {
-    return this.guardando().has(idLegajo);
-  }
 
   protected alternarSoloPendientes(): void {
     this.soloPendientes.update((valor) => !valor);
-  }
-
-  protected onAuditar(
-    usuario: LegajoResumenUsuario,
-    documento: DocumentoResumenLegajo,
-    evento: AuditoriaDocumentoEvento,
-  ): void {
-    const idAuditor = this.sesion()?.idUsuario;
-    if (idAuditor === undefined) {
-      return;
-    }
-
-    this.marcarGuardando(documento.idLegajo, true);
-    this.errorAuditoria.set(null);
-
-    this.legajoService
-      .auditar(documento.idLegajo, evento.veredicto, idAuditor, evento.comentario)
-      .subscribe({
-        next: () =>
-          this.aplicarVeredictoLocal(usuario.idUsuario, documento.idLegajo, evento.veredicto),
-        error: (fallo: Error) => {
-          this.errorAuditoria.set(fallo.message);
-          this.marcarGuardando(documento.idLegajo, false);
-        },
-        complete: () => this.marcarGuardando(documento.idLegajo, false),
-      });
-  }
-
-  /**
-   * Actualiza el estado en memoria en vez de recargar todo el resumen, que
-   * trae el instituto entero y haría parpadear las tarjetas que no cambiaron.
-   */
-  private aplicarVeredictoLocal(
-    idUsuario: number,
-    idLegajo: number,
-    veredicto: VeredictoLegajo,
-  ): void {
-    this.resumen.update((lista) =>
-      lista.map((usuario) => {
-        if (usuario.idUsuario !== idUsuario) {
-          return usuario;
-        }
-        return {
-          ...usuario,
-          documentos: usuario.documentos.map((documento) =>
-            documento.idLegajo === idLegajo ? { ...documento, estado: veredicto } : documento,
-          ),
-        };
-      }),
-    );
-  }
-
-  private marcarGuardando(idLegajo: number, activo: boolean): void {
-    this.guardando.update((actual) => {
-      const siguiente = new Set(actual);
-      if (activo) {
-        siguiente.add(idLegajo);
-      } else {
-        siguiente.delete(idLegajo);
-      }
-      return siguiente;
-    });
   }
 
   protected cerrarSesion(): void {
@@ -306,8 +217,9 @@ function esVistaPanelValida(valor: string | null): valor is VistaPanel {
 
 /**
  * Lee la vista guardada. Si `localStorage` no está disponible o no hay nada
- * guardado, arranca en "cards" — el detalle completo por persona, que es el
- * comportamiento de siempre.
+ * guardado, arranca en "cards" — tarjetas con los conteos por persona, el
+ * comportamiento de siempre (lo que cambió es que "cards" ya no dibuja los
+ * documentos sueltos de cada una, ver el comentario del componente).
  */
 function leerVistaPanelGuardada(): VistaPanel {
   try {
