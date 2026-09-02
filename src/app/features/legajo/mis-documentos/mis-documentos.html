@@ -8,8 +8,27 @@
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="resumen().rechazados"
+  [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
+  @if (esLegajoAjeno()) {
+    <!-- Rechazar guarda el motivo pero todavía no manda el mail (regla #4). -->
+    <div class="mb-6 rounded-lg bg-pendiente/10 px-4 py-3 text-sm text-texto">
+      Al rechazar un documento se guarda el motivo, pero el
+      <strong>aviso automático por correo todavía no está implementado</strong>
+      en el sistema: por ahora hay que avisarle a la persona por otro medio.
+    </div>
+  }
+
+  @if (errorAuditoria(); as mensaje) {
+    <div class="mb-6 rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado" role="alert">
+      {{ mensaje }}
+      <button type="button" class="ml-2 underline" (click)="errorAuditoria.set(null)">
+        Cerrar
+      </button>
+    </div>
+  }
+
   <div class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
     <div class="flex flex-wrap items-baseline justify-between gap-2">
       <h2 class="text-base font-semibold text-texto">Documentos aprobados</h2>
@@ -118,21 +137,138 @@
             </div>
           </div>
 
-          <div class="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end">
-            <app-insignia-estado [estado]="fila.estado" />
+          <div class="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+            <div class="flex items-center gap-3 sm:flex-col sm:items-end">
+              <app-insignia-estado [estado]="fila.estado" />
 
-            @if (!esLegajoAjeno() && (fila.faltante || fila.estado === 'Rechazado' || estaVencido(fila))) {
-              <button
-                type="button"
-                class="rounded-full border border-principal px-4 py-1.5 text-sm font-medium text-principal transition-colors hover:bg-principal-suave"
-                (click)="irASubir()"
-              >
-                @if (fila.faltante) {
-                  Cargar
-                } @else {
-                  Resubir
-                }
-              </button>
+              @if (!esLegajoAjeno() && (fila.faltante || fila.estado === 'Rechazado' || estaVencido(fila))) {
+                <button
+                  type="button"
+                  class="rounded-full border border-principal px-4 py-1.5 text-sm font-medium text-principal transition-colors hover:bg-principal-suave"
+                  (click)="irASubir()"
+                >
+                  @if (fila.faltante) {
+                    Cargar
+                  } @else {
+                    Resubir
+                  }
+                </button>
+              }
+            </div>
+
+            <!--
+              Aprobar/rechazar: solo en el legajo de OTRA persona (ver el
+              comentario de "Auditoría" en mis-documentos.ts). Antes esto
+              vivía en Control de Legajos; ahora la revisión pasó al perfil de
+              cada persona.
+            -->
+            @if (esLegajoAjeno() && !fila.faltante) {
+              @if (urlDelArchivo(fila); as url) {
+                <a
+                  [href]="url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-xs text-principal underline sm:text-right"
+                >
+                  Ver el archivo
+                </a>
+              } @else {
+                <p class="text-xs text-texto-suave sm:text-right">Sin archivo adjunto.</p>
+              }
+
+              <div class="flex gap-2">
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-full border-2 border-aprobado px-3.5 py-1.5 text-xs font-semibold text-aprobado transition-colors duration-150 hover:bg-aprobado/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aprobado focus-visible:ring-offset-2 disabled:cursor-not-allowed sm:text-sm"
+                  [class.bg-aprobado]="estaGuardando(fila.idLegajo) || fila.estado === 'Aprobado'"
+                  [class.text-white]="estaGuardando(fila.idLegajo) || fila.estado === 'Aprobado'"
+                  [disabled]="estaGuardando(fila.idLegajo) || fila.estado === 'Aprobado'"
+                  [attr.aria-pressed]="fila.estado === 'Aprobado'"
+                  (click)="iniciarAprobacion(fila)"
+                >
+                  @if (fila.estado === 'Aprobado') {
+                    Aprobado
+                  } @else {
+                    Aprobar
+                  }
+                </button>
+
+                <button
+                  type="button"
+                  class="inline-flex items-center gap-1.5 rounded-full border-2 border-rechazado px-3.5 py-1.5 text-xs font-semibold text-rechazado transition-colors duration-150 hover:bg-rechazado/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rechazado focus-visible:ring-offset-2 disabled:cursor-not-allowed sm:text-sm"
+                  [class.bg-rechazado]="estaGuardando(fila.idLegajo) || fila.estado === 'Rechazado'"
+                  [class.text-white]="estaGuardando(fila.idLegajo) || fila.estado === 'Rechazado'"
+                  [disabled]="estaGuardando(fila.idLegajo) || fila.estado === 'Rechazado'"
+                  [attr.aria-pressed]="fila.estado === 'Rechazado'"
+                  (click)="iniciarRechazo(fila)"
+                >
+                  @if (fila.estado === 'Rechazado') {
+                    Rechazado
+                  } @else {
+                    Rechazar
+                  }
+                </button>
+              </div>
+
+              @if (accionAbiertaPara(fila) === 'aprobar') {
+                <div class="w-full rounded-lg border border-aprobado/40 bg-aprobado/5 p-3 sm:w-72">
+                  <p class="text-xs text-texto">
+                    ¿Aprobás <strong>{{ fila.nombre }}</strong>? Se le avisa a la persona y el
+                    documento queda como presentado.
+                  </p>
+                  <div class="mt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      class="rounded-full px-3 py-1 text-xs text-texto-suave hover:text-texto"
+                      (click)="cancelarAccion()"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-full bg-aprobado px-3 py-1 text-xs font-semibold text-white hover:brightness-90"
+                      (click)="confirmarAprobacion()"
+                    >
+                      Sí, aprobar
+                    </button>
+                  </div>
+                </div>
+              }
+
+              @if (accionAbiertaPara(fila) === 'rechazar') {
+                <div class="w-full rounded-lg border border-borde bg-fondo-panel p-3 sm:w-72">
+                  <label
+                    class="text-xs font-medium text-texto-suave"
+                    [attr.for]="'motivo-' + fila.idLegajo"
+                  >
+                    Motivo del rechazo (lo va a ver la persona)
+                  </label>
+                  <textarea
+                    [id]="'motivo-' + fila.idLegajo"
+                    [value]="motivoRechazo()"
+                    (input)="motivoRechazo.set($any($event.target).value)"
+                    rows="2"
+                    class="mt-1 w-full resize-none rounded-md border border-borde bg-superficie px-2 py-1.5 text-sm text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rechazado"
+                    placeholder="Ej: el certificado está vencido, subí uno emitido este año."
+                  ></textarea>
+                  <div class="mt-2 flex justify-end gap-2">
+                    <button
+                      type="button"
+                      class="rounded-full px-3 py-1 text-xs text-texto-suave hover:text-texto"
+                      (click)="cancelarAccion()"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-full bg-rechazado px-3 py-1 text-xs font-semibold text-white hover:brightness-90"
+                      (click)="confirmarRechazo()"
+                    >
+                      Confirmar rechazo
+                    </button>
+                  </div>
+                </div>
+              }
             }
           </div>
         </div>

@@ -1,9 +1,11 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { RUTAS_API } from '../configuracion/api';
+import { ContextoDocente } from './modelos/contexto-docente';
 import { ProgramaMateria } from './modelos/programa-materia';
 import {
+  MENSAJE_ERROR_CONTEXTO_DOCENTE,
   MENSAJE_ERROR_ENVIO_PROGRAMA,
   MENSAJE_ERROR_PDF_PROGRAMA,
   ProgramasMateriaService,
@@ -38,6 +40,32 @@ interface RespuestaCrearPrograma {
 @Injectable()
 export class ProgramasMateriaHttpService extends ProgramasMateriaService {
   private readonly http = inject(HttpClient);
+
+  obtenerContextoDocente(idUsuario: number): Observable<ContextoDocente | null> {
+    return this.http.get<ContextoDocente>(RUTAS_API.contextoDocente(idUsuario)).pipe(
+      map((contexto) => ({
+        idDocente: contexto.idDocente,
+        // `materias` puede no venir si el backend serializa una lista vacía
+        // como ausente; normalizarlo acá evita un `undefined` en el template.
+        materias: (contexto.materias ?? []).map((materia) => ({
+          idMateria: materia.idMateria,
+          nombre: materia.nombre?.trim() || 'Materia sin nombre cargado',
+          carrera: materia.carrera ?? null,
+          curso: materia.curso ?? null,
+        })),
+      })),
+      catchError((error: HttpErrorResponse) => {
+        // 404 = este usuario no es docente. No es un error de red: la
+        // pantalla lo explica con todas las letras. Ver el contrato en
+        // `ProgramasMateriaService.obtenerContextoDocente`.
+        if (error.status === 404) {
+          return of(null);
+        }
+        console.error('Error al traer el contexto del docente:', error);
+        return throwError(() => new Error(MENSAJE_ERROR_CONTEXTO_DOCENTE));
+      }),
+    );
+  }
 
   enviarPrograma(programa: ProgramaMateria): Observable<number> {
     return this.http

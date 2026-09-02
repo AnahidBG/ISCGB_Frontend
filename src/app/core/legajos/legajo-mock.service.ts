@@ -7,6 +7,7 @@ import {
   NuevoDocumentoLegajo,
 } from './modelos/documento-requerido';
 import { LegajoResumenUsuario } from './modelos/legajo-resumen';
+import { ResumenUsuarioLegajo } from './modelos/resumen-usuario-legajo';
 import { LegajoService, VeredictoLegajo } from './legajo.service';
 
 /** Cuánto tarda el legajo falso, para ver el estado de carga en pantalla. */
@@ -142,10 +143,8 @@ const RESUMEN_INSTITUCIONAL_INVENTADO: readonly LegajoResumenUsuario[] = [
  * Pendientes inventados, con la forma de `GET /api/Legajos/pendientes`.
  *
  * Los `id` coinciden a propósito con los `idLegajo` en estado 'Pendiente' de
- * `RESUMEN_INSTITUCIONAL_INVENTADO`: así el cruce que hace
- * `aprenderNombresDeTipos()` tiene con qué trabajar y la pantalla de prueba
- * muestra los nombres reales de los tipos de documento, igual que contra la
- * API real.
+ * `RESUMEN_INSTITUCIONAL_INVENTADO`, para que los datos de prueba sean
+ * coherentes entre los dos endpoints, igual que contra la API real.
  */
 const PENDIENTES_INVENTADOS: readonly DocumentoLegajo[] = [
   {
@@ -217,6 +216,34 @@ export class LegajoMockService extends LegajoService {
     return of(RESUMEN_INSTITUCIONAL_INVENTADO.map((usuario) => ({ ...usuario }))).pipe(
       delay(DEMORA_SIMULADA_MS),
     );
+  }
+
+  /**
+   * Los conteos salen de `RESUMEN_INSTITUCIONAL_INVENTADO` en vez de
+   * inventarse aparte: así los dos métodos siempre coinciden entre sí, igual
+   * que el backend real (los conteos de `resumen-usuarios` y los documentos
+   * de `resumen-estado` salen de la misma tabla `legajo`).
+   */
+  obtenerResumenUsuarios(): Observable<ResumenUsuarioLegajo[]> {
+    const resumen = RESUMEN_INSTITUCIONAL_INVENTADO.map((usuario) => {
+      const aprobados = usuario.documentos.filter((d) => d.estado === 'Aprobado').length;
+      const pendientes = usuario.documentos.filter((d) => d.estado === 'Pendiente').length;
+      const rechazados = usuario.documentos.filter((d) => d.estado === 'Rechazado').length;
+      const total = usuario.documentos.length;
+
+      return {
+        idUsuario: usuario.idUsuario,
+        nombreCompleto: usuario.nombreCompleto,
+        dni: usuario.dni,
+        aprobados,
+        pendientes,
+        rechazados,
+        otros: total - aprobados - pendientes - rechazados,
+        total,
+      };
+    });
+
+    return of(resumen).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
   subirDocumento(_documento: NuevoDocumentoLegajo): Observable<void> {

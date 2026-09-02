@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
-import { aNombreDeArchivo } from '../../../core/comun/archivos';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
@@ -32,6 +32,15 @@ import { ZonaArchivo } from '../../../shared/ui/zona-archivo/zona-archivo';
  *      `GET /api/Legajos/requeridos-por-rol/{idRol}`: son exactamente los
  *      documentos que el instituto le pide a este rol.
  *
+ * ── Se sacó "Nombre / Descripción" (02/09/2026) ───────────────────────────
+ * A pedido de Dirección en la demo. Era texto libre y no tenía a dónde ir: el
+ * DTO del backend (`SubirLegajoDto`) no tiene campo de descripción, y el
+ * archivo en disco lo nombra el propio backend con el TIPO de documento
+ * (`ISCGB_NombreApellido_TipoDocumento_fecha.pdf`, ver `LegajosController`).
+ * Lo único que lograba era que la misma cosa se llamara distinto en cada
+ * legajo — "Certificado de reincidencia" vs. el tipo real — y que la lista de
+ * documentos mostrara dos nombres para un solo papel.
+ *
  * La validación de PDF que hace esta pantalla es SOLO por comodidad: avisa
  * antes de subir algo que va a fallar. La validación de verdad va del lado
  * del servidor, mirando el contenido del archivo — nunca confiar en lo que
@@ -51,8 +60,8 @@ export class SubirDocumento {
 
   protected readonly sesion = this.auth.sesion;
 
-  /** El primer rol de la sesión, para mostrarlo debajo del nombre. */
-  protected readonly rolPrincipal = computed(() => this.sesion()?.roles[0] ?? '');
+  /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
+  protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
 
   /**
    * A dónde vuelve el "‹ Volver" (y el botón "Cancelar" del formulario).
@@ -69,10 +78,8 @@ export class SubirDocumento {
   protected readonly cargandoTipos = signal(true);
 
   protected readonly idTipoElegido = signal<number | null>(null);
-  protected readonly descripcion = signal('');
   protected readonly archivo = signal<File | null>(null);
   protected readonly fechaVencimiento = signal('');
-  protected readonly presentadoFisico = signal(false);
 
   protected readonly enviando = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -93,11 +100,7 @@ export class SubirDocumento {
   protected readonly pideVencimiento = computed(() => this.tipoElegido()?.anual === true);
 
   protected readonly puedeEnviar = computed(
-    () =>
-      this.idTipoElegido() !== null &&
-      this.archivo() !== null &&
-      this.descripcion().trim() !== '' &&
-      !this.enviando(),
+    () => this.idTipoElegido() !== null && this.archivo() !== null && !this.enviando(),
   );
 
   constructor() {
@@ -109,16 +112,8 @@ export class SubirDocumento {
     this.idTipoElegido.set(valor === '' ? null : Number(valor));
   }
 
-  protected alEscribirDescripcion(evento: Event): void {
-    this.descripcion.set((evento.target as HTMLInputElement).value);
-  }
-
   protected alElegirFecha(evento: Event): void {
     this.fechaVencimiento.set((evento.target as HTMLInputElement).value);
-  }
-
-  protected alMarcarFisico(evento: Event): void {
-    this.presentadoFisico.set((evento.target as HTMLInputElement).checked);
   }
 
   protected alElegirArchivo(archivo: File): void {
@@ -148,8 +143,11 @@ export class SubirDocumento {
         idUsuario,
         idTipoDoc,
         fechaVencimiento: this.fechaAEnviar(),
-        presentadoFisico: this.presentadoFisico(),
-        archivo: this.archivoConNombre(elegido),
+        // Siempre `false`: la pantalla ya no le pregunta a la persona si
+        // entregó el papel (ver el recordatorio rojo del template). Quien
+        // confirma la entrega física es Secretaría, que es la que la recibe.
+        presentadoFisico: false,
+        archivo: elegido,
       })
       .subscribe({
         next: () => {
@@ -165,10 +163,8 @@ export class SubirDocumento {
 
   protected subirOtro(): void {
     this.idTipoElegido.set(null);
-    this.descripcion.set('');
     this.archivo.set(null);
     this.fechaVencimiento.set('');
-    this.presentadoFisico.set(false);
     this.exito.set(false);
     this.error.set(null);
   }
@@ -180,31 +176,6 @@ export class SubirDocumento {
   protected cerrarSesion(): void {
     this.auth.cerrarSesion();
     this.router.navigate(['/login']);
-  }
-
-  /**
-   * Renombra el archivo con la descripción que escribió la persona.
-   *
-   * El DTO del backend (`SubirLegajoDto`) no tiene ningún campo para un
-   * nombre o descripción: lo único que viaja del archivo es su nombre. Y hoy
-   * el backend guarda como `{Guid}_{nombre original}`, así que el nombre del
-   * archivo ES el único lugar donde esta descripción puede llegar.
-   *
-   * Se limpia de acentos y caracteres raros porque termina siendo un nombre
-   * de archivo en disco, y ahí una barra o dos puntos rompen la ruta.
-   *
-   * Cuando el backend implemente el renombrado de la regla #2
-   * (`ISCGB_NombreyApellido_NombreDocumento`), este texto es el que va en la
-   * última parte.
-   */
-  private archivoConNombre(original: File): File {
-    const limpio = aNombreDeArchivo(this.descripcion());
-
-    if (limpio === '') {
-      return original;
-    }
-
-    return new File([original], `${limpio}.pdf`, { type: original.type });
   }
 
   /** El input de fecha da "2026-08-27"; el backend espera una fecha completa. */

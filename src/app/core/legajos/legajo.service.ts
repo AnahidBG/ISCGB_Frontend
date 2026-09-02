@@ -5,6 +5,7 @@ import {
   NuevoDocumentoLegajo,
 } from './modelos/documento-requerido';
 import { LegajoResumenUsuario } from './modelos/legajo-resumen';
+import { ResumenUsuarioLegajo } from './modelos/resumen-usuario-legajo';
 
 /** Los dos únicos veredictos posibles. Ver CLAUDE.md, regla de negocio #3. */
 export type VeredictoLegajo = 'Aprobado' | 'Rechazado';
@@ -68,18 +69,43 @@ export abstract class LegajoService {
    * Documentos de todo el instituto esperando revisión.
    * `GET /api/Legajos/pendientes`.
    *
-   * Además de listar, es la única fuente que dice cómo se llama cada tipo de
-   * documento (ver `tipos-documento.ts`).
+   * Hasta el 01/09/2026 esta era además la única fuente que decía cómo se
+   * llama cada tipo de documento: `tipos-documento.ts` cruzaba estos
+   * pendientes con `resumen-estado` para adivinar los nombres, porque ese
+   * otro endpoint manda `idTipoDoc` pero no el nombre. Ese cruce tenía un
+   * efecto feo: al aprobar un documento salía de `pendientes`, se perdía el
+   * nombre aprendido y la pantalla pasaba a mostrar el nombre adivinado de
+   * una tabla hardcodeada — el documento "se renombraba solo" al aprobarlo.
+   *
+   * Ya no se usa para eso: la revisión pasó al perfil de cada persona, que
+   * lee `GET /api/Legajos/usuario/{id}`, y ese sí devuelve el nombre real
+   * del tipo (`LegajoDetalleDto.TipoDocumento`, con su JOIN) para cualquier
+   * estado. `tipos-documento.ts` quedó sin uso y hay que borrarlo — no lo
+   * reutilices: vuelve a traer el renombrado.
    */
   abstract listarParaRevision(): Observable<DocumentoLegajo[]>;
 
   /**
-   * Legajos de todo el instituto agrupados por usuario, que es lo que dibuja
-   * Control de Legajos. `GET /api/Legajos/resumen-estado`.
+   * Legajos de todo el instituto agrupados por usuario, con el detalle
+   * documento por documento. `GET /api/Legajos/resumen-estado`.
    *
-   * A diferencia de `listarParaRevision()` trae todos los documentos y no
-   * solo los pendientes, pero no manda el nombre del tipo de documento. Por
-   * eso las dos se usan juntas.
+   * ⚠️ Ya no la usa Control de Legajos (ver `obtenerResumenUsuarios()` abajo):
+   * la vista principal de "Ver Legajos" pasó a listar personas, no
+   * documentos, así que trae todo el legajo del instituto de entrada para
+   * nada. Queda por si algo más la necesita — si nada la usa, se puede
+   * borrar junto con `LegajoResumenUsuario`.
    */
   abstract obtenerResumenInstitucional(): Observable<LegajoResumenUsuario[]>;
+
+  /**
+   * Todas las personas del instituto con conteos por estado (aprobados/
+   * pendientes/rechazados/otros), SIN la lista de documentos de cada una.
+   * `GET /api/Legajos/resumen-usuarios`.
+   *
+   * Es lo que dibuja la vista principal de "Ver Legajos": una lista de
+   * personas liviana, sin traer el legajo completo del instituto de entrada.
+   * El detalle documento por documento se pide recién al abrir el perfil de
+   * una persona, con `obtenerLegajoDeUsuario()`.
+   */
+  abstract obtenerResumenUsuarios(): Observable<ResumenUsuarioLegajo[]>;
 }

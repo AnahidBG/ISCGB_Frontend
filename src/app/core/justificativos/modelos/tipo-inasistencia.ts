@@ -31,11 +31,9 @@ export const TIPOS_INASISTENCIA: readonly TipoInasistencia[] = [
     etiqueta: 'Compromisos laborales',
     ayuda: 'Adjuntá la constancia del empleador.',
   },
-  {
-    valor: 'Duelo Familiar',
-    etiqueta: 'Duelo familiar',
-    ayuda: 'Adjuntá el certificado o constancia correspondiente.',
-  },
+  // "Duelo familiar" se sacó a pedido de Dirección (demo del 02/09/2026):
+  // ese caso se encuadra dentro de "Causas personales", que además es el
+  // único motivo que no exige comprobante.
 ];
 
 /** Misma regla que aplica el backend, para no dejar enviar algo que va a fallar. */

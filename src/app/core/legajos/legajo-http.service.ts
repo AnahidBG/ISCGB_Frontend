@@ -9,6 +9,7 @@ import {
   NuevoDocumentoLegajo,
 } from './modelos/documento-requerido';
 import { LegajoResumenUsuario } from './modelos/legajo-resumen';
+import { ResumenUsuarioLegajo } from './modelos/resumen-usuario-legajo';
 import {
   LegajoService,
   MENSAJE_ERROR_AUDITORIA_LEGAJO,
@@ -19,6 +20,9 @@ import {
 
 export const MENSAJE_ERROR_RESUMEN_INSTITUCIONAL =
   'No pudimos traer los legajos del instituto. Intentá de nuevo en un momento.';
+
+export const MENSAJE_ERROR_RESUMEN_USUARIOS =
+  'No pudimos traer la lista de personas del instituto. Intentá de nuevo en un momento.';
 
 /** Lo que devuelve `GetLegajosPorUsuario` (`LegajoDetalleDto`). */
 interface LegajoApi {
@@ -191,6 +195,23 @@ export class LegajoHttpService extends LegajoService {
       }),
     );
   }
+
+  /**
+   * Todas las personas del instituto con conteos por estado, sin la lista de
+   * documentos. La usa "Ver Legajos" (ver el comentario en `LegajoService`).
+   */
+  obtenerResumenUsuarios(): Observable<ResumenUsuarioLegajo[]> {
+    return this.http.get<ResumenUsuarioLegajo[]>(RUTAS_API.legajosResumenUsuarios).pipe(
+      map((resumen) => resumen.map(aResumenUsuarioLegajo)),
+      catchError((error: HttpErrorResponse) => {
+        if (error.status === 404) {
+          return of([]);
+        }
+        console.error('Error al traer la lista de personas del instituto:', error);
+        return throwError(() => new Error(MENSAJE_ERROR_RESUMEN_USUARIOS));
+      }),
+    );
+  }
 }
 
 function aDocumentoLegajo(legajo: LegajoApi): DocumentoLegajo {
@@ -202,6 +223,7 @@ function aDocumentoLegajo(legajo: LegajoApi): DocumentoLegajo {
     comentario: legajo.comentario,
     fechaVencimiento:
       legajo.fechaVencimiento === null ? null : new Date(legajo.fechaVencimiento),
+    rutaArchivo: legajo.rutaArchivo,
   };
 }
 
@@ -233,5 +255,22 @@ function aLegajoResumenUsuario(usuario: LegajoResumenUsuario): LegajoResumenUsua
       estado: documento.estado,
       rutaArchivo: documento.rutaArchivo,
     })),
+  };
+}
+
+/**
+ * Normaliza una fila de `resumen-usuarios`, igual criterio que
+ * `aLegajoResumenUsuario`: `nombreCompleto` puede llegar vacío.
+ */
+function aResumenUsuarioLegajo(usuario: ResumenUsuarioLegajo): ResumenUsuarioLegajo {
+  return {
+    idUsuario: usuario.idUsuario,
+    nombreCompleto: usuario.nombreCompleto?.trim() || 'Persona sin nombre cargado',
+    dni: usuario.dni ?? '',
+    aprobados: usuario.aprobados ?? 0,
+    pendientes: usuario.pendientes ?? 0,
+    rechazados: usuario.rechazados ?? 0,
+    otros: usuario.otros ?? 0,
+    total: usuario.total ?? 0,
   };
 }

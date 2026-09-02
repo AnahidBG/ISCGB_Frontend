@@ -14,48 +14,36 @@
     <div>
       <h2 class="text-lg font-bold text-texto">Identificación</h2>
       <p class="mt-1 text-sm text-texto-suave">
-        ⚠️ Provisorio: hasta que el backend permita elegir la materia y resolver el docente
-        automáticamente desde la sesión, estos dos campos se cargan a mano.
+        El programa se guarda a tu nombre. Elegí de cuál de tus materias es.
       </p>
     </div>
 
     <div class="grid gap-4 sm:grid-cols-2">
       <app-campo-formulario
-        etiqueta="ID Docente"
-        idCampo="idDocente"
-        [requerido]="true"
-        [error]="
-          formulario.controls.idDocente.touched && formulario.controls.idDocente.invalid
-            ? 'Ingresá el ID del docente.'
-            : null
-        "
-      >
-        <input
-          id="idDocente"
-          type="number"
-          min="1"
-          formControlName="idDocente"
-          class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
-        />
-      </app-campo-formulario>
-
-      <app-campo-formulario
-        etiqueta="ID Materia"
+        etiqueta="Materia"
         idCampo="idMateria"
         [requerido]="true"
         [error]="
           formulario.controls.idMateria.touched && formulario.controls.idMateria.invalid
-            ? 'Ingresá el ID de la materia.'
+            ? 'Elegí de qué materia es este programa.'
             : null
         "
       >
-        <input
+        <select
           id="idMateria"
-          type="number"
-          min="1"
           formControlName="idMateria"
           class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
-        />
+        >
+          <!--
+            La opción vacía obliga a elegir: con `Validators.min(1)`, dejarla
+            sin tocar marca el campo como inválido en vez de mandar la primera
+            materia de la lista sin que nadie la haya elegido.
+          -->
+          <option [value]="0" disabled>Elegí una materia…</option>
+          @for (materia of materias(); track materia.idMateria) {
+            <option [value]="materia.idMateria">{{ etiquetaDeMateria(materia) }}</option>
+          }
+        </select>
       </app-campo-formulario>
 
       <app-campo-formulario etiqueta="Ciclo lectivo" idCampo="cicloLectivo" [requerido]="true">

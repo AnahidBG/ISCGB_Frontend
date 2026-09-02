@@ -1,12 +1,15 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
+import { ContextoDocente } from '../../../core/programas-materia/modelos/contexto-docente';
 import { ProgramaMateria } from '../../../core/programas-materia/modelos/programa-materia';
 import { ProgramasMateriaService } from '../../../core/programas-materia/programas-materia.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Boton } from '../../../shared/ui/boton/boton';
+import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 import { FormularioProgramaMateria } from './partes/formulario-programa-materia/formulario-programa-materia';
 
 /**
@@ -30,7 +33,7 @@ import { FormularioProgramaMateria } from './partes/formulario-programa-materia/
  */
 @Component({
   selector: 'app-entrega-programa',
-  imports: [EstructuraPanel, Boton, FormularioProgramaMateria],
+  imports: [EstructuraPanel, Boton, PantallaCarga, FormularioProgramaMateria],
   templateUrl: './entrega-programa.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -41,8 +44,8 @@ export class EntregaPrograma {
 
   protected readonly sesion = this.auth.sesion;
 
-  /** El primer rol de la sesión, para mostrarlo debajo del nombre. */
-  protected readonly rolPrincipal = computed(() => this.sesion()?.roles[0] ?? '');
+  /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
+  protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
 
   /** A dónde vuelve el "‹ Volver": el panel que le corresponde a esta sesión. */
   protected readonly rutaPanel = computed(() => destinoSegunRoles(this.sesion()));
@@ -66,6 +69,66 @@ export class EntregaPrograma {
 
   /** Error de la última descarga de PDF, o `null`. */
   protected readonly errorPdf = signal<string | null>(null);
+
+  // ── Contexto del docente ──────────────────────────────────────────────────
+  //
+  // Antes el formulario pedía "ID Docente" e "ID Materia" a mano (dos campos
+  // numéricos). Ahora los dos salen de acá: el idDocente se resuelve desde la
+  // sesión y las materias se eligen por nombre. Ver `ContextoDocente`.
+  //
+  // Hay tres desenlaces posibles y la pantalla los distingue, porque lo que
+  // tiene que hacer la persona es distinto en cada uno:
+  //   · contexto con materias  → se muestra el formulario
+  //   · contexto sin materias  → nadie le asignó materias todavía
+  //   · `null`                 → esta sesión no es docente
+
+  /** `true` mientras se resuelve quién es el docente y qué dicta. */
+  protected readonly cargandoContexto = signal(true);
+
+  protected readonly contexto = signal<ContextoDocente | null>(null);
+
+  /** Error de red al traer el contexto, o `null`. */
+  protected readonly errorContexto = signal<string | null>(null);
+
+  /** `true` si la sesión no corresponde a ningún docente cargado. */
+  protected readonly noEsDocente = signal(false);
+
+  /** `true` solo cuando hay con qué llenar el formulario. */
+  protected readonly puedeCargarPrograma = computed(
+    () => (this.contexto()?.materias.length ?? 0) > 0,
+  );
+
+  constructor() {
+    this.cargarContexto();
+  }
+
+  protected cargarContexto(): void {
+    const idUsuario = this.sesion()?.idUsuario;
+
+    // Sin sesión no hay a quién resolver. No debería pasar (esta pantalla
+    // vive detrás de authGuard), pero mejor no dejar el spinner girando.
+    if (idUsuario === undefined) {
+      this.cargandoContexto.set(false);
+      this.noEsDocente.set(true);
+      return;
+    }
+
+    this.cargandoContexto.set(true);
+    this.errorContexto.set(null);
+    this.noEsDocente.set(false);
+
+    this.programasMateria.obtenerContextoDocente(idUsuario).subscribe({
+      next: (contexto) => {
+        this.contexto.set(contexto);
+        this.noEsDocente.set(contexto === null);
+        this.cargandoContexto.set(false);
+      },
+      error: (fallo: Error) => {
+        this.errorContexto.set(fallo.message);
+        this.cargandoContexto.set(false);
+      },
+    });
+  }
 
   protected manejarEnvio(programa: ProgramaMateria): void {
     this.enviando.set(true);

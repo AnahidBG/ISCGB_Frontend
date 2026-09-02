@@ -25,6 +25,24 @@
           poder seguir su estado desde tu panel.
         </p>
 
+        <!-- El mismo aviso del formulario, acá donde recién se termina el envío. -->
+        <div
+          role="note"
+          class="mx-auto mt-5 flex max-w-md items-start gap-3 rounded-xl border-2 border-rechazado bg-rechazado/10 px-4 py-3.5 text-left"
+        >
+          <span
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rechazado text-white"
+          >
+            <app-icono nombre="alerta" class="h-5 w-5" />
+          </span>
+          <p class="text-sm leading-relaxed text-texto">
+            <span class="block font-bold text-rechazado">
+              Recordá presentar este documento en Secretaría.
+            </span>
+            La copia digital no reemplaza la entrega del papel.
+          </p>
+        </div>
+
         <div class="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
           <button
             type="button"
@@ -53,7 +71,15 @@ class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
           </p>
         }
 
-        <div class="grid gap-6 sm:grid-cols-2">
+        <!--
+          Una sola columna: acá había un segundo campo, "Nombre / Descripción"
+          (texto libre), que se sacó a pedido de Dirección en la demo del
+          02/09/2026. El documento ya queda identificado por su TIPO, que es
+          lo que ve Secretaría y lo que usa el backend para nombrar el archivo
+          en disco; el texto libre solo permitía que la misma cosa se llamara
+          distinto en cada legajo.
+        -->
+        <div class="grid gap-6">
           <div>
             <label for="tipo" class="block text-sm font-semibold text-texto">
               Tipo de Documento <span class="text-rechazado">*</span>
@@ -81,21 +107,6 @@ class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
             }
           </div>
 
-          <div>
-            <label for="descripcion" class="block text-sm font-semibold text-texto">
-              Nombre / Descripción <span class="text-rechazado">*</span>
-            </label>
-            <input
-              id="descripcion"
-              type="text"
-              required
-              maxlength="80"
-              placeholder="Ej. Título de Profesorado en Historia"
-              [value]="descripcion()"
-              class="mt-2 w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
-              (input)="alEscribirDescripcion($event)"
-            />
-          </div>
         </div>
 
         <!--
@@ -134,17 +145,34 @@ class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
           />
         </div>
 
-        <label class="mt-6 flex items-start gap-3">
-          <input
-            type="checkbox"
-            [checked]="presentadoFisico()"
-            class="mt-0.5 h-4 w-4 rounded border-borde accent-principal"
-            (change)="alMarcarFisico($event)"
-          />
-          <span class="text-sm text-texto-suave">
-            También entregué este documento en papel en Secretaría.
+        <!--
+          Recordatorio de la entrega en papel.
+
+          Reemplaza al checkbox "también entregué este documento en
+          Secretaría" (pedido de Dirección, 02/09/2026). El checkbox le
+          preguntaba a la persona algo que el instituto no puede verificar
+          desde acá — quien lo tildaba sin haberlo entregado quedaba igual de
+          "presentado" en el sistema. Como aviso, en cambio, le sirve a todo
+          el mundo: se ve siempre, no se puede tildar por costumbre, y deja en
+          claro que subir el PDF no cierra el trámite.
+        -->
+        <div
+          role="note"
+          class="mt-6 flex items-start gap-3 rounded-xl border-2 border-rechazado bg-rechazado/10 px-4 py-3.5"
+        >
+          <span
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rechazado text-white"
+          >
+            <app-icono nombre="alerta" class="h-5 w-5" />
           </span>
-        </label>
+
+          <p class="text-sm leading-relaxed text-texto">
+            <span class="block font-bold text-rechazado">
+              Recordá presentar este documento en Secretaría.
+            </span>
+            La copia digital no reemplaza la entrega del papel.
+          </p>
+        </div>
 
         <div class="mt-8 flex flex-col-reverse items-stretch gap-3 border-t border-borde pt-6 sm:flex-row sm:justify-end">
           <button

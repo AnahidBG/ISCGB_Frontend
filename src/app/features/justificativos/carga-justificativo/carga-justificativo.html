@@ -87,7 +87,15 @@
           }
         </div>
 
-        <!-- Las fechas no están en el Figma, las agregué (ver el .ts). -->
+        <!--
+          Las fechas no están en el Figma, las agregué (ver el .ts).
+
+          La ayuda de "Hasta" va DEBAJO del input, no entre la etiqueta y el
+          campo: puesta arriba empujaba ese input ~20px para abajo y las dos
+          fechas quedaban desalineadas entre sí, porque "Faltaste desde" no
+          tiene ninguna línea de ayuda. Además es lo que ya hace el select de
+          arriba con `ayudaDelTipo()`.
+        -->
         <div class="mt-6 grid gap-6 sm:grid-cols-2">
           <div>
             <label for="desde" class="block text-sm font-semibold text-texto">
@@ -105,17 +113,18 @@
 
           <div>
             <label for="hasta" class="block text-sm font-semibold text-texto">Hasta</label>
-            <p class="mt-1 text-xs text-texto-suave">
-              Si faltaste un solo día, dejá la misma fecha.
-            </p>
             <input
               id="hasta"
               type="date"
+              aria-describedby="ayuda-hasta"
               [value]="fechaFin()"
               [attr.min]="fechaInicio()"
               class="mt-2 w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
               (change)="alElegirFin($event)"
             />
+            <p id="ayuda-hasta" class="mt-2 text-xs text-texto-suave">
+              Si faltaste un solo día, dejá la misma fecha.
+            </p>
           </div>
         </div>
 
