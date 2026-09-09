@@ -59,6 +59,28 @@ export type NombreIcono =
   selector: 'app-icono',
   templateUrl: './icono.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  // Sin un `display` propio, el `:host` de un componente es `inline`, y sobre
+  // un elemento `inline` las utilidades de tamaño de Tailwind (`h-5 w-5`) no
+  // hacen nada: el `<svg>` — que solo tiene `viewBox`, sin ancho/alto — se
+  // dibuja a 0x0 y el ícono desaparece. Se salvaba de casualidad cuando el
+  // `<app-icono>` era hijo directo de un contenedor flex (`<a class="flex">`),
+  // porque ahí el flex item se "blockifica". Dentro de un `<button>` que no es
+  // flex — la hamburguesa, la X del cajón mobile, la campana — quedaba invisible.
+  //
+  // `inline-block` en el host hace que `h-5 w-5` lo dimensionen SIEMPRE, y el
+  // `<svg>` en `block` al 100% llena esa caja. `line-height: 0` saca el hueco
+  // que el inline-block deja debajo por el interlineado.
+  host: { class: 'inline-block' },
+  styles: `
+    :host {
+      line-height: 0;
+    }
+    svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  `,
 })
 export class Icono {
   readonly nombre = input.required<NombreIcono>();
