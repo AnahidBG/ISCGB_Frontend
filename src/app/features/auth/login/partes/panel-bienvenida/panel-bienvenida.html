@@ -6,12 +6,19 @@
   procesar las hojas de estilo. En la primera pantalla que ve el usuario,
   esos milisegundos se notan.
 
+  En celular (`< lg`) este panel NO es una columna: es el fondo a pantalla
+  completa sobre el que flota la card de login (ver login.html). Por eso acá
+  la foto va desenfocada (`blur-[2px]`) y el título/subtítulo se ocultan
+  (`hidden lg:block`) — nítidos, quedaban detrás de la card y competían con
+  ella. En celular se ve solo la marca sobre el fondo ambiente. En `lg` (dos
+  columnas) vuelve todo: foto nítida, título y subtítulo.
+
   Ojo: no escribas clases de Tailwind de ejemplo dentro de un comentario.
   Tailwind lee el archivo entero como texto plano, no entiende que esto es un
   comentario, y va a intentar generar esa clase (y fallar el build).
 -->
 <section
-  class="relative flex h-full flex-col justify-between overflow-hidden bg-principal p-12 text-white"
+  class="relative flex h-full flex-col justify-between overflow-hidden bg-principal p-8 text-white lg:p-12"
 >
   <!--
     alt="" a propósito: la foto es decorativa y no aporta información que el
@@ -24,7 +31,7 @@
   <img
     src="imagenes/instituto-aula.png"
     alt=""
-    class="pointer-events-none absolute inset-0 h-full w-full object-cover"
+    class="pointer-events-none absolute inset-0 h-full w-full object-cover blur-[2px] lg:blur-none"
   />
 
   <!-- Velo de color. aria-hidden porque es decoración, no información. -->
@@ -39,8 +46,8 @@
     <span class="text-2xl font-semibold tracking-wide">ISCGB</span>
   </p>
 
-  <!-- Mensaje principal -->
-  <div class="relative max-w-xl">
+  <!-- Mensaje principal — oculto en celular (competía con la card de login). -->
+  <div class="relative hidden max-w-xl lg:block">
     <h1 class="text-5xl leading-tight font-bold text-balance">
       Gestión Documental y Autogestión Académica
     </h1>
@@ -49,15 +56,4 @@
       Gabriel Brochero.
     </p>
   </div>
-
-  <!-- Áreas del sistema -->
-  <ul class="relative flex flex-wrap gap-4">
-    @for (area of areas; track area) {
-      <li
-        class="rounded-lg border border-white/25 bg-white/10 px-5 py-2.5 text-sm font-medium backdrop-blur-sm"
-      >
-        {{ area }}
-      </li>
-    }
-  </ul>
 </section>
