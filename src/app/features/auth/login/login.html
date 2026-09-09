@@ -1,7 +1,11 @@
 <!--
-  Dos columnas en pantallas grandes, una sola apiladas en celular.
-  En celular el panel verde se oculta: ocupa media pantalla y no aporta
-  nada al que solo quiere entrar.
+  Escritorio (`lg`): dos columnas — el panel verde a la izquierda, el
+  formulario a la derecha.
+
+  Celular: una sola capa. El panel verde pasa a ser el FONDO a pantalla
+  completa (`absolute inset-0`) y la card del formulario flota centrada
+  encima (`z-10`). El panel se encarga de desenfocar su foto y esconder su
+  texto para que no compita con la card — ver panel-bienvenida.html.
 -->
 <main class="relative min-h-dvh bg-fondo lg:grid lg:grid-cols-2">
   <div class="absolute inset-0 lg:relative lg:block">
@@ -9,7 +13,7 @@
   </div>
 
   <div class="relative z-10 flex min-h-dvh items-center justify-center px-6 py-12 lg:min-h-0">
-    <div class="w-full max-w-md rounded-3xl bg-superficie p-8 shadow-sm sm:p-10">
+    <div class="w-full max-w-md rounded-3xl bg-superficie p-8 shadow-xl sm:p-10 lg:shadow-sm">
       <app-formulario-login
         [cargando]="cargando()"
         [errorGeneral]="error()"

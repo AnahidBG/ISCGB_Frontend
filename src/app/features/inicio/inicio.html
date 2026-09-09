@@ -1,5 +1,5 @@
 @if (sesion(); as datos) {
-  <main class="contenedor flex min-h-dvh flex-col justify-center py-16">
+  <main class="contenedor flex min-h-dvh flex-col justify-center py-12 sm:py-16">
     <div class="mx-auto w-full max-w-2xl">
       <img
         src="imagenes/logo-iscgb-verde.svg"
@@ -9,7 +9,7 @@
         class="h-14 w-auto"
       />
 
-      <h1 class="mt-6 text-4xl text-principal">
+      <h1 class="mt-6 text-3xl text-principal sm:text-4xl">
         Hola{{ datos.nombreCompleto ? ', ' + datos.nombreCompleto : '' }}
       </h1>
       <p class="mt-2 text-texto-suave">Entraste al sistema. Tu sesión está activa.</p>
@@ -19,21 +19,29 @@
         login funcionó de punta a punta. Se va cuando exista el dashboard real.
       -->
       <dl class="mt-10 divide-y divide-borde rounded-xl border border-borde bg-superficie">
-        <div class="flex items-baseline justify-between gap-4 px-6 py-4">
+        <div
+          class="flex flex-col gap-0.5 px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4 sm:px-6"
+        >
           <dt class="text-sm text-texto-suave">DNI</dt>
           <dd class="font-mono text-texto">{{ dniConPuntos(datos.dni) }}</dd>
         </div>
-        <div class="flex items-baseline justify-between gap-4 px-6 py-4">
+        <div
+          class="flex flex-col gap-0.5 px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4 sm:px-6"
+        >
           <dt class="text-sm text-texto-suave">Correo</dt>
-          <dd class="text-texto">{{ datos.email }}</dd>
+          <dd class="break-all text-texto sm:text-right">{{ datos.email }}</dd>
         </div>
-        <div class="flex items-baseline justify-between gap-4 px-6 py-4">
+        <div
+          class="flex flex-col gap-0.5 px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4 sm:px-6"
+        >
           <dt class="text-sm text-texto-suave">
             {{ datos.roles.length > 1 ? 'Roles' : 'Rol' }}
           </dt>
           <dd class="text-texto">{{ rolesParaMostrar() }}</dd>
         </div>
-        <div class="flex items-baseline justify-between gap-4 px-6 py-4">
+        <div
+          class="flex flex-col gap-0.5 px-5 py-4 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4 sm:px-6"
+        >
           <dt class="text-sm text-texto-suave">La sesión vence</dt>
           <dd class="text-texto">{{ datos.venceEl.toLocaleString('es-AR') }}</dd>
         </div>
