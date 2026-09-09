@@ -72,11 +72,18 @@ const CLAVE_COLAPSADO = 'iscgb.panel.colapsado';
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
     // Un clic en cualquier lado cierra los desplegables del encabezado (el de
-    // la persona y el de la campana), y Escape también. Es lo que cualquiera
-    // espera de un menú desplegable: si no, queda abierto tapando cosas hasta
-    // que se vuelve a tocar el botón que lo abrió.
+    // la persona y el de la campana). Es lo que cualquiera espera de un menú
+    // desplegable: si no, queda abierto tapando cosas hasta que se vuelve a
+    // tocar el botón que lo abrió.
+    //
+    // Escape cierra ESO y además el cajón de celular — un diálogo modal
+    // (`role="dialog" aria-modal="true"`) tiene que poder cerrarse con Escape
+    // (ARIA APG). El clic afuera NO cierra el cajón: para eso está su fondo
+    // oscuro, que ya lo maneja. Meter el cajón en `cerrarMenusFlotantes()`
+    // haría que el mismo clic que abre la hamburguesa lo cierre al burbujear
+    // hasta el `document` — por eso Escape va por un método aparte.
     '(document:click)': 'cerrarMenusFlotantes()',
-    '(document:keydown.escape)': 'cerrarMenusFlotantes()',
+    '(document:keydown.escape)': 'cerrarConEscape()',
   },
 })
 export class EstructuraPanel {
@@ -242,10 +249,19 @@ export class EstructuraPanel {
     this.menuNotificacionesAbierto.set(false);
   }
 
-  /** Un clic afuera (o Escape) cierra cualquiera de los dos desplegables. */
+  /** Un clic afuera cierra cualquiera de los dos desplegables del encabezado. */
   protected cerrarMenusFlotantes(): void {
     this.menuPerfilAbierto.set(false);
     this.menuNotificacionesAbierto.set(false);
+  }
+
+  /**
+   * Escape: cierra los desplegables del encabezado Y el cajón de celular.
+   * El cajón es un diálogo modal y se espera que Escape lo cierre.
+   */
+  protected cerrarConEscape(): void {
+    this.cerrarMenusFlotantes();
+    this.menuAbierto.set(false);
   }
 
   protected alternarColapso(): void {

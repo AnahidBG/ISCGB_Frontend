@@ -124,4 +124,33 @@ describe('EstructuraPanel', () => {
       expect((component as any).menuPerfilAbierto()).toBe(false);
     });
   });
+
+  describe('menú de celular (cajón)', () => {
+    it('Escape cierra el cajón', () => {
+      (component as any).alternarMenu();
+      expect((component as any).menuAbierto()).toBe(true);
+
+      (component as any).cerrarConEscape();
+      expect((component as any).menuAbierto()).toBe(false);
+    });
+
+    it('Escape además cierra los desplegables flotantes del encabezado', () => {
+      (component as any).alternarMenuNotificaciones(new MouseEvent('click'));
+      (component as any).alternarMenu();
+
+      (component as any).cerrarConEscape();
+
+      expect((component as any).menuAbierto()).toBe(false);
+      expect((component as any).menuNotificacionesAbierto()).toBe(false);
+      expect((component as any).menuPerfilAbierto()).toBe(false);
+    });
+
+    it('un clic afuera NO cierra el cajón — para eso está el fondo oscuro y la X', () => {
+      (component as any).alternarMenu();
+
+      (component as any).cerrarMenusFlotantes();
+
+      expect((component as any).menuAbierto()).toBe(true);
+    });
+  });
 });
