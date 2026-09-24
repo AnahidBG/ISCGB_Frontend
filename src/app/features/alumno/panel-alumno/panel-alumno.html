@@ -11,45 +11,75 @@
   (cerrarSesion)="cerrarSesion()"
 >
   <!--
-    El progreso se muestra con su contexto ("3 de 8 documentos obligatorios")
-    y no solo como porcentaje: un "37%" pelado no le dice a nadie cuánto le
-    falta ni de qué. Ver `calcularProgresoLegajo`.
+    "Mapa del trámite": el mismo resumen que antes ("3 de 8 documentos
+    obligatorios") pero desplegable — toca la tarjeta y ves, documento por
+    documento, cuál falta, cuál está en revisión y cuál ya está aprobado. Ver
+    `ProgresoTramite`.
   -->
-  <div class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
-    <div class="flex flex-wrap items-baseline justify-between gap-2">
-      <h2 class="text-base font-semibold text-texto">Progreso del legajo</h2>
-      <span class="text-sm font-medium text-principal">{{ progreso().porcentaje }}%</span>
-    </div>
+  <app-progreso-tramite
+    [porcentaje]="progreso().porcentaje"
+    [aprobados]="progreso().aprobados"
+    [total]="progreso().total"
+    [estimado]="progreso().estimado"
+    [pasos]="pasosTramite()"
+  />
 
-    <div
-      class="mt-3 h-2 overflow-hidden rounded-full bg-fondo"
-      role="progressbar"
-      aria-label="Progreso del legajo"
-      [attr.aria-valuenow]="progreso().porcentaje"
-      aria-valuemin="0"
-      aria-valuemax="100"
+  <!--
+    "Solicitar certificado": un solo botón que despliega las dos variantes
+    (con y sin horario), en vez de mostrar los dos enlaces siempre visibles.
+    Mismo patrón de acordeón que `ProgresoTramite`, para no inventar una
+    interacción nueva.
+  -->
+  <div class="mt-5 rounded-2xl border border-borde bg-superficie p-5 sm:mt-6 sm:p-6">
+    <button
+      type="button"
+      class="flex w-full items-center justify-between gap-3 text-left"
+      [attr.aria-expanded]="certificadoDesplegado()"
+      aria-controls="detalle-certificado"
+      (click)="alternarCertificado()"
     >
-      <div
-        class="h-full rounded-full bg-acento-verde transition-[width] duration-500 ease-out"
-        [style.width.%]="progreso().porcentaje"
-      ></div>
-    </div>
+      <div class="flex min-w-0 items-center gap-3">
+        <span
+          class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-fondo-panel text-texto-suave sm:flex"
+        >
+          <app-icono nombre="documento" class="h-5 w-5" />
+        </span>
+        <div class="min-w-0">
+          <p class="text-sm font-semibold text-texto">Solicitar certificado</p>
+          <p class="mt-0.5 text-xs text-texto-suave">Certificado de alumno regular, con o sin horarios</p>
+        </div>
+      </div>
 
-    @if (progreso().estimado) {
-      <!--
-        Sin la lista de documentos obligatorios de su rol, el denominador es
-        "lo que subió" y el número queda optimista. Decirlo es obligatorio:
-        alguien que ve "100%" sin esta aclaración se va tranquilo con el
-        legajo a medio entregar.
-      -->
-      <p class="mt-3 text-xs leading-relaxed text-texto-suave">
-        Este porcentaje es aproximado: se calcula sobre los documentos que ya subiste, porque
-        todavía no está cargada la lista de documentación obligatoria de tu rol.
-      </p>
-    } @else {
-      <p class="mt-3 text-sm text-texto-suave">
-        {{ progreso().aprobados }} de {{ progreso().total }} documentos obligatorios aprobados.
-      </p>
+      <app-icono
+        nombre="expandir"
+        class="h-4 w-4 shrink-0 text-texto-suave transition-transform duration-200"
+        [class.rotate-180]="certificadoDesplegado()"
+      />
+    </button>
+
+    @if (certificadoDesplegado()) {
+      <div id="detalle-certificado" class="mt-4 flex flex-col gap-3 border-t border-borde pt-4">
+        <a
+          routerLink="/alumno/certificado/regular"
+          class="flex items-center gap-3 rounded-xl border border-borde px-4 py-3 text-sm font-medium text-principal transition-colors hover:bg-fondo-panel"
+        >
+          <app-icono nombre="documento" class="h-5 w-5 shrink-0" />
+          Certificado alumno regular
+        </a>
+
+        <div>
+          <a
+            routerLink="/alumno/certificado/regular-con-horario"
+            class="flex items-center gap-3 rounded-xl border border-borde px-4 py-3 text-sm font-medium text-principal transition-colors hover:bg-fondo-panel"
+          >
+            <app-icono nombre="calendario" class="h-5 w-5 shrink-0" />
+            Certificado alumno regular con horario
+          </a>
+          <p class="mt-1.5 px-1 text-xs leading-relaxed text-texto-suave">
+            Para completar y confirmar los horarios es importante que te acerques a Preceptoría.
+          </p>
+        </div>
+      </div>
     }
   </div>
 
@@ -86,7 +116,6 @@
 
   <p class="mt-5 text-sm text-texto-suave sm:mt-6">
     Justificativos de inasistencia, reconocimiento de saberes y el enlace al portal SIAADE
-    todavía no tienen pantalla propia — ver "Pendientes" en
-    <code class="text-xs">docs/alcance-paneles-roles.md</code>.
+    todavía no están disponibles — los vamos a sumar pronto.
   </p>
 </app-estructura-panel>

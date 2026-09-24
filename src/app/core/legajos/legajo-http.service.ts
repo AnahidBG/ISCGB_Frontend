@@ -224,6 +224,7 @@ function aDocumentoLegajo(legajo: LegajoApi): DocumentoLegajo {
     fechaVencimiento:
       legajo.fechaVencimiento === null ? null : new Date(legajo.fechaVencimiento),
     rutaArchivo: legajo.rutaArchivo,
+    presentadoFisico: legajo.presentadoFisico ?? false,
   };
 }
 
@@ -237,6 +238,7 @@ function aDocumentoPendiente(pendiente: LegajoPendienteApi): DocumentoLegajo {
     // `/pendientes` no manda ninguno de los dos.
     comentario: null,
     fechaVencimiento: null,
+    presentadoFisico: pendiente.presentadoFisico ?? false,
   };
 }
 

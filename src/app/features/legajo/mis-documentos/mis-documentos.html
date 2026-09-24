@@ -141,6 +141,16 @@
             <div class="flex items-center gap-3 sm:flex-col sm:items-end">
               <app-insignia-estado [estado]="fila.estado" />
 
+              @if (esLegajoAjeno() && !fila.faltante && fila.presentadoFisico) {
+                <span
+                  class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-principal-suave px-2.5 py-1 text-xs font-medium text-principal"
+                  title="Además del archivo digital, Secretaría tiene el papel físico de este documento"
+                >
+                  <app-icono nombre="documento" class="h-3.5 w-3.5" />
+                  Presentado físicamente
+                </span>
+              }
+
               @if (!esLegajoAjeno() && (fila.faltante || fila.estado === 'Rechazado' || estaVencido(fila))) {
                 <button
                   type="button"
@@ -248,9 +258,22 @@
                     [value]="motivoRechazo()"
                     (input)="motivoRechazo.set($any($event.target).value)"
                     rows="2"
-                    class="mt-1 w-full resize-none rounded-md border border-borde bg-superficie px-2 py-1.5 text-sm text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rechazado"
+                    [attr.aria-invalid]="errorMotivoRechazo() !== null"
+                    [attr.aria-describedby]="errorMotivoRechazo() ? 'motivo-error-' + fila.idLegajo : null"
+                    [class.border-rechazado]="errorMotivoRechazo() !== null"
+                    [class.border-borde]="errorMotivoRechazo() === null"
+                    class="mt-1 w-full resize-none rounded-md border bg-superficie px-2 py-1.5 text-sm text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rechazado"
                     placeholder="Ej: el certificado está vencido, subí uno emitido este año."
                   ></textarea>
+                  @if (errorMotivoRechazo(); as error) {
+                    <p
+                      [id]="'motivo-error-' + fila.idLegajo"
+                      role="alert"
+                      class="mt-1 text-xs text-rechazado"
+                    >
+                      {{ error }}
+                    </p>
+                  }
                   <div class="mt-2 flex justify-end gap-2">
                     <button
                       type="button"

@@ -1,15 +1,20 @@
 import { DocumentoLegajo } from './modelos/documento-legajo';
 import { DocumentoRequerido } from './modelos/documento-requerido';
-import { calcularProgresoLegajo } from './progreso-legajo';
+import { calcularProgresoLegajo, ultimaVersionPorTipo } from './progreso-legajo';
 
-function documento(nombre: string, estado: string | null): DocumentoLegajo {
+function documento(
+  nombre: string,
+  estado: string | null,
+  fechaSubida = new Date('2026-08-01'),
+): DocumentoLegajo {
   return {
     id: Math.random(),
     nombre,
     estado,
-    fechaSubida: new Date('2026-08-01'),
+    fechaSubida,
     comentario: null,
     fechaVencimiento: null,
+    presentadoFisico: false,
   };
 }
 
@@ -99,5 +104,36 @@ describe('calcularProgresoLegajo', () => {
     );
 
     expect(progreso.porcentaje).toBe(100);
+  });
+});
+
+describe('ultimaVersionPorTipo', () => {
+  it('de dos versiones del mismo documento, se queda con la más nueva', () => {
+    const version = ultimaVersionPorTipo([
+      documento('Certificado de Salud', 'Rechazado', new Date('2026-05-01')),
+      documento('Certificado de Salud', 'Aprobado', new Date('2026-08-01')),
+    ]);
+
+    expect(version).toHaveLength(1);
+    expect(version[0].estado).toBe('Aprobado');
+  });
+
+  it('no mezcla tipos de documento distintos', () => {
+    const versiones = ultimaVersionPorTipo([
+      documento('DNI', 'Aprobado'),
+      documento('Título', 'Pendiente'),
+    ]);
+
+    expect(versiones).toHaveLength(2);
+  });
+
+  it('cruza por nombre normalizado, igual que calcularProgresoLegajo', () => {
+    const version = ultimaVersionPorTipo([
+      documento('apto fisico ', 'Pendiente', new Date('2026-05-01')),
+      documento('Apto Físico', 'Aprobado', new Date('2026-08-01')),
+    ]);
+
+    expect(version).toHaveLength(1);
+    expect(version[0].estado).toBe('Aprobado');
   });
 });

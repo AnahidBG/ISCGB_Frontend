@@ -17,6 +17,11 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
  * de `EstructuraPanel` — es el único de este set que no sale de ningún
  * dato ni estado del sistema, es puramente de navegación (el chevron del
  * botón que colapsa/expande la barra).
+ *
+ * `expandir` se agregó el 23/09/2026 para `ProgresoTramite`: un chevron
+ * hacia ABAJO (distinto de `colapsar`, que apunta a los costados y está
+ * pensado para la barra lateral), pensado para un acordeón que se abre
+ * hacia abajo y rota 180° al desplegarse.
  */
 export type NombreIcono =
   | 'panel'
@@ -34,6 +39,7 @@ export type NombreIcono =
   | 'rechazado'
   | 'reloj'
   | 'colapsar'
+  | 'expandir'
   | 'volver'
   | 'calendario'
   | 'configuracion'

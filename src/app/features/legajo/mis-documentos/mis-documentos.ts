@@ -59,6 +59,8 @@ interface FilaDocumento {
    */
   estadoParaOrden: string | null;
   rutaArchivo: string | null;
+  /** Si Secretaría tiene además el papel físico. `false` en las filas "faltante". */
+  presentadoFisico: boolean;
 }
 
 /**
@@ -284,6 +286,7 @@ export class MisDocumentos {
         idLegajo: ultima.id,
         estadoParaOrden: estadoOriginalPorLegajo.get(ultima.id) ?? ultima.estado,
         rutaArchivo: ultima.rutaArchivo ?? null,
+        presentadoFisico: ultima.presentadoFisico,
       };
     });
 
@@ -300,6 +303,7 @@ export class MisDocumentos {
       idLegajo: null,
       estadoParaOrden: null,
       rutaArchivo: null,
+      presentadoFisico: false,
     }));
 
     return [...subidos, ...faltantes].sort(
@@ -369,6 +373,20 @@ export class MisDocumentos {
 
   protected readonly motivoRechazo = signal('');
 
+  /** `true` desde que se intentó confirmar un rechazo sin motivo. */
+  protected readonly intentoConfirmarRechazo = signal(false);
+
+  /**
+   * El motivo es OBLIGATORIO al rechazar: la persona necesita saber qué
+   * corregir, y sin esto el rechazo llegaba mudo (regla de negocio, no algo
+   * que se pueda dejar "por si después escriben algo").
+   */
+  protected readonly errorMotivoRechazo = computed(() =>
+    this.intentoConfirmarRechazo() && this.motivoRechazo().trim().length === 0
+      ? 'Contale a la persona qué tiene que corregir.'
+      : null,
+  );
+
   protected estaGuardando(idLegajo: number | null): boolean {
     return idLegajo !== null && this.guardando().has(idLegajo);
   }
@@ -400,12 +418,14 @@ export class MisDocumentos {
       return;
     }
     this.motivoRechazo.set('');
+    this.intentoConfirmarRechazo.set(false);
     this.accionEnCurso.set({ idLegajo: fila.idLegajo, modo: 'rechazar' });
   }
 
   protected cancelarAccion(): void {
     this.accionEnCurso.set(null);
     this.motivoRechazo.set('');
+    this.intentoConfirmarRechazo.set(false);
   }
 
   protected confirmarAprobacion(): void {
@@ -422,10 +442,17 @@ export class MisDocumentos {
     if (accion === null) {
       return;
     }
+
     const texto = this.motivoRechazo().trim();
+    if (texto.length === 0) {
+      this.intentoConfirmarRechazo.set(true);
+      return;
+    }
+
     this.accionEnCurso.set(null);
     this.motivoRechazo.set('');
-    this.enviarAuditoria(accion.idLegajo, 'Rechazado', texto.length > 0 ? texto : null);
+    this.intentoConfirmarRechazo.set(false);
+    this.enviarAuditoria(accion.idLegajo, 'Rechazado', texto);
   }
 
   private enviarAuditoria(
