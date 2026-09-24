@@ -1,0 +1,76 @@
+<div class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
+  <button
+    type="button"
+    class="flex w-full items-center justify-between gap-3 text-left"
+    [attr.aria-expanded]="desplegado()"
+    aria-controls="detalle-tramite"
+    (click)="alternar()"
+  >
+    <div class="flex min-w-0 items-center gap-3">
+      <span
+        class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-fondo-panel text-texto-suave sm:flex"
+      >
+        <app-icono nombre="legajo" class="h-5 w-5" />
+      </span>
+
+      <div class="min-w-0">
+        <p class="text-sm font-semibold text-texto">En qué paso está tu trámite</p>
+        <p class="mt-0.5 text-xs text-texto-suave">
+          @if (estimado()) {
+            {{ porcentaje() }}% completado (aproximado)
+          } @else {
+            {{ aprobados() }} / {{ total() }} completado ({{ porcentaje() }}%)
+          }
+        </p>
+      </div>
+    </div>
+
+    <app-icono
+      nombre="expandir"
+      class="h-4 w-4 shrink-0 text-texto-suave transition-transform duration-200"
+      [class.rotate-180]="desplegado()"
+    />
+  </button>
+
+  <div
+    class="mt-4 h-1.5 overflow-hidden rounded-full bg-fondo-panel"
+    role="progressbar"
+    aria-label="Progreso del trámite"
+    [attr.aria-valuenow]="porcentaje()"
+    aria-valuemin="0"
+    aria-valuemax="100"
+  >
+    <div
+      class="h-full rounded-full bg-acento-verde transition-[width] duration-500 ease-out"
+      [style.width.%]="porcentaje()"
+    ></div>
+  </div>
+
+  @if (estimado()) {
+    <!--
+      Sin la lista de documentos obligatorios de su rol, el denominador es
+      "lo que subió" y el número queda optimista. Decirlo es obligatorio:
+      alguien que ve "100%" sin esta aclaración se va tranquilo con el
+      trámite a medio entregar (mismo criterio que `MisDocumentos`).
+    -->
+    <p class="mt-2 text-xs leading-relaxed text-texto-suave">
+      Todavía no sabemos qué documentos te pide el instituto, así que este número cuenta solo lo
+      que subiste.
+    </p>
+  }
+
+  @if (desplegado()) {
+    <ol id="detalle-tramite" class="mt-4 flex flex-col gap-2 border-t border-borde pt-4">
+      @for (paso of pasos(); track paso.nombre) {
+        <li class="flex items-center justify-between gap-3 rounded-lg bg-fondo-panel px-3 py-2">
+          <span class="min-w-0 truncate text-sm text-texto">{{ paso.nombre }}</span>
+          @if (paso.faltante) {
+            <span class="shrink-0 whitespace-nowrap text-xs text-texto-suave">Sin cargar</span>
+          } @else {
+            <app-insignia-estado [estado]="paso.estado" />
+          }
+        </li>
+      }
+    </ol>
+  }
+</div>

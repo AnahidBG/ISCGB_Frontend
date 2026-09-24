@@ -168,6 +168,47 @@ export const routes: Routes = [
       import('./features/alumno/panel-alumno/panel-alumno').then((m) => m.PanelAlumno),
   },
   {
+    // "Próximamente": certificado de alumno regular SIN horarios (Sprint 2
+    // del roadmap, ver docs/ISCGB-PROJECT.md). Solo Alumno: la historia es
+    // "Solicitud de certificado de alumno regular (Estudiante)".
+    //
+    // ⚠️ El backend todavía no tiene el endpoint. Se decidió con Secretaría
+    // dividir en DOS certificados en vez de uno con un campo opcional,
+    // porque el frontend no tiene acceso a datos académicos (horarios de
+    // cursada): el que NO los pide se puede armar solo con lo que ya hay
+    // (datos personales + estado de alumno regular); el que SÍ los pide
+    // necesita que Preceptoría los complete a mano — ver la ruta de abajo.
+    path: 'alumno/certificado/regular',
+    title: 'Certificado de alumno regular · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.alumno)],
+    data: {
+      titulo: 'Certificado de alumno regular',
+      descripcion:
+        'Certificado con tus datos personales, DNI y la fecha de emisión, con el logo y el sello del instituto — para presentar donde te lo pidan.',
+      disponibleDesde: 'Sprint 2 · septiembre de 2026',
+      icono: 'documento',
+    },
+    loadComponent: () =>
+      import('./features/proximamente/proximamente').then((m) => m.Proximamente),
+  },
+  {
+    // "Próximamente": certificado de alumno regular CON horarios. Misma
+    // historia que el de arriba, variante con los días y horarios de
+    // cursada — ver el comentario de esa ruta para el porqué de los dos.
+    path: 'alumno/certificado/regular-con-horario',
+    title: 'Certificado de alumno regular con horario · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.alumno)],
+    data: {
+      titulo: 'Certificado de alumno regular con horario',
+      descripcion:
+        'Igual al certificado de alumno regular, pero con los días y horarios de cursada. Preceptoría tiene que completar y confirmar esos datos a mano antes de entregarlo.',
+      disponibleDesde: 'Sprint 2 · septiembre de 2026',
+      icono: 'calendario',
+    },
+    loadComponent: () =>
+      import('./features/proximamente/proximamente').then((m) => m.Proximamente),
+  },
+  {
     // "Próximamente": calendario de mesas de examen (Sprint 3 del roadmap,
     // ver docs/ISCGB-PROJECT.md). Sin roleGuard porque los cuatro roles lo
     // van a usar — Docente y Director/Secretario para las mesas, Alumno para
