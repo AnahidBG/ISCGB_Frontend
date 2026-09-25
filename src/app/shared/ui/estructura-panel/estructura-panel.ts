@@ -206,11 +206,30 @@ export class EstructuraPanel {
    * iniciales, que es mejor que un ícono genérico de persona: identifica de
    * un vistazo a quién pertenece la sesión.
    */
-  protected readonly iniciales = computed(() => inicialesDe(this.nombreUsuario()));
+  protected readonly iniciales = computed(() => inicialesDe(this.nombreUsuario()) || '?');
 
   /** Solo el nombre de pila, que es como saluda el encabezado del Figma. */
   protected readonly primerNombre = computed(
     () => this.nombreUsuario().trim().split(/\s+/)[0] ?? '',
+  );
+
+  /**
+   * Etiqueta accesible del botón de la persona, con reserva por si
+   * `nombreCompleto` llega vacío (usuario sin nombre/apellido cargados en
+   * la base — pasa de verdad, ver `Usuarios.nombre`/`apellido` anulables).
+   *
+   * ⚠️ Bug real encontrado el 25/09/2026: antes todo el bloque de la
+   * persona (el botón, el círculo con las iniciales, el menú desplegable)
+   * vivía detrás de `@if (nombreUsuario())` en el HTML. Angular trata la
+   * cadena vacía como falsy, así que con `nombreCompleto: ''` el botón NO
+   * SE DIBUJABA — ni una versión rota, directamente no existía en el DOM.
+   * Para quien usa el sistema eso se ve exactamente igual que "toco el
+   * ícono de la persona y no pasa nada": no hay nada ahí para tocar. Ahora
+   * el bloque se dibuja siempre; lo único que cambia con el nombre vacío es
+   * esta etiqueta y las iniciales (ver `iniciales` arriba).
+   */
+  protected readonly etiquetaMenuPersona = computed(
+    () => `Menú de ${this.nombreUsuario().trim() || 'la cuenta'}`,
   );
 
   protected alternarMenu(): void {

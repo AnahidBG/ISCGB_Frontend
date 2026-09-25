@@ -217,7 +217,17 @@
     </div>
   }
 
-  <div class="flex min-h-dvh flex-1 flex-col">
+  <!--
+    `min-w-0` no es decorativo acá: sin él, un hijo `flex-1` nunca se achica
+    por debajo del ancho mínimo de SU CONTENIDO (el "min-width: auto" por
+    defecto de los flex items). Alguna tabla o texto largo adentro empujaba
+    esta columna entera a ~514px en una pantalla de 390px, y como el padre
+    (`app-estructura-panel > div`, `flex`) no compensaba, toda la pantalla
+    quedaba con scroll horizontal fantasma — el header, el contenido, todo
+    corrido — en CUALQUIER pantalla del sistema en celular. Bug real
+    encontrado el 25/09/2026 con capturas de Playwright a 390px de ancho.
+  -->
+  <div class="flex min-h-dvh min-w-0 flex-1 flex-col">
     <header
       class="flex items-center gap-3 border-b border-borde bg-superficie px-4 py-3.5 sm:gap-4 sm:px-6"
     >
@@ -422,20 +432,25 @@
 
         <span aria-hidden="true" class="hidden h-8 w-px bg-borde sm:block"></span>
 
-        @if (nombreUsuario()) {
-          <!--
-            El bloque de la persona. Al tocarlo se abre su menú.
-            `relative` acá es lo que ancla el desplegable a este bloque.
-          -->
-          <div class="relative">
-            <button
-              type="button"
-              class="flex items-center gap-3 rounded-full py-1 pl-3 pr-1 transition-colors hover:bg-fondo-panel"
-              [attr.aria-expanded]="menuPerfilAbierto()"
-              aria-haspopup="menu"
-              [attr.aria-label]="'Menú de ' + nombreUsuario()"
-              (click)="alternarMenuPerfil($event)"
-            >
+        <!--
+          El bloque de la persona. Al tocarlo se abre su menú.
+          `relative` acá es lo que ancla el desplegable a este bloque.
+
+          Se dibuja SIEMPRE, sin `@if` de por medio — ver el comentario de
+          `etiquetaMenuPersona` en estructura-panel.ts: cuando
+          `nombreCompleto` llega vacío, este bloque entero dejaba de
+          existir en el DOM y el ícono de la persona quedaba "muerto" al
+          tocarlo. Ahora solo cambia el texto/iniciales, nunca desaparece.
+        -->
+        <div class="relative">
+          <button
+            type="button"
+            class="flex items-center gap-3 rounded-full py-1 pl-3 pr-1 transition-colors hover:bg-fondo-panel"
+            [attr.aria-expanded]="menuPerfilAbierto()"
+            aria-haspopup="menu"
+            [attr.aria-label]="etiquetaMenuPersona()"
+            (click)="alternarMenuPerfil($event)"
+          >
               <span class="hidden flex-col items-end leading-tight sm:flex">
                 <span class="text-sm font-semibold text-texto">{{ primerNombre() }}</span>
                 @if (rolPrincipal()) {
@@ -532,7 +547,6 @@
               </div>
             }
           </div>
-        }
       </div>
     </header>
 
