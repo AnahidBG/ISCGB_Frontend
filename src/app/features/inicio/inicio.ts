@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
+import { map } from 'rxjs';
 import { AuthService } from '../../core/auth/auth.service';
 import { formatearDni } from '../../core/auth/dni';
 import { ROLES } from '../../core/auth/modelos/rol';
@@ -24,8 +26,20 @@ import { Boton } from '../../shared/ui/boton/boton';
 export class Inicio {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
 
   protected readonly sesion = this.auth.sesion;
+
+  /**
+   * `true` cuando `roleGuard` mandó para acá porque la sesión intentó
+   * entrar a una pantalla que no le corresponde por su rol — ver el
+   * criterio de Sprint 2 "Gestión de usuarios y roles": el sistema tiene
+   * que avisarlo, no redirigir en silencio.
+   */
+  protected readonly accesoDenegado = toSignal(
+    this.route.queryParamMap.pipe(map((params) => params.get('accesoDenegado') === '1')),
+    { initialValue: false },
+  );
 
   /**
    * ¿Mostrarle el acceso a la entrega del programa?

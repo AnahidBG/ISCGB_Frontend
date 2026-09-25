@@ -14,6 +14,16 @@
       </h1>
       <p class="mt-2 text-texto-suave">Entraste al sistema. Tu sesión está activa.</p>
 
+      @if (accesoDenegado()) {
+        <p
+          role="alert"
+          class="mt-4 rounded-lg border-l-4 border-rechazado bg-rechazado/10 px-4 py-3 text-sm text-texto"
+        >
+          <strong class="text-rechazado">Acceso denegado.</strong>
+          Esa pantalla no corresponde a tu rol.
+        </p>
+      }
+
       <!--
         Provisorio: mostrar los datos de la sesión sirve para comprobar que el
         login funcionó de punta a punta. Se va cuando exista el dashboard real.

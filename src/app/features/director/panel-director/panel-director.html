@@ -48,6 +48,7 @@
           <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">DNI</th>
           <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Rol</th>
           <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Legajo</th>
+          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6"></th>
         </tr>
       </thead>
       <tbody class="divide-y divide-borde">
@@ -60,6 +61,14 @@
             </td>
             <td class="px-5 py-3 sm:px-6">
               <app-insignia-estado [estado]="usuario.estadoLegajo" />
+            </td>
+            <td class="whitespace-nowrap px-5 py-3 text-right sm:px-6">
+              <a
+                [routerLink]="['/director/usuarios', usuario.idUsuario, 'editar']"
+                class="rounded-full border border-principal px-3 py-1.5 text-xs font-semibold text-principal transition-colors hover:bg-principal-suave"
+              >
+                Editar
+              </a>
             </td>
           </tr>
         }

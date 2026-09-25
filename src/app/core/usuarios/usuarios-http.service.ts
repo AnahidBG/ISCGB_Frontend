@@ -3,14 +3,36 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { Rol } from '../auth/modelos/rol';
 import { RUTAS_API } from '../configuracion/api';
+import { DatosEditarUsuario } from './modelos/datos-editar-usuario';
 import { NuevoUsuario } from './modelos/nuevo-usuario';
+import { UsuarioDetalle } from './modelos/usuario-detalle';
 import { UsuarioInstitucional } from './modelos/usuario-institucional';
 import {
   MENSAJE_ALTA_NO_DISPONIBLE,
+  MENSAJE_EDICION_NO_DISPONIBLE,
   MENSAJE_ERROR_ALTA_USUARIO,
+  MENSAJE_ERROR_EDITAR_USUARIO,
   MENSAJE_USUARIO_DUPLICADO,
   UsuariosService,
 } from './usuarios.service';
+
+/** Lo que devuelve `GetUsuarioById` (`UsuarioController.cs`). YA es real. */
+interface UsuarioDetalleApi {
+  idUsuario: number;
+  dni: string;
+  nombre: string | null;
+  apellido: string | null;
+  email: string | null;
+  telefono: string | null;
+  telefonoEmergencia: string | null;
+  lugarNacimiento: string | null;
+  contactoEmergencia: string | null;
+  direccion: string | null;
+  idProvincia: number | null;
+  fechaNac: string | null;
+  estadoUsuario: boolean;
+  roles: { idRol: number; nombreRol: string | null }[];
+}
 
 /** Un rol tal como viene dentro de cada usuario en `GET /api/Usuarios`. */
 interface RolApiUsuario {
@@ -139,6 +161,82 @@ export class UsuariosHttpService extends UsuariosService {
       }),
     );
   }
+
+  /**
+   * El detalle completo de una persona. YA es real —
+   * `GET /api/Usuarios/{id}` existe y funciona (confirmado con Swagger el
+   * 25/09/2026), a diferencia de `crear`/`actualizar`.
+   */
+  obtener(idUsuario: number): Observable<UsuarioDetalle> {
+    return this.http.get<UsuarioDetalleApi>(RUTAS_API.usuarioPorId(idUsuario)).pipe(
+      map(aUsuarioDetalle),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error al traer el detalle del usuario:', error);
+        return throwError(() => error);
+      }),
+    );
+  }
+
+  /**
+   * Edición de usuario.
+   *
+   * Mismo cuerpo que `crear` (menos `dni` y `password`, que acá no se
+   * tocan) — es el contrato YA documentado en `docs/contrato-alta-usuario.md`,
+   * no uno nuevo. Ver el comentario de `DatosEditarUsuario` sobre por qué
+   * no se agregan los campos nuevos del criterio de Sprint 2 (CUIL, Sexo,
+   * etc.) acá todavía.
+   */
+  actualizar(idUsuario: number, datos: DatosEditarUsuario): Observable<void> {
+    const cuerpo = {
+      nombre: datos.nombre,
+      apellido: datos.apellido,
+      email: datos.email,
+      roles: datos.roles,
+      estadoUsuario: datos.activo,
+      telefono: datos.telefono,
+      fechaNac: datos.fechaNacimiento === null ? null : aFechaSola(datos.fechaNacimiento),
+      direccion: datos.direccion,
+      lugarNacimiento: datos.lugarNacimiento,
+      contactoEmergencia: datos.contactoEmergencia,
+      telefonoEmergencia: datos.telefonoEmergencia,
+    };
+
+    return this.http.put(RUTAS_API.usuarioPorId(idUsuario), cuerpo).pipe(
+      map(() => undefined),
+      catchError((error: HttpErrorResponse) => {
+        // 404 = la ruta no existe; 405 = existe pero no acepta PUT. Mismo
+        // criterio que `crear`: el endpoint todavía no está publicado.
+        if (error.status === 404 || error.status === 405) {
+          return throwError(() => new Error(MENSAJE_EDICION_NO_DISPONIBLE));
+        }
+
+        console.error('Error al editar el usuario:', error);
+        return throwError(() => new Error(MENSAJE_ERROR_EDITAR_USUARIO));
+      }),
+    );
+  }
+}
+
+/** Normaliza el detalle real de `GetUsuarioById`. */
+function aUsuarioDetalle(usuario: UsuarioDetalleApi): UsuarioDetalle {
+  return {
+    idUsuario: usuario.idUsuario,
+    dni: usuario.dni,
+    nombre: usuario.nombre ?? '',
+    apellido: usuario.apellido ?? '',
+    email: usuario.email ?? '',
+    telefono: usuario.telefono,
+    telefonoEmergencia: usuario.telefonoEmergencia,
+    lugarNacimiento: usuario.lugarNacimiento,
+    contactoEmergencia: usuario.contactoEmergencia,
+    direccion: usuario.direccion,
+    idProvincia: usuario.idProvincia,
+    fechaNac: usuario.fechaNac === null ? null : new Date(usuario.fechaNac),
+    estadoUsuario: usuario.estadoUsuario,
+    roles: (usuario.roles ?? [])
+      .map((rol) => rol.nombreRol)
+      .filter((nombre): nombre is string => nombre !== null && nombre.trim() !== '') as Rol[],
+  };
 }
 
 /** `Date` → "2026-08-27", que es lo que espera un `DateOnly` de .NET. */
