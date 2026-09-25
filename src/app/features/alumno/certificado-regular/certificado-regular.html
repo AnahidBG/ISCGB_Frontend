@@ -1,0 +1,93 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Certificado de alumno regular"
+  subtitulo="Para presentar en la entidad que te lo pida."
+  volverUrl="/alumno/panel"
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <div class="mx-auto max-w-xl">
+    <div class="rounded-2xl border border-borde bg-superficie p-6 sm:p-8">
+      @if (!datosCompletos()) {
+        <div class="flex flex-col items-center gap-3 text-center">
+          <span
+            class="flex h-14 w-14 items-center justify-center rounded-full bg-rechazado/10 text-rechazado"
+          >
+            <app-icono nombre="alerta" class="h-7 w-7" />
+          </span>
+          <h2 class="text-lg font-bold text-texto">Te faltan datos personales</h2>
+          <p class="max-w-sm text-sm leading-relaxed text-texto-suave">
+            Para emitir el certificado necesitamos tu nombre completo y tu DNI cargados en el
+            sistema. Pasá por Secretaría para completarlos.
+          </p>
+        </div>
+      } @else {
+        <div class="flex items-start gap-4">
+          <span
+            class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-fondo-panel text-texto-suave"
+          >
+            <app-icono nombre="documento" class="h-6 w-6" />
+          </span>
+          <div class="min-w-0">
+            <h2 class="text-base font-semibold text-texto">Certificado de alumno regular</h2>
+            <p class="mt-1 text-sm leading-relaxed text-texto-suave">
+              Certifica que sos alumno/a regular del instituto. Trae tu nombre completo, DNI y
+              la fecha de emisión de hoy, con el membrete institucional.
+            </p>
+          </div>
+        </div>
+
+        <!-- Vista previa de los datos que va a llevar el certificado. -->
+        <dl class="mt-6 divide-y divide-borde rounded-xl border border-borde bg-fondo-panel">
+          <div class="flex items-center justify-between gap-4 px-4 py-3">
+            <dt class="text-sm text-texto-suave">Nombre completo</dt>
+            <dd class="text-sm font-medium text-texto">{{ sesion()?.nombreCompleto }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-4 px-4 py-3">
+            <dt class="text-sm text-texto-suave">DNI</dt>
+            <dd class="font-mono text-sm font-medium text-texto">{{ dniFormateado() }}</dd>
+          </div>
+          <div class="flex items-center justify-between gap-4 px-4 py-3">
+            <dt class="text-sm text-texto-suave">Fecha de emisión</dt>
+            <dd class="text-sm font-medium text-texto">Hoy</dd>
+          </div>
+        </dl>
+
+        @if (error(); as mensaje) {
+          <p role="alert" class="mt-4 rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+            {{ mensaje }}
+          </p>
+        }
+
+        @if (generado()) {
+          <p class="mt-4 rounded-lg bg-aprobado/10 px-4 py-3 text-sm text-texto">
+            <strong class="text-aprobado">Listo.</strong>
+            El certificado se descargó a tu dispositivo.
+          </p>
+        }
+
+        <button
+          type="button"
+          [disabled]="generando()"
+          class="mt-6 flex w-full items-center justify-center gap-2 rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro disabled:cursor-not-allowed disabled:opacity-40"
+          (click)="descargar()"
+        >
+          <app-icono nombre="subir" class="h-4 w-4" />
+          @if (generando()) {
+            Generando…
+          } @else {
+            Descargar certificado (PDF)
+          }
+        </button>
+
+        <p class="mt-3 text-center text-xs text-texto-suave">
+          ¿Necesitás que figuren los días y horarios de cursada? Esa variante todavía no está
+          disponible — pedila en Secretaría mientras tanto.
+        </p>
+      }
+    </div>
+  </div>
+</app-estructura-panel>
