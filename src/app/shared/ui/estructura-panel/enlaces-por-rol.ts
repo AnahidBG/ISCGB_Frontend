@@ -53,7 +53,11 @@ export function enlacesPorSesion(
   }
 
   if (tieneAlgunRol(sesion, [ROLES.director, ROLES.secretario])) {
-    enlaces.push({ etiqueta: 'Control de Legajos', url: '/secretario/control-legajos', icono: 'legajo' });
+    enlaces.push({
+      etiqueta: 'Control de Legajos',
+      url: '/secretario/control-legajos',
+      icono: 'legajo',
+    });
   }
 
   // "Mi Legajo" y "Subir Documento" son del legajo PROPIO: no van cuando la
@@ -61,6 +65,16 @@ export function enlacesPorSesion(
   if (tieneAlgunRol(sesion, [ROLES.docente, ROLES.alumno]) && !opciones.legajoAjeno) {
     enlaces.push({ etiqueta: 'Mi Legajo', url: '/legajo/mis-documentos', icono: 'legajo' });
     enlaces.push({ etiqueta: 'Subir Documento', url: '/legajo/subir-documento', icono: 'subir' });
+  }
+
+  // Autogestión estudiantil (Sprint 2): SCRUM-121 pide que el certificado
+  // "figure en el menú".
+  if (tieneAlgunRol(sesion, [ROLES.alumno])) {
+    enlaces.push({
+      etiqueta: 'Certificado alumno regular',
+      url: '/alumno/certificado/regular',
+      icono: 'documento',
+    });
   }
 
   // Sin `else`, a propósito: una sesión Director+Docente (el caso real de

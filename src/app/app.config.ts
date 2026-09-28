@@ -8,6 +8,8 @@ import { AuthHttpService } from './core/auth/auth-http.service';
 import { sesionInterceptor } from './core/auth/sesion.interceptor';
 import { tokenInterceptor } from './core/auth/token.interceptor';
 import { cargaInterceptor } from './core/carga/carga.interceptor';
+import { CertificadosService } from './core/certificados/certificados.service';
+import { CertificadosHttpService } from './core/certificados/certificados-http.service';
 import { JustificativosService } from './core/justificativos/justificativos.service';
 import { JustificativosHttpService } from './core/justificativos/justificativos-http.service';
 import { LegajoService } from './core/legajos/legajo.service';
@@ -42,12 +44,12 @@ export const appConfig: ApplicationConfig = {
     { provide: AuthService, useClass: AuthHttpService },
     { provide: ProgramasMateriaService, useClass: ProgramasMateriaHttpService },
     { provide: JustificativosService, useClass: JustificativosHttpService },
+    { provide: CertificadosService, useClass: CertificadosHttpService },
 
-    // UsuariosHttpService pega contra GET /api/Usuarios (real), pero esa
-    // respuesta no trae estado de legajo por persona: cada usuario queda con
-    // estadoLegajo: null y la columna se ve vacía. Es correcto y esperado —
-    // ver docs/alcance-dashboard-director.md. Para volver al maquetado
-    // completo (con estadoLegajo falso pero visible): UsuariosMockService.
+    // UsuariosHttpService: GET /api/Usuarios (real) y la gestión de usuarios
+    // contra /api/UsuariosAdmin (rama CargaDeUsuarios del backend, todavía no
+    // mergeada — sin ella, alta/modificación/baja avisan que no está
+    // habilitada). Ver docs/contrato-alta-usuario.md.
     { provide: UsuariosService, useClass: UsuariosHttpService },
 
     // LegajoHttpService: desde el 30/08/2026 las SEIS operaciones pegan

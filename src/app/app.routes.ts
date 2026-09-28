@@ -174,38 +174,32 @@ export const routes: Routes = [
       import('./features/alumno/panel-alumno/panel-alumno').then((m) => m.PanelAlumno),
   },
   {
-    // Certificado de alumno regular SIN horarios — Sprint 2, "Solicitud de
-    // certificado de alumno regular (Estudiante)". Se arma 100% en el
-    // navegador con `jsPDF`: nombre, DNI y fecha de emisión salen de la
-    // sesión, no dependen de ningún endpoint nuevo. Ver el comentario en
-    // `certificado-regular.ts` para el detalle.
-    //
-    // La variante CON horario sigue en "Próximamente" (ruta de abajo): esa
-    // sí necesita datos de cursada que hoy no expone ningún endpoint.
+    // Certificado de alumno regular — Sprint 2, "Solicitud de certificado de
+    // alumno regular (Estudiante)" (SCRUM-12). Lo genera el backend
+    // (`GET /api/Certificados/alumno-regular`), con sello y nombre del
+    // instituto. Ver `certificado-regular.ts`.
     path: 'alumno/certificado/regular',
     title: 'Certificado de alumno regular · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.alumno)],
+    data: { variante: 'regular' },
     loadComponent: () =>
       import('./features/alumno/certificado-regular/certificado-regular').then(
         (m) => m.CertificadoRegular,
       ),
   },
   {
-    // "Próximamente": certificado de alumno regular CON horarios. Misma
-    // historia que el de arriba, variante con los días y horarios de
-    // cursada — ver el comentario de esa ruta para el porqué de los dos.
+    // La misma pantalla, variante CON horario de cursada
+    // (`GET /api/Certificados/alumno-regular-horario`). Antes era
+    // "Próximamente": el backend ya la genera, con las líneas de días y
+    // horarios para que Preceptoría las complete.
     path: 'alumno/certificado/regular-con-horario',
     title: 'Certificado de alumno regular con horario · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.alumno)],
-    data: {
-      titulo: 'Certificado de alumno regular con horario',
-      descripcion:
-        'Igual al certificado de alumno regular, pero con los días y horarios de cursada. Preceptoría tiene que completar y confirmar esos datos a mano antes de entregarlo.',
-      disponibleDesde: 'Sprint 2 · septiembre de 2026',
-      icono: 'calendario',
-    },
+    data: { variante: 'regular-con-horario' },
     loadComponent: () =>
-      import('./features/proximamente/proximamente').then((m) => m.Proximamente),
+      import('./features/alumno/certificado-regular/certificado-regular').then(
+        (m) => m.CertificadoRegular,
+      ),
   },
   {
     // "Próximamente": calendario de mesas de examen (Sprint 3 del roadmap,

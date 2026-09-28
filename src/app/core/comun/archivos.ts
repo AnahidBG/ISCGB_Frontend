@@ -59,3 +59,26 @@ export function aNombreDeArchivo(texto: string): string {
     .replace(/[^a-zA-Z0-9 _-]/g, '')
     .replace(/\s+/g, '_');
 }
+
+/**
+ * Dispara la descarga de un archivo que ya tenemos en memoria (un PDF que
+ * devolvió la API).
+ *
+ * El navegador no deja "guardar un Blob" directamente: hay que darle una URL
+ * temporal que lo represente y simular el click en un enlace. Esa URL vive en
+ * memoria hasta que se la revoca, así que se libera apenas se usa — si no, el
+ * archivo entero queda retenido mientras la pestaña siga abierta.
+ *
+ * Lo usan la entrega del programa de materia y el certificado de alumno
+ * regular.
+ */
+export function descargarArchivo(archivo: Blob, nombre: string): void {
+  const url = URL.createObjectURL(archivo);
+  const enlace = document.createElement('a');
+
+  enlace.href = url;
+  enlace.download = nombre;
+  enlace.click();
+
+  URL.revokeObjectURL(url);
+}

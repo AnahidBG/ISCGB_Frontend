@@ -11,6 +11,7 @@ import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-
 import { Boton } from '../../../shared/ui/boton/boton';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 import { FormularioProgramaMateria } from './partes/formulario-programa-materia/formulario-programa-materia';
+import { descargarArchivo } from '../../../core/comun/archivos';
 
 /**
  * Pantalla de entrega del programa de materia (Docente).
@@ -159,7 +160,7 @@ export class EntregaPrograma {
     this.programasMateria.descargarPdf(id).subscribe({
       next: (archivo) => {
         this.descargandoPdf.set(false);
-        guardarArchivo(archivo, `Programa_Materia_${id}.pdf`);
+        descargarArchivo(archivo, `Programa_Materia_${id}.pdf`);
       },
       error: (fallo: Error) => {
         this.descargandoPdf.set(false);
@@ -179,23 +180,4 @@ export class EntregaPrograma {
     this.auth.cerrarSesion();
     this.router.navigate(['/login']);
   }
-}
-
-/**
- * Dispara la descarga de un archivo que ya tenemos en memoria.
- *
- * El navegador no deja "guardar un Blob" directamente: hay que darle una URL
- * temporal que lo represente y simular el click en un enlace. Esa URL vive en
- * memoria hasta que se la revoca, así que se libera apenas se usa — si no, el
- * archivo entero queda retenido mientras la pestaña siga abierta.
- */
-function guardarArchivo(archivo: Blob, nombre: string): void {
-  const url = URL.createObjectURL(archivo);
-  const enlace = document.createElement('a');
-
-  enlace.href = url;
-  enlace.download = nombre;
-  enlace.click();
-
-  URL.revokeObjectURL(url);
 }
