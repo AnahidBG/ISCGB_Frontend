@@ -17,6 +17,15 @@
     <app-tarjeta-metrica etiqueta="Rechazados" [valor]="resumen().rechazados" tono="rechazado" />
   </div>
 
+  <app-progreso-tramite
+    class="mt-5 block sm:mt-6"
+    [porcentaje]="progreso().porcentaje"
+    [aprobados]="progreso().aprobados"
+    [total]="progreso().total"
+    [estimado]="progreso().estimado"
+    [pasos]="pasosTramite()"
+  />
+
   <div class="mt-5 grid gap-5 sm:mt-6 sm:gap-6 xl:grid-cols-3">
     <section class="rounded-2xl border border-borde bg-superficie xl:col-span-2">
       <header class="border-b border-borde px-5 py-4 sm:px-6 sm:py-5">

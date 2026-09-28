@@ -61,6 +61,27 @@ describe('EstructuraPanel', () => {
     expect((component as any).iniciales()).toBe('MP');
   });
 
+  /**
+   * Regresión del bug real del 25/09/2026: con `nombreCompleto` vacío (pasa
+   * cuando el usuario no tiene nombre/apellido cargados en la base — ver
+   * `UsuarioController`), el botón del menú de la persona entero vivía
+   * detrás de `@if (nombreUsuario())` y dejaba de existir en el DOM. Para
+   * quien usaba el sistema, tocar ahí no hacía nada — no había nada que
+   * tocar. Estos dos tests fijan que el botón siempre tenga algo que
+   * mostrar, nunca que desaparezca.
+   */
+  it('con nombre vacío, las iniciales caen a "?" en vez de quedar en blanco', () => {
+    fixture.componentRef.setInput('nombreUsuario', '');
+    fixture.detectChanges();
+    expect((component as any).iniciales()).toBe('?');
+  });
+
+  it('con nombre vacío, la etiqueta del menú de la persona sigue siendo legible', () => {
+    fixture.componentRef.setInput('nombreUsuario', '');
+    fixture.detectChanges();
+    expect((component as any).etiquetaMenuPersona()).toBe('Menú de la cuenta');
+  });
+
   describe('campana de notificaciones', () => {
     it('sin novedades no enciende el puntito rojo', () => {
       expect((component as any).hayNotificaciones()).toBe(false);

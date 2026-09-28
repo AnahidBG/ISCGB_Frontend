@@ -31,4 +31,10 @@ export interface DocumentoLegajo {
    * prueba tampoco lo tienen cargado.
    */
   rutaArchivo?: string | null;
+
+  /**
+   * Si Secretaría tiene además el papel físico de este documento. El backend
+   * ya lo devuelve; antes se descartaba al mapear la respuesta.
+   */
+  presentadoFisico: boolean;
 }

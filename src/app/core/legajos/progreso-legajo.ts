@@ -123,6 +123,33 @@ export function documentosSinCargar(
 }
 
 /**
+ * De cada tipo de documento (por nombre normalizado), la versión más nueva.
+ *
+ * El backend crea una fila nueva cada vez que se resube un documento, nunca
+ * actualiza la vieja: un rechazado que ya se corrigió deja dos filas del
+ * mismo tipo. Mostrar las dos le hace creer a la persona que sigue teniendo
+ * algo rechazado cuando ya lo arregló — el mismo problema que ya resolvía
+ * `MisDocumentos` con esta misma lógica, ahora reutilizable para cualquier
+ * pantalla que solo necesite "el estado actual", sin el resto de sus filtros
+ * y su orden.
+ */
+export function ultimaVersionPorTipo(
+  documentos: readonly DocumentoLegajo[],
+): DocumentoLegajo[] {
+  const porTipo = new Map<string, DocumentoLegajo>();
+
+  for (const documento of documentos) {
+    const clave = normalizarTexto(documento.nombre);
+    const actual = porTipo.get(clave);
+    if (actual === undefined || documento.fechaSubida.getTime() > actual.fechaSubida.getTime()) {
+      porTipo.set(clave, documento);
+    }
+  }
+
+  return [...porTipo.values()];
+}
+
+/**
  * Redondea y corta en 100.
  *
  * El tope importa en el camino estimado: ahí numerador y denominador salen de

@@ -1,5 +1,7 @@
 import { Observable } from 'rxjs';
+import { DatosEditarUsuario } from './modelos/datos-editar-usuario';
 import { NuevoUsuario } from './modelos/nuevo-usuario';
+import { UsuarioDetalle } from './modelos/usuario-detalle';
 import { UsuarioInstitucional } from './modelos/usuario-institucional';
 
 /** Cuando el alta falla por algo que no es culpa de lo que cargó la persona. */
@@ -20,6 +22,21 @@ export const MENSAJE_ALTA_NO_DISPONIBLE =
 /** El DNI o el email ya están en uso por otra persona. */
 export const MENSAJE_USUARIO_DUPLICADO =
   'Ya existe un usuario con ese DNI o ese correo. Revisá los datos o buscá a la persona en el listado.';
+
+/** Cuando la edición falla por algo que no es culpa de lo que cargó la persona. */
+export const MENSAJE_ERROR_EDITAR_USUARIO =
+  'No pudimos guardar los cambios. Intentá de nuevo en un momento.';
+
+/**
+ * El backend todavía no tiene el endpoint de edición.
+ *
+ * Mismo criterio que `MENSAJE_ALTA_NO_DISPONIBLE`: no es un error de red,
+ * es trabajo pendiente del otro lado — ver `DatosEditarUsuario` para el
+ * detalle de qué falta (endpoint Y columnas nuevas en la base).
+ */
+export const MENSAJE_EDICION_NO_DISPONIBLE =
+  'El servidor todavía no tiene habilitada la edición de usuarios. La pantalla está lista y ' +
+  'empieza a funcionar en cuanto el backend publique el endpoint PUT /api/Usuarios/{id}.';
 
 /**
  * Contrato de lectura de usuarios del instituto.
@@ -56,4 +73,23 @@ export abstract class UsuariosService {
    * tocar una línea de Angular.
    */
   abstract crear(usuario: NuevoUsuario): Observable<void>;
+
+  /**
+   * El detalle completo de una persona, para precargar "Editar Usuario".
+   *
+   * A diferencia de `crear`, este SÍ pega contra un endpoint real:
+   * `GET /api/Usuarios/{id}` — confirmado con Swagger el 25/09/2026.
+   */
+  abstract obtener(idUsuario: number): Observable<UsuarioDetalle>;
+
+  /**
+   * Guarda los cambios del perfil de una persona ya existente — Sprint 2,
+   * "Gestión de usuarios y roles" (Director).
+   *
+   * ⚠️ El backend NO tiene este endpoint todavía (ni `PUT` ni `PATCH` en
+   * `UsuarioController`, confirmado con Swagger). Apunta a
+   * `PUT /api/Usuarios/{id}`, que es donde corresponde, y traduce el
+   * 404/405 de hoy a un mensaje que lo explica — mismo patrón que `crear`.
+   */
+  abstract actualizar(idUsuario: number, datos: DatosEditarUsuario): Observable<void>;
 }

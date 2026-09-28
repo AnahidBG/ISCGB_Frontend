@@ -8,6 +8,7 @@ function documento(parcial: Partial<DocumentoLegajo> & { id: number }): Document
     fechaSubida: new Date('2026-01-01'),
     comentario: null,
     fechaVencimiento: null,
+    presentadoFisico: false,
     ...parcial,
   };
 }

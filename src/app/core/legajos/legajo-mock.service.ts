@@ -31,21 +31,23 @@ const LEGAJOS_POR_DNI: Readonly<Record<string, readonly DocumentoLegajo[]>> = {
       id: 1,
       nombre: 'Título de Grado - Analítico',
       estado: 'Aprobado',
-      fechaSubida: new Date('2026-05-12'), comentario: null, fechaVencimiento: null
+      fechaSubida: new Date('2026-05-12'), comentario: null, fechaVencimiento: null, presentadoFisico: false
     },
     {
       id: 2,
       nombre: 'DNI Copia Actualizada',
       estado: 'Pendiente',
-      fechaSubida: new Date('2026-05-10'), comentario: null, fechaVencimiento: null
+      // A propósito en `true`: es el caso de prueba para ver la insignia
+      // "Presentado físicamente" en la revisión de Secretaría.
+      fechaSubida: new Date('2026-05-10'), comentario: null, fechaVencimiento: null, presentadoFisico: true
     },
     {
       id: 3,
       nombre: 'Certificado de Salud',
       estado: 'Aprobado',
-      fechaSubida: new Date('2026-04-30'), comentario: null, fechaVencimiento: null
+      fechaSubida: new Date('2026-04-30'), comentario: null, fechaVencimiento: null, presentadoFisico: false
     },
-    { id: 4, nombre: 'Curso TIC 2025', estado: 'Rechazado', fechaSubida: new Date('2026-05-08'), comentario: null, fechaVencimiento: null },
+    { id: 4, nombre: 'Curso TIC 2025', estado: 'Rechazado', fechaSubida: new Date('2026-05-08'), comentario: null, fechaVencimiento: null, presentadoFisico: false },
   ],
   // Alberto Alumno
   '22222222': [
@@ -53,9 +55,9 @@ const LEGAJOS_POR_DNI: Readonly<Record<string, readonly DocumentoLegajo[]>> = {
       id: 5,
       nombre: 'DNI Copia Actualizada',
       estado: 'Aprobado',
-      fechaSubida: new Date('2026-03-02'), comentario: null, fechaVencimiento: null
+      fechaSubida: new Date('2026-03-02'), comentario: null, fechaVencimiento: null, presentadoFisico: false
     },
-    { id: 6, nombre: 'Apto Físico', estado: 'Pendiente', fechaSubida: new Date('2026-05-15'), comentario: null, fechaVencimiento: null },
+    { id: 6, nombre: 'Apto Físico', estado: 'Pendiente', fechaSubida: new Date('2026-05-15'), comentario: null, fechaVencimiento: null, presentadoFisico: false },
   ],
   // Dora Directora y Docente
   '55555555': [
@@ -63,13 +65,13 @@ const LEGAJOS_POR_DNI: Readonly<Record<string, readonly DocumentoLegajo[]>> = {
       id: 7,
       nombre: 'Título de Grado - Analítico',
       estado: 'Aprobado',
-      fechaSubida: new Date('2026-02-20'), comentario: null, fechaVencimiento: null
+      fechaSubida: new Date('2026-02-20'), comentario: null, fechaVencimiento: null, presentadoFisico: false
     },
     {
       id: 8,
       nombre: 'Certificado de Salud',
       estado: 'Pendiente',
-      fechaSubida: new Date('2026-05-20'), comentario: null, fechaVencimiento: null
+      fechaSubida: new Date('2026-05-20'), comentario: null, fechaVencimiento: null, presentadoFisico: false
     },
   ],
 };
@@ -152,21 +154,21 @@ const PENDIENTES_INVENTADOS: readonly DocumentoLegajo[] = [
     nombre: 'Título de Grado - Analítico',
     propietario: 'Angel Silva',
     estado: 'Pendiente',
-    fechaSubida: new Date('2026-08-22'), comentario: null, fechaVencimiento: null
+    fechaSubida: new Date('2026-08-22'), comentario: null, fechaVencimiento: null, presentadoFisico: false
   },
   {
     id: 5,
     nombre: 'Título de Grado - Analítico',
     propietario: 'Ana García',
     estado: 'Pendiente',
-    fechaSubida: new Date('2026-08-21'), comentario: null, fechaVencimiento: null
+    fechaSubida: new Date('2026-08-21'), comentario: null, fechaVencimiento: null, presentadoFisico: true
   },
   {
     id: 2,
     nombre: 'DNI Copia Actualizada',
     propietario: 'Dolores Díaz',
     estado: 'Pendiente',
-    fechaSubida: new Date('2026-05-10'), comentario: null, fechaVencimiento: null
+    fechaSubida: new Date('2026-05-10'), comentario: null, fechaVencimiento: null, presentadoFisico: false
   },
 ];
 

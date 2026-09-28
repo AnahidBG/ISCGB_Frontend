@@ -7,13 +7,18 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
-import { calcularProgresoLegajo } from '../../../core/legajos/progreso-legajo';
+import {
+  calcularProgresoLegajo,
+  documentosSinCargar,
+  ultimaVersionPorTipo,
+} from '../../../core/legajos/progreso-legajo';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { notificacionesPorRechazos } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
+import { PasoTramite, ProgresoTramite } from '../../../shared/ui/progreso-tramite/progreso-tramite';
 import { TarjetaMetrica } from '../../../shared/ui/tarjeta-metrica/tarjeta-metrica';
 
 const ACCION_DOCENTE: AccionPanel = {
@@ -37,7 +42,7 @@ interface ProximoPaso {
  */
 @Component({
   selector: 'app-panel-docente',
-  imports: [EstructuraPanel, InsigniaEstado, TarjetaMetrica, Icono, DatePipe],
+  imports: [EstructuraPanel, InsigniaEstado, TarjetaMetrica, Icono, DatePipe, ProgresoTramite],
   templateUrl: './panel-docente.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -124,6 +129,26 @@ export class PanelDocente {
   protected readonly progreso = computed(() =>
     calcularProgresoLegajo(this.documentos(), this.requeridos()),
   );
+
+  /**
+   * El detalle documento por documento del "Mapa del trámite"
+   * (`ProgresoTramite`): los ya subidos (con su última versión, sin
+   * duplicar por resubidas) más los que todavía faltan.
+   */
+  protected readonly pasosTramite = computed<PasoTramite[]>(() => {
+    const subidos: PasoTramite[] = ultimaVersionPorTipo(this.documentos()).map((documento) => ({
+      nombre: documento.nombre,
+      estado: documento.estado,
+      faltante: false,
+    }));
+
+    const faltantes: PasoTramite[] = documentosSinCargar(
+      this.documentos(),
+      this.requeridos().filter((requerido) => requerido.obligatorio),
+    ).map((requerido) => ({ nombre: requerido.nombreDocumento, estado: null, faltante: true }));
+
+    return [...subidos, ...faltantes];
+  });
 
   protected readonly proximosPasos = computed<ProximoPaso[]>(() => {
     const { total, aprobados, pendientes, rechazados } = this.resumen();

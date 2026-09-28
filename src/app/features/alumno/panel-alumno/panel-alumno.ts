@@ -1,18 +1,24 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
-import { calcularProgresoLegajo } from '../../../core/legajos/progreso-legajo';
+import {
+  calcularProgresoLegajo,
+  documentosSinCargar,
+  ultimaVersionPorTipo,
+} from '../../../core/legajos/progreso-legajo';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { notificacionesPorRechazos } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
+import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
+import { PasoTramite, ProgresoTramite } from '../../../shared/ui/progreso-tramite/progreso-tramite';
 
 const ACCION_ALUMNO: AccionPanel = {
   etiqueta: 'Nuevo Documento',
@@ -36,7 +42,7 @@ const ACCION_ALUMNO: AccionPanel = {
  */
 @Component({
   selector: 'app-panel-alumno',
-  imports: [EstructuraPanel, InsigniaEstado, DatePipe],
+  imports: [EstructuraPanel, InsigniaEstado, DatePipe, ProgresoTramite, Icono, RouterLink],
   templateUrl: './panel-alumno.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -88,6 +94,35 @@ export class PanelAlumno {
   protected readonly progreso = computed(() =>
     calcularProgresoLegajo(this.documentos(), this.requeridos()),
   );
+
+  /** El detalle documento por documento del "Mapa del trámite" (`ProgresoTramite`). */
+  protected readonly pasosTramite = computed<PasoTramite[]>(() => {
+    const subidos: PasoTramite[] = ultimaVersionPorTipo(this.documentos()).map((documento) => ({
+      nombre: documento.nombre,
+      estado: documento.estado,
+      faltante: false,
+    }));
+
+    const faltantes: PasoTramite[] = documentosSinCargar(
+      this.documentos(),
+      this.requeridos().filter((requerido) => requerido.obligatorio),
+    ).map((requerido) => ({ nombre: requerido.nombreDocumento, estado: null, faltante: true }));
+
+    return [...subidos, ...faltantes];
+  });
+
+  /**
+   * `true` con el desplegable de "Solicitar certificado" abierto.
+   *
+   * Un solo botón que despliega las dos variantes, en vez de mostrar los dos
+   * enlaces siempre visibles: así lo pidió el equipo (decisión de UX del
+   * 23/09/2026, discutida con Secretaría).
+   */
+  protected readonly certificadoDesplegado = signal(false);
+
+  protected alternarCertificado(): void {
+    this.certificadoDesplegado.update((valor) => !valor);
+  }
 
   protected cerrarSesion(): void {
     this.auth.cerrarSesion();

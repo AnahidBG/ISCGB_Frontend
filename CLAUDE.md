@@ -27,7 +27,7 @@ Sistema ERP web para digitalizar la gestión de legajos y documentación académ
 | Variables locales / parámetros (C#) | `camelCase` | `documentoActual`, `usuarioId` |
 | Métodos y variables (TypeScript) | `camelCase` | `obtenerLegajo()`, `fechaVencimiento` |
 | Clases/Interfaces (TypeScript) | `PascalCase` | `AuthService`, `LegajoModel` |
-| Archivos Angular | `kebab-case` | `dashboard-alumno.component.ts`, `role.guard.ts` |
+| Archivos Angular | `kebab-case`, sin sufijo `.component` en componentes (estilo Angular 20) | `panel-alumno.ts` + `panel-alumno.html`, `role.guard.ts` |
 | Enums (C#) | `PascalCase`, singular | `EstadoDocumento`, `RolUsuario`, `TipoDocumento` |
 | Rutas Angular / features | `kebab-case` | `dashboard-docente`, `dashboard-secretario` |
 

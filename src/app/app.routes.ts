@@ -71,6 +71,17 @@ export const routes: Routes = [
       import('./features/director/alta-usuario/alta-usuario').then((m) => m.AltaUsuario),
   },
   {
+    // Edición de usuarios — el complemento de "Nuevo Usuario". Sprint 2,
+    // "Gestión de usuarios y roles" (Director). Igual que el alta, la
+    // pantalla ya está construida y avisa con todas las letras si el
+    // backend responde 404 — ver `DatosEditarUsuario`.
+    path: 'director/usuarios/:idUsuario/editar',
+    title: 'Editar usuario · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.director)],
+    loadComponent: () =>
+      import('./features/director/editar-usuario/editar-usuario').then((m) => m.EditarUsuario),
+  },
+  {
     // Documentos pendientes de revisión de todo el instituto. Datos de
     // ejemplo — ver docs/alcance-paneles-roles.md.
     path: 'secretario/panel',
@@ -166,6 +177,40 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard(ROLES.alumno)],
     loadComponent: () =>
       import('./features/alumno/panel-alumno/panel-alumno').then((m) => m.PanelAlumno),
+  },
+  {
+    // Certificado de alumno regular SIN horarios — Sprint 2, "Solicitud de
+    // certificado de alumno regular (Estudiante)". Se arma 100% en el
+    // navegador con `jsPDF`: nombre, DNI y fecha de emisión salen de la
+    // sesión, no dependen de ningún endpoint nuevo. Ver el comentario en
+    // `certificado-regular.ts` para el detalle.
+    //
+    // La variante CON horario sigue en "Próximamente" (ruta de abajo): esa
+    // sí necesita datos de cursada que hoy no expone ningún endpoint.
+    path: 'alumno/certificado/regular',
+    title: 'Certificado de alumno regular · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.alumno)],
+    loadComponent: () =>
+      import('./features/alumno/certificado-regular/certificado-regular').then(
+        (m) => m.CertificadoRegular,
+      ),
+  },
+  {
+    // "Próximamente": certificado de alumno regular CON horarios. Misma
+    // historia que el de arriba, variante con los días y horarios de
+    // cursada — ver el comentario de esa ruta para el porqué de los dos.
+    path: 'alumno/certificado/regular-con-horario',
+    title: 'Certificado de alumno regular con horario · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.alumno)],
+    data: {
+      titulo: 'Certificado de alumno regular con horario',
+      descripcion:
+        'Igual al certificado de alumno regular, pero con los días y horarios de cursada. Preceptoría tiene que completar y confirmar esos datos a mano antes de entregarlo.',
+      disponibleDesde: 'Sprint 2 · septiembre de 2026',
+      icono: 'calendario',
+    },
+    loadComponent: () =>
+      import('./features/proximamente/proximamente').then((m) => m.Proximamente),
   },
   {
     // "Próximamente": calendario de mesas de examen (Sprint 3 del roadmap,
