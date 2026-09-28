@@ -551,6 +551,26 @@
     </header>
 
     <main class="flex-1 px-4 py-6 sm:px-6 sm:py-8 lg:px-10">
+      @if (mostrarAccesoDenegado()) {
+        <div
+          role="alert"
+          class="mb-6 flex items-start justify-between gap-3 rounded-lg border-l-4 border-rechazado bg-rechazado/10 px-4 py-3 text-sm text-texto"
+        >
+          <p>
+            <strong class="text-rechazado">Acceso denegado.</strong>
+            La pantalla a la que intentaste entrar no corresponde a tu rol. Te trajimos a tu panel.
+          </p>
+          <button
+            type="button"
+            class="shrink-0 rounded p-0.5 text-texto-suave transition-colors hover:text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+            aria-label="Cerrar aviso"
+            (click)="cerrarAvisoAcceso()"
+          >
+            <app-icono nombre="cerrar" class="h-4 w-4" />
+          </button>
+        </div>
+      }
+
       <!--
         Encabezado de la pantalla: el saludo y la acción principal. Va acá y
         no en cada panel para que todos queden iguales, como en el Figma.

@@ -4,8 +4,7 @@ export const RUTAS_API = {
   login: `${URL_BASE_API}/api/Auth/login`,
   programasMateria: `${URL_BASE_API}/api/ProgramasMateria`,
 
-  pdfPrograma: (idPrograma: number) =>
-    `${URL_BASE_API}/api/ProgramasMateria/${idPrograma}/pdf`,
+  pdfPrograma: (idPrograma: number) => `${URL_BASE_API}/api/ProgramasMateria/${idPrograma}/pdf`,
 
   // Quién es el docente (su IdDocente) y qué materias dicta. Lo pide el
   // formulario de entrega del programa al abrirse, para no tener que pedir
@@ -52,18 +51,37 @@ export const RUTAS_API = {
 
   // --- Usuarios (ISCGB_Backend/Controllers/UsuarioController.cs) ---
 
-  /**
-   * Listado paginado (GET) y alta de un usuario (POST).
-   *
-   * ⚠️ El POST TODAVÍA NO EXISTE: `UsuariosController` solo tiene los dos GET.
-   * La URL está acá porque es donde corresponde que viva el alta, y porque
-   * así el día que el backend la implemente no hay que tocar nada del
-   * frontend. Ver docs/contrato-alta-usuario.md.
-   */
+  /** Listado paginado. Solo lectura: `UsuariosController` no tiene POST ni PUT. */
   usuarios: `${URL_BASE_API}/api/Usuarios`,
 
   /** Detalle de un usuario. */
   usuarioPorId: (id: number) => `${URL_BASE_API}/api/Usuarios/${id}`,
+
+  // --- Gestión de usuarios (ISCGB_Backend/Controllers/CargaUsuarioController.cs) ---
+  // La clase se llama `UsuariosAdminController`, así que la ruta es
+  // `api/UsuariosAdmin` aunque el archivo se llame distinto. Está en la rama
+  // `CargaDeUsuarios` del backend (27/09/2026), todavía no en `main`.
+
+  /** Alta. Body: `CargaUsuarioDto`. */
+  altaUsuario: `${URL_BASE_API}/api/UsuariosAdmin/alta`,
+
+  /** Modificación del perfil. Body: `CargaUsuarioDto` completo. */
+  modificarUsuario: (id: number) => `${URL_BASE_API}/api/UsuariosAdmin/modificar/${id}`,
+
+  /** Baja lógica (estado inactivo). Sin body. */
+  bajaUsuario: (id: number) => `${URL_BASE_API}/api/UsuariosAdmin/baja/${id}`,
+
+  // --- Reconocimiento de saberes (SCRUM-30) ---
+  // ⚠️ PROPUESTO: el backend todavía no tiene controlador. Ver
+  // docs/contrato-reconocimiento-saberes.md.
+  reconocimientoSaberes: `${URL_BASE_API}/api/ReconocimientoSaberes`,
+
+  // --- Certificados (ISCGB_Backend/Controllers/CertificadosController.cs) ---
+  // `[Authorize]`: el alumno sale del propio token (claim NameIdentifier), no
+  // de la URL — por eso no llevan id. Devuelven `application/pdf`.
+
+  certificadoAlumnoRegular: `${URL_BASE_API}/api/Certificados/alumno-regular`,
+  certificadoAlumnoRegularConHorario: `${URL_BASE_API}/api/Certificados/alumno-regular-horario`,
 
   // --- Justificativos (ISCGB_Backend/Controllers/JustificativosController.cs) ---
 

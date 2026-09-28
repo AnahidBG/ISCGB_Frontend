@@ -1,8 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
-import { map, of, switchAll } from 'rxjs';
+import { catchError, map, of, switchAll, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
@@ -14,11 +14,14 @@ import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requ
 import {
   calcularProgresoLegajo,
   documentosSinCargar,
+  ultimaVersionPorTipo,
 } from '../../../core/legajos/progreso-legajo';
-import { idRolDocumental } from '../../../core/legajos/rol-documental';
+import { idRolDocumental, idRolDocumentalDe } from '../../../core/legajos/rol-documental';
+import { UsuarioDetalle } from '../../../core/usuarios/modelos/usuario-detalle';
+import { UsuariosService } from '../../../core/usuarios/usuarios.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
-import { notificacionesPorRechazos } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
+import { novedadesDelLegajo } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { TarjetaMetrica } from '../../../shared/ui/tarjeta-metrica/tarjeta-metrica';
@@ -83,6 +86,7 @@ interface FilaDocumento {
 export class MisDocumentos {
   private readonly auth = inject(AuthService);
   private readonly legajos = inject(LegajoService);
+  private readonly usuarios = inject(UsuariosService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -108,9 +112,32 @@ export class MisDocumentos {
       this.idUsuarioSeleccionado() !== null &&
       this.idUsuarioSeleccionado() !== this.sesion()?.idUsuario,
   );
-  protected readonly tituloLegajo = computed(() =>
-    this.esLegajoAjeno() ? 'Legajo del usuario' : 'Mis Documentos',
+  /**
+   * La persona cuyo legajo se está revisando (solo con legajo ajeno), o
+   * `null`. Hace falta por dos cosas: mostrar su nombre en el título y saber
+   * SU rol, que es lo que decide qué documentos le corresponden. Si el
+   * detalle no se puede traer, la pantalla funciona igual, sin faltantes.
+   */
+  protected readonly personaRevisada = toSignal(
+    this.route.paramMap.pipe(
+      map((params) => Number(params.get('idUsuario'))),
+      switchMap((id) =>
+        Number.isFinite(id) && id > 0 && id !== this.auth.sesion()?.idUsuario
+          ? this.usuarios.obtener(id).pipe(catchError(() => of(null)))
+          : of(null),
+      ),
+    ),
+    { initialValue: null as UsuarioDetalle | null },
   );
+
+  protected readonly tituloLegajo = computed(() => {
+    if (!this.esLegajoAjeno()) {
+      return 'Mis Documentos';
+    }
+    const persona = this.personaRevisada();
+    const nombre = persona === null ? '' : `${persona.nombre} ${persona.apellido}`.trim();
+    return nombre === '' ? 'Legajo del usuario' : `Legajo de ${nombre}`;
+  });
   protected readonly subtituloLegajo = computed(() =>
     this.esLegajoAjeno()
       ? 'Documentación del usuario y el estado actual de cada documento.'
@@ -182,9 +209,26 @@ export class MisDocumentos {
     });
   });
 
+  /**
+   * Qué documentos le corresponden a la persona dueña del legajo.
+   *
+   * Legajo propio: por el rol de la sesión. Legajo ajeno: por el rol de la
+   * persona REVISADA — antes acá no se pedía nada, así que Secretaría y
+   * Dirección no veían qué le faltaba entregar a nadie y el progreso salía
+   * siempre "estimado". Revisar un legajo sin saber qué falta es la mitad
+   * del trabajo (SCRUM-19 / SCRUM-7, "detectar documentación faltante").
+   */
   protected readonly requeridos = toSignal(
     this.esLegajoAjeno()
-      ? of<DocumentoRequerido[]>([])
+      ? toObservable(this.personaRevisada).pipe(
+          map((persona) => (persona === null ? null : idRolDocumentalDe(persona.rolesConId))),
+          switchMap((idRol) =>
+            idRol === null
+              ? of<DocumentoRequerido[]>([])
+              : this.legajos.documentosRequeridos(idRol),
+          ),
+          catchError(() => of<DocumentoRequerido[]>([])),
+        )
       : this.idRol === null
         ? of<DocumentoRequerido[]>([])
         : this.legajos.documentosRequeridos(this.idRol),
@@ -208,19 +252,30 @@ export class MisDocumentos {
   );
 
   /**
-   * El detalle que se despliega al tocar la campana: qué documentos están
-   * rechazados y por qué.
+   * La campana (SCRUM-7): rechazos vigentes, vencidos, faltantes y legajo
+   * completo — ver `novedadesDelLegajo`. Sin `url` en los rechazos: ya
+   * estamos en la pantalla que los muestra.
    *
-   * Sin `url`: ya estamos en la pantalla que los muestra. Con legajo ajeno no
-   * se arma nada — quien revisa no necesita que le avisen de rechazos que
-   * puso él mismo hace dos segundos.
+   * Con legajo ajeno no se arma nada: quien revisa no necesita que le avisen
+   * de rechazos que puso él mismo hace dos segundos.
    */
-  protected readonly notificacionesDetalle = computed(() =>
-    this.esLegajoAjeno() ? [] : notificacionesPorRechazos(this.documentosConOverrides()),
+  private readonly novedades = computed(() =>
+    this.esLegajoAjeno()
+      ? { total: 0, detalle: [] }
+      : novedadesDelLegajo(this.documentosConOverrides(), this.requeridos()),
   );
 
+  protected readonly notificaciones = computed(() => this.novedades().total);
+  protected readonly notificacionesDetalle = computed(() => this.novedades().detalle);
+
+  /**
+   * Conteos del semáforo, sobre la versión VIGENTE de cada documento. Antes
+   * contaba todas las filas: un documento rechazado y vuelto a subir sumaba
+   * un "Rechazado" que ya no existía, y encendía la campana por algo que la
+   * persona ya había resuelto.
+   */
   protected readonly resumen = computed(() => {
-    const documentos = this.documentosConOverrides();
+    const documentos = ultimaVersionPorTipo(this.documentosConOverrides());
     return {
       aprobados: documentos.filter((d) => d.estado === 'Aprobado').length,
       pendientes: documentos.filter((d) => d.estado === 'Pendiente').length,
@@ -414,7 +469,11 @@ export class MisDocumentos {
   }
 
   protected iniciarRechazo(fila: FilaDocumento): void {
-    if (fila.idLegajo === null || this.estaGuardando(fila.idLegajo) || fila.estado === 'Rechazado') {
+    if (
+      fila.idLegajo === null ||
+      this.estaGuardando(fila.idLegajo) ||
+      fila.estado === 'Rechazado'
+    ) {
       return;
     }
     this.motivoRechazo.set('');
@@ -521,4 +580,3 @@ function prioridad(fila: FilaDocumento): number {
   if (fila.estadoParaOrden === 'Aprobado') return 4;
   return 3;
 }
-

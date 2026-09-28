@@ -1,13 +1,13 @@
-import { Rol } from '../../auth/modelos/rol';
+import { Rol, RolApi } from '../../auth/modelos/rol';
 
 /**
- * El detalle completo de una persona, tal como lo devuelve
- * `GET /api/Usuarios/{id}` (`UsuarioController.GetUsuarioById`, YA REAL —
- * confirmado con Swagger el 25/09/2026, a diferencia del listado y del alta).
+ * El detalle de una persona, tal como lo devuelve `GET /api/Usuarios/{id}`
+ * (`UsuarioController.GetUsuarioById`).
  *
- * Es la base para precargar "Editar Usuario": a diferencia de
- * `UsuarioInstitucional` (la fila liviana del listado), este trae todos los
- * campos de la ficha personal.
+ * Es la base para precargar "Editar Usuario". Ojo con lo que NO trae:
+ * CUIL, género y afiliación de emergencia no están en la respuesta (esas
+ * columnas se agregaron en la rama `CargaDeUsuarios` del backend, pero el
+ * `GET` no las devuelve), así que en la edición hay que volver a cargarlas.
  */
 export interface UsuarioDetalle {
   idUsuario: number;
@@ -17,19 +17,20 @@ export interface UsuarioDetalle {
   email: string;
   telefono: string | null;
   telefonoEmergencia: string | null;
-
-  /**
-   * Hoy es un solo campo de texto libre en la base (`lugar_nacimiento`).
-   * El criterio nuevo pide Provincia y País por separado — ver el comentario
-   * en `DatosEditarUsuario` sobre cómo se parte acá sin inventar una
-   * columna que la base no tiene.
-   */
   lugarNacimiento: string | null;
-
   contactoEmergencia: string | null;
   direccion: string | null;
   idProvincia: number | null;
   fechaNac: Date | null;
   estadoUsuario: boolean;
+
+  /** Los nombres, para mostrar y para `tieneAlgunRol`. */
   roles: Rol[];
+
+  /**
+   * Los mismos roles con su id. Los usa la revisión de legajo ajeno para
+   * pedir qué documentos le corresponden a ESA persona
+   * (`requeridos-por-rol/{idRol}`), no a quien la está revisando.
+   */
+  rolesConId: RolApi[];
 }

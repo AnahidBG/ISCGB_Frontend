@@ -1,25 +1,26 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of, throwError } from 'rxjs';
-import { Rol } from '../auth/modelos/rol';
+import { ID_ROL, Rol, RolApi } from '../auth/modelos/rol';
+import { esEndpointInexistente, mensajeDelServidor } from '../comun/error-api';
+import { aFechaSola, desdeFechaSola } from '../comun/fechas';
 import { RUTAS_API } from '../configuracion/api';
-import { DatosEditarUsuario } from './modelos/datos-editar-usuario';
-import { NuevoUsuario } from './modelos/nuevo-usuario';
+import { PerfilUsuario } from './modelos/perfil-usuario';
 import { UsuarioDetalle } from './modelos/usuario-detalle';
 import { UsuarioInstitucional } from './modelos/usuario-institucional';
 import {
-  MENSAJE_ALTA_NO_DISPONIBLE,
-  MENSAJE_EDICION_NO_DISPONIBLE,
   MENSAJE_ERROR_ALTA_USUARIO,
+  MENSAJE_ERROR_BAJA_USUARIO,
   MENSAJE_ERROR_EDITAR_USUARIO,
-  MENSAJE_USUARIO_DUPLICADO,
+  MENSAJE_GESTION_NO_DISPONIBLE,
   UsuariosService,
+  mensajePerfilActualizado,
 } from './usuarios.service';
 
-/** Lo que devuelve `GetUsuarioById` (`UsuarioController.cs`). YA es real. */
+/** Lo que devuelve `GetUsuarioById` (`UsuarioController.cs`). */
 interface UsuarioDetalleApi {
   idUsuario: number;
-  dni: string;
+  dni: string | null;
   nombre: string | null;
   apellido: string | null;
   email: string | null;
@@ -29,30 +30,21 @@ interface UsuarioDetalleApi {
   contactoEmergencia: string | null;
   direccion: string | null;
   idProvincia: number | null;
+  /** `DateOnly?` → "1990-05-14", sin hora. */
   fechaNac: string | null;
   estadoUsuario: boolean;
-  roles: { idRol: number; nombreRol: string | null }[];
+  roles: RolApi[] | null;
 }
 
-/** Un rol tal como viene dentro de cada usuario en `GET /api/Usuarios`. */
-interface RolApiUsuario {
-  idRol: number;
-  nombreRol: string | null;
-}
-
-/**
- * Forma real de cada fila del listado, tal como la arma `GetUsuarios` en
- * `UsuarioController.cs`. Confirmado leyendo el código fuente del backend
- * el 27/08/2026. Notar lo que NO trae: ningún dato de legajo.
- */
+/** Cada fila de `GetUsuarios` (`UsuarioController.cs`). No trae nada del legajo. */
 interface UsuarioApi {
   idUsuario: number;
-  dni: string;
-  nombreCompleto: string;
+  dni: string | null;
+  nombreCompleto: string | null;
   email: string | null;
   telefono: string | null;
   estadoUsuario: boolean;
-  roles: RolApiUsuario[];
+  roles: RolApi[] | null;
 }
 
 interface RespuestaUsuariosApi {
@@ -66,35 +58,47 @@ interface RespuestaUsuariosApi {
 }
 
 /**
- * Cuántos usuarios pedir de una vez. El endpoint real pagina de a 10 por
+ * `CargaUsuarioDto` del backend, campo por campo (rama `CargaDeUsuarios`).
+ * ASP.NET no distingue mayúsculas al leer el JSON, así que el camelCase
+ * entra bien en las propiedades PascalCase.
+ */
+interface CargaUsuarioApi {
+  nombre: string;
+  apellido: string;
+  dni: string;
+  cuil: string;
+  email: string;
+  genero: string;
+  direccion: string;
+  telefono: string;
+  idProvincia: number;
+  /** `DateOnly?`: "YYYY-MM-DD" o null. */
+  fechaNac: string | null;
+  contactoEmergencia: string;
+  telefonoEmergencia: string;
+  afiliacionEmergencia: string;
+  idRol: number;
+  esDirectorSuplente: boolean;
+}
+
+/**
+ * Cuántos usuarios pedir de una vez. `GET /api/Usuarios` pagina de a 10 por
  * default — con eso el panel del Director mostraría solo los primeros 10.
- * Mientras el instituto tenga menos usuarios que esto, pedir una sola
- * página "grande" alcanza para la "visualización global" que pide
- * ISCGB-PROJECT.md. Si el instituto real supera este número, el listado
- * queda incompleto EN SILENCIO — ver docs/alcance-dashboard-director.md.
- * El día que haga falta, la solución correcta es agregar paginación de
- * verdad al panel, no seguir subiendo este número.
+ * Mientras el instituto tenga menos usuarios que esto, una sola página
+ * "grande" alcanza para la "visualización global" que pide ISCGB-PROJECT.md.
+ * Si el instituto real supera este número, el listado queda incompleto EN
+ * SILENCIO — la solución correcta es paginar en el panel, no subir esto.
  */
 const REGISTROS_POR_PAGINA = 500;
 
 /**
  * Usuarios contra la API real.
  *
- * Pega contra `GET /api/Usuarios` (`UsuariosController`), que devuelve 404
- * cuando ningún usuario matchea el filtro — se trata igual que un listado
- * vacío, no como error.
- *
- * ⚠️ GAP CONOCIDO, a propósito: la respuesta real NO trae el estado del
- * legajo de cada persona (`UsuarioApi` no tiene ese campo — el backend no
- * cruza Usuarios con Legajos en este endpoint todavía). Acá `estadoLegajo`
- * queda `null` para todos. `app-insignia-estado` ya sabe mostrar `null`
- * como "sin datos" en vez de inventar un color, así que el panel no miente:
- * antes (`UsuariosMockService`) mostraba Aprobado/Pendiente/Rechazado
- * inventados para cada persona, lo cual se veía más completo pero no
- * correspondía a ningún dato real. Si preferís seguir mostrando ese
- * maquetado completo para hacer demos mientras el backend no tiene el
- * cruce, `app.config.ts` vuelve a `UsuariosMockService` cambiando una sola
- * línea.
+ * `listar` y `obtener` pegan contra `UsuariosController` (en `main`).
+ * `crear`, `actualizar` y `darDeBaja` pegan contra `UsuariosAdminController`
+ * (rama `CargaDeUsuarios`, todavía sin mergear): contra un backend sin esa
+ * rama responden 404 sin cuerpo, y se traduce a
+ * `MENSAJE_GESTION_NO_DISPONIBLE` en vez de un error genérico.
  */
 @Injectable()
 export class UsuariosHttpService extends UsuariosService {
@@ -106,6 +110,8 @@ export class UsuariosHttpService extends UsuariosService {
     return this.http.get<RespuestaUsuariosApi>(url).pipe(
       map((respuesta) => (respuesta.datos ?? []).map(aUsuarioInstitucional)),
       catchError((error: HttpErrorResponse) => {
+        // `GetUsuarios` responde 404 cuando ningún usuario matchea el filtro:
+        // es un listado vacío, no un error.
         if (error.status === 404) {
           return of([]);
         }
@@ -114,59 +120,6 @@ export class UsuariosHttpService extends UsuariosService {
     );
   }
 
-  /**
-   * Alta de usuario.
-   *
-   * Los nombres del cuerpo son los que pide `docs/contrato-alta-usuario.md`.
-   * Todavía no hay nadie del otro lado escuchando: ver el comentario del
-   * método abstracto en `usuarios.service.ts`.
-   */
-  crear(usuario: NuevoUsuario): Observable<void> {
-    const cuerpo = {
-      dni: usuario.dni,
-      nombre: usuario.nombre,
-      apellido: usuario.apellido,
-      email: usuario.email,
-      password: usuario.password,
-      roles: usuario.roles,
-      estadoUsuario: usuario.activo,
-      telefono: usuario.telefono,
-      // Solo la fecha, sin hora: la columna es `DateOnly` en el backend.
-      fechaNac: usuario.fechaNacimiento === null ? null : aFechaSola(usuario.fechaNacimiento),
-      direccion: usuario.direccion,
-      lugarNacimiento: usuario.lugarNacimiento,
-      contactoEmergencia: usuario.contactoEmergencia,
-      telefonoEmergencia: usuario.telefonoEmergencia,
-    };
-
-    return this.http.post(RUTAS_API.usuarios, cuerpo).pipe(
-      map(() => undefined),
-      catchError((error: HttpErrorResponse) => {
-        // 404 = la ruta no existe; 405 = existe pero no acepta POST. Las dos
-        // significan lo mismo para quien está usando la pantalla: el endpoint
-        // todavía no está publicado.
-        if (error.status === 404 || error.status === 405) {
-          return throwError(() => new Error(MENSAJE_ALTA_NO_DISPONIBLE));
-        }
-
-        // 409 es el código correcto para "ya existe"; algunos backends usan
-        // 400 con un mensaje. Se contemplan los dos para no mostrar un error
-        // genérico ante el caso más común del alta: el DNI repetido.
-        if (error.status === 409) {
-          return throwError(() => new Error(MENSAJE_USUARIO_DUPLICADO));
-        }
-
-        console.error('Error al dar de alta el usuario:', error);
-        return throwError(() => new Error(MENSAJE_ERROR_ALTA_USUARIO));
-      }),
-    );
-  }
-
-  /**
-   * El detalle completo de una persona. YA es real —
-   * `GET /api/Usuarios/{id}` existe y funciona (confirmado con Swagger el
-   * 25/09/2026), a diferencia de `crear`/`actualizar`.
-   */
   obtener(idUsuario: number): Observable<UsuarioDetalle> {
     return this.http.get<UsuarioDetalleApi>(RUTAS_API.usuarioPorId(idUsuario)).pipe(
       map(aUsuarioDetalle),
@@ -177,51 +130,101 @@ export class UsuariosHttpService extends UsuariosService {
     );
   }
 
-  /**
-   * Edición de usuario.
-   *
-   * Mismo cuerpo que `crear` (menos `dni` y `password`, que acá no se
-   * tocan) — es el contrato YA documentado en `docs/contrato-alta-usuario.md`,
-   * no uno nuevo. Ver el comentario de `DatosEditarUsuario` sobre por qué
-   * no se agregan los campos nuevos del criterio de Sprint 2 (CUIL, Sexo,
-   * etc.) acá todavía.
-   */
-  actualizar(idUsuario: number, datos: DatosEditarUsuario): Observable<void> {
-    const cuerpo = {
-      nombre: datos.nombre,
-      apellido: datos.apellido,
-      email: datos.email,
-      roles: datos.roles,
-      estadoUsuario: datos.activo,
-      telefono: datos.telefono,
-      fechaNac: datos.fechaNacimiento === null ? null : aFechaSola(datos.fechaNacimiento),
-      direccion: datos.direccion,
-      lugarNacimiento: datos.lugarNacimiento,
-      contactoEmergencia: datos.contactoEmergencia,
-      telefonoEmergencia: datos.telefonoEmergencia,
-    };
+  crear(perfil: PerfilUsuario): Observable<string> {
+    return this.http
+      .post<{ mensaje?: string; legajoAutocompletado?: string }>(
+        RUTAS_API.altaUsuario,
+        aCargaUsuarioApi(perfil),
+      )
+      .pipe(
+        map((respuesta) => {
+          const legajo = respuesta?.legajoAutocompletado?.trim();
+          const base = respuesta?.mensaje?.trim() || 'Usuario creado exitosamente.';
+          return legajo ? `${base} N.° de legajo: ${legajo}.` : base;
+        }),
+        catchError((error: HttpErrorResponse) =>
+          throwError(() => new Error(traducirError(error, MENSAJE_ERROR_ALTA_USUARIO))),
+        ),
+      );
+  }
 
-    return this.http.put(RUTAS_API.usuarioPorId(idUsuario), cuerpo).pipe(
-      map(() => undefined),
-      catchError((error: HttpErrorResponse) => {
-        // 404 = la ruta no existe; 405 = existe pero no acepta PUT. Mismo
-        // criterio que `crear`: el endpoint todavía no está publicado.
-        if (error.status === 404 || error.status === 405) {
-          return throwError(() => new Error(MENSAJE_EDICION_NO_DISPONIBLE));
-        }
+  actualizar(idUsuario: number, perfil: PerfilUsuario): Observable<string> {
+    return this.http
+      .put<{ message?: string }>(RUTAS_API.modificarUsuario(idUsuario), aCargaUsuarioApi(perfil))
+      .pipe(
+        // El backend responde siempre el mismo texto con "del usuario"; el
+        // criterio pide, si se puede, el nombre de la persona (SCRUM-139).
+        map(() => mensajePerfilActualizado(`${perfil.nombre} ${perfil.apellido}`)),
+        catchError((error: HttpErrorResponse) =>
+          throwError(() => new Error(traducirError(error, MENSAJE_ERROR_EDITAR_USUARIO))),
+        ),
+      );
+  }
 
-        console.error('Error al editar el usuario:', error);
-        return throwError(() => new Error(MENSAJE_ERROR_EDITAR_USUARIO));
-      }),
+  darDeBaja(idUsuario: number): Observable<string> {
+    return this.http.put<{ message?: string }>(RUTAS_API.bajaUsuario(idUsuario), null).pipe(
+      map(
+        (respuesta) =>
+          respuesta?.message?.trim() || 'El usuario ha sido dado de baja (inactivo) correctamente.',
+      ),
+      catchError((error: HttpErrorResponse) =>
+        throwError(() => new Error(traducirError(error, MENSAJE_ERROR_BAJA_USUARIO))),
+      ),
     );
   }
 }
 
-/** Normaliza el detalle real de `GetUsuarioById`. */
+/**
+ * El mensaje que ve la persona ante un error de gestión de usuarios.
+ *
+ * El del backend primero: ahí viene "Ya existe un director suplente
+ * asignado con el nombre: X", que es exactamente lo que el criterio pide
+ * mostrar (SCRUM-138). Si la ruta no existe, se dice eso. Si no, genérico.
+ */
+function traducirError(error: HttpErrorResponse, porDefecto: string): string {
+  if (esEndpointInexistente(error)) {
+    return MENSAJE_GESTION_NO_DISPONIBLE;
+  }
+  const delServidor = mensajeDelServidor(error);
+  if (delServidor !== null && error.status >= 400 && error.status < 500) {
+    return delServidor;
+  }
+  console.error('Error en la gestión de usuarios:', error);
+  return porDefecto;
+}
+
+function aCargaUsuarioApi(perfil: PerfilUsuario): CargaUsuarioApi {
+  return {
+    nombre: perfil.nombre,
+    apellido: perfil.apellido,
+    dni: perfil.dni,
+    cuil: perfil.cuil,
+    email: perfil.email,
+    genero: perfil.genero,
+    direccion: perfil.direccion,
+    telefono: perfil.telefono,
+    idProvincia: perfil.idProvincia,
+    fechaNac: perfil.fechaNacimiento === null ? null : aFechaSola(perfil.fechaNacimiento),
+    contactoEmergencia: perfil.contactoEmergencia,
+    telefonoEmergencia: perfil.telefonoEmergencia,
+    afiliacionEmergencia: perfil.afiliacionEmergencia,
+    idRol: ID_ROL[perfil.rol],
+    // El backend lo ignora para cualquier rol que no sea Docente, pero
+    // mandarlo en `false` evita que un tilde olvidado viaje de más.
+    esDirectorSuplente: perfil.rol === 'Docente' && perfil.esDirectorSuplente,
+  };
+}
+
+function nombresDeRoles(roles: RolApi[] | null): Rol[] {
+  return (roles ?? [])
+    .map((rol) => rol.nombreRol)
+    .filter((nombre): nombre is string => nombre !== null && nombre.trim() !== '') as Rol[];
+}
+
 function aUsuarioDetalle(usuario: UsuarioDetalleApi): UsuarioDetalle {
   return {
     idUsuario: usuario.idUsuario,
-    dni: usuario.dni,
+    dni: usuario.dni ?? '',
     nombre: usuario.nombre ?? '',
     apellido: usuario.apellido ?? '',
     email: usuario.email ?? '',
@@ -231,30 +234,24 @@ function aUsuarioDetalle(usuario: UsuarioDetalleApi): UsuarioDetalle {
     contactoEmergencia: usuario.contactoEmergencia,
     direccion: usuario.direccion,
     idProvincia: usuario.idProvincia,
-    fechaNac: usuario.fechaNac === null ? null : new Date(usuario.fechaNac),
+    // `desdeFechaSola` y no `new Date(...)`: ver `core/comun/fechas.ts`.
+    fechaNac: desdeFechaSola(usuario.fechaNac),
     estadoUsuario: usuario.estadoUsuario,
-    roles: (usuario.roles ?? [])
-      .map((rol) => rol.nombreRol)
-      .filter((nombre): nombre is string => nombre !== null && nombre.trim() !== '') as Rol[],
+    roles: nombresDeRoles(usuario.roles),
+    rolesConId: usuario.roles ?? [],
   };
-}
-
-/** `Date` → "2026-08-27", que es lo que espera un `DateOnly` de .NET. */
-function aFechaSola(fecha: Date): string {
-  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-  const dia = String(fecha.getDate()).padStart(2, '0');
-  return `${fecha.getFullYear()}-${mes}-${dia}`;
 }
 
 function aUsuarioInstitucional(usuario: UsuarioApi): UsuarioInstitucional {
   return {
     idUsuario: usuario.idUsuario,
-    nombreCompleto: usuario.nombreCompleto,
-    dni: usuario.dni,
-    roles: (usuario.roles ?? [])
-      .map((rol) => rol.nombreRol)
-      .filter((nombre): nombre is string => nombre !== null && nombre.trim() !== '') as Rol[],
-    // Ver el "GAP CONOCIDO" en el comentario de la clase.
+    // El backend concatena dos campos anulables: puede llegar " ".
+    nombreCompleto: usuario.nombreCompleto?.trim() || 'Persona sin nombre cargado',
+    dni: usuario.dni ?? '',
+    email: usuario.email,
+    roles: nombresDeRoles(usuario.roles),
+    activo: usuario.estadoUsuario,
+    // Lo completa el panel con `GET /api/Legajos/resumen-estado`.
     estadoLegajo: null,
   };
 }

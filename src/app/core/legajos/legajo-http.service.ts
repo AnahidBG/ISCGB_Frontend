@@ -4,12 +4,10 @@ import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { RUTAS_API } from '../configuracion/api';
 import { DocumentoLegajo } from './modelos/documento-legajo';
-import {
-  DocumentoRequerido,
-  NuevoDocumentoLegajo,
-} from './modelos/documento-requerido';
+import { DocumentoRequerido, NuevoDocumentoLegajo } from './modelos/documento-requerido';
 import { LegajoResumenUsuario } from './modelos/legajo-resumen';
 import { ResumenUsuarioLegajo } from './modelos/resumen-usuario-legajo';
+import { contarPorEstado } from './resumen-legajo';
 import {
   LegajoService,
   MENSAJE_ERROR_AUDITORIA_LEGAJO,
@@ -110,21 +108,19 @@ export class LegajoHttpService extends LegajoService {
   }
 
   documentosRequeridos(idRol: number): Observable<DocumentoRequerido[]> {
-    return this.http
-      .get<RequeridosApi>(RUTAS_API.documentosRequeridosPorRol(idRol))
-      .pipe(
-        map((respuesta) => respuesta.documentos ?? []),
-        catchError((error: HttpErrorResponse) => {
-          // Un 404 acá significa "nadie configuró todavía qué documentos le
-          // pedimos a este rol" — falta cargar filas en
-          // roles_tipos_documentos. Es un hueco de datos, no un error.
-          if (error.status === 404) {
-            return of([]);
-          }
-          console.error('Error al traer los documentos requeridos:', error);
-          return throwError(() => new Error(MENSAJE_ERROR_LEGAJO));
-        }),
-      );
+    return this.http.get<RequeridosApi>(RUTAS_API.documentosRequeridosPorRol(idRol)).pipe(
+      map((respuesta) => respuesta.documentos ?? []),
+      catchError((error: HttpErrorResponse) => {
+        // Un 404 acá significa "nadie configuró todavía qué documentos le
+        // pedimos a este rol" — falta cargar filas en
+        // roles_tipos_documentos. Es un hueco de datos, no un error.
+        if (error.status === 404) {
+          return of([]);
+        }
+        console.error('Error al traer los documentos requeridos:', error);
+        return throwError(() => new Error(MENSAJE_ERROR_LEGAJO));
+      }),
+    );
   }
 
   subirDocumento(documento: NuevoDocumentoLegajo): Observable<void> {
@@ -256,8 +252,7 @@ function aDocumentoLegajo(legajo: LegajoApi): DocumentoLegajo {
     estado: legajo.estado,
     fechaSubida: new Date(legajo.fechaCarga),
     comentario: legajo.comentario,
-    fechaVencimiento:
-      legajo.fechaVencimiento === null ? null : new Date(legajo.fechaVencimiento),
+    fechaVencimiento: legajo.fechaVencimiento === null ? null : new Date(legajo.fechaVencimiento),
     rutaArchivo: legajo.rutaArchivo,
     presentadoFisico: legajo.presentadoFisico ?? false,
   };
@@ -308,20 +303,13 @@ function aLegajoResumenUsuario(usuario: LegajoResumenUsuario): LegajoResumenUsua
 function aResumenUsuarioLegajoDesdeInstitucional(
   usuario: LegajoResumenUsuario,
 ): ResumenUsuarioLegajo {
-  const documentos = usuario.documentos ?? [];
-  const aprobados = documentos.filter((d) => d.estado === 'Aprobado').length;
-  const pendientes = documentos.filter((d) => d.estado === 'Pendiente').length;
-  const rechazados = documentos.filter((d) => d.estado === 'Rechazado').length;
-  const total = documentos.length;
-
+  // Solo la versión vigente de cada documento: el backend guarda una fila
+  // nueva por cada resubida y contar las viejas mostraba rechazos que la
+  // persona ya había corregido. Ver `contarPorEstado`.
   return {
     idUsuario: usuario.idUsuario,
     nombreCompleto: usuario.nombreCompleto,
     dni: usuario.dni,
-    aprobados,
-    pendientes,
-    rechazados,
-    otros: total - aprobados - pendientes - rechazados,
-    total,
+    ...contarPorEstado(usuario.documentos ?? []),
   };
 }

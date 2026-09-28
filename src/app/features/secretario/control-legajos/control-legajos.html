@@ -76,7 +76,25 @@
       </p>
     </div>
 
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+    <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+      @if (rolesDisponibles()) {
+        <div class="flex gap-1 rounded-full border border-borde bg-superficie p-1" role="group" aria-label="Filtrar por rol">
+          @for (opcion of filtrosDeRol; track opcion.valor) {
+            <button
+              type="button"
+              class="rounded-full px-3 py-1 text-xs font-semibold transition-colors"
+              [class.bg-principal]="filtroRol() === opcion.valor"
+              [class.text-white]="filtroRol() === opcion.valor"
+              [class.text-texto-suave]="filtroRol() !== opcion.valor"
+              [attr.aria-pressed]="filtroRol() === opcion.valor"
+              (click)="elegirFiltroRol(opcion.valor)"
+            >
+              {{ opcion.etiqueta }}
+            </button>
+          }
+        </div>
+      }
+
       <label class="flex cursor-pointer items-center gap-2 text-sm text-texto">
         <input
           type="checkbox"
@@ -110,6 +128,8 @@
         Nadie coincide con "{{ busqueda() }}".
       } @else if (soloPendientes()) {
         No hay ningún documento esperando revisión. Está todo al día.
+      } @else if (filtroRol() !== 'todos') {
+        No hay legajos de {{ filtroRol() === 'Docente' ? 'docentes' : 'alumnos' }} para mostrar.
       } @else {
         Todavía no hay legajos cargados en el instituto.
       }
@@ -139,7 +159,12 @@
                   >
                     {{ iniciales(usuario.nombreCompleto) }}
                   </span>
-                  <span class="font-medium text-texto">{{ usuario.nombreCompleto }}</span>
+                  <span class="min-w-0">
+                    <span class="block font-medium text-texto">{{ usuario.nombreCompleto }}</span>
+                    @if (usuario.roles.length > 0) {
+                      <span class="block text-xs text-texto-suave">{{ rolesComoTexto(usuario) }}</span>
+                    }
+                  </span>
                 </div>
               </td>
               <td class="whitespace-nowrap px-5 py-3 text-texto-suave sm:px-6">{{ usuario.dni }}</td>
@@ -198,7 +223,12 @@
             </span>
             <div class="min-w-0">
               <p class="truncate text-sm font-medium text-texto">{{ usuario.nombreCompleto }}</p>
-              <p class="text-xs text-texto-suave">DNI {{ usuario.dni }}</p>
+              <p class="text-xs text-texto-suave">
+                DNI {{ usuario.dni }}
+                @if (usuario.roles.length > 0) {
+                  · {{ rolesComoTexto(usuario) }}
+                }
+              </p>
             </div>
           </div>
 
@@ -245,7 +275,12 @@
             </span>
             <div class="min-w-0">
               <p class="truncate text-sm font-semibold text-texto">{{ usuario.nombreCompleto }}</p>
-              <p class="text-xs text-texto-suave">DNI {{ usuario.dni }}</p>
+              <p class="text-xs text-texto-suave">
+                DNI {{ usuario.dni }}
+                @if (usuario.roles.length > 0) {
+                  · {{ rolesComoTexto(usuario) }}
+                }
+              </p>
             </div>
           </div>
 

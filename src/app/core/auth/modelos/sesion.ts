@@ -49,6 +49,19 @@ export interface Sesion {
 }
 
 /**
+ * ¿La sesión existe y su token todavía no venció?
+ *
+ * La sesión guardada solo se revisaba al recargar la página: con la pestaña
+ * abierta más de 2 horas, el frontend seguía creyendo que había sesión y el
+ * backend (que ahora sí valida el JWT con `UseAuthentication()`) contestaba
+ * 401 a todo. Criterio de Sprint 2 "Gestión de usuarios y roles": el nivel
+ * de acceso se verifica con el token AL NAVEGAR, no solo al entrar.
+ */
+export function sesionVigente(sesion: Sesion | null, ahora: number = Date.now()): boolean {
+  return sesion !== null && new Date(sesion.venceEl).getTime() > ahora;
+}
+
+/**
  * ¿La sesión tiene alguno de los roles pedidos?
  *
  * Se usa tanto para decidir qué mostrar como para el `roleGuard`. Alcanza

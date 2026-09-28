@@ -14,6 +14,16 @@
 
   <div class="relative z-10 flex min-h-dvh items-center justify-center px-6 py-12 lg:min-h-0">
     <div class="w-full max-w-md rounded-3xl bg-superficie p-8 shadow-xl sm:p-10 lg:shadow-sm">
+      @if (sesionVencida() && error() === null) {
+        <p
+          role="status"
+          class="mb-6 rounded-lg border-l-4 border-pendiente bg-pendiente/10 px-4 py-3 text-sm text-texto"
+        >
+          <strong>Tu sesión venció.</strong>
+          Por seguridad dura 2 horas: volvé a ingresar con tu DNI y contraseña.
+        </p>
+      }
+
       <app-formulario-login
         [cargando]="cargando()"
         [errorGeneral]="error()"

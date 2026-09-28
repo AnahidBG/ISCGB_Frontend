@@ -10,6 +10,20 @@
   [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
+  @if (legajoCompleto()) {
+    <p
+      role="status"
+      class="mb-5 flex items-start gap-3 rounded-2xl border border-aprobado/30 bg-aprobado/10 px-5 py-4 text-sm leading-relaxed text-texto sm:mb-6"
+    >
+      <app-icono nombre="aprobado" class="mt-0.5 h-5 w-5 shrink-0 text-aprobado" />
+      <span>
+        <strong class="text-aprobado">¡Tu legajo está completo!</strong>
+        Presentaste y te aprobaron toda la documentación obligatoria. Si algún documento es anual,
+        te vamos a avisar cuando haya que renovarlo.
+      </span>
+    </p>
+  }
+
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
     <app-tarjeta-metrica etiqueta="Documentos Totales" [valor]="resumen().total" tono="neutro" />
     <app-tarjeta-metrica etiqueta="Aprobados" [valor]="resumen().aprobados" tono="aprobado" />

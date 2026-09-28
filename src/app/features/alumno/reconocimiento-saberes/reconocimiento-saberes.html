@@ -1,0 +1,185 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Reconocimiento de saberes"
+  subtitulo="Pedí que te reconozcan una materia que ya aprobaste en otra institución."
+  volverUrl="/alumno/panel"
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <div class="mx-auto max-w-3xl">
+    @if (mensajeExito(); as mensaje) {
+      <div
+        class="rounded-2xl border border-borde bg-superficie px-5 py-10 text-center sm:px-8 sm:py-12"
+        role="status"
+      >
+        <span
+          class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-aprobado/10 text-aprobado"
+        >
+          <app-icono nombre="aprobado" class="h-8 w-8" />
+        </span>
+        <h2 class="mt-5 text-xl font-bold text-principal">Solicitud enviada</h2>
+        <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-texto-suave">
+          {{ mensaje }}
+        </p>
+        <button
+          type="button"
+          class="mt-7 rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro"
+          (click)="volverAlPanel()"
+        >
+          Volver al panel
+        </button>
+      </div>
+    } @else {
+      <form
+        class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
+        (submit)="$event.preventDefault(); enviar()"
+      >
+        @if (error(); as mensaje) {
+          <p
+            role="alert"
+            class="mb-6 rounded-xl bg-rechazado/10 px-4 py-3 text-sm leading-relaxed text-rechazado"
+          >
+            {{ mensaje }}
+          </p>
+        }
+
+        <!-- SCRUM-176: documentos cargados sobre los requeridos. -->
+        <div class="rounded-xl bg-fondo-panel p-4">
+          <div class="flex flex-wrap items-baseline justify-between gap-2">
+            <p class="text-sm font-semibold text-texto">Documentación requerida</p>
+            <p class="text-sm text-texto-suave">
+              {{ cargados() }} de {{ totalRequeridos }} documentos cargados
+            </p>
+          </div>
+          <div
+            class="mt-3 h-2 overflow-hidden rounded-full bg-superficie"
+            role="progressbar"
+            aria-label="Documentos cargados"
+            [attr.aria-valuenow]="porcentaje()"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <div
+              class="h-full rounded-full bg-acento-verde transition-[width] duration-500 ease-out"
+              [style.width.%]="porcentaje()"
+            ></div>
+          </div>
+        </div>
+
+        <!-- ── Materia del ISCGB ──────────────────────────────────────── -->
+        <fieldset class="mt-8">
+          <legend class="text-base font-bold text-principal">Materia del ISCGB</legend>
+
+          <div class="mt-4 flex flex-col gap-5">
+            <p class="flex flex-col gap-1.5">
+              <label for="materia" class="text-sm font-medium text-texto">
+                ¿Qué materia querés que te reconozcan?
+                <span aria-hidden="true" class="text-rechazado">*</span>
+              </label>
+              <input
+                id="materia"
+                type="text"
+                required
+                autocomplete="off"
+                [value]="materia()"
+                (input)="materia.set($any($event.target).value)"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+                placeholder="Ej. Programación I"
+              />
+              @if (errorMateria(); as mensaje) {
+                <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+              }
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="comentario" class="text-sm font-medium text-texto">Comentario</label>
+              <textarea
+                id="comentario"
+                rows="3"
+                [value]="comentario()"
+                (input)="comentario.set($any($event.target).value)"
+                class="w-full resize-y rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+                placeholder="En qué institución la cursaste, el año, cómo se llamaba allá la materia…"
+              ></textarea>
+            </p>
+          </div>
+        </fieldset>
+
+        <!-- ── Documentación ──────────────────────────────────────────── -->
+        <fieldset class="mt-8 border-t border-borde pt-6">
+          <legend class="text-base font-bold text-principal">Documentación (solo PDF)</legend>
+
+          <div class="mt-4 grid gap-6 sm:grid-cols-2">
+            <div>
+              <p class="text-sm font-medium text-texto">
+                Programa de la materia de la otra institución
+                <span aria-hidden="true" class="text-rechazado">*</span>
+              </p>
+              <app-zona-archivo
+                class="mt-2 block"
+                [archivo]="programa()"
+                textoArrastrar="Arrastrá el programa acá"
+                textoTocar="Adjuntar programa"
+                (elegido)="elegir('programa', $event)"
+                (quitado)="quitar('programa')"
+                (rechazado)="rechazar('programa', $event)"
+              />
+              @if (errorArchivo().programa; as mensaje) {
+                <p role="alert" class="mt-2 text-sm text-rechazado">{{ mensaje }}</p>
+              } @else if (faltaArchivo('programa')) {
+                <p role="alert" class="mt-2 text-sm text-rechazado">Adjuntá el programa en PDF.</p>
+              }
+            </div>
+
+            <div>
+              <p class="text-sm font-medium text-texto">
+                Analítico / rendimiento académico
+                <span aria-hidden="true" class="text-rechazado">*</span>
+              </p>
+              <app-zona-archivo
+                class="mt-2 block"
+                [archivo]="analitico()"
+                textoArrastrar="Arrastrá el analítico acá"
+                textoTocar="Adjuntar analítico"
+                (elegido)="elegir('analitico', $event)"
+                (quitado)="quitar('analitico')"
+                (rechazado)="rechazar('analitico', $event)"
+              />
+              @if (errorArchivo().analitico; as mensaje) {
+                <p role="alert" class="mt-2 text-sm text-rechazado">{{ mensaje }}</p>
+              } @else if (faltaArchivo('analitico')) {
+                <p role="alert" class="mt-2 text-sm text-rechazado">Adjuntá el analítico en PDF.</p>
+              }
+            </div>
+          </div>
+        </fieldset>
+
+        <div
+          class="mt-8 flex flex-col-reverse items-stretch gap-3 border-t border-borde pt-6 sm:flex-row sm:justify-end"
+        >
+          <button
+            type="button"
+            class="rounded-full px-6 py-3 text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel"
+            (click)="volverAlPanel()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            [disabled]="enviando()"
+            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            @if (enviando()) {
+              Enviando…
+            } @else {
+              Enviar solicitud
+            }
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</app-estructura-panel>

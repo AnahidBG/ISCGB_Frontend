@@ -1,11 +1,10 @@
 import { Injectable } from '@angular/core';
 import { Observable, delay, of, throwError } from 'rxjs';
-import { ROLES } from '../auth/modelos/rol';
-import { DatosEditarUsuario } from './modelos/datos-editar-usuario';
-import { NuevoUsuario } from './modelos/nuevo-usuario';
+import { ID_ROL, ROLES } from '../auth/modelos/rol';
+import { PerfilUsuario } from './modelos/perfil-usuario';
 import { UsuarioDetalle } from './modelos/usuario-detalle';
 import { UsuarioInstitucional } from './modelos/usuario-institucional';
-import { MENSAJE_USUARIO_DUPLICADO, UsuariosService } from './usuarios.service';
+import { UsuariosService, mensajePerfilActualizado } from './usuarios.service';
 
 /** Cuánto tarda el listado falso, para ver el estado de carga en pantalla. */
 const DEMORA_SIMULADA_MS = 500;
@@ -28,104 +27,128 @@ const USUARIOS_INVENTADOS: readonly UsuarioInstitucional[] = [
     idUsuario: 1,
     nombreCompleto: 'Dolores Docente',
     dni: '11111111',
+    email: '11111111@iscgb.edu.ar',
     roles: [ROLES.docente],
+    activo: true,
     estadoLegajo: 'Aprobado',
   },
   {
     idUsuario: 2,
     nombreCompleto: 'Alberto Alumno',
     dni: '22222222',
+    email: '22222222@iscgb.edu.ar',
     roles: [ROLES.alumno],
+    activo: true,
     estadoLegajo: 'Pendiente',
   },
   {
     idUsuario: 3,
     nombreCompleto: 'Sergio Secretario',
     dni: '44444444',
+    email: '44444444@iscgb.edu.ar',
     roles: [ROLES.secretario],
+    activo: true,
     estadoLegajo: 'Aprobado',
   },
   {
     idUsuario: 4,
     nombreCompleto: 'Dora Directora y Docente',
     dni: '55555555',
+    email: '55555555@iscgb.edu.ar',
     roles: [ROLES.director, ROLES.docente],
+    activo: true,
     estadoLegajo: 'Aprobado',
   },
   {
     idUsuario: 5,
     nombreCompleto: 'Nadia Sinrol',
     dni: '66666666',
+    email: '66666666@iscgb.edu.ar',
     roles: [],
+    activo: true,
     estadoLegajo: null,
   },
   {
     idUsuario: 6,
     nombreCompleto: 'Martín Morales',
     dni: '77777777',
+    email: '77777777@iscgb.edu.ar',
     roles: [ROLES.docente],
+    activo: true,
     estadoLegajo: 'Rechazado',
   },
   {
     idUsuario: 7,
     nombreCompleto: 'Julieta Juárez',
     dni: '88888888',
+    email: '88888888@iscgb.edu.ar',
     roles: [ROLES.alumno],
+    activo: true,
     estadoLegajo: 'Rechazado',
   },
   {
     idUsuario: 8,
     nombreCompleto: 'Ramiro Rearte',
     dni: '99999999',
+    email: '99999999@iscgb.edu.ar',
     roles: [ROLES.docente],
+    activo: true,
     estadoLegajo: 'Pendiente',
   },
 ];
 
 @Injectable()
 export class UsuariosMockService extends UsuariosService {
-  /** Los que se dieron de alta en esta sesión, para verlos aparecer en el listado. */
-  private readonly agregados: UsuarioInstitucional[] = [];
+  /** Los que se dieron de alta o se modificaron en esta sesión (en memoria). */
+  private readonly usuarios: UsuarioInstitucional[] = USUARIOS_INVENTADOS.map((u) => ({ ...u }));
+
+  /** Nombre del director suplente actual, o `null`. */
+  private suplente: string | null = null;
 
   listar(): Observable<UsuarioInstitucional[]> {
-    return of([...USUARIOS_INVENTADOS, ...this.agregados]).pipe(delay(DEMORA_SIMULADA_MS));
+    return of([...this.usuarios]).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
   /**
-   * Alta simulada. Sirve para probar la pantalla de punta a punta —incluido
-   * el caso de DNI repetido— sin depender de que el backend tenga el endpoint.
+   * Alta simulada. Sirve para probar la pantalla de punta a punta sin
+   * backend. Se guarda en memoria y nada más: al recargar la página
+   * desaparece, a propósito, para que nadie lo confunda con datos reales.
    *
-   * Se guarda en memoria y nada más: al recargar la página desaparece. Es a
-   * propósito, para que a nadie se le confunda con datos reales.
+   * Imita las dos reglas de `UsuariosAdminController` que la pantalla tiene
+   * que saber mostrar: DNI repetido y un solo director suplente.
    */
-  crear(usuario: NuevoUsuario): Observable<void> {
-    const yaExiste = [...USUARIOS_INVENTADOS, ...this.agregados].some(
-      (existente) => existente.dni === usuario.dni,
-    );
-
-    if (yaExiste) {
-      return throwError(() => new Error(MENSAJE_USUARIO_DUPLICADO)).pipe(
-        delay(DEMORA_SIMULADA_MS),
+  crear(perfil: PerfilUsuario): Observable<string> {
+    if (this.usuarios.some((existente) => existente.dni === perfil.dni)) {
+      return this.fallar('Ya existe un usuario con ese DNI.');
+    }
+    if (perfil.rol === ROLES.docente && perfil.esDirectorSuplente && this.suplente !== null) {
+      return this.fallar(
+        `Ya existe un director suplente asignado con el nombre: ${this.suplente}.`,
       );
     }
 
-    this.agregados.push({
+    const nombreCompleto = `${perfil.nombre} ${perfil.apellido}`.trim();
+    this.usuarios.push({
       idUsuario: Date.now(),
-      nombreCompleto: `${usuario.nombre} ${usuario.apellido}`.trim(),
-      dni: usuario.dni,
-      roles: [...usuario.roles],
-      // Recién dado de alta: todavía no presentó nada.
+      nombreCompleto,
+      dni: perfil.dni,
+      email: perfil.email,
+      roles: [perfil.rol],
+      activo: true,
       estadoLegajo: null,
     });
+    if (perfil.esDirectorSuplente) {
+      this.suplente = nombreCompleto;
+    }
 
-    return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
+    return of(`Usuario creado exitosamente. N.° de legajo: ${perfil.dni}.`).pipe(
+      delay(DEMORA_SIMULADA_MS),
+    );
   }
 
   /** Arma un detalle inventado a partir de la fila liviana del listado. */
   obtener(idUsuario: number): Observable<UsuarioDetalle> {
-    const encontrado = [...USUARIOS_INVENTADOS, ...this.agregados].find(
-      (usuario) => usuario.idUsuario === idUsuario,
-    );
+    const encontrado = this.usuarios.find((usuario) => usuario.idUsuario === idUsuario);
 
     if (encontrado === undefined) {
       return throwError(() => new Error('No encontramos a esa persona.')).pipe(
@@ -135,12 +158,12 @@ export class UsuariosMockService extends UsuariosService {
 
     const [nombre, ...resto] = encontrado.nombreCompleto.split(' ');
 
-    return of({
+    return of<UsuarioDetalle>({
       idUsuario: encontrado.idUsuario,
       dni: encontrado.dni,
       nombre: nombre ?? '',
       apellido: resto.join(' '),
-      email: `${encontrado.dni}@iscgb.edu.ar`,
+      email: encontrado.email ?? '',
       telefono: null,
       telefonoEmergencia: null,
       lugarNacimiento: null,
@@ -148,13 +171,33 @@ export class UsuariosMockService extends UsuariosService {
       direccion: null,
       idProvincia: null,
       fechaNac: null,
-      estadoUsuario: true,
+      estadoUsuario: encontrado.activo,
       roles: [...encontrado.roles],
+      rolesConId: encontrado.roles.map((rol) => ({ idRol: ID_ROL[rol], nombreRol: rol })),
     }).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
-  /** Edición simulada: no persiste nada, solo confirma que "anduvo". */
-  actualizar(_idUsuario: number, _datos: DatosEditarUsuario): Observable<void> {
-    return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
+  actualizar(idUsuario: number, perfil: PerfilUsuario): Observable<string> {
+    const usuario = this.usuarios.find((u) => u.idUsuario === idUsuario);
+    if (usuario === undefined) {
+      return this.fallar('Usuario no encontrado.');
+    }
+    usuario.nombreCompleto = `${perfil.nombre} ${perfil.apellido}`.trim();
+    return of(mensajePerfilActualizado(usuario.nombreCompleto)).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  darDeBaja(idUsuario: number): Observable<string> {
+    const usuario = this.usuarios.find((u) => u.idUsuario === idUsuario);
+    if (usuario === undefined) {
+      return this.fallar('Usuario no encontrado.');
+    }
+    usuario.activo = false;
+    return of('El usuario ha sido dado de baja (inactivo) correctamente.').pipe(
+      delay(DEMORA_SIMULADA_MS),
+    );
+  }
+
+  private fallar(mensaje: string): Observable<never> {
+    return throwError(() => new Error(mensaje)).pipe(delay(DEMORA_SIMULADA_MS));
   }
 }

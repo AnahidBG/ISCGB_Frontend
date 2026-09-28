@@ -15,7 +15,7 @@ import {
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
-import { notificacionesPorRechazos } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
+import { novedadesDelLegajo } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { PasoTramite, ProgresoTramite } from '../../../shared/ui/progreso-tramite/progreso-tramite';
@@ -53,7 +53,6 @@ export class PanelDocente {
 
   protected readonly sesion = this.auth.sesion;
 
-
   /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
 
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
@@ -83,8 +82,9 @@ export class PanelDocente {
     { initialValue: [] as DocumentoRequerido[] },
   );
 
+  /** Conteos sobre la versión VIGENTE de cada documento (un rechazo ya corregido no suma). */
   protected readonly resumen = computed(() => {
-    const documentos = this.documentos();
+    const documentos = ultimaVersionPorTipo(this.documentos());
     return {
       total: documentos.length,
       aprobados: documentos.filter((d) => d.estado === 'Aprobado').length,
@@ -105,21 +105,6 @@ export class PanelDocente {
   );
 
   /**
-   * Lo que enciende el puntito rojo de la campana.
-   *
-   * Un documento rechazado es algo que esta persona tiene que resolver: hay
-   * que volver a subirlo. Los pendientes no cuentan — están esperando a
-   * Secretaría, no a ella, y avisar de algo sobre lo que no puede hacer nada
-   * es entrenarla para ignorar la campana.
-   */
-  protected readonly notificaciones = computed(() => this.resumen().rechazados);
-
-  /** El detalle que se despliega al tocar la campana: qué le rechazaron y por qué. */
-  protected readonly notificacionesDetalle = computed(() =>
-    notificacionesPorRechazos(this.documentos(), { url: '/legajo/mis-documentos' }),
-  );
-
-  /**
    * El progreso del legajo, con la fórmula del MVP: documentos aprobados
    * sobre los OBLIGATORIOS del rol (no sobre los que ya subió, que era el
    * cálculo optimista de antes — mostraba 100% con un solo documento
@@ -128,6 +113,26 @@ export class PanelDocente {
    */
   protected readonly progreso = computed(() =>
     calcularProgresoLegajo(this.documentos(), this.requeridos()),
+  );
+
+  /**
+   * Lo que se despliega al tocar la campana (SCRUM-7): rechazos vigentes,
+   * anuales vencidos, obligatorios que faltan entregar y el aviso de legajo
+   * completo. Ver `novedadesDelLegajo`.
+   */
+  private readonly novedades = computed(() =>
+    novedadesDelLegajo(this.documentos(), this.requeridos(), { url: '/legajo/mis-documentos' }),
+  );
+
+  protected readonly notificaciones = computed(() => this.novedades().total);
+  protected readonly notificacionesDetalle = computed(() => this.novedades().detalle);
+
+  /** Todo lo obligatorio aprobado, sin rechazos pendientes (SCRUM-153). */
+  protected readonly legajoCompleto = computed(
+    () =>
+      !this.progreso().estimado &&
+      this.progreso().porcentaje === 100 &&
+      this.notificacionesDetalle().every((novedad) => novedad.tono === 'aprobado'),
   );
 
   /**

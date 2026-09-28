@@ -1,7 +1,11 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
+import { destinoSegunRoles } from './destino-por-rol';
 import { tieneAlgunRol } from './modelos/sesion';
+
+/** Query param con el que los paneles avisan que se bloqueó una pantalla por rol. */
+export const PARAMETRO_ACCESO_DENEGADO = 'accesoDenegado';
 
 /**
  * Deja pasar solo a quien tenga alguno de los roles indicados.
@@ -18,11 +22,18 @@ import { tieneAlgunRol } from './modelos/sesion';
  * el primero que no pase.
  *
  * A dónde manda a quien no pasa:
- *   · sin sesión      → /login  (todavía no se identificó)
- *   · con rol distinto→ /inicio (ya entró, pero esta pantalla no es suya)
+ *   · sin sesión       → /login  (todavía no se identificó)
+ *   · con rol distinto → a SU panel, con `?accesoDenegado=1`
  *
  * Esa diferencia importa: mandar a /login a alguien que YA inició sesión lo
  * hace pensar que se le venció la sesión, y va a reintentar en loop.
+ *
+ * Antes el rebote iba siempre a `/inicio`, una pantalla provisoria que no
+ * tiene menú: la persona quedaba "afuera" del sistema y tenía que adivinar
+ * cómo volver. Ahora vuelve a su propio panel (el mismo que elige el login,
+ * `destinoSegunRoles`) y `EstructuraPanel` le muestra el cartel de acceso
+ * denegado — criterio de Sprint 2 "Gestión de usuarios y roles": bloquear y
+ * mostrar un mensaje, no redirigir en silencio.
  *
  * ⚠️ Esto NO es seguridad, igual que `authGuard`. Un guard corre en el
  * navegador y cualquiera puede saltearlo con las herramientas de
@@ -47,10 +58,10 @@ export function roleGuard(...permitidos: readonly string[]): CanActivateFn {
       return true;
     }
 
-    // `accesoDenegado=1` para que `/inicio` pueda avisarlo — ver el
-    // criterio de Sprint 2 "Gestión de usuarios y roles": si alguien entra
-    // a una pantalla que no es de su rol, el sistema tiene que decirlo, no
-    // solo redirigir en silencio.
-    return router.createUrlTree(['/inicio'], { queryParams: { accesoDenegado: 1 } });
+    // Sin ningún rol, `destinoSegunRoles` devuelve `/inicio`, que no tiene
+    // `roleGuard`: no hay forma de que esto rebote en círculo.
+    return router.createUrlTree([destinoSegunRoles(sesion)], {
+      queryParams: { [PARAMETRO_ACCESO_DENEGADO]: 1 },
+    });
   };
 }

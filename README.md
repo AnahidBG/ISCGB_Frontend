@@ -7,6 +7,8 @@ Instituto Superior Cura Gabriel Brochero.
 - **Convenciones para agentes de IA:** [`CLAUDE.md`](CLAUDE.md)
 - **Alcance de la pantalla de login:** [`docs/alcance-login.md`](docs/alcance-login.md)
 - **Contrato de la API:** [`docs/contrato-api.md`](docs/contrato-api.md)
+- **Estado del Sprint 2 (Jira ↔ front ↔ back) y pendientes de backend:**
+  [`docs/alineacion-sprint-2.md`](docs/alineacion-sprint-2.md)
 
 ## Stack
 

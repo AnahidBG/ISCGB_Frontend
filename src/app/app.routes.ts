@@ -57,13 +57,10 @@ export const routes: Routes = [
       import('./features/director/panel-director/panel-director').then((m) => m.PanelDirector),
   },
   {
-    // Alta de usuarios — el reemplazo de crearlos desde Swagger.
+    // Alta de usuarios — Sprint 2, "Gestión de usuarios y roles" (SCRUM-16).
     // Solo Director: ISCGB-PROJECT.md le da a ese rol el alta/baja de
-    // usuarios y roles (Sprint 2).
-    //
-    // ⚠️ El backend no tiene todavía el endpoint que esto necesita
-    // (`POST /api/Usuarios`). La pantalla está completa y lo avisa cuando el
-    // servidor responde 404 — ver docs/contrato-alta-usuario.md.
+    // usuarios y roles. Pega contra `POST /api/UsuariosAdmin/alta` (rama
+    // `CargaDeUsuarios` del backend) — ver docs/contrato-alta-usuario.md.
     path: 'director/usuarios/nuevo',
     title: 'Nuevo usuario · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.director)],
@@ -71,10 +68,8 @@ export const routes: Routes = [
       import('./features/director/alta-usuario/alta-usuario').then((m) => m.AltaUsuario),
   },
   {
-    // Edición de usuarios — el complemento de "Nuevo Usuario". Sprint 2,
-    // "Gestión de usuarios y roles" (Director). Igual que el alta, la
-    // pantalla ya está construida y avisa con todas las letras si el
-    // backend responde 404 — ver `DatosEditarUsuario`.
+    // Modificación y BAJA de usuarios — el complemento de "Nuevo Usuario".
+    // `PUT /api/UsuariosAdmin/modificar/{id}` y `.../baja/{id}`.
     path: 'director/usuarios/:idUsuario/editar',
     title: 'Editar usuario · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.director)],
@@ -179,38 +174,44 @@ export const routes: Routes = [
       import('./features/alumno/panel-alumno/panel-alumno').then((m) => m.PanelAlumno),
   },
   {
-    // Certificado de alumno regular SIN horarios — Sprint 2, "Solicitud de
-    // certificado de alumno regular (Estudiante)". Se arma 100% en el
-    // navegador con `jsPDF`: nombre, DNI y fecha de emisión salen de la
-    // sesión, no dependen de ningún endpoint nuevo. Ver el comentario en
-    // `certificado-regular.ts` para el detalle.
-    //
-    // La variante CON horario sigue en "Próximamente" (ruta de abajo): esa
-    // sí necesita datos de cursada que hoy no expone ningún endpoint.
+    // Certificado de alumno regular — Sprint 2, "Solicitud de certificado de
+    // alumno regular (Estudiante)" (SCRUM-12). Lo genera el backend
+    // (`GET /api/Certificados/alumno-regular`), con sello y nombre del
+    // instituto. Ver `certificado-regular.ts`.
     path: 'alumno/certificado/regular',
     title: 'Certificado de alumno regular · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.alumno)],
+    data: { variante: 'regular' },
     loadComponent: () =>
       import('./features/alumno/certificado-regular/certificado-regular').then(
         (m) => m.CertificadoRegular,
       ),
   },
   {
-    // "Próximamente": certificado de alumno regular CON horarios. Misma
-    // historia que el de arriba, variante con los días y horarios de
-    // cursada — ver el comentario de esa ruta para el porqué de los dos.
+    // La misma pantalla, variante CON horario de cursada
+    // (`GET /api/Certificados/alumno-regular-horario`). Antes era
+    // "Próximamente": el backend ya la genera, con las líneas de días y
+    // horarios para que Preceptoría las complete.
     path: 'alumno/certificado/regular-con-horario',
     title: 'Certificado de alumno regular con horario · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.alumno)],
-    data: {
-      titulo: 'Certificado de alumno regular con horario',
-      descripcion:
-        'Igual al certificado de alumno regular, pero con los días y horarios de cursada. Preceptoría tiene que completar y confirmar esos datos a mano antes de entregarlo.',
-      disponibleDesde: 'Sprint 2 · septiembre de 2026',
-      icono: 'calendario',
-    },
+    data: { variante: 'regular-con-horario' },
     loadComponent: () =>
-      import('./features/proximamente/proximamente').then((m) => m.Proximamente),
+      import('./features/alumno/certificado-regular/certificado-regular').then(
+        (m) => m.CertificadoRegular,
+      ),
+  },
+  {
+    // Solicitud de reconocimiento de saberes — Sprint 2 (SCRUM-30). El
+    // endpoint todavía no existe en el backend: la pantalla lo avisa. Ver
+    // docs/contrato-reconocimiento-saberes.md.
+    path: 'alumno/reconocimiento-saberes',
+    title: 'Reconocimiento de saberes · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.alumno)],
+    loadComponent: () =>
+      import('./features/alumno/reconocimiento-saberes/reconocimiento-saberes').then(
+        (m) => m.ReconocimientoSaberes,
+      ),
   },
   {
     // "Próximamente": calendario de mesas de examen (Sprint 3 del roadmap,

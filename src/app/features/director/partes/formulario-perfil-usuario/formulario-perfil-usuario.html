@@ -1,0 +1,384 @@
+<form
+  class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
+  [formGroup]="formulario"
+  (submit)="$event.preventDefault(); enviar()"
+>
+  @if (error(); as mensaje) {
+    <p
+      role="alert"
+      class="mb-6 rounded-xl bg-rechazado/10 px-4 py-3 text-sm leading-relaxed text-rechazado"
+    >
+      {{ mensaje }}
+    </p>
+  }
+
+  <p class="mb-6 text-xs text-texto-suave">
+    Los campos con <span class="text-rechazado">*</span> son obligatorios.
+  </p>
+
+  <!-- ── Datos personales ────────────────────────────────────────────── -->
+  <fieldset>
+    <legend class="text-base font-bold text-principal">Datos personales</legend>
+
+    <div class="mt-4 grid gap-5 sm:grid-cols-2">
+      <p class="flex flex-col gap-1.5">
+        <label for="nombre" class="text-sm font-medium text-texto">
+          Nombre <span aria-hidden="true" class="text-rechazado">*</span>
+        </label>
+        <input
+          id="nombre"
+          type="text"
+          formControlName="nombre"
+          autocomplete="off"
+          required
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+          placeholder="Ej. María"
+        />
+        @if (errorObligatorio('nombre'); as mensaje) {
+          <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+        }
+      </p>
+
+      <p class="flex flex-col gap-1.5">
+        <label for="apellido" class="text-sm font-medium text-texto">
+          Apellido <span aria-hidden="true" class="text-rechazado">*</span>
+        </label>
+        <input
+          id="apellido"
+          type="text"
+          formControlName="apellido"
+          autocomplete="off"
+          required
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+          placeholder="Ej. Gómez"
+        />
+        @if (errorObligatorio('apellido'); as mensaje) {
+          <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+        }
+      </p>
+
+      <p class="flex flex-col gap-1.5">
+        <label for="dni" class="text-sm font-medium text-texto">
+          DNI <span aria-hidden="true" class="text-rechazado">*</span>
+        </label>
+        <input
+          id="dni"
+          type="text"
+          inputmode="numeric"
+          formControlName="dni"
+          autocomplete="off"
+          required
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none disabled:bg-fondo-panel disabled:text-texto-suave"
+          placeholder="43.880.335"
+        />
+        <span class="text-xs text-texto-suave">
+          @if (esEdicion()) {
+            El DNI no se modifica: es con lo que la persona inicia sesión.
+          } @else {
+            Con esto va a iniciar sesión. Con o sin puntos, da igual.
+          }
+        </span>
+        @if (errorDni; as mensaje) {
+          <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+        }
+      </p>
+
+      <p class="flex flex-col gap-1.5">
+        <label for="cuil" class="text-sm font-medium text-texto">
+          CUIL <span aria-hidden="true" class="text-rechazado">*</span>
+        </label>
+        <input
+          id="cuil"
+          type="text"
+          inputmode="numeric"
+          formControlName="cuil"
+          autocomplete="off"
+          required
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+          placeholder="20-43880335-7"
+        />
+        @if (esEdicion()) {
+          <span class="text-xs text-texto-suave">
+            El sistema todavía no devuelve el CUIL guardado: cargalo de nuevo al editar.
+          </span>
+        }
+        @if (errorCuil; as mensaje) {
+          <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+        }
+      </p>
+
+      <p class="flex flex-col gap-1.5">
+        <label for="email" class="text-sm font-medium text-texto">
+          Correo electrónico <span aria-hidden="true" class="text-rechazado">*</span>
+        </label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          autocomplete="off"
+          required
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+          placeholder="nombre@ejemplo.com"
+        />
+        <span class="text-xs text-texto-suave">Ahí llegan los avisos de documentación.</span>
+        @if (errorEmail; as mensaje) {
+          <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+        }
+      </p>
+
+      <p class="flex flex-col gap-1.5">
+        <label for="genero" class="text-sm font-medium text-texto">
+          Sexo / Género <span aria-hidden="true" class="text-rechazado">*</span>
+        </label>
+        <select
+          id="genero"
+          formControlName="genero"
+          required
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+        >
+          <option value="" disabled>Elegí una opción</option>
+          @for (opcion of opcionesDeGenero; track opcion) {
+            <option [value]="opcion">{{ opcion }}</option>
+          }
+        </select>
+        @if (errorObligatorio('genero'); as mensaje) {
+          <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+        }
+      </p>
+
+      <p class="flex flex-col gap-1.5">
+        <label for="telefono" class="text-sm font-medium text-texto">
+          Teléfono <span aria-hidden="true" class="text-rechazado">*</span>
+        </label>
+        <input
+          id="telefono"
+          type="tel"
+          formControlName="telefono"
+          required
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+        />
+        @if (errorObligatorio('telefono'); as mensaje) {
+          <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+        }
+      </p>
+
+      <p class="flex flex-col gap-1.5">
+        <label for="fechaNacimiento" class="text-sm font-medium text-texto">
+          Fecha de nacimiento
+        </label>
+        <input
+          id="fechaNacimiento"
+          type="date"
+          formControlName="fechaNacimiento"
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+        />
+      </p>
+
+      <p class="flex flex-col gap-1.5 sm:col-span-2">
+        <label for="direccion" class="text-sm font-medium text-texto">
+          Domicilio <span aria-hidden="true" class="text-rechazado">*</span>
+        </label>
+        <input
+          id="direccion"
+          type="text"
+          formControlName="direccion"
+          required
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+          placeholder="Calle, número, localidad"
+        />
+        @if (errorObligatorio('direccion'); as mensaje) {
+          <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+        }
+      </p>
+
+      <p class="flex flex-col gap-1.5 sm:col-span-2">
+        <label for="idProvincia" class="text-sm font-medium text-texto">
+          Lugar de nacimiento (provincia y país)
+          <span aria-hidden="true" class="text-rechazado">*</span>
+        </label>
+        <select
+          id="idProvincia"
+          formControlName="idProvincia"
+          required
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+        >
+          <option value="" disabled>Elegí la provincia</option>
+          @for (provincia of provincias; track provincia.idProvincia) {
+            <option [value]="provincia.idProvincia">
+              {{ provincia.nombre }}, {{ provincia.pais }}
+            </option>
+          }
+        </select>
+        @if (errorProvincia; as mensaje) {
+          <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+        }
+      </p>
+    </div>
+  </fieldset>
+
+  <!-- ── Contacto de emergencia ──────────────────────────────────────── -->
+  <fieldset class="mt-8 border-t border-borde pt-6">
+    <legend class="text-base font-bold text-principal">Contacto de emergencia</legend>
+
+    <div class="mt-4 grid gap-5 sm:grid-cols-3">
+      <p class="flex flex-col gap-1.5">
+        <label for="contactoEmergencia" class="text-sm font-medium text-texto">
+          Nombre <span aria-hidden="true" class="text-rechazado">*</span>
+        </label>
+        <input
+          id="contactoEmergencia"
+          type="text"
+          formControlName="contactoEmergencia"
+          required
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+          placeholder="A quién avisar"
+        />
+        @if (errorObligatorio('contactoEmergencia'); as mensaje) {
+          <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+        }
+      </p>
+
+      <p class="flex flex-col gap-1.5">
+        <label for="telefonoEmergencia" class="text-sm font-medium text-texto">
+          Teléfono <span aria-hidden="true" class="text-rechazado">*</span>
+        </label>
+        <input
+          id="telefonoEmergencia"
+          type="tel"
+          formControlName="telefonoEmergencia"
+          required
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+        />
+        @if (errorObligatorio('telefonoEmergencia'); as mensaje) {
+          <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+        }
+      </p>
+
+      <p class="flex flex-col gap-1.5">
+        <label for="afiliacionEmergencia" class="text-sm font-medium text-texto">
+          Afiliación (obra social) <span aria-hidden="true" class="text-rechazado">*</span>
+        </label>
+        <input
+          id="afiliacionEmergencia"
+          type="text"
+          formControlName="afiliacionEmergencia"
+          required
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+          placeholder="Ej. APROSS"
+        />
+        @if (errorObligatorio('afiliacionEmergencia'); as mensaje) {
+          <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+        }
+      </p>
+    </div>
+  </fieldset>
+
+  <!-- ── Información académica ───────────────────────────────────────── -->
+  <fieldset class="mt-8 border-t border-borde pt-6">
+    <legend class="text-base font-bold text-principal">
+      Información académica <span aria-hidden="true" class="text-rechazado">*</span>
+    </legend>
+
+    @if (esEdicion()) {
+      <p class="mt-1 text-sm text-texto-suave">
+        El rol no se cambia desde acá: el sistema todavía no guarda cambios de rol al modificar un
+        perfil. Si hace falta cambiarlo, lo tiene que hacer el equipo técnico.
+      </p>
+    } @else {
+      <p class="mt-1 text-sm text-texto-suave">
+        Se asigna un solo rol. Preceptoría está incluida en Secretario.
+      </p>
+    }
+
+    <div class="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Rol">
+      @for (opcion of opcionesDeRol; track opcion.rol) {
+        <label
+          class="flex items-start gap-3 rounded-xl border p-4 transition-colors"
+          [class.cursor-pointer]="!esEdicion()"
+          [class.opacity-60]="esEdicion() && rolElegido() !== opcion.rol"
+          [class.border-principal]="rolElegido() === opcion.rol"
+          [class.bg-principal-suave]="rolElegido() === opcion.rol"
+          [class.border-borde]="rolElegido() !== opcion.rol"
+        >
+          <input
+            type="radio"
+            formControlName="rol"
+            [value]="opcion.rol"
+            class="mt-0.5 h-4 w-4 shrink-0 accent-principal"
+          />
+          <span class="min-w-0">
+            <span class="block text-sm font-semibold text-texto">{{ opcion.rol }}</span>
+            <span class="mt-0.5 block text-xs leading-relaxed text-texto-suave">
+              {{ opcion.descripcion }}
+            </span>
+          </span>
+        </label>
+      }
+    </div>
+
+    @if (errorRol; as mensaje) {
+      <p role="alert" class="mt-3 text-sm text-rechazado">{{ mensaje }}</p>
+    }
+
+    <div class="mt-5 grid gap-5 sm:grid-cols-2">
+      <p class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-texto">N.° de legajo</span>
+        <span
+          class="rounded-xl border border-borde bg-fondo-panel px-4 py-3 font-mono text-sm text-texto-suave"
+          aria-live="polite"
+        >
+          {{ numeroLegajo() }}
+        </span>
+        <span class="text-xs text-texto-suave">Se completa solo con el DNI.</span>
+      </p>
+
+      @if (puedeSerSuplente()) {
+        <p class="flex flex-col gap-1.5">
+          <span class="text-sm font-medium text-texto">Dirección</span>
+          <label class="flex cursor-pointer items-start gap-3 rounded-xl border border-borde p-4">
+            <input
+              type="checkbox"
+              formControlName="esDirectorSuplente"
+              class="mt-0.5 h-4 w-4 shrink-0 rounded border-borde accent-principal"
+            />
+            <span class="min-w-0">
+              <span class="block text-sm font-semibold text-texto">Director suplente</span>
+              <span class="mt-0.5 block text-xs leading-relaxed text-texto-suave">
+                Puede haber uno solo. Si ya hay otro asignado, el sistema te avisa quién es.
+              </span>
+              @if (esEdicion()) {
+                <span class="mt-1.5 block text-xs leading-relaxed text-pendiente">
+                  El sistema todavía no informa si esta persona ya es suplente: si lo es, dejalo
+                  tildado — si lo destildás, deja de serlo al guardar.
+                </span>
+              }
+            </span>
+          </label>
+        </p>
+      }
+    </div>
+  </fieldset>
+
+  <div
+    class="mt-8 flex flex-col-reverse items-stretch gap-3 border-t border-borde pt-6 sm:flex-row sm:justify-end"
+  >
+    <button
+      type="button"
+      class="rounded-full px-6 py-3 text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel"
+      (click)="cancelar.emit()"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      [disabled]="enviando()"
+      class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      @if (enviando()) {
+        Guardando…
+      } @else {
+        {{ textoEnviar() }}
+      }
+    </button>
+  </div>
+</form>
