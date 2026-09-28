@@ -1,8 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
+import { catchError, forkJoin, map, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
+import { LegajoService } from '../../../core/legajos/legajo.service';
+import { LegajoResumenUsuario } from '../../../core/legajos/modelos/legajo-resumen';
+import { estadoGeneralDelLegajo } from '../../../core/legajos/resumen-legajo';
+import { UsuarioInstitucional } from '../../../core/usuarios/modelos/usuario-institucional';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import {
@@ -12,6 +17,7 @@ import {
 } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { MAXIMO_NOTIFICACIONES } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
+import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 
 /**
  * El botón verde del encabezado. Dar de alta a alguien es LA acción del
@@ -27,49 +33,69 @@ const ACCION_DIRECTOR: AccionPanel = {
 /**
  * Panel del Director.
  *
- * Es la vista con más alcance del sistema: lista a todo el instituto y el
- * estado de su legajo (ISCGB-PROJECT.md → permisos de Director,
- * "visualización global de alumnos, docentes y secretarios").
+ * Es la vista con más alcance del sistema: lista a todo el instituto — con
+ * el estado de su cuenta y de su legajo — y es la puerta de entrada a la
+ * gestión de usuarios (Sprint 2, SCRUM-16: alta, modificación y baja).
  *
- * ⚠️ Corre contra datos inventados. El backend todavía no expone un
- * endpoint para listar usuarios — ver docs/alcance-dashboard-director.md
- * para el detalle de esta decisión y qué falta para reemplazarla.
+ * Los datos son reales y salen de DOS endpoints que se cruzan acá:
  *
- * Multi-rol: si la sesión tiene ADEMÁS el rol Docente (el caso real es un
- * director que también dicta una materia — hay un usuario de prueba para
- * esto, "Dora Directora y Docente" en `usuarios-de-prueba.ts`), el panel
- * agrega "Entregar programa de materia" al menú. No hay dos paneles ni una
- * fusión de pantallas: es el panel del rol de mayor alcance con los accesos
- * extra que los otros roles de esa sesión habilitan. Mismo criterio que ya
- * usaba `Inicio` con `puedeEntregarPrograma`.
+ *   · `GET /api/Usuarios`               → quién es, roles, cuenta activa/inactiva
+ *   · `GET /api/Legajos/resumen-estado` → sus documentos, para el estado del legajo
+ *
+ * Antes la columna "Legajo" quedaba vacía para todos con el cartel "el
+ * estado del legajo todavía no llega desde el sistema" — pero
+ * `resumen-estado` ya existía y trae los documentos de cada persona. Si
+ * ese segundo pedido falla, el listado se muestra igual, sin el estado.
+ *
+ * Multi-rol: si la sesión tiene ADEMÁS el rol Docente (un director que
+ * también dicta una materia), el menú suma "Entregar programa de materia" —
+ * lo resuelve `enlacesPorSesion`, no este componente.
  */
 @Component({
   selector: 'app-panel-director',
-  imports: [EstructuraPanel, InsigniaEstado, RouterLink],
+  imports: [EstructuraPanel, InsigniaEstado, PantallaCarga, RouterLink],
   templateUrl: './panel-director.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PanelDirector {
   private readonly auth = inject(AuthService);
   private readonly usuariosService = inject(UsuariosService);
+  private readonly legajoService = inject(LegajoService);
   private readonly router = inject(Router);
 
   protected readonly sesion = this.auth.sesion;
-
 
   /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
 
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
 
   /**
-   * `toSignal`: el listado se pide una sola vez, al entrar a la pantalla, y
-   * no hace falta manejar la suscripción a mano ni un `ngOnInit`. Mientras
-   * no llega la respuesta, `listadoUsuarios()` es `[]` — no `undefined` —
-   * así el template no necesita un `@if` extra para el primer render.
+   * `undefined` mientras carga, `null` si falló, la lista si llegó.
+   *
+   * `toSignal`: se pide una sola vez, al entrar, sin manejar la suscripción
+   * a mano. El legajo se pide en paralelo y, si falla, cada fila queda sin
+   * estado en vez de tirar abajo el listado entero.
    */
-  protected readonly listadoUsuarios = toSignal(this.usuariosService.listar(), {
-    initialValue: [],
-  });
+  private readonly datos = toSignal(
+    forkJoin({
+      usuarios: this.usuariosService.listar(),
+      legajos: this.legajoService
+        .obtenerResumenInstitucional()
+        .pipe(catchError(() => of<LegajoResumenUsuario[] | null>(null))),
+    }).pipe(
+      map(({ usuarios, legajos }) => ({
+        usuarios: conEstadoDeLegajo(usuarios, legajos),
+        legajoDisponible: legajos !== null,
+      })),
+      catchError(() => of(null)),
+    ),
+  );
+
+  protected readonly cargando = computed(() => this.datos() === undefined);
+  protected readonly errorCarga = computed(() => this.datos() === null);
+  protected readonly legajoDisponible = computed(() => this.datos()?.legajoDisponible ?? true);
+
+  protected readonly listadoUsuarios = computed(() => this.datos()?.usuarios ?? []);
 
   protected readonly accion = ACCION_DIRECTOR;
 
@@ -80,6 +106,7 @@ export class PanelDirector {
 
     return {
       total: usuarios.length,
+      inactivos: usuarios.filter((usuario) => !usuario.activo).length,
       aprobados: usuarios.filter((usuario) => usuario.estadoLegajo === 'Aprobado').length,
       pendientes: usuarios.filter((usuario) => usuario.estadoLegajo === 'Pendiente').length,
       rechazados: usuarios.filter((usuario) => usuario.estadoLegajo === 'Rechazado').length,
@@ -104,7 +131,7 @@ export class PanelDirector {
       .slice(0, MAXIMO_NOTIFICACIONES)
       .map((usuario) => ({
         titulo: `El legajo de ${usuario.nombreCompleto} espera revisión`,
-        url: '/secretario/control-legajos',
+        url: `/legajo/usuario/${usuario.idUsuario}`,
         tono: 'pendiente' as const,
       })),
   );
@@ -113,4 +140,19 @@ export class PanelDirector {
     this.auth.cerrarSesion();
     this.router.navigate(['/login']);
   }
+}
+
+/** Le pone a cada persona el estado general de su legajo, cruzando por `idUsuario`. */
+function conEstadoDeLegajo(
+  usuarios: UsuarioInstitucional[],
+  legajos: LegajoResumenUsuario[] | null,
+): UsuarioInstitucional[] {
+  if (legajos === null) {
+    return usuarios;
+  }
+  const porUsuario = new Map(legajos.map((legajo) => [legajo.idUsuario, legajo.documentos]));
+  return usuarios.map((usuario) => ({
+    ...usuario,
+    estadoLegajo: estadoGeneralDelLegajo(porUsuario.get(usuario.idUsuario) ?? []),
+  }));
 }

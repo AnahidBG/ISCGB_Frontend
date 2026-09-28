@@ -1,6 +1,5 @@
 import { Observable } from 'rxjs';
-import { DatosEditarUsuario } from './modelos/datos-editar-usuario';
-import { NuevoUsuario } from './modelos/nuevo-usuario';
+import { PerfilUsuario } from './modelos/perfil-usuario';
 import { UsuarioDetalle } from './modelos/usuario-detalle';
 import { UsuarioInstitucional } from './modelos/usuario-institucional';
 
@@ -8,88 +7,79 @@ import { UsuarioInstitucional } from './modelos/usuario-institucional';
 export const MENSAJE_ERROR_ALTA_USUARIO =
   'No pudimos dar de alta al usuario. Intentá de nuevo en un momento.';
 
-/**
- * El backend todavía no tiene el endpoint de alta.
- *
- * Se distingue del error genérico a propósito: no es una falla pasajera y
- * reintentar no lo va a arreglar. Quien esté probando la pantalla tiene que
- * entender que falta trabajo del otro lado, no que se rompió algo.
- */
-export const MENSAJE_ALTA_NO_DISPONIBLE =
-  'El servidor todavía no tiene habilitada el alta de usuarios. La pantalla está lista y ' +
-  'empieza a funcionar en cuanto el backend publique el endpoint (ver docs/contrato-alta-usuario.md).';
-
-/** El DNI o el email ya están en uso por otra persona. */
-export const MENSAJE_USUARIO_DUPLICADO =
-  'Ya existe un usuario con ese DNI o ese correo. Revisá los datos o buscá a la persona en el listado.';
-
 /** Cuando la edición falla por algo que no es culpa de lo que cargó la persona. */
 export const MENSAJE_ERROR_EDITAR_USUARIO =
   'No pudimos guardar los cambios. Intentá de nuevo en un momento.';
 
-/**
- * El backend todavía no tiene el endpoint de edición.
- *
- * Mismo criterio que `MENSAJE_ALTA_NO_DISPONIBLE`: no es un error de red,
- * es trabajo pendiente del otro lado — ver `DatosEditarUsuario` para el
- * detalle de qué falta (endpoint Y columnas nuevas en la base).
- */
-export const MENSAJE_EDICION_NO_DISPONIBLE =
-  'El servidor todavía no tiene habilitada la edición de usuarios. La pantalla está lista y ' +
-  'empieza a funcionar en cuanto el backend publique el endpoint PUT /api/Usuarios/{id}.';
+/** Cuando la baja falla por algo que no es culpa de quien la pidió. */
+export const MENSAJE_ERROR_BAJA_USUARIO =
+  'No pudimos dar de baja al usuario. Intentá de nuevo en un momento.';
 
 /**
- * Contrato de lectura de usuarios del instituto.
+ * El backend todavía no tiene publicados los endpoints de gestión de
+ * usuarios.
  *
- * Es lo que necesita el panel del Director: quién está dado de alta y en
- * qué estado está su legajo (ISCGB-PROJECT.md → permisos de Director,
- * "visualización global de alumnos, docentes y secretarios").
+ * `UsuariosAdminController` (alta, modificar, baja) existe en la rama
+ * `CargaDeUsuarios` de ISCGB_Backend pero todavía no está en `main`. Contra
+ * un backend sin esa rama, la ruta no existe y ASP.NET responde 404 sin
+ * cuerpo. Se distingue del error genérico a propósito: reintentar no lo va a
+ * arreglar, falta mergear del otro lado.
+ */
+export const MENSAJE_GESTION_NO_DISPONIBLE =
+  'El servidor todavía no tiene habilitada la gestión de usuarios (alta, modificación y baja). ' +
+  'La pantalla está lista y empieza a funcionar en cuanto el backend publique UsuariosAdmin.';
+
+/** Lo que muestra la pantalla cuando el backend confirma la modificación. */
+export function mensajePerfilActualizado(nombre: string): string {
+  // SCRUM-139: "El perfil del usuario ha sido actualizado correctamente",
+  // y si es posible con el nombre en lugar de "usuario".
+  const quien = nombre.trim();
+  return quien === ''
+    ? 'El perfil del usuario ha sido actualizado correctamente.'
+    : `El perfil de ${quien} ha sido actualizado correctamente.`;
+}
+
+/**
+ * Usuarios del instituto: lectura (panel del Director) y gestión de perfiles
+ * — Sprint 2, "Gestión de usuarios y roles" (SCRUM-16).
  *
- * Mismo patrón que `AuthService`: una clase abstracta, y hoy una sola
- * implementación (`UsuariosMockService`). Falta la versión HTTP porque el
- * backend todavía no tiene un endpoint para esto — no está ni en
- * `docs/contrato-api.md` ni confirmado con Angel. Antes de escribir
- * `UsuariosHttpService`, leer docs/alcance-dashboard-director.md para no
- * inventar una forma de respuesta que después no coincida con la real.
+ * Mismo patrón que `AuthService`: una clase abstracta con una implementación
+ * HTTP real y una simulada, intercambiables desde `app.config.ts`.
+ *
+ * Endpoints del backend:
+ *
+ *   · `GET  /api/Usuarios`                     → `listar`   (main)
+ *   · `GET  /api/Usuarios/{id}`                → `obtener`  (main)
+ *   · `POST /api/UsuariosAdmin/alta`           → `crear`    (rama CargaDeUsuarios)
+ *   · `PUT  /api/UsuariosAdmin/modificar/{id}` → `actualizar` (rama CargaDeUsuarios)
+ *   · `PUT  /api/UsuariosAdmin/baja/{id}`      → `darDeBaja` (rama CargaDeUsuarios)
  */
 export abstract class UsuariosService {
-  /** Todas las personas del instituto con su rol y el estado de su legajo. */
+  /** Todas las personas del instituto, activas e inactivas, con sus roles. */
   abstract listar(): Observable<UsuarioInstitucional[]>;
 
-  /**
-   * Da de alta a una persona. Solo el Director (ISCGB-PROJECT.md → Sprint 2,
-   * "Gestión de usuarios y roles").
-   *
-   * ⚠️ El backend NO tiene este endpoint todavía. Lo único que existe hoy es
-   * `POST /api/Auth/crear-usuario-prueba`, que acepta solo `{ dni, password }`
-   * y escribe a mano `email = "prueba@test.com"` y `IdRol = 1` — su propio
-   * comentario en el código dice "esto es de prueba. No quedaría de esta
-   * forma". Usarlo desde acá crearía usuarios basura en la base real, así que
-   * la implementación HTTP apunta a `POST /api/Usuarios`, que es donde
-   * corresponde, y traduce el 404/405 de hoy a un mensaje que lo explica.
-   *
-   * Ver docs/contrato-alta-usuario.md: ahí está el DTO exacto que hay que
-   * implementar del lado del backend para que esta pantalla funcione sin
-   * tocar una línea de Angular.
-   */
-  abstract crear(usuario: NuevoUsuario): Observable<void>;
-
-  /**
-   * El detalle completo de una persona, para precargar "Editar Usuario".
-   *
-   * A diferencia de `crear`, este SÍ pega contra un endpoint real:
-   * `GET /api/Usuarios/{id}` — confirmado con Swagger el 25/09/2026.
-   */
+  /** El detalle de una persona, para precargar "Editar Usuario". */
   abstract obtener(idUsuario: number): Observable<UsuarioDetalle>;
 
   /**
-   * Guarda los cambios del perfil de una persona ya existente — Sprint 2,
-   * "Gestión de usuarios y roles" (Director).
+   * Da de alta a una persona. Devuelve el mensaje de confirmación.
    *
-   * ⚠️ El backend NO tiene este endpoint todavía (ni `PUT` ni `PATCH` en
-   * `UsuarioController`, confirmado con Swagger). Apunta a
-   * `PUT /api/Usuarios/{id}`, que es donde corresponde, y traduce el
-   * 404/405 de hoy a un mensaje que lo explica — mismo patrón que `crear`.
+   * Falla con el mensaje del backend cuando lo hay (rol inválido, ya existe
+   * un director suplente), con `MENSAJE_GESTION_NO_DISPONIBLE` si el
+   * endpoint no está publicado, o con `MENSAJE_ERROR_ALTA_USUARIO`.
    */
-  abstract actualizar(idUsuario: number, datos: DatosEditarUsuario): Observable<void>;
+  abstract crear(perfil: PerfilUsuario): Observable<string>;
+
+  /**
+   * Guarda los cambios del perfil. Devuelve el mensaje de confirmación
+   * ("El perfil de X ha sido actualizado correctamente").
+   */
+  abstract actualizar(idUsuario: number, perfil: PerfilUsuario): Observable<string>;
+
+  /**
+   * Baja lógica: la cuenta pasa a inactiva y NO se borra nada — ni los
+   * datos ni la documentación histórica (criterio de aceptación). Si era
+   * director suplente, deja de serlo.
+   */
+  abstract darDeBaja(idUsuario: number): Observable<string>;
 }

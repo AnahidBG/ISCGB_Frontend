@@ -57,13 +57,10 @@ export const routes: Routes = [
       import('./features/director/panel-director/panel-director').then((m) => m.PanelDirector),
   },
   {
-    // Alta de usuarios — el reemplazo de crearlos desde Swagger.
+    // Alta de usuarios — Sprint 2, "Gestión de usuarios y roles" (SCRUM-16).
     // Solo Director: ISCGB-PROJECT.md le da a ese rol el alta/baja de
-    // usuarios y roles (Sprint 2).
-    //
-    // ⚠️ El backend no tiene todavía el endpoint que esto necesita
-    // (`POST /api/Usuarios`). La pantalla está completa y lo avisa cuando el
-    // servidor responde 404 — ver docs/contrato-alta-usuario.md.
+    // usuarios y roles. Pega contra `POST /api/UsuariosAdmin/alta` (rama
+    // `CargaDeUsuarios` del backend) — ver docs/contrato-alta-usuario.md.
     path: 'director/usuarios/nuevo',
     title: 'Nuevo usuario · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.director)],
@@ -71,10 +68,8 @@ export const routes: Routes = [
       import('./features/director/alta-usuario/alta-usuario').then((m) => m.AltaUsuario),
   },
   {
-    // Edición de usuarios — el complemento de "Nuevo Usuario". Sprint 2,
-    // "Gestión de usuarios y roles" (Director). Igual que el alta, la
-    // pantalla ya está construida y avisa con todas las letras si el
-    // backend responde 404 — ver `DatosEditarUsuario`.
+    // Modificación y BAJA de usuarios — el complemento de "Nuevo Usuario".
+    // `PUT /api/UsuariosAdmin/modificar/{id}` y `.../baja/{id}`.
     path: 'director/usuarios/:idUsuario/editar',
     title: 'Editar usuario · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.director)],
