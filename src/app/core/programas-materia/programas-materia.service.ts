@@ -10,6 +10,16 @@ export const MENSAJE_ERROR_ENVIO_PROGRAMA =
 export const MENSAJE_ERROR_PDF_PROGRAMA =
   'El programa quedó guardado, pero no pudimos generar el PDF. Probá descargarlo de nuevo.';
 
+/**
+ * `GET /api/ProgramasMateria/contexto-docente/{idUsuario}` no existe en el
+ * backend (ni en `main` ni en ninguna rama, revisado el 28/09/2026). Antes
+ * ese 404 de "ruta inexistente" se leía como "no sos docente", y a TODO
+ * docente la pantalla le decía que no podía entregar programas.
+ */
+export const MENSAJE_CONTEXTO_NO_DISPONIBLE =
+  'El sistema todavía no informa qué materias tenés a cargo, así que por ahora no se puede ' +
+  'cargar el programa desde acá. Ya está pedido al equipo de backend.';
+
 /** Cuando no se pueden traer las materias a cargo del docente. */
 export const MENSAJE_ERROR_CONTEXTO_DOCENTE =
   'No pudimos traer tus materias. Recargá la página o intentá de nuevo en un momento.';

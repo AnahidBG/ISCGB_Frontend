@@ -1,7 +1,7 @@
 <app-estructura-panel
   [enlaces]="enlaces()"
   encabezado="titulo"
-  tituloPagina="Certificado de alumno regular"
+  [tituloPagina]="titulo"
   subtitulo="Para presentar en la entidad que te lo pida."
   volverUrl="/alumno/panel"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
@@ -29,13 +29,16 @@
           <span
             class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-fondo-panel text-texto-suave"
           >
-            <app-icono nombre="documento" class="h-6 w-6" />
+            <app-icono [nombre]="conHorario ? 'calendario' : 'documento'" class="h-6 w-6" />
           </span>
           <div class="min-w-0">
-            <h2 class="text-base font-semibold text-texto">Certificado de alumno regular</h2>
+            <h2 class="text-base font-semibold text-texto">{{ titulo }}</h2>
             <p class="mt-1 text-sm leading-relaxed text-texto-suave">
-              Certifica que sos alumno/a regular del instituto. Trae tu nombre completo, DNI y
-              la fecha de emisión de hoy, con el membrete institucional.
+              Certifica que sos alumno/a regular del instituto. Lo emite el sistema con tu nombre
+              completo, tu DNI, la fecha de emisión y el sello del instituto.
+              @if (conHorario) {
+                Además trae los días de la semana con el horario de cursada para completar.
+              }
             </p>
           </div>
         </div>
@@ -83,10 +86,22 @@
           }
         </button>
 
-        <p class="mt-3 text-center text-xs text-texto-suave">
-          ¿Necesitás que figuren los días y horarios de cursada? Esa variante todavía no está
-          disponible — pedila en Secretaría mientras tanto.
-        </p>
+        @if (conHorario) {
+          <p class="mt-3 text-center text-xs leading-relaxed text-texto-suave">
+            Los horarios de cursada salen en blanco: Preceptoría los completa y los firma. Llevalo
+            impreso a Secretaría/Preceptoría antes de presentarlo.
+          </p>
+        } @else {
+          <p class="mt-3 text-center text-xs text-texto-suave">
+            ¿Necesitás que figuren los días y horarios de cursada? Pedí el
+            <a
+              routerLink="/alumno/certificado/regular-con-horario"
+              class="font-medium text-principal underline"
+            >
+              certificado con horario</a
+            >.
+          </p>
+        }
       }
     </div>
   </div>

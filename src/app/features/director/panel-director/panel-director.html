@@ -10,69 +10,108 @@
   [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
-  <!--
-    El listado ya es real (GET /api/Usuarios). Lo que falta es el estado del
-    legajo por persona, que ese endpoint todavía no devuelve — por eso la
-    columna se ve vacía. Ver docs/alcance-dashboard-director.md.
-  -->
-  <p class="mb-5 rounded-xl bg-menta/40 px-4 py-3 text-sm leading-relaxed text-texto sm:mb-6">
-    <strong>El estado del legajo todavía no llega desde el sistema.</strong>
-    Por eso esa columna aparece vacía: preferimos mostrar el hueco antes que
-    inventar un color.
-  </p>
+  @if (cargando()) {
+    <app-pantalla-carga tamano="md" mensaje="Cargando el listado del instituto…" />
+  } @else if (errorCarga()) {
+    <p role="alert" class="rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+      No pudimos traer el listado de usuarios. Intentá de nuevo en un momento.
+    </p>
+  } @else {
+    @if (!legajoDisponible()) {
+      <p
+        class="mb-5 rounded-xl bg-pendiente/10 px-4 py-3 text-sm leading-relaxed text-texto sm:mb-6"
+      >
+        <strong>No pudimos traer el estado de los legajos.</strong>
+        El listado de personas está completo; la columna "Legajo" queda vacía hasta que vuelvas a
+        entrar.
+      </p>
+    }
 
-  <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
-    <div class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
-      <p class="text-sm text-texto-suave">Usuarios totales</p>
-      <p class="mt-1 text-2xl font-semibold text-texto sm:text-3xl">{{ resumen().total }}</p>
-    </div>
-    <div class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
-      <p class="text-sm text-texto-suave">Legajos aprobados</p>
-      <p class="mt-1 text-3xl font-semibold text-aprobado">{{ resumen().aprobados }}</p>
-    </div>
-    <div class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
-      <p class="text-sm text-texto-suave">Pendientes</p>
-      <p class="mt-1 text-3xl font-semibold text-pendiente">{{ resumen().pendientes }}</p>
-    </div>
-    <div class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
-      <p class="text-sm text-texto-suave">Rechazados</p>
-      <p class="mt-1 text-3xl font-semibold text-rechazado">{{ resumen().rechazados }}</p>
-    </div>
-  </div>
-
-  <div class="mt-6 overflow-x-auto rounded-2xl border border-borde bg-superficie sm:mt-8">
-    <table class="w-full min-w-[34rem] text-left text-sm">
-      <thead class="border-b border-borde text-texto-suave">
-        <tr>
-          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Nombre</th>
-          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">DNI</th>
-          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Rol</th>
-          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Legajo</th>
-          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6"></th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-borde">
-        @for (usuario of listadoUsuarios(); track usuario.idUsuario) {
-          <tr>
-            <td class="whitespace-nowrap px-5 py-3 text-texto sm:px-6">{{ usuario.nombreCompleto }}</td>
-            <td class="whitespace-nowrap px-5 py-3 font-mono text-texto-suave sm:px-6">{{ usuario.dni }}</td>
-            <td class="whitespace-nowrap px-5 py-3 text-texto-suave sm:px-6">
-              {{ usuario.roles.join(' · ') || 'Sin rol asignado' }}
-            </td>
-            <td class="px-5 py-3 sm:px-6">
-              <app-insignia-estado [estado]="usuario.estadoLegajo" />
-            </td>
-            <td class="whitespace-nowrap px-5 py-3 text-right sm:px-6">
-              <a
-                [routerLink]="['/director/usuarios', usuario.idUsuario, 'editar']"
-                class="rounded-full border border-principal px-3 py-1.5 text-xs font-semibold text-principal transition-colors hover:bg-principal-suave"
-              >
-                Editar
-              </a>
-            </td>
-          </tr>
+    <div class="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      <div class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
+        <p class="text-sm text-texto-suave">Usuarios totales</p>
+        <p class="mt-1 text-2xl font-semibold text-texto sm:text-3xl">{{ resumen().total }}</p>
+        @if (resumen().inactivos > 0) {
+          <p class="mt-1 text-xs text-texto-suave">{{ resumen().inactivos }} dados de baja</p>
         }
-      </tbody>
-    </table>
-  </div>
+      </div>
+      <div class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
+        <p class="text-sm text-texto-suave">Legajos aprobados</p>
+        <p class="mt-1 text-3xl font-semibold text-aprobado">{{ resumen().aprobados }}</p>
+      </div>
+      <div class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
+        <p class="text-sm text-texto-suave">Pendientes</p>
+        <p class="mt-1 text-3xl font-semibold text-pendiente">{{ resumen().pendientes }}</p>
+      </div>
+      <div class="rounded-2xl border border-borde bg-superficie p-4 sm:p-5">
+        <p class="text-sm text-texto-suave">Rechazados</p>
+        <p class="mt-1 text-3xl font-semibold text-rechazado">{{ resumen().rechazados }}</p>
+      </div>
+    </div>
+
+    <div class="mt-6 overflow-x-auto rounded-2xl border border-borde bg-superficie sm:mt-8">
+      <table class="w-full min-w-[34rem] text-left text-sm">
+        <thead class="border-b border-borde text-texto-suave">
+          <tr>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Nombre</th>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">DNI</th>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Rol</th>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Cuenta</th>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Legajo</th>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6"></th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-borde">
+          @for (usuario of listadoUsuarios(); track usuario.idUsuario) {
+            <tr [class.opacity-60]="!usuario.activo">
+              <td class="whitespace-nowrap px-5 py-3 text-texto sm:px-6">
+                {{ usuario.nombreCompleto }}
+              </td>
+              <td class="whitespace-nowrap px-5 py-3 font-mono text-texto-suave sm:px-6">
+                {{ usuario.dni }}
+              </td>
+              <td class="whitespace-nowrap px-5 py-3 text-texto-suave sm:px-6">
+                {{ usuario.roles.join(' · ') || 'Sin rol asignado' }}
+              </td>
+              <td class="whitespace-nowrap px-5 py-3 sm:px-6">
+                @if (usuario.activo) {
+                  <span class="text-xs font-semibold text-aprobado">Activa</span>
+                } @else {
+                  <span class="text-xs font-semibold text-rechazado">Dada de baja</span>
+                }
+              </td>
+              <td class="px-5 py-3 sm:px-6">
+                <a
+                  [routerLink]="['/legajo/usuario', usuario.idUsuario]"
+                  class="inline-flex rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+                  [attr.aria-label]="'Ver el legajo de ' + usuario.nombreCompleto"
+                >
+                  <app-insignia-estado [estado]="usuario.estadoLegajo" />
+                </a>
+              </td>
+              <td class="whitespace-nowrap px-5 py-3 text-right sm:px-6">
+                <a
+                  [routerLink]="['/director/usuarios', usuario.idUsuario, 'editar']"
+                  class="rounded-full border border-principal px-3 py-1.5 text-xs font-semibold text-principal transition-colors hover:bg-principal-suave"
+                >
+                  Editar
+                </a>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td class="px-5 py-3 text-sm text-texto-suave sm:px-6" colspan="6">
+                Todavía no hay usuarios cargados.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <p class="mt-4 text-xs leading-relaxed text-texto-suave">
+      "Aprobado" en la columna Legajo quiere decir que todo lo que la persona presentó está
+      aprobado. Lo que le falta presentar se ve entrando a su legajo.
+    </p>
+  }
 </app-estructura-panel>

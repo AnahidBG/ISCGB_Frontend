@@ -1,5 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+  signal,
+} from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
+import { map } from 'rxjs';
+import { PARAMETRO_ACCESO_DENEGADO } from '../../../core/auth/role.guard';
 import { inicialesDe } from '../../../core/comun/texto';
 import { Icono, NombreIcono } from '../icono/icono';
 
@@ -64,6 +75,14 @@ const CLAVE_COLAPSADO = 'iscgb.panel.colapsado';
  * y se cierra entero — colapsarlo A MEDIAS en una pantalla chica no tendría
  * sentido, y por eso el botón de colapsar está oculto ahí (`hidden lg:flex`
  * en el HTML).
+ *
+ * ── Acceso denegado (Sprint 2) ────────────────────────────────────────────
+ * Cuando `roleGuard` (o un 403 del backend) rebota a alguien de una pantalla
+ * que no es de su rol, lo trae a SU panel con `?accesoDenegado=1`. El cartel
+ * se dibuja acá y no en cada panel porque los cuatro paneles usan esta misma
+ * estructura: así ninguno se olvida de mostrarlo. Leer un query param es
+ * navegación, no autenticación — el componente sigue sin saber nada de
+ * sesiones.
  */
 @Component({
   selector: 'app-estructura-panel',
@@ -151,6 +170,24 @@ export class EstructuraPanel {
   readonly notificacionesDetalle = input<NotificacionPanel[]>([]);
 
   readonly cerrarSesion = output<void>();
+
+  private readonly ruta = inject(ActivatedRoute);
+
+  private readonly llegoConAccesoDenegado = toSignal(
+    this.ruta.queryParamMap.pipe(map((params) => params.get(PARAMETRO_ACCESO_DENEGADO) === '1')),
+    { initialValue: false },
+  );
+
+  /** Se puede cerrar con la cruz; vuelve a aparecer si hay otro rebote. */
+  private readonly avisoAccesoCerrado = signal(false);
+
+  protected readonly mostrarAccesoDenegado = computed(
+    () => this.llegoConAccesoDenegado() && !this.avisoAccesoCerrado(),
+  );
+
+  protected cerrarAvisoAcceso(): void {
+    this.avisoAccesoCerrado.set(true);
+  }
 
   /** `true` con el menú de celular abierto. En escritorio siempre está visible. */
   protected readonly menuAbierto = signal(false);

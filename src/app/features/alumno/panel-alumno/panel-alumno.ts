@@ -15,7 +15,7 @@ import {
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
-import { notificacionesPorRechazos } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
+import { novedadesDelLegajo } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { PasoTramite, ProgresoTramite } from '../../../shared/ui/progreso-tramite/progreso-tramite';
@@ -30,13 +30,11 @@ const ACCION_ALUMNO: AccionPanel = {
  * Panel del Alumno.
  *
  * Muestra el legajo propio y el progreso de entrega ("Módulo de Salida",
- * ISCGB-PROJECT.md). El resto de lo que le corresponde a Alumno —
- * justificativos de inasistencia, solicitud de reconocimiento de saberes,
- * enlace al portal SIAADE — todavía no tiene pantalla propia ni endpoint,
- * así que no se inventa un botón que no lleva a ningún lado (mismo criterio
- * que se usó con "Solicitar acceso" en el login: si no hay a dónde
- * mandarlo, es peor que no tener el botón). Quedan listados como
- * pendientes en docs/alcance-paneles-roles.md.
+ * ISCGB-PROJECT.md), y los accesos de autogestión estudiantil del Sprint 2:
+ * certificado de alumno regular (con y sin horario), reconocimiento de
+ * saberes y justificar inasistencia. El enlace a SIAADE es del Sprint 3 y
+ * todavía no tiene URL definida con el instituto, así que no se inventa un
+ * botón que no lleva a ningún lado.
  *
  * El legajo es real: sale de `GET /api/Legajos/usuario/{id}`.
  */
@@ -53,7 +51,6 @@ export class PanelAlumno {
 
   protected readonly sesion = this.auth.sesion;
 
-
   /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
 
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
@@ -63,22 +60,6 @@ export class PanelAlumno {
   protected readonly documentos = toSignal(this.legajoService.obtenerLegajoPropio(), {
     initialValue: [],
   });
-
-  /**
-   * Enciende el puntito rojo de la campana. Mismo criterio que
-   * `PanelDocente.notificaciones`: un documento rechazado es algo que esta
-   * persona tiene que resolver, los pendientes no (están en manos de
-   * Secretaría). Antes esta pantalla no le pasaba ningún número a
-   * `EstructuraPanel`, así que la campana nunca se encendía acá.
-   */
-  protected readonly notificaciones = computed(
-    () => this.documentos().filter((documento) => documento.estado === 'Rechazado').length,
-  );
-
-  /** El detalle que se despliega al tocar la campana: qué le rechazaron y por qué. */
-  protected readonly notificacionesDetalle = computed(() =>
-    notificacionesPorRechazos(this.documentos(), { url: '/legajo/mis-documentos' }),
-  );
 
   /** El denominador del progreso. Ver el comentario en `PanelDocente`. */
   private readonly idRol = idRolDocumental(this.auth.sesion());
@@ -93,6 +74,26 @@ export class PanelAlumno {
   /** Misma fórmula que en `PanelDocente`: aprobados / obligatorios del rol. */
   protected readonly progreso = computed(() =>
     calcularProgresoLegajo(this.documentos(), this.requeridos()),
+  );
+
+  /**
+   * Lo que se despliega al tocar la campana (SCRUM-7): rechazos vigentes,
+   * anuales vencidos, obligatorios que faltan entregar y el aviso de legajo
+   * completo. Ver `novedadesDelLegajo`.
+   */
+  private readonly novedades = computed(() =>
+    novedadesDelLegajo(this.documentos(), this.requeridos(), { url: '/legajo/mis-documentos' }),
+  );
+
+  protected readonly notificaciones = computed(() => this.novedades().total);
+  protected readonly notificacionesDetalle = computed(() => this.novedades().detalle);
+
+  /** Todo lo obligatorio aprobado, sin rechazos pendientes (SCRUM-153). */
+  protected readonly legajoCompleto = computed(
+    () =>
+      !this.progreso().estimado &&
+      this.progreso().porcentaje === 100 &&
+      this.notificacionesDetalle().every((novedad) => novedad.tono === 'aprobado'),
   );
 
   /** El detalle documento por documento del "Mapa del trámite" (`ProgresoTramite`). */

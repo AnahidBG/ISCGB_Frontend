@@ -1,10 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { catchError, forkJoin, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ROLES, Rol } from '../../../core/auth/modelos/rol';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { inicialesDe, normalizarTexto } from '../../../core/comun/texto';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { ResumenUsuarioLegajo } from '../../../core/legajos/modelos/resumen-usuario-legajo';
+import { UsuarioInstitucional } from '../../../core/usuarios/modelos/usuario-institucional';
+import { UsuariosService } from '../../../core/usuarios/usuarios.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import {
   EstructuraPanel,
@@ -44,6 +48,13 @@ import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga'
  *
  * Contenedor: es el único que conoce `LegajoService`; no le queda ninguna
  * lógica de auditoría — esa vive en `MisDocumentos` ahora.
+ *
+ * ── Sprint 2 (SCRUM-19, "Revisión y cambio de estado del legajo docente") ──
+ *   · Los conteos cuentan solo la versión VIGENTE de cada documento (ver
+ *     `contarPorEstado`): antes un rechazo ya corregido seguía sumando.
+ *   · Filtro por rol (Docentes / Alumnos): `resumen-estado` no trae roles,
+ *     así que se cruza con `GET /api/Usuarios`. Si ese segundo pedido
+ *     falla, la lista se muestra igual y el filtro se oculta.
  */
 @Component({
   selector: 'app-control-legajos',
@@ -60,16 +71,22 @@ import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga'
 export class ControlLegajos {
   private readonly auth = inject(AuthService);
   private readonly legajoService = inject(LegajoService);
+  private readonly usuariosService = inject(UsuariosService);
   private readonly router = inject(Router);
 
   protected readonly sesion = this.auth.sesion;
-
 
   /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
 
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
 
-  protected readonly resumen = signal<ResumenUsuarioLegajo[]>([]);
+  protected readonly resumen = signal<PersonaConLegajo[]>([]);
+
+  /** `false` si no se pudieron traer los roles: el filtro por rol no se ofrece. */
+  protected readonly rolesDisponibles = signal(false);
+
+  protected readonly filtrosDeRol = FILTROS_DE_ROL;
+  protected readonly filtroRol = signal<FiltroRol>('todos');
   protected readonly cargando = signal(true);
   protected readonly error = signal<string | null>(null);
 
@@ -140,17 +157,19 @@ export class ControlLegajos {
   protected readonly usuariosFiltrados = computed(() => {
     const texto = normalizarTexto(this.busqueda());
     const soloPendientes = this.soloPendientes();
+    const filtroRol = this.filtroRol();
 
     const filtrados = this.resumen().filter((usuario) => {
       if (soloPendientes && usuario.pendientes === 0) {
         return false;
       }
+      if (filtroRol !== 'todos' && !usuario.roles.includes(filtroRol)) {
+        return false;
+      }
       if (texto === '') {
         return true;
       }
-      return (
-        normalizarTexto(usuario.nombreCompleto).includes(texto) || usuario.dni.includes(texto)
-      );
+      return normalizarTexto(usuario.nombreCompleto).includes(texto) || usuario.dni.includes(texto);
     });
 
     return [...filtrados].sort((a, b) => {
@@ -175,9 +194,15 @@ export class ControlLegajos {
     this.cargando.set(true);
     this.error.set(null);
 
-    this.legajoService.obtenerResumenUsuarios().subscribe({
-      next: (resumen) => {
-        this.resumen.set(resumen);
+    forkJoin({
+      resumen: this.legajoService.obtenerResumenUsuarios(),
+      usuarios: this.usuariosService
+        .listar()
+        .pipe(catchError(() => of<UsuarioInstitucional[] | null>(null))),
+    }).subscribe({
+      next: ({ resumen, usuarios }) => {
+        this.resumen.set(conRoles(resumen, usuarios));
+        this.rolesDisponibles.set(usuarios !== null);
         this.cargando.set(false);
       },
       error: (fallo: Error) => {
@@ -189,6 +214,14 @@ export class ControlLegajos {
 
   protected readonly iniciales = inicialesDe;
 
+  protected elegirFiltroRol(filtro: FiltroRol): void {
+    this.filtroRol.set(filtro);
+  }
+
+  protected rolesComoTexto(persona: PersonaConLegajo): string {
+    return persona.roles.join(' · ');
+  }
+
   protected alternarSoloPendientes(): void {
     this.soloPendientes.update((valor) => !valor);
   }
@@ -197,6 +230,28 @@ export class ControlLegajos {
     this.auth.cerrarSesion();
     this.router.navigate(['/login']);
   }
+}
+
+/** Una fila de la lista: el resumen del legajo más los roles de la persona. */
+export interface PersonaConLegajo extends ResumenUsuarioLegajo {
+  /** Vacío si no se pudo cruzar con `GET /api/Usuarios`. */
+  roles: Rol[];
+}
+
+type FiltroRol = 'todos' | typeof ROLES.docente | typeof ROLES.alumno;
+
+const FILTROS_DE_ROL: readonly { valor: FiltroRol; etiqueta: string }[] = [
+  { valor: 'todos', etiqueta: 'Todos' },
+  { valor: ROLES.docente, etiqueta: 'Docentes' },
+  { valor: ROLES.alumno, etiqueta: 'Alumnos' },
+];
+
+function conRoles(
+  resumen: ResumenUsuarioLegajo[],
+  usuarios: UsuarioInstitucional[] | null,
+): PersonaConLegajo[] {
+  const rolesPorId = new Map((usuarios ?? []).map((u) => [u.idUsuario, u.roles]));
+  return resumen.map((persona) => ({ ...persona, roles: rolesPorId.get(persona.idUsuario) ?? [] }));
 }
 
 /** Cómo se dibuja la lista de personas en Control de Legajos. */

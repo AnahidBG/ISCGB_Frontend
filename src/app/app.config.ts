@@ -5,13 +5,18 @@ import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { AuthService } from './core/auth/auth.service';
 import { AuthHttpService } from './core/auth/auth-http.service';
+import { sesionInterceptor } from './core/auth/sesion.interceptor';
 import { tokenInterceptor } from './core/auth/token.interceptor';
 import { cargaInterceptor } from './core/carga/carga.interceptor';
+import { CertificadosService } from './core/certificados/certificados.service';
+import { CertificadosHttpService } from './core/certificados/certificados-http.service';
 import { JustificativosService } from './core/justificativos/justificativos.service';
 import { JustificativosHttpService } from './core/justificativos/justificativos-http.service';
 import { LegajoService } from './core/legajos/legajo.service';
 import { LegajoHttpService } from './core/legajos/legajo-http.service';
 import { ProgramasMateriaService } from './core/programas-materia/programas-materia.service';
+import { ReconocimientoSaberesService } from './core/reconocimiento-saberes/reconocimiento-saberes.service';
+import { ReconocimientoSaberesHttpService } from './core/reconocimiento-saberes/reconocimiento-saberes-http.service';
 import { ProgramasMateriaHttpService } from './core/programas-materia/programas-materia-http.service';
 import { UsuariosService } from './core/usuarios/usuarios.service';
 import { UsuariosHttpService } from './core/usuarios/usuarios-http.service';
@@ -23,10 +28,15 @@ export const appConfig: ApplicationConfig = {
 
     // El ORDEN de los interceptores importa: se ejecutan en el orden de este
     // arreglo. `tokenInterceptor` va primero para que el pedido ya salga con
-    // el header puesto; `cargaInterceptor` envuelve el resultado para mostrar
-    // el logo de espera. Una llamada puntual puede quedar afuera del loader
-    // marcándola con SIN_CARGA_GLOBAL — ver core/carga/carga.interceptor.ts.
-    provideHttpClient(withFetch(), withInterceptors([tokenInterceptor, cargaInterceptor])),
+    // el header puesto; `sesionInterceptor` mira la respuesta (401 → sesión
+    // vencida, 403 → acceso denegado); `cargaInterceptor` envuelve el
+    // resultado para mostrar el logo de espera. Una llamada puntual puede
+    // quedar afuera del loader marcándola con SIN_CARGA_GLOBAL — ver
+    // core/carga/carga.interceptor.ts.
+    provideHttpClient(
+      withFetch(),
+      withInterceptors([tokenInterceptor, sesionInterceptor, cargaInterceptor]),
+    ),
 
     // ── Todo contra la API real en http://localhost:5231 ──────────────────
     // Cada uno de estos tiene una versión con datos falsos al lado
@@ -36,12 +46,13 @@ export const appConfig: ApplicationConfig = {
     { provide: AuthService, useClass: AuthHttpService },
     { provide: ProgramasMateriaService, useClass: ProgramasMateriaHttpService },
     { provide: JustificativosService, useClass: JustificativosHttpService },
+    { provide: CertificadosService, useClass: CertificadosHttpService },
+    { provide: ReconocimientoSaberesService, useClass: ReconocimientoSaberesHttpService },
 
-    // UsuariosHttpService pega contra GET /api/Usuarios (real), pero esa
-    // respuesta no trae estado de legajo por persona: cada usuario queda con
-    // estadoLegajo: null y la columna se ve vacía. Es correcto y esperado —
-    // ver docs/alcance-dashboard-director.md. Para volver al maquetado
-    // completo (con estadoLegajo falso pero visible): UsuariosMockService.
+    // UsuariosHttpService: GET /api/Usuarios (real) y la gestión de usuarios
+    // contra /api/UsuariosAdmin (rama CargaDeUsuarios del backend, todavía no
+    // mergeada — sin ella, alta/modificación/baja avisan que no está
+    // habilitada). Ver docs/contrato-alta-usuario.md.
     { provide: UsuariosService, useClass: UsuariosHttpService },
 
     // LegajoHttpService: desde el 30/08/2026 las SEIS operaciones pegan
