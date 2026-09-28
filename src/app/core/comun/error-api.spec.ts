@@ -41,4 +41,12 @@ describe('esEndpointInexistente', () => {
   it('404 con motivo = el controlador respondió NotFound a propósito', () => {
     expect(esEndpointInexistente(errorCon(404, 'Usuario no encontrado.'))).toBe(false);
   });
+
+  it('NotFound() a secas manda ProblemDetails: tampoco es una ruta inexistente', () => {
+    expect(esEndpointInexistente(errorCon(404, { title: 'Not Found', status: 404 }))).toBe(false);
+  });
+
+  it('otros códigos nunca son "ruta inexistente"', () => {
+    expect(esEndpointInexistente(errorCon(500, null))).toBe(false);
+  });
 });

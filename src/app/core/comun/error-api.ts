@@ -56,14 +56,22 @@ export function mensajeDelServidor(error: HttpErrorResponse): string | null {
 }
 
 /**
- * ¿El 404/405 es "esa ruta no existe en el servidor" y no un `NotFound()`
- * con motivo?
+ * ¿El 404/405 es "esa ruta no existe en el servidor" y no un `NotFound()` del
+ * controlador?
  *
- * ASP.NET responde una ruta no mapeada con 404 y el cuerpo VACÍO; los
- * `NotFound(new { message })` de los controladores traen texto. La
+ * ASP.NET responde una ruta no mapeada con 404 y el cuerpo VACÍO. Un
+ * controlador con `[ApiController]` que responde `NotFound(...)` siempre
+ * manda ALGO: el objeto que le pasaron, un texto, o — con `NotFound()` a
+ * secas — un `ProblemDetails` (`{ title: "Not Found", status: 404 }`). La
  * diferencia importa: "el backend todavía no publicó este endpoint" y "esa
  * persona no existe" piden mensajes completamente distintos.
  */
 export function esEndpointInexistente(error: HttpErrorResponse): boolean {
-  return (error.status === 404 || error.status === 405) && mensajeDelServidor(error) === null;
+  if (error.status !== 404 && error.status !== 405) {
+    return false;
+  }
+  const cuerpo: unknown = error.error;
+  return (
+    cuerpo === null || cuerpo === undefined || (typeof cuerpo === 'string' && cuerpo.trim() === '')
+  );
 }

@@ -1,10 +1,12 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of, throwError } from 'rxjs';
+import { esEndpointInexistente } from '../comun/error-api';
 import { RUTAS_API } from '../configuracion/api';
 import { ContextoDocente } from './modelos/contexto-docente';
 import { ProgramaMateria } from './modelos/programa-materia';
 import {
+  MENSAJE_CONTEXTO_NO_DISPONIBLE,
   MENSAJE_ERROR_CONTEXTO_DOCENTE,
   MENSAJE_ERROR_ENVIO_PROGRAMA,
   MENSAJE_ERROR_PDF_PROGRAMA,
@@ -55,9 +57,14 @@ export class ProgramasMateriaHttpService extends ProgramasMateriaService {
         })),
       })),
       catchError((error: HttpErrorResponse) => {
-        // 404 = este usuario no es docente. No es un error de red: la
-        // pantalla lo explica con todas las letras. Ver el contrato en
-        // `ProgramasMateriaService.obtenerContextoDocente`.
+        // 404 SIN cuerpo = la ruta no existe en el backend (hoy es así).
+        // No es "no sos docente": se dice lo que pasa de verdad.
+        if (esEndpointInexistente(error)) {
+          return throwError(() => new Error(MENSAJE_CONTEXTO_NO_DISPONIBLE));
+        }
+        // 404 CON cuerpo = el controlador respondió que este usuario no es
+        // docente. No es un error de red: la pantalla lo explica. Ver el
+        // contrato en `ProgramasMateriaService.obtenerContextoDocente`.
         if (error.status === 404) {
           return of(null);
         }
@@ -68,15 +75,13 @@ export class ProgramasMateriaHttpService extends ProgramasMateriaService {
   }
 
   enviarPrograma(programa: ProgramaMateria): Observable<number> {
-    return this.http
-      .post<RespuestaCrearPrograma>(RUTAS_API.programasMateria, programa)
-      .pipe(
-        map((respuesta) => respuesta.idPrograma),
-        catchError((error: HttpErrorResponse) => {
-          console.error('Error al enviar el programa de materia:', error);
-          return throwError(() => new Error(MENSAJE_ERROR_ENVIO_PROGRAMA));
-        }),
-      );
+    return this.http.post<RespuestaCrearPrograma>(RUTAS_API.programasMateria, programa).pipe(
+      map((respuesta) => respuesta.idPrograma),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error al enviar el programa de materia:', error);
+        return throwError(() => new Error(MENSAJE_ERROR_ENVIO_PROGRAMA));
+      }),
+    );
   }
 
   descargarPdf(idPrograma: number): Observable<Blob> {
