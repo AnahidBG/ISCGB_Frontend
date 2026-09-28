@@ -21,7 +21,7 @@ import { UsuarioDetalle } from '../../../core/usuarios/modelos/usuario-detalle';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
-import { notificacionesPorRechazos } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
+import { novedadesDelLegajo } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { TarjetaMetrica } from '../../../shared/ui/tarjeta-metrica/tarjeta-metrica';
@@ -252,16 +252,21 @@ export class MisDocumentos {
   );
 
   /**
-   * El detalle que se despliega al tocar la campana: qué documentos están
-   * rechazados y por qué.
+   * La campana (SCRUM-7): rechazos vigentes, vencidos, faltantes y legajo
+   * completo — ver `novedadesDelLegajo`. Sin `url` en los rechazos: ya
+   * estamos en la pantalla que los muestra.
    *
-   * Sin `url`: ya estamos en la pantalla que los muestra. Con legajo ajeno no
-   * se arma nada — quien revisa no necesita que le avisen de rechazos que
-   * puso él mismo hace dos segundos.
+   * Con legajo ajeno no se arma nada: quien revisa no necesita que le avisen
+   * de rechazos que puso él mismo hace dos segundos.
    */
-  protected readonly notificacionesDetalle = computed(() =>
-    this.esLegajoAjeno() ? [] : notificacionesPorRechazos(this.documentosConOverrides()),
+  private readonly novedades = computed(() =>
+    this.esLegajoAjeno()
+      ? { total: 0, detalle: [] }
+      : novedadesDelLegajo(this.documentosConOverrides(), this.requeridos()),
   );
+
+  protected readonly notificaciones = computed(() => this.novedades().total);
+  protected readonly notificacionesDetalle = computed(() => this.novedades().detalle);
 
   /**
    * Conteos del semáforo, sobre la versión VIGENTE de cada documento. Antes
