@@ -1,3 +1,7 @@
+> ⚠️ **Documento histórico (27/08/2026).** El backend cambió desde entonces
+> (JWT validado, `UseStaticFiles`, certificados, gestión de usuarios). El
+> estado actual está en [`alineacion-sprint-2.md`](alineacion-sprint-2.md).
+
 # Verificación frontend ↔ backend
 
 Fecha: **27/08/2026** · Revisado contra el código fuente real de `ISCGB_Backend`
