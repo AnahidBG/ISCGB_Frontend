@@ -9,6 +9,7 @@ import {
 import { LegajoResumenUsuario } from './modelos/legajo-resumen';
 import { ResumenUsuarioLegajo } from './modelos/resumen-usuario-legajo';
 import { LegajoService, VeredictoLegajo } from './legajo.service';
+import { contarPorEstado } from './resumen-legajo';
 
 /** Cuánto tarda el legajo falso, para ver el estado de carga en pantalla. */
 const DEMORA_SIMULADA_MS = 500;
@@ -227,23 +228,13 @@ export class LegajoMockService extends LegajoService {
    * de `resumen-estado` salen de la misma tabla `legajo`).
    */
   obtenerResumenUsuarios(): Observable<ResumenUsuarioLegajo[]> {
-    const resumen = RESUMEN_INSTITUCIONAL_INVENTADO.map((usuario) => {
-      const aprobados = usuario.documentos.filter((d) => d.estado === 'Aprobado').length;
-      const pendientes = usuario.documentos.filter((d) => d.estado === 'Pendiente').length;
-      const rechazados = usuario.documentos.filter((d) => d.estado === 'Rechazado').length;
-      const total = usuario.documentos.length;
-
-      return {
-        idUsuario: usuario.idUsuario,
-        nombreCompleto: usuario.nombreCompleto,
-        dni: usuario.dni,
-        aprobados,
-        pendientes,
-        rechazados,
-        otros: total - aprobados - pendientes - rechazados,
-        total,
-      };
-    });
+    // Mismo cálculo que `LegajoHttpService`: solo la versión vigente de cada documento.
+    const resumen = RESUMEN_INSTITUCIONAL_INVENTADO.map((usuario) => ({
+      idUsuario: usuario.idUsuario,
+      nombreCompleto: usuario.nombreCompleto,
+      dni: usuario.dni,
+      ...contarPorEstado(usuario.documentos),
+    }));
 
     return of(resumen).pipe(delay(DEMORA_SIMULADA_MS));
   }

@@ -1,5 +1,8 @@
-import { ROLES } from '../auth/modelos/rol';
-import { Sesion, idDeRol } from '../auth/modelos/sesion';
+import { ROLES, RolApi } from '../auth/modelos/rol';
+import { Sesion } from '../auth/modelos/sesion';
+
+/** De mayor a menor exigencia documental. Ver `idRolDocumental`. */
+const ORDEN_DOCUMENTAL = [ROLES.docente, ROLES.alumno, ROLES.secretario, ROLES.director];
 
 /**
  * Con qué rol le pedimos a esta persona su documentación.
@@ -20,10 +23,21 @@ import { Sesion, idDeRol } from '../auth/modelos/sesion';
  * existiera. Quien lo use tiene que contemplar ese caso, no asumir un número.
  */
 export function idRolDocumental(sesion: Sesion | null): number | null {
-  return (
-    idDeRol(sesion, ROLES.docente) ??
-    idDeRol(sesion, ROLES.alumno) ??
-    idDeRol(sesion, ROLES.secretario) ??
-    idDeRol(sesion, ROLES.director)
-  );
+  return idRolDocumentalDe(sesion?.rolesConId ?? []);
+}
+
+/**
+ * Lo mismo que `idRolDocumental`, pero para los roles de CUALQUIER persona,
+ * no de la sesión. Lo usa la revisión de un legajo ajeno: los documentos que
+ * hay que exigirle a la persona revisada dependen de SU rol, no del de
+ * Secretaría o Dirección que la está mirando.
+ */
+export function idRolDocumentalDe(roles: readonly RolApi[]): number | null {
+  for (const nombre of ORDEN_DOCUMENTAL) {
+    const encontrado = roles.find((rol) => rol.nombreRol === nombre);
+    if (encontrado !== undefined) {
+      return encontrado.idRol;
+    }
+  }
+  return null;
 }
