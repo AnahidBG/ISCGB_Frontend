@@ -1,7 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Observable, delay, of, throwError } from 'rxjs';
 import { ROLES } from '../auth/modelos/rol';
+import { DatosEditarUsuario } from './modelos/datos-editar-usuario';
 import { NuevoUsuario } from './modelos/nuevo-usuario';
+import { UsuarioDetalle } from './modelos/usuario-detalle';
 import { UsuarioInstitucional } from './modelos/usuario-institucional';
 import { MENSAJE_USUARIO_DUPLICADO, UsuariosService } from './usuarios.service';
 
@@ -116,6 +118,43 @@ export class UsuariosMockService extends UsuariosService {
       estadoLegajo: null,
     });
 
+    return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  /** Arma un detalle inventado a partir de la fila liviana del listado. */
+  obtener(idUsuario: number): Observable<UsuarioDetalle> {
+    const encontrado = [...USUARIOS_INVENTADOS, ...this.agregados].find(
+      (usuario) => usuario.idUsuario === idUsuario,
+    );
+
+    if (encontrado === undefined) {
+      return throwError(() => new Error('No encontramos a esa persona.')).pipe(
+        delay(DEMORA_SIMULADA_MS),
+      );
+    }
+
+    const [nombre, ...resto] = encontrado.nombreCompleto.split(' ');
+
+    return of({
+      idUsuario: encontrado.idUsuario,
+      dni: encontrado.dni,
+      nombre: nombre ?? '',
+      apellido: resto.join(' '),
+      email: `${encontrado.dni}@iscgb.edu.ar`,
+      telefono: null,
+      telefonoEmergencia: null,
+      lugarNacimiento: null,
+      contactoEmergencia: null,
+      direccion: null,
+      idProvincia: null,
+      fechaNac: null,
+      estadoUsuario: true,
+      roles: [...encontrado.roles],
+    }).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  /** Edición simulada: no persiste nada, solo confirma que "anduvo". */
+  actualizar(_idUsuario: number, _datos: DatosEditarUsuario): Observable<void> {
     return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
   }
 }

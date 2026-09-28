@@ -24,7 +24,7 @@ export const MENSAJE_ERROR_RESUMEN_INSTITUCIONAL =
 export const MENSAJE_ERROR_RESUMEN_USUARIOS =
   'No pudimos traer la lista de personas del instituto. Intentá de nuevo en un momento.';
 
-/** Lo que devuelve `GetLegajosPorUsuario` (`LegajoDetalleDto`). */
+/** Cada fila de `documentos` dentro de lo que devuelve `GetLegajosPorUsuario`. */
 interface LegajoApi {
   idLegajo: number;
   idUsuario: number;
@@ -36,6 +36,23 @@ interface LegajoApi {
   presentadoFisico: boolean | null;
   comentario: string | null;
   auditor: string;
+}
+
+/**
+ * Forma REAL de `GET /api/Legajos/usuario/{id}` (`UsuarioDocumentosDto`).
+ *
+ * ⚠️ Bug real encontrado el 25/09/2026: el endpoint SIEMPRE envuelve los
+ * documentos en este objeto — confirmado con `curl` contra el backend real,
+ * para un usuario con documentos y para uno sin ninguno (`documentos: []`
+ * en los dos casos, nunca un array suelto). El código de acá abajo pedía
+ * `LegajoApi[]` directo y le hacía `.map()`, así que "Mi Legajo" y "Mis
+ * Documentos" rompían con `TypeError: legajos.map is not a function` para
+ * CUALQUIER usuario, siempre — quedaba tapado por el catchError genérico
+ * ("No pudimos traer el legajo"), que se ve igual que un problema de red.
+ */
+interface UsuarioDocumentosApi {
+  nombreCompleto: string | null;
+  documentos: LegajoApi[] | null;
 }
 
 /** Forma real de `GET /api/Legajos/requeridos-por-rol/{idRol}`. */
@@ -80,8 +97,8 @@ export class LegajoHttpService extends LegajoService {
   }
 
   obtenerLegajoDeUsuario(idUsuario: number): Observable<DocumentoLegajo[]> {
-    return this.http.get<LegajoApi[]>(RUTAS_API.legajosPorUsuario(idUsuario)).pipe(
-      map((legajos) => legajos.map(aDocumentoLegajo)),
+    return this.http.get<UsuarioDocumentosApi>(RUTAS_API.legajosPorUsuario(idUsuario)).pipe(
+      map((respuesta) => (respuesta.documentos ?? []).map(aDocumentoLegajo)),
       catchError((error: HttpErrorResponse) => {
         if (error.status === 404) {
           return of([]);
@@ -199,17 +216,35 @@ export class LegajoHttpService extends LegajoService {
   /**
    * Todas las personas del instituto con conteos por estado, sin la lista de
    * documentos. La usa "Ver Legajos" (ver el comentario en `LegajoService`).
+   *
+   * ⚠️ PARCHE (Milena, 25/09/2026): `GET /api/Legajos/resumen-usuarios` NO
+   * EXISTE en el backend — devuelve 404 de la propia infraestructura de
+   * ASP.NET (ruta no mapeada, no un `NotFound()` a propósito del controller).
+   * Confirmado leyendo `LegajoController.cs`: el endpoint nunca se
+   * implementó del lado del backend, a pesar de que el frontend lo pide desde
+   * la reestructuración de "Control de Legajos" del 01/09/2026.
+   *
+   * Efecto real: como `catchError` traduce CUALQUIER 404 en `[]` (para
+   * distinguir "nadie tiene documentos" de un error), Secretaría veía la
+   * lista de "Ver Legajos" completamente vacía — como si nadie hubiera
+   * subido nada, aunque en la base sí estuvieran los documentos. Este era
+   * el bug reportado: "subo un documento y me dice que se subió bien, pero
+   * en Control de Legajos no aparece nada".
+   *
+   * Mientras el backend no agregue el endpoint liviano, uso acá el mismo
+   * criterio que ya tenía `LegajoMockService.obtenerResumenUsuarios()`:
+   * pido `GET /api/Legajos/resumen-estado` (que SÍ existe y trae a todos los
+   * usuarios con su legajo completo) y calculo los conteos en el cliente.
+   * Es más pesado que un endpoint agregado del lado del servidor, pero
+   * funciona HOY sin esperar al equipo de backend. Cuando `resumen-usuarios`
+   * exista de verdad, esta función vuelve a ser una sola llamada directa.
    */
   obtenerResumenUsuarios(): Observable<ResumenUsuarioLegajo[]> {
-    return this.http.get<ResumenUsuarioLegajo[]>(RUTAS_API.legajosResumenUsuarios).pipe(
-      map((resumen) => resumen.map(aResumenUsuarioLegajo)),
-      catchError((error: HttpErrorResponse) => {
-        if (error.status === 404) {
-          return of([]);
-        }
-        console.error('Error al traer la lista de personas del instituto:', error);
-        return throwError(() => new Error(MENSAJE_ERROR_RESUMEN_USUARIOS));
-      }),
+    // `obtenerResumenInstitucional()` ya traduce el 404 de "nadie tiene
+    // documentos" a `[]` y cualquier otro error a un mensaje legible — no
+    // hace falta un `catchError` más acá arriba.
+    return this.obtenerResumenInstitucional().pipe(
+      map((usuarios) => usuarios.map(aResumenUsuarioLegajoDesdeInstitucional)),
     );
   }
 }
@@ -261,18 +296,32 @@ function aLegajoResumenUsuario(usuario: LegajoResumenUsuario): LegajoResumenUsua
 }
 
 /**
- * Normaliza una fila de `resumen-usuarios`, igual criterio que
- * `aLegajoResumenUsuario`: `nombreCompleto` puede llegar vacío.
+ * Arma un `ResumenUsuarioLegajo` (conteos por estado) a partir de un
+ * `LegajoResumenUsuario` (el legajo completo, documento por documento).
+ *
+ * Es el reemplazo de `GET /api/Legajos/resumen-usuarios` mientras ese
+ * endpoint no exista en el backend — ver el comentario en
+ * `obtenerResumenUsuarios()`. Mismo cálculo que ya usaba
+ * `LegajoMockService.obtenerResumenUsuarios()`, para que el día que el
+ * backend agregue el endpoint liviano los conteos den exactamente igual.
  */
-function aResumenUsuarioLegajo(usuario: ResumenUsuarioLegajo): ResumenUsuarioLegajo {
+function aResumenUsuarioLegajoDesdeInstitucional(
+  usuario: LegajoResumenUsuario,
+): ResumenUsuarioLegajo {
+  const documentos = usuario.documentos ?? [];
+  const aprobados = documentos.filter((d) => d.estado === 'Aprobado').length;
+  const pendientes = documentos.filter((d) => d.estado === 'Pendiente').length;
+  const rechazados = documentos.filter((d) => d.estado === 'Rechazado').length;
+  const total = documentos.length;
+
   return {
     idUsuario: usuario.idUsuario,
-    nombreCompleto: usuario.nombreCompleto?.trim() || 'Persona sin nombre cargado',
-    dni: usuario.dni ?? '',
-    aprobados: usuario.aprobados ?? 0,
-    pendientes: usuario.pendientes ?? 0,
-    rechazados: usuario.rechazados ?? 0,
-    otros: usuario.otros ?? 0,
-    total: usuario.total ?? 0,
+    nombreCompleto: usuario.nombreCompleto,
+    dni: usuario.dni,
+    aprobados,
+    pendientes,
+    rechazados,
+    otros: total - aprobados - pendientes - rechazados,
+    total,
   };
 }

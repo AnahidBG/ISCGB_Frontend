@@ -47,6 +47,10 @@ export function roleGuard(...permitidos: readonly string[]): CanActivateFn {
       return true;
     }
 
-    return router.createUrlTree(['/inicio']);
+    // `accesoDenegado=1` para que `/inicio` pueda avisarlo — ver el
+    // criterio de Sprint 2 "Gestión de usuarios y roles": si alguien entra
+    // a una pantalla que no es de su rol, el sistema tiene que decirlo, no
+    // solo redirigir en silencio.
+    return router.createUrlTree(['/inicio'], { queryParams: { accesoDenegado: 1 } });
   };
 }

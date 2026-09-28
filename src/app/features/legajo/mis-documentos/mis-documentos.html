@@ -314,7 +314,19 @@
         class="rounded-2xl border border-borde bg-superficie px-5 py-10 text-center text-sm text-texto-suave"
       >
         @if (filtro() === 'todos') {
-          Todavía no hay nada en tu legajo.
+          <!--
+            "tu legajo" no vale acá cuando es Secretaría o Dirección mirando
+            el legajo de OTRA persona (esLegajoAjeno) — antes decía "tu
+            legajo" sin importar quién mira, así que un secretario abriendo
+            el perfil de alguien sin documentos leía "todavía no hay nada
+            en TU legajo", como si fuera el suyo propio. Bug real
+            encontrado el 25/09/2026 con captura de Control de Legajos.
+          -->
+          @if (esLegajoAjeno()) {
+            Todavía no hay nada en el legajo de esta persona.
+          } @else {
+            Todavía no hay nada en tu legajo.
+          }
         } @else {
           No hay documentos en este estado.
         }

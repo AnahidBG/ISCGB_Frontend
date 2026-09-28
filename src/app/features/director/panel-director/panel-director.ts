@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
@@ -45,7 +45,7 @@ const ACCION_DIRECTOR: AccionPanel = {
  */
 @Component({
   selector: 'app-panel-director',
-  imports: [EstructuraPanel, InsigniaEstado],
+  imports: [EstructuraPanel, InsigniaEstado, RouterLink],
   templateUrl: './panel-director.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

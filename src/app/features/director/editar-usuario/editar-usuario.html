@@ -1,0 +1,303 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Editar Usuario"
+  [subtitulo]="usuario() ? 'Modificando el perfil de ' + usuario()!.nombre + ' ' + usuario()!.apellido + '.' : ''"
+  volverUrl="/director/panel"
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <div class="mx-auto max-w-3xl">
+    @if (cargando()) {
+      <app-pantalla-carga tamano="md" mensaje="Cargando los datos de la persona…" />
+    } @else if (errorCarga(); as mensaje) {
+      <div class="rounded-2xl border border-borde bg-superficie px-5 py-10 text-center sm:px-8 sm:py-12">
+        <p class="text-sm text-rechazado" role="alert">{{ mensaje }}</p>
+        <button
+          type="button"
+          class="mt-5 rounded-full border border-principal px-6 py-3 text-sm font-semibold text-principal transition-colors hover:bg-principal-suave"
+          (click)="volverAlPanel()"
+        >
+          Volver al panel
+        </button>
+      </div>
+    } @else if (guardadoConExito()) {
+      <!--
+        El texto exacto que pide el criterio de Sprint 2: "El perfil del
+        usuario ha sido actualizado correctamente".
+      -->
+      <div class="rounded-2xl border border-borde bg-superficie px-5 py-10 text-center sm:px-8 sm:py-12">
+        <span
+          class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-aprobado/10 text-aprobado"
+        >
+          <app-icono nombre="aprobado" class="h-8 w-8" />
+        </span>
+
+        <h2 class="mt-5 text-xl font-bold text-principal">
+          El perfil del usuario ha sido actualizado correctamente
+        </h2>
+
+        <div class="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
+          <button
+            type="button"
+            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro"
+            (click)="volverAlPanel()"
+          >
+            Volver al panel
+          </button>
+        </div>
+      </div>
+    } @else {
+      <form
+        class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
+        [formGroup]="formulario"
+        (submit)="$event.preventDefault(); guardar()"
+      >
+        @if (error(); as mensaje) {
+          <p
+            role="alert"
+            class="mb-6 rounded-xl bg-rechazado/10 px-4 py-3 text-sm leading-relaxed text-rechazado"
+          >
+            {{ mensaje }}
+          </p>
+        }
+
+        <!-- ── Datos de la persona ─────────────────────────────────────── -->
+        <fieldset>
+          <legend class="text-base font-bold text-principal">Datos de la persona</legend>
+
+          <div class="mt-4 grid gap-5 sm:grid-cols-2">
+            <p class="flex flex-col gap-1.5">
+              <label for="nombre" class="text-sm font-medium text-texto">
+                Nombre <span aria-hidden="true" class="text-rechazado">*</span>
+                <span class="sr-only">(obligatorio)</span>
+              </label>
+              <input
+                id="nombre"
+                type="text"
+                formControlName="nombre"
+                autocomplete="off"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+              />
+              @if (errorNombre; as mensaje) {
+                <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+              }
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="apellido" class="text-sm font-medium text-texto">
+                Apellido <span aria-hidden="true" class="text-rechazado">*</span>
+                <span class="sr-only">(obligatorio)</span>
+              </label>
+              <input
+                id="apellido"
+                type="text"
+                formControlName="apellido"
+                autocomplete="off"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+              />
+              @if (errorApellido; as mensaje) {
+                <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+              }
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <span class="text-sm font-medium text-texto">DNI</span>
+              <span
+                class="w-full rounded-xl border border-borde bg-humo px-4 py-3 text-sm text-texto-suave"
+              >
+                {{ usuario()?.dni }}
+              </span>
+              <span class="text-xs text-texto-suave">
+                El DNI no se puede cambiar: es con lo que esta persona inicia sesión.
+              </span>
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="email" class="text-sm font-medium text-texto">
+                Correo electrónico <span aria-hidden="true" class="text-rechazado">*</span>
+                <span class="sr-only">(obligatorio)</span>
+              </label>
+              <input
+                id="email"
+                type="email"
+                formControlName="email"
+                autocomplete="off"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+              />
+              @if (errorEmail; as mensaje) {
+                <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+              }
+            </p>
+          </div>
+        </fieldset>
+
+        <!-- ── Roles ───────────────────────────────────────────────────── -->
+        <fieldset class="mt-8 border-t border-borde pt-6">
+          <legend class="text-base font-bold text-principal">
+            Permisos <span aria-hidden="true" class="text-rechazado">*</span>
+            <span class="sr-only">(obligatorio)</span>
+          </legend>
+          <p class="mt-1 text-sm text-texto-suave">
+            Se puede elegir más de uno: en el instituto hay quien dirige y además da clase.
+          </p>
+
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            @for (opcion of opcionesDeRol; track opcion.rol) {
+              <label
+                class="flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors"
+                [class.border-principal]="estaElegido(opcion.rol)"
+                [class.bg-principal-suave]="estaElegido(opcion.rol)"
+                [class.border-borde]="!estaElegido(opcion.rol)"
+                [class.hover:bg-fondo-panel]="!estaElegido(opcion.rol)"
+              >
+                <input
+                  type="checkbox"
+                  class="mt-0.5 h-4 w-4 shrink-0 rounded border-borde accent-principal"
+                  [checked]="estaElegido(opcion.rol)"
+                  (change)="alternarRol(opcion.rol)"
+                />
+                <span class="min-w-0">
+                  <span class="block text-sm font-semibold text-texto">{{ opcion.rol }}</span>
+                  <span class="mt-0.5 block text-xs leading-relaxed text-texto-suave">
+                    {{ opcion.descripcion }}
+                  </span>
+                </span>
+              </label>
+            }
+          </div>
+
+          @if (errorRoles; as mensaje) {
+            <p role="alert" class="mt-3 text-sm text-rechazado">{{ mensaje }}</p>
+          }
+        </fieldset>
+
+        <!-- ── Estado (alta / baja) ───────────────────────────────────── -->
+        <fieldset class="mt-8 border-t border-borde pt-6">
+          <legend class="text-base font-bold text-principal">Estado</legend>
+          <p class="mt-1 text-sm text-texto-suave">
+            Dar de baja NO borra a la persona ni su documentación: solo le bloquea el ingreso.
+          </p>
+
+          <label
+            class="mt-4 flex items-start gap-3 rounded-xl border border-borde p-4 sm:max-w-sm"
+          >
+            <input
+              type="checkbox"
+              formControlName="activo"
+              class="mt-0.5 h-4 w-4 shrink-0 rounded border-borde accent-principal"
+            />
+            <span class="min-w-0">
+              <span class="block text-sm font-semibold text-texto">Puede iniciar sesión</span>
+              <span class="mt-0.5 block text-xs leading-relaxed text-texto-suave">
+                Destildalo para dar de baja a esta persona sin borrar nada.
+              </span>
+            </span>
+          </label>
+        </fieldset>
+
+        <!-- ── Ficha personal (opcional) ───────────────────────────────── -->
+        <fieldset class="mt-8 border-t border-borde pt-6">
+          <legend class="text-base font-bold text-principal">Ficha personal</legend>
+          <p class="mt-1 text-sm text-texto-suave">Todo lo de acá abajo es opcional.</p>
+
+          <div class="mt-4 grid gap-5 sm:grid-cols-2">
+            <p class="flex flex-col gap-1.5">
+              <label for="telefono" class="text-sm font-medium text-texto">Teléfono</label>
+              <input
+                id="telefono"
+                type="tel"
+                formControlName="telefono"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+              />
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="fechaNacimiento" class="text-sm font-medium text-texto">
+                Fecha de nacimiento
+              </label>
+              <input
+                id="fechaNacimiento"
+                type="date"
+                formControlName="fechaNacimiento"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+              />
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="direccion" class="text-sm font-medium text-texto">Dirección</label>
+              <input
+                id="direccion"
+                type="text"
+                formControlName="direccion"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+              />
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="lugarNacimiento" class="text-sm font-medium text-texto">
+                Lugar de nacimiento
+              </label>
+              <input
+                id="lugarNacimiento"
+                type="text"
+                formControlName="lugarNacimiento"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+              />
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="contactoEmergencia" class="text-sm font-medium text-texto">
+                Contacto de emergencia
+              </label>
+              <input
+                id="contactoEmergencia"
+                type="text"
+                formControlName="contactoEmergencia"
+                placeholder="Nombre de la persona"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+              />
+            </p>
+
+            <p class="flex flex-col gap-1.5">
+              <label for="telefonoEmergencia" class="text-sm font-medium text-texto">
+                Teléfono de emergencia
+              </label>
+              <input
+                id="telefonoEmergencia"
+                type="tel"
+                formControlName="telefonoEmergencia"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+              />
+            </p>
+          </div>
+        </fieldset>
+
+        <div
+          class="mt-8 flex flex-col-reverse items-stretch gap-3 border-t border-borde pt-6 sm:flex-row sm:justify-end"
+        >
+          <button
+            type="button"
+            class="rounded-full px-6 py-3 text-sm font-medium text-texto-suave transition-colors hover:bg-fondo-panel"
+            (click)="volverAlPanel()"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            [disabled]="enviando()"
+            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            @if (enviando()) {
+              Guardando…
+            } @else {
+              Guardar cambios
+            }
+          </button>
+        </div>
+      </form>
+    }
+  </div>
+</app-estructura-panel>
