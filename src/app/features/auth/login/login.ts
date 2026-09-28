@@ -1,5 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
+import { map } from 'rxjs';
+import { PARAMETRO_SESION_VENCIDA } from '../../../core/auth/auth.guard';
 import { AuthService } from '../../../core/auth/auth.service';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { CredencialesLogin } from '../../../core/auth/modelos/credenciales-login';
@@ -33,6 +36,17 @@ import { PanelBienvenida } from './partes/panel-bienvenida/panel-bienvenida';
 export class Login {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
+  /**
+   * `true` cuando se llegó acá porque el token venció (lo manda `authGuard`
+   * o `sesionInterceptor`). Sin este aviso la persona aparece en el login
+   * sin entender por qué la sacaron.
+   */
+  protected readonly sesionVencida = toSignal(
+    this.route.queryParamMap.pipe(map((params) => params.get(PARAMETRO_SESION_VENCIDA) === '1')),
+    { initialValue: false },
+  );
 
   /** `true` mientras esperamos la respuesta del servidor. */
   protected readonly cargando = signal(false);
