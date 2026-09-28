@@ -60,7 +60,9 @@
         </span>
         <div class="min-w-0">
           <p class="text-sm font-semibold text-texto">Solicitar certificado</p>
-          <p class="mt-0.5 text-xs text-texto-suave">Certificado de alumno regular, con o sin horarios</p>
+          <p class="mt-0.5 text-xs text-texto-suave">
+            Certificado de alumno regular, con o sin horarios
+          </p>
         </div>
       </div>
 
@@ -128,8 +130,42 @@
     </table>
   </div>
 
-  <p class="mt-5 text-sm text-texto-suave sm:mt-6">
-    Justificativos de inasistencia, reconocimiento de saberes y el enlace al portal SIAADE
-    todavía no están disponibles — los vamos a sumar pronto.
+  <div class="mt-5 grid gap-4 sm:mt-6 sm:grid-cols-2">
+    <a
+      routerLink="/alumno/reconocimiento-saberes"
+      class="flex items-center gap-3 rounded-2xl border border-borde bg-superficie p-5 transition-colors hover:bg-fondo-panel"
+    >
+      <span
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-fondo-panel text-texto-suave"
+      >
+        <app-icono nombre="legajo" class="h-5 w-5" />
+      </span>
+      <span class="min-w-0">
+        <span class="block text-sm font-semibold text-texto">Reconocimiento de saberes</span>
+        <span class="mt-0.5 block text-xs text-texto-suave">
+          Pedí que te reconozcan una materia aprobada en otra institución.
+        </span>
+      </span>
+    </a>
+    <a
+      routerLink="/justificativos/cargar"
+      class="flex items-center gap-3 rounded-2xl border border-borde bg-superficie p-5 transition-colors hover:bg-fondo-panel"
+    >
+      <span
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-fondo-panel text-texto-suave"
+      >
+        <app-icono nombre="documento" class="h-5 w-5" />
+      </span>
+      <span class="min-w-0">
+        <span class="block text-sm font-semibold text-texto">Justificar inasistencia</span>
+        <span class="mt-0.5 block text-xs text-texto-suave">
+          Cargá el certificado y la nota aclaratoria.
+        </span>
+      </span>
+    </a>
+  </div>
+
+  <p class="mt-5 text-xs text-texto-suave sm:mt-6">
+    El enlace al portal SIAADE llega en el Sprint 3.
   </p>
 </app-estructura-panel>

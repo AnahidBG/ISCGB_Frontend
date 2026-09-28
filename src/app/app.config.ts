@@ -15,6 +15,8 @@ import { JustificativosHttpService } from './core/justificativos/justificativos-
 import { LegajoService } from './core/legajos/legajo.service';
 import { LegajoHttpService } from './core/legajos/legajo-http.service';
 import { ProgramasMateriaService } from './core/programas-materia/programas-materia.service';
+import { ReconocimientoSaberesService } from './core/reconocimiento-saberes/reconocimiento-saberes.service';
+import { ReconocimientoSaberesHttpService } from './core/reconocimiento-saberes/reconocimiento-saberes-http.service';
 import { ProgramasMateriaHttpService } from './core/programas-materia/programas-materia-http.service';
 import { UsuariosService } from './core/usuarios/usuarios.service';
 import { UsuariosHttpService } from './core/usuarios/usuarios-http.service';
@@ -45,6 +47,7 @@ export const appConfig: ApplicationConfig = {
     { provide: ProgramasMateriaService, useClass: ProgramasMateriaHttpService },
     { provide: JustificativosService, useClass: JustificativosHttpService },
     { provide: CertificadosService, useClass: CertificadosHttpService },
+    { provide: ReconocimientoSaberesService, useClass: ReconocimientoSaberesHttpService },
 
     // UsuariosHttpService: GET /api/Usuarios (real) y la gestión de usuarios
     // contra /api/UsuariosAdmin (rama CargaDeUsuarios del backend, todavía no

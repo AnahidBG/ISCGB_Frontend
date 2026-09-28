@@ -68,12 +68,17 @@ export function enlacesPorSesion(
   }
 
   // Autogestión estudiantil (Sprint 2): SCRUM-121 pide que el certificado
-  // "figure en el menú".
+  // "figure en el menú", y lo mismo el reconocimiento de saberes (SCRUM-174).
   if (tieneAlgunRol(sesion, [ROLES.alumno])) {
     enlaces.push({
       etiqueta: 'Certificado alumno regular',
       url: '/alumno/certificado/regular',
       icono: 'documento',
+    });
+    enlaces.push({
+      etiqueta: 'Reconocimiento de saberes',
+      url: '/alumno/reconocimiento-saberes',
+      icono: 'legajo',
     });
   }
 

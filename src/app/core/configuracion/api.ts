@@ -4,8 +4,7 @@ export const RUTAS_API = {
   login: `${URL_BASE_API}/api/Auth/login`,
   programasMateria: `${URL_BASE_API}/api/ProgramasMateria`,
 
-  pdfPrograma: (idPrograma: number) =>
-    `${URL_BASE_API}/api/ProgramasMateria/${idPrograma}/pdf`,
+  pdfPrograma: (idPrograma: number) => `${URL_BASE_API}/api/ProgramasMateria/${idPrograma}/pdf`,
 
   // Quién es el docente (su IdDocente) y qué materias dicta. Lo pide el
   // formulario de entrega del programa al abrirse, para no tener que pedir
@@ -71,6 +70,11 @@ export const RUTAS_API = {
 
   /** Baja lógica (estado inactivo). Sin body. */
   bajaUsuario: (id: number) => `${URL_BASE_API}/api/UsuariosAdmin/baja/${id}`,
+
+  // --- Reconocimiento de saberes (SCRUM-30) ---
+  // ⚠️ PROPUESTO: el backend todavía no tiene controlador. Ver
+  // docs/contrato-reconocimiento-saberes.md.
+  reconocimientoSaberes: `${URL_BASE_API}/api/ReconocimientoSaberes`,
 
   // --- Certificados (ISCGB_Backend/Controllers/CertificadosController.cs) ---
   // `[Authorize]`: el alumno sale del propio token (claim NameIdentifier), no

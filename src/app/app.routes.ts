@@ -202,6 +202,18 @@ export const routes: Routes = [
       ),
   },
   {
+    // Solicitud de reconocimiento de saberes — Sprint 2 (SCRUM-30). El
+    // endpoint todavía no existe en el backend: la pantalla lo avisa. Ver
+    // docs/contrato-reconocimiento-saberes.md.
+    path: 'alumno/reconocimiento-saberes',
+    title: 'Reconocimiento de saberes · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.alumno)],
+    loadComponent: () =>
+      import('./features/alumno/reconocimiento-saberes/reconocimiento-saberes').then(
+        (m) => m.ReconocimientoSaberes,
+      ),
+  },
+  {
     // "Próximamente": calendario de mesas de examen (Sprint 3 del roadmap,
     // ver docs/ISCGB-PROJECT.md). Sin roleGuard porque los cuatro roles lo
     // van a usar — Docente y Director/Secretario para las mesas, Alumno para

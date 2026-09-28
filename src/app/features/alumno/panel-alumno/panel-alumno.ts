@@ -30,13 +30,11 @@ const ACCION_ALUMNO: AccionPanel = {
  * Panel del Alumno.
  *
  * Muestra el legajo propio y el progreso de entrega ("Módulo de Salida",
- * ISCGB-PROJECT.md). El resto de lo que le corresponde a Alumno —
- * justificativos de inasistencia, solicitud de reconocimiento de saberes,
- * enlace al portal SIAADE — todavía no tiene pantalla propia ni endpoint,
- * así que no se inventa un botón que no lleva a ningún lado (mismo criterio
- * que se usó con "Solicitar acceso" en el login: si no hay a dónde
- * mandarlo, es peor que no tener el botón). Quedan listados como
- * pendientes en docs/alcance-paneles-roles.md.
+ * ISCGB-PROJECT.md), y los accesos de autogestión estudiantil del Sprint 2:
+ * certificado de alumno regular (con y sin horario), reconocimiento de
+ * saberes y justificar inasistencia. El enlace a SIAADE es del Sprint 3 y
+ * todavía no tiene URL definida con el instituto, así que no se inventa un
+ * botón que no lleva a ningún lado.
  *
  * El legajo es real: sale de `GET /api/Legajos/usuario/{id}`.
  */
