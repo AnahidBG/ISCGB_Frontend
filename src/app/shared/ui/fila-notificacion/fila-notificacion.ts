@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { NotificacionPanel } from '../../../core/notificaciones/modelos/notificacion-panel';
+import { Icono } from '../icono/icono';
 
 type Tono = NonNullable<NotificacionPanel['tono']>;
 
@@ -23,7 +24,7 @@ const CLASE_PUNTO_POR_TONO: Record<Tono, string> = {
  */
 @Component({
   selector: 'app-fila-notificacion',
-  imports: [NgTemplateOutlet, RouterLink],
+  imports: [NgTemplateOutlet, RouterLink, Icono],
   templateUrl: './fila-notificacion.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -38,6 +39,9 @@ export class FilaNotificacion {
 
   /** Se tocó la fila (solo pasa si es un enlace). */
   readonly seleccionada = output<void>();
+
+  /** Se descartó esta notificación de la vista actual. */
+  readonly eliminada = output<NotificacionPanel>();
 
   protected readonly clasePunto = computed(
     () => CLASE_PUNTO_POR_TONO[this.notificacion().tono ?? 'pendiente'],

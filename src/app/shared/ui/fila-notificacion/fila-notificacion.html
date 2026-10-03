@@ -2,20 +2,31 @@
   Con `url` la fila lleva a algún lado; sin `url` es solo el aviso. Las dos
   ramas se dibujan igual para que la lista se lea pareja.
 -->
-@if (notificacion().url; as destino) {
-  <a
-    [attr.role]="rolEnlace()"
-    [routerLink]="destino"
-    class="flex gap-3 px-4 py-3 transition-colors hover:bg-fondo-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-principal"
-    (click)="seleccionada.emit()"
+<div class="flex items-start gap-2 px-4 py-3 hover:bg-fondo-panel">
+  @if (notificacion().url; as destino) {
+    <a
+      [attr.role]="rolEnlace()"
+      [routerLink]="destino"
+      class="flex min-w-0 flex-1 gap-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-principal"
+      (click)="seleccionada.emit()"
+    >
+      <ng-container *ngTemplateOutlet="contenido" />
+    </a>
+  } @else {
+    <div class="flex min-w-0 flex-1 gap-3">
+      <ng-container *ngTemplateOutlet="contenido" />
+    </div>
+  }
+
+  <button
+    type="button"
+    class="shrink-0 rounded p-1 text-texto-suave transition-colors hover:bg-fondo-panel hover:text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+    [attr.aria-label]="'Descartar notificación: ' + notificacion().titulo"
+    (click)="eliminada.emit(notificacion())"
   >
-    <ng-container *ngTemplateOutlet="contenido" />
-  </a>
-} @else {
-  <div class="flex gap-3 px-4 py-3">
-    <ng-container *ngTemplateOutlet="contenido" />
-  </div>
-}
+    <app-icono nombre="cerrar" class="h-4 w-4" />
+  </button>
+</div>
 
 <ng-template #contenido>
   <span

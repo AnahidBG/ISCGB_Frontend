@@ -38,7 +38,11 @@
   <ul class="min-h-0 flex-1 divide-y divide-borde overflow-y-auto">
     @for (novedad of notificaciones(); track $index) {
       <li>
-        <app-fila-notificacion [notificacion]="novedad" (seleccionada)="cerrar.emit()" />
+        <app-fila-notificacion
+          [notificacion]="novedad"
+          (seleccionada)="cerrar.emit()"
+          (eliminada)="eliminada.emit($event)"
+        />
       </li>
     }
   </ul>
