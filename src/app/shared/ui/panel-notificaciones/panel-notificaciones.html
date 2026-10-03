@@ -21,6 +21,14 @@
         >
           {{ cantidad() }}
         </span>
+        <button
+          type="button"
+          class="rounded-lg border border-aprobado/40 bg-aprobado/10 px-2.5 py-1 text-xs font-semibold text-aprobado transition-colors hover:bg-aprobado/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aprobado"
+          aria-label="Marcar todas las notificaciones como leídas"
+          (click)="marcarLeidas.emit()"
+        >
+          Marcar como leído
+        </button>
       }
       <button
         #botonCerrar

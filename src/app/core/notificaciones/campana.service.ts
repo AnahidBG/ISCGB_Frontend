@@ -29,6 +29,11 @@ interface Dependencias {
   justificativos: JustificativosService;
 }
 
+function pesoNotificacion(notificacion: NotificacionPanel): number {
+  const coincidencia = notificacion.detalle?.match(/^(\d+) documentos? esperan/) ?? null;
+  return coincidencia === null ? 1 : Number(coincidencia[1]);
+}
+
 /**
  * De dónde sale la campana para un rol. `null` en el observable = "no pude
  * armarla": el servicio deja lo que ya tenía en vez de pisarlo con un cero
@@ -98,6 +103,45 @@ interface Contenido {
 }
 
 const SIN_CONTENIDO: Contenido = { idUsuario: null, total: 0, detalle: [] };
+const CLAVE_LEIDAS = 'iscgb.notificaciones.leidas';
+
+function claveNotificacion(notificacion: NotificacionPanel): string {
+  return JSON.stringify([
+    notificacion.titulo,
+    notificacion.detalle ?? '',
+    notificacion.url ?? '',
+    notificacion.tono ?? 'pendiente',
+  ]);
+}
+
+function claveLeidas(idUsuario: number): string {
+  return `${CLAVE_LEIDAS}.${idUsuario}`;
+}
+
+function leidasGuardadas(idUsuario: number): Set<string> {
+  try {
+    const valor = sessionStorage.getItem(claveLeidas(idUsuario));
+    if (valor === null) {
+      return new Set();
+    }
+
+    const guardadas: unknown = JSON.parse(valor);
+    return Array.isArray(guardadas)
+      ? new Set(guardadas.filter((item): item is string => typeof item === 'string'))
+      : new Set();
+  } catch (error) {
+    console.error('No se pudieron recuperar las notificaciones leídas:', error);
+    return new Set();
+  }
+}
+
+function guardarLeidas(idUsuario: number, leidas: Set<string>): void {
+  try {
+    sessionStorage.setItem(claveLeidas(idUsuario), JSON.stringify([...leidas]));
+  } catch (error) {
+    console.error('No se pudieron guardar las notificaciones leídas:', error);
+  }
+}
 
 /**
  * La campana de notificaciones de LA SESIÓN, igual en todas las pantallas.
@@ -133,30 +177,44 @@ const SIN_CONTENIDO: Contenido = { idUsuario: null, total: 0, detalle: [] };
  */
 @Injectable({ providedIn: 'root' })
 export class CampanaService {
-  private readonly auth = inject(AuthService);
-  private readonly dependencias: Dependencias = {
-    legajos: inject(LegajoService),
-    justificativos: inject(JustificativosService),
-  };
+  private readonly auth = inject(AuthService, { optional: true });
+  private readonly legajos = inject(LegajoService, { optional: true });
+  private readonly justificativos = inject(JustificativosService, { optional: true });
+  private readonly dependencias: Dependencias | null =
+    this.legajos !== null && this.justificativos !== null
+      ? { legajos: this.legajos, justificativos: this.justificativos }
+      : null;
 
   private readonly contenido = signal<Contenido>(SIN_CONTENIDO);
+  private readonly leidas = signal<Set<string>>(new Set());
 
   /** El contenido, solo si es de la sesión que está abierta AHORA. */
   private readonly vigente = computed(() => {
     const contenido = this.contenido();
-    const sesion = this.auth.sesion();
+    const sesion = this.auth?.sesion() ?? null;
     return sesion !== null && contenido.idUsuario === sesion.idUsuario ? contenido : SIN_CONTENIDO;
   });
 
   /** Cuántas novedades hay: lo que enciende el puntito rojo. */
-  readonly total: Signal<number> = computed(() => this.vigente().total);
+  readonly total: Signal<number> = computed(
+    () =>
+      Math.max(
+        0,
+        this.vigente().total -
+          this.vigente().detalle
+            .filter((notificacion) => this.leidas().has(claveNotificacion(notificacion)))
+            .reduce((total, notificacion) => total + pesoNotificacion(notificacion), 0),
+      ),
+  );
 
   /**
    * TODAS las novedades, una por una. Recortarlas para el desplegable es cosa
    * de la presentación (`EstructuraPanel`), que además las muestra completas
    * en su panel lateral.
    */
-  readonly detalle: Signal<NotificacionPanel[]> = computed(() => this.vigente().detalle);
+  readonly detalle: Signal<NotificacionPanel[]> = computed(() =>
+    this.vigente().detalle.filter((notificacion) => !this.leidas().has(claveNotificacion(notificacion))),
+  );
 
   private carga: Subscription | null = null;
   private cargandoPara: number | null = null;
@@ -166,15 +224,16 @@ export class CampanaService {
    * llama al crear cada pantalla y no tiene nada que contestarle.
    */
   refrescar(): void {
-    const sesion = this.auth.sesion();
+    const sesion = this.auth?.sesion() ?? null;
     const fuente = sesion === null ? undefined : FUENTE_POR_ROL.get(rolPrincipalDe(sesion));
 
-    if (sesion === null || fuente === undefined) {
+    if (sesion === null || fuente === undefined || this.dependencias === null) {
       this.cancelarCarga();
       this.contenido.set(SIN_CONTENIDO);
       return;
     }
 
+    this.leidas.set(leidasGuardadas(sesion.idUsuario));
     if (this.cargandoPara === sesion.idUsuario) {
       return;
     }
@@ -200,7 +259,7 @@ export class CampanaService {
       .subscribe({
         next: (novedades) => {
           // `null` = no se pudo armar: se queda lo que había.
-          if (novedades !== null && this.auth.sesion()?.idUsuario === idUsuario) {
+          if (novedades !== null && this.auth?.sesion()?.idUsuario === idUsuario) {
             this.contenido.set({ idUsuario, total: novedades.total, detalle: novedades.detalle });
           }
         },
@@ -210,6 +269,32 @@ export class CampanaService {
 
     // Con un observable síncrono `finalize` ya corrió: no hay nada que guardar.
     this.carga = ultima ? null : suscripcion;
+  }
+
+  /** Oculta todas las novedades actuales y las conserva durante la sesión. */
+  marcarTodasComoLeidas(): void {
+    const sesion = this.auth?.sesion() ?? null;
+    const novedades = this.vigente().detalle;
+    if (sesion === null || novedades.length === 0) {
+      return;
+    }
+
+    const leidas = new Set(this.leidas());
+    novedades.forEach((notificacion) => leidas.add(claveNotificacion(notificacion)));
+    this.leidas.set(leidas);
+    guardarLeidas(sesion.idUsuario, leidas);
+  }
+
+  marcarComoLeida(notificacion: NotificacionPanel): void {
+    const sesion = this.auth?.sesion() ?? null;
+    if (sesion === null) {
+      return;
+    }
+
+    const leidas = new Set(this.leidas());
+    leidas.add(claveNotificacion(notificacion));
+    this.leidas.set(leidas);
+    guardarLeidas(sesion.idUsuario, leidas);
   }
 
   private cancelarCarga(): void {

@@ -86,7 +86,10 @@ describe('CampanaService', () => {
     llamadas.justificativos.mock.calls.length;
 
   beforeEach(() => {
+    TestBed.resetTestingModule();
     sesion.set(null);
+    sessionStorage.clear();
+    vi.spyOn(sessionStorage, 'getItem').mockReturnValue(null);
     Object.values(llamadas).forEach((fn) => fn.mockClear());
 
     legajoPropio = () => of([]);
@@ -125,6 +128,10 @@ describe('CampanaService', () => {
         },
       ],
     });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('arranca vacía', () => {
