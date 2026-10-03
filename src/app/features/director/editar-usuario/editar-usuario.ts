@@ -33,7 +33,7 @@ const ORDEN_DE_ROLES: readonly Rol[] = [
  * (`FormularioPerfilUsuario`) en modo edición: DNI y rol fijos.
  *
  *   · Precarga: `GET /api/Usuarios/{id}` (real, en `main`).
- *   · Guardar: `PUT /api/UsuariosAdmin/modificar/{id}` (rama `CargaDeUsuarios`).
+ *   · Guardar: `PUT /api/UsuariosAdmin/modificar/{id}`.
  *     Muestra "El perfil de X ha sido actualizado correctamente" (SCRUM-139).
  *   · Baja: `PUT /api/UsuariosAdmin/baja/{id}`. Es un cambio de estado a
  *     inactivo, nunca un borrado: los datos y la documentación histórica

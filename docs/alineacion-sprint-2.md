@@ -1,8 +1,8 @@
 # Alineación Sprint 2 — frontend ↔ backend ↔ Jira
 
-**Fecha:** 28/09/2026 · **Sprint:** septiembre (01/09 – 30/09/2026)
-Revisado contra: Jira (proyecto SCRUM), `ISCGB_Backend` rama `main`
-(`3b975cc`) y rama `CargaDeUsuarios` (`d455a51`, sin mergear).
+**Fecha:** 03/10/2026 · **Sprint:** septiembre (01/09 – 30/09/2026)
+Revisado contra: Jira (proyecto SCRUM) e `ISCGB_Backend` rama `main`
+(`be92dcf` para gestión de usuarios).
 
 El backend no se toca desde el frontend: cuando algo falta del otro lado, la
 pantalla lo dice con todas las letras y queda anotado acá abajo.
@@ -13,7 +13,7 @@ pantalla lo dice con todas las letras y queda anotado acá abajo.
 
 | Historia | Front (subtarea) | Estado en el frontend | Backend que usa |
 |---|---|---|---|
-| **SCRUM-16** Gestión de usuarios y roles (Dirección) | SCRUM-130 | ✅ Alta, modificación y baja; rol único; CUIL/género/afiliación/provincia; director suplente; mensaje "El perfil de X ha sido actualizado correctamente"; acceso denegado con cartel; vencimiento del token verificado al navegar | `GET /api/Usuarios`, `GET /api/Usuarios/{id}` (main) · `POST /api/UsuariosAdmin/alta`, `PUT .../modificar/{id}`, `PUT .../baja/{id}` (**rama CargaDeUsuarios**) |
+| **SCRUM-16** Gestión de usuarios y roles (Dirección) | SCRUM-130 | ✅ Alta, modificación, baja y reactivación; cambio de rol; CUIL/género/afiliación/provincia; director suplente; mensaje "El perfil de X ha sido actualizado correctamente"; acceso denegado con cartel; vencimiento del token verificado al navegar | `GET /api/Usuarios`, `GET /api/Usuarios/{id}`, `POST /api/UsuariosAdmin/alta`, `PUT .../modificar/{id}`, `PUT .../baja/{id}`, `PUT .../alta/{id}` |
 | **SCRUM-19** Revisión y cambio de estado del legajo docente (Secretario y Dirección) | SCRUM-161 | ✅ Aprobar / rechazar por documento, motivo obligatorio al rechazar, "Presentado físicamente" visible, faltantes y progreso del revisado, filtro Docentes / Alumnos, conteos sobre la versión vigente | `GET /api/Legajos/resumen-estado`, `GET /api/Legajos/usuario/{id}`, `PUT /api/Legajos/auditar/{id}`, `GET /api/Legajos/requeridos-por-rol/{idRol}` |
 | **SCRUM-7** Notificación de documentación faltante (Sistema) | SCRUM-148 | ✅ Campana con rechazos vigentes, anuales vencidos, obligatorios faltantes y "¡Tu legajo está completo!" (también como cartel). ❌ Mail y frecuencia de avisos: son del backend | Los mismos de Legajos |
 | **SCRUM-12** Certificado de alumno regular (Estudiante) | SCRUM-119 | ✅ Con y sin horario, generado por el backend con sello; enlace en el menú | `GET /api/Certificados/alumno-regular`, `.../alumno-regular-horario` |
@@ -53,40 +53,36 @@ pantalla lo dice con todas las letras y queda anotado acá abajo.
 
 Ordenados por impacto en el Sprint 2.
 
-1. **Mergear `CargaDeUsuarios` a `main`.** Sin eso, alta/modificación/baja
-   responden "no habilitado".
-2. **Contraseña del alta:** `PasswordHash = "AsignarContraseñaTemporal"` no es
+1. **Contraseña del alta:** `PasswordHash = "AsignarContraseñaTemporal"` no es
    un hash BCrypt; el login de esa persona va a dar 500 (`BCrypt.Verify`
    tira excepción). Generar una contraseña inicial real.
-3. **`[Authorize(Roles = ...)]`**: está comentado en `UsuariosAdminController`
+2. **`[Authorize(Roles = ...)]`**: está comentado en `UsuariosAdminController`
    y falta en Usuarios, Legajos, Justificativos y ProgramasMateria. Hoy
    cualquiera con Postman puede crear usuarios o aprobar legajos. (Regla #5.)
-4. **`GET /api/Provincias`** (y datos semilla en `Pais` / `Provincia`):
+3. **`GET /api/Provincias`** (y datos semilla en `Pais` / `Provincia`):
    `idProvincia` es obligatorio con clave foránea. El frontend usa una lista
    provisoria 1..24 en orden alfabético (`core/usuarios/modelos/provincia.ts`).
-5. **Email al rechazar** (`IEmailService`) en `AuditarLegajo` y
+4. **Email al rechazar** (`IEmailService`) en `AuditarLegajo` y
    `AuditarJustificativo`. (Regla #4.)
-6. **`presentadoFisico` en `AuditoriaLegajoDto`** para el check de
+5. **`presentadoFisico` en `AuditoriaLegajoDto`** para el check de
    documentación física (SCRUM-167/171).
-7. **`GET /api/Usuarios/{id}`**: devolver CUIL, género, afiliación y
+6. **`GET /api/Usuarios/{id}`**: devolver CUIL, género, afiliación y
    `DirectorSuplente`. Sin el último, editar a un suplente sin volver a
    tildar la casilla le quita la suplencia.
-8. **`PUT /api/UsuariosAdmin/alta/{id}`** reactiva cuentas dadas de baja.
+7. **`PUT /api/UsuariosAdmin/alta/{id}`** reactiva cuentas dadas de baja.
    `PUT /api/UsuariosAdmin/modificar/{id}` también actualiza el rol enviado
    en `IdRol`.
-9. **`POST /api/ReconocimientoSaberes`** — contrato en
+8. **`POST /api/ReconocimientoSaberes`** — contrato en
    `contrato-reconocimiento-saberes.md`.
-10. **`GET /api/ProgramasMateria/contexto-docente/{idUsuario}`** (Sprint 1):
-    sin esto el docente no puede elegir sus materias en "Entregar programa".
-11. **Validar PDF por contenido** (magic bytes `%PDF-`) en Legajos y
+9. **Validar PDF por contenido** (magic bytes `%PDF-`) en Legajos y
     Justificativos (hoy solo `ContentType` o nada). (Regla #1.)
-12. **Sello del certificado (verificar):** `GeneradorPDFCertificado` lo busca
+10. **Sello del certificado (verificar):** `GeneradorPDFCertificado` lo busca
     en `AppContext.BaseDirectory/wwwroot/images/sello.png` — la carpeta
     `bin/` —, pero el archivo está en `wwwRoot/Images/sello.png` del proyecto
     y el `.csproj` no lo copia a la salida. Si el certificado responde 500,
     es esto. Además, en Linux/Docker las mayúsculas (`wwwRoot`, `Images`)
     no coinciden.
-13. `POST /api/Auth/crear-usuario-prueba` sigue expuesto sin autenticación.
+11. `POST /api/Auth/crear-usuario-prueba` sigue expuesto sin autenticación.
 
 ---
 
@@ -99,7 +95,7 @@ npm start         # http://localhost:4200, contra http://localhost:5231
 ```
 
 Con el backend de `main`: login, paneles, Control de Legajos, revisión,
-certificados y notificaciones funcionan de punta a punta. Gestión de
-usuarios necesita la rama `CargaDeUsuarios`; reconocimiento de saberes
+certificados, notificaciones y gestión de usuarios funcionan de punta a
+punta. Reconocimiento de saberes
 necesita el endpoint nuevo — sin ellos, las pantallas avisan que el
 servidor todavía no lo tiene habilitado.

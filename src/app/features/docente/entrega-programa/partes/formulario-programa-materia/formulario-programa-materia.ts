@@ -53,7 +53,7 @@ type GrupoUnidad = FormGroup<{
  * persona sin que nada avisara: el backend solo valida que el id EXISTA, no
  * que sea el tuyo.
  *
- * Ahora los dos salen de `GET /api/ProgramasMateria/contexto-docente/{id}`,
+ * Ahora los dos salen de `GET /api/ProgramasMaterias/contexto-docente/{id}`,
  * que los resuelve desde la sesión: el `idDocente` llega ya resuelto por
  * `input` y la materia se elige por nombre de una lista. Ver
  * `ContextoDocente`.

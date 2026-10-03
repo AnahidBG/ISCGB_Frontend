@@ -21,7 +21,7 @@ export interface MateriaACargo {
  * nombre de otra persona sin que nada avisara: el backend solo valida que el
  * id EXISTA, no que sea el tuyo.
  *
- * Sale de `GET /api/ProgramasMateria/contexto-docente/{idUsuario}`.
+ * Sale de `GET /api/ProgramasMaterias/contexto-docente/{idUsuario}`.
  */
 export interface ContextoDocente {
   idDocente: number;
