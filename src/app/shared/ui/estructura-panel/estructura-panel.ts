@@ -15,6 +15,7 @@ import { map } from 'rxjs';
 import { PARAMETRO_ACCESO_DENEGADO } from '../../../core/auth/role.guard';
 import { inicialesDe } from '../../../core/comun/texto';
 import { NotificacionPanel } from '../../../core/notificaciones/modelos/notificacion-panel';
+import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { FilaNotificacion } from '../fila-notificacion/fila-notificacion';
 import { Icono, NombreIcono } from '../icono/icono';
 import { PanelNotificaciones } from '../panel-notificaciones/panel-notificaciones';
@@ -46,15 +47,6 @@ const CLAVE_COLAPSADO = 'iscgb.panel.colapsado';
  * en `core/`: `CampanaService` entrega la lista completa.
  */
 const MAXIMO_NOTIFICACIONES_EN_DESPLEGABLE = 5;
-
-function claveNotificacion(notificacion: NotificacionPanel): string {
-  return JSON.stringify([
-    notificacion.titulo,
-    notificacion.detalle ?? '',
-    notificacion.url ?? '',
-    notificacion.tono ?? 'pendiente',
-  ]);
-}
 
 /**
  * Estructura común a los paneles de cada rol: barra lateral + encabezado
@@ -186,6 +178,7 @@ export class EstructuraPanel {
   readonly cerrarSesion = output<void>();
 
   private readonly ruta = inject(ActivatedRoute);
+  private readonly campana = inject(CampanaService, { optional: true });
 
   private readonly llegoConAccesoDenegado = toSignal(
     this.ruta.queryParamMap.pipe(map((params) => params.get(PARAMETRO_ACCESO_DENEGADO) === '1')),
@@ -218,9 +211,6 @@ export class EstructuraPanel {
   /** `true` con el panel lateral de TODAS las notificaciones abierto. */
   protected readonly panelNotificacionesAbierto = signal(false);
 
-  /** Notificaciones descartadas mientras dura esta instancia del panel. */
-  private readonly notificacionesDescartadas = signal<Set<string>>(new Set());
-
   /** La campana: a ella vuelve el foco al cerrar el panel lateral. */
   private readonly botonCampana = viewChild<ElementRef<HTMLButtonElement>>('botonCampana');
 
@@ -230,9 +220,7 @@ export class EstructuraPanel {
    * puede pasar solo `notificacionesDetalle` y la campana igual se enciende.
    */
   protected readonly cantidadNotificaciones = computed(() =>
-    this.notificaciones() > 0
-      ? Math.max(0, this.notificaciones() - this.notificacionesDescartadas().size)
-      : this.notificacionesVisibles().length,
+    this.notificaciones() > 0 ? this.notificaciones() : this.notificacionesVisibles().length,
   );
 
   protected readonly hayNotificaciones = computed(() => this.cantidadNotificaciones() > 0);
@@ -243,9 +231,7 @@ export class EstructuraPanel {
   );
 
   protected readonly notificacionesVisibles = computed(() =>
-    this.notificacionesDetalle().filter(
-      (notificacion) => !this.notificacionesDescartadas().has(claveNotificacion(notificacion)),
-    ),
+    this.notificacionesDetalle(),
   );
 
   /**
@@ -359,11 +345,11 @@ export class EstructuraPanel {
   }
 
   protected descartarNotificacion(notificacion: NotificacionPanel): void {
-    this.notificacionesDescartadas.update((descartadas) => {
-      const nuevas = new Set(descartadas);
-      nuevas.add(claveNotificacion(notificacion));
-      return nuevas;
-    });
+    this.campana?.marcarComoLeida(notificacion);
+  }
+
+  protected marcarTodasComoLeidas(): void {
+    this.campana?.marcarTodasComoLeidas();
   }
 
   /**

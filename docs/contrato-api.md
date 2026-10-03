@@ -1,7 +1,7 @@
 # Contrato de la API — ISCGB
 
-Relevado el **19/08/2026** de la colección de Postman publicada por el QA
-del equipo. Backend a cargo de Angel Silva.
+Relevado y actualizado el **03/10/2026** contra el código y los contratos que
+consume el frontend. Backend a cargo de Angel Silva.
 
 Dirección base de desarrollo: `http://localhost:5231`
 
@@ -37,7 +37,10 @@ El `dni` va sin puntos.
   "nombreContactoEmergencia": null,
   "direccion": null,
   "email": "prueba@test.com",
-  "idUsuario": 1
+  "idUsuario": 1,
+  "roles": [
+    { "idRol": 3, "nombreRol": "Docente" }
+  ]
 }
 ```
 
@@ -61,7 +64,7 @@ tal cual en `RespuestaLogin` y los ordena una sola vez al convertirlos a
 {
   "nameid": "1",
   "DNI": "43880335",
-  "role": "1",
+  "role": "Docente",
   "nbf": 1787094079,
   "exp": 1787101279,
   "iat": 1787094079
@@ -70,11 +73,13 @@ tal cual en `RespuestaLogin` y los ordena una sola vez al convertirlos a
 
 - Algoritmo `HS256`.
 - Dura **2 horas** (`exp - iat = 7200`).
-- `role` es el **ID del rol en texto**, no su nombre.
-- `role` es **uno solo**, aunque la base permite varios por usuario.
+- `role` es el **nombre del rol**, no su ID.
+- Puede ser un valor único o un arreglo cuando el usuario tiene más de un rol.
+- El frontend toma los roles y sus IDs desde `respuesta.roles`; no usa el claim
+  para decidir el rol de la sesión.
 
-> 🔺 **Desactualizado.** Lo de arriba es lo que devolvía la API el 19/08. El
-> `AuthController` que está hoy en el repositorio ya no se comporta así:
+> El contrato histórico de la colección de Postman quedó desactualizado. El
+> `AuthController` actual emite un claim por cada rol:
 >
 > ```csharp
 > foreach (var rol in usuario.UsuariosRoles)
@@ -92,7 +97,8 @@ tal cual en `RespuestaLogin` y los ordena una sola vez al convertirlos a
 >   token**: viene en la respuesta y con su nombre, lo que resuelve el
 >   problema #3 de la tabla de abajo.
 >
-> Pendiente: confirmarlo contra la API corriendo antes de tocar el frontend.
+> El frontend ya adapta esta respuesta en `AuthHttpService` y conserva la
+> relación `idRol`/`nombreRol` en `Sesion.rolesConId`.
 
 ## `POST /api/Auth/crear-usuario-prueba`
 
@@ -132,6 +138,9 @@ muestra en el selector del frontend. No se envía en `POST /api/ProgramasMateria
 porque el programa se guarda por docente y materia, no por comisión.
 
 ## `POST /api/ProgramasMateria`
+
+Contrato vigente del controller `ProgramasMateriaController`, usado por el
+frontend actual.
 
 Guarda el programa junto con sus unidades de contenido en un solo pedido.
 
@@ -220,8 +229,8 @@ recibe el `POST` se guardan pero **todavía no se imprimen**.
 | 0c | Los endpoints de programas no tienen `[Authorize]`, y `DescargarPdf` no verifica que quien pide sea el docente dueño: cambiando el número en la URL se baja el programa de cualquier otro | 🔴 Alta |
 | 1 | `crear-usuario-prueba` crea usuarios sin autenticación | 🔴 Alta |
 | 2 | Los 401 distinguen DNI inexistente de contraseña incorrecta, permitiendo averiguar qué DNIs existen | 🔴 Alta |
-| 3 | `role` es un ID sin tabla de equivalencias publicada | 🟠 Bloquea el redirect por rol |
-| 4 | `role` singular vs. `Usuarios_roles` muchos-a-muchos | 🟠 Contradicción de modelo |
+| 3 | El claim `role` puede ser string o arreglo según la cantidad de roles | 🟡 El frontend ya usa `roles` del cuerpo del login |
+| 4 | El cuerpo del login y el JWT exponen roles con convenciones distintas | 🟡 El frontend los adapta en `AuthHttpService` |
 | 5 | `dni` es `varchar(20)`: acepta `"Lucas23"` | 🟡 Media |
 | 6 | `GET /weatherforecast` de la plantilla sigue expuesto | 🟡 Baja |
 | 7 | Nombres de campos con convenciones mezcladas | 🟡 Baja |

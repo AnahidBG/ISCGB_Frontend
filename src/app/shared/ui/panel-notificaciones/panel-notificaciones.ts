@@ -66,6 +66,7 @@ export class PanelNotificaciones {
 
   readonly cerrar = output<void>();
   readonly eliminada = output<NotificacionPanel>();
+  readonly marcarLeidas = output<void>();
 
   private readonly botonCerrar = viewChild.required<ElementRef<HTMLButtonElement>>('botonCerrar');
 
