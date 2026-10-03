@@ -14,7 +14,7 @@ import {
 } from './programas-materia.service';
 
 /**
- * Lo que devuelve `POST /api/ProgramasMaterias` cuando el guardado sale bien.
+ * Lo que devuelve `POST /api/ProgramasMateria` cuando el guardado sale bien.
  *
  * El `message` es para humanos y no lo mostramos: el frontend arma su propio
  * texto. El `idPrograma` es lo único que nos importa de acá.
@@ -29,8 +29,8 @@ interface RespuestaCrearPrograma {
  *
  * Cubre los dos endpoints del backend:
  *
- *   · `POST /api/ProgramasMaterias`            → guarda y devuelve el id
- *   · `GET  /api/ProgramasMaterias/{id}/pdf`   → devuelve el archivo
+ *   · `POST /api/ProgramasMateria`            → guarda y devuelve el id
+ *   · `GET  /api/ProgramasMateria/{id}/pdf`   → devuelve el archivo
  *
  * El contexto devuelve `{ idDocente, materias }`, que es la forma que usa la
  * pantalla para identificar al docente y llenar el selector de materias.
@@ -50,6 +50,8 @@ export class ProgramasMateriaHttpService extends ProgramasMateriaService {
           nombre: materia.nombre?.trim() || 'Materia sin nombre cargado',
           carrera: materia.carrera ?? null,
           curso: materia.curso ?? null,
+          idComision: materia.idComision,
+          nombreComision: materia.nombreComision?.trim() || `Comisión ${materia.idComision}`,
         })),
       })),
       catchError((error: HttpErrorResponse) => {

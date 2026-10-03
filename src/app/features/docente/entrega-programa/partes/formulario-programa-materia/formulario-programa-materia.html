@@ -40,7 +40,7 @@
             materia de la lista sin que nadie la haya elegido.
           -->
           <option [value]="0" disabled>Elegí una materia…</option>
-          @for (materia of materias(); track materia.idMateria) {
+          @for (materia of materias(); track materia.idMateria + '-' + materia.idComision) {
             <option [value]="materia.idMateria">{{ etiquetaDeMateria(materia) }}</option>
           }
         </select>

@@ -9,6 +9,8 @@ export interface MateriaACargo {
    */
   carrera: string | null;
   curso: string | null;
+  idComision: number;
+  nombreComision: string;
 }
 
 /**
@@ -21,7 +23,7 @@ export interface MateriaACargo {
  * nombre de otra persona sin que nada avisara: el backend solo valida que el
  * id EXISTA, no que sea el tuyo.
  *
- * Sale de `GET /api/ProgramasMaterias/contexto-docente/{idUsuario}`.
+ * Sale de `GET /api/ProgramasMateria/contexto-docente/{idUsuario}`.
  */
 export interface ContextoDocente {
   idDocente: number;
@@ -42,5 +44,6 @@ export function etiquetaDeMateria(materia: MateriaACargo): string {
     (dato): dato is string => dato !== null && dato.trim() !== '',
   );
 
-  return contexto.length === 0 ? materia.nombre : `${materia.nombre} (${contexto.join(' · ')})`;
+  const datos = [...contexto, materia.nombreComision];
+  return `${materia.nombre} (${datos.join(' · ')})`;
 }

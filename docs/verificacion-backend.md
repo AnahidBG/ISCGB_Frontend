@@ -58,9 +58,9 @@ problema en los DTOs `PascalCase`. Vale para `LoginRequestDto` y para
 | Frontend | Endpoint real | Estado |
 |---|---|---|
 | `AuthHttpService.iniciarSesion()` | `POST /api/Auth/login` | ✅ |
-| `ProgramasMateriaHttpService.obtenerContextoDocente()` | `GET /api/ProgramasMaterias/contexto-docente/{idUsuario}` | ✅ |
-| `ProgramasMateriaHttpService.enviarPrograma()` | `POST /api/ProgramasMaterias` | ✅ |
-| `ProgramasMateriaHttpService.descargarPdf()` | `GET /api/ProgramasMaterias/{id}/pdf` | ✅ |
+| `ProgramasMateriaHttpService.obtenerContextoDocente()` | `GET /api/ProgramasMateria/contexto-docente/{idUsuario}` | ✅ |
+| `ProgramasMateriaHttpService.enviarPrograma()` | `POST /api/ProgramasMateria` | ✅ |
+| `ProgramasMateriaHttpService.descargarPdf()` | `GET /api/ProgramasMateria/{id}/pdf` | ✅ |
 | `LegajoHttpService.obtenerLegajoPropio()` | `GET /api/Legajos/usuario/{id}` | ✅ |
 | `UsuariosHttpService.listar()` | `GET /api/Usuarios` | ✅ |
 

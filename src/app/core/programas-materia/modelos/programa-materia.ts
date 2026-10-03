@@ -1,7 +1,7 @@
 import { ContenidoUnidad } from './contenido-unidad';
 
 /**
- * Lo que el frontend le manda a `POST /api/ProgramasMaterias`.
+ * Lo que el frontend le manda a `POST /api/ProgramasMateria`.
  *
  * Coincide campo por campo con el `CrearProgramaDto` del backend (verificado
  * contra el PR #4 del repositorio de la API). A diferencia del login, acá los

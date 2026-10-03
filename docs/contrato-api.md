@@ -104,7 +104,7 @@ Devuelve `{ "message": "Usuario de prueba creado con éxito." }`.
 
 Es un endpoint de testing. **No debe llegar a producción.**
 
-## `GET /api/ProgramasMaterias/contexto-docente/{idUsuario}`
+## `GET /api/ProgramasMateria/contexto-docente/{idUsuario}`
 
 Devuelve el docente y las materias que tiene asignadas. La pantalla
 "Entregar programa" usa este endpoint para llenar el selector de materias.
@@ -118,7 +118,8 @@ Devuelve el docente y las materias que tiene asignadas. La pantalla
       "nombre": "…",
       "carrera": "…",
       "curso": "…",
-      "idComision": 1
+      "idComision": 1,
+      "nombreComision": "Comisión A"
     }
   ]
 }
@@ -126,7 +127,7 @@ Devuelve el docente y las materias que tiene asignadas. La pantalla
 
 Devuelve `404` cuando el usuario no está registrado como docente.
 
-## `POST /api/ProgramasMaterias`
+## `POST /api/ProgramasMateria`
 
 Guarda el programa junto con sus unidades de contenido en un solo pedido.
 
@@ -186,7 +187,7 @@ descarta, el usuario se queda sin manera de bajarlo.
 
 ⚠️ Devuelve `200`, no `201`, y no expone la ubicación del recurso creado.
 
-## `GET /api/ProgramasMaterias/{idPrograma}/pdf`
+## `GET /api/ProgramasMateria/{idPrograma}/pdf`
 
 Genera el PDF del programa con QuestPDF y lo devuelve como archivo.
 
