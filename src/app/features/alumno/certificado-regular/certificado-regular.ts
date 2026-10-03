@@ -3,6 +3,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { formatearDni } from '../../../core/auth/dni';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
+import { CampanaService } from '../../../core/notificaciones/campana.service';
 import {
   CertificadosService,
   VarianteCertificado,
@@ -44,12 +45,17 @@ import { Icono } from '../../../shared/ui/icono/icono';
 })
 export class CertificadoRegular {
   private readonly auth = inject(AuthService);
+  private readonly campana = inject(CampanaService);
   private readonly certificados = inject(CertificadosService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
+
+  /** La campana del encabezado, igual en todas las pantallas (`CampanaService`). */
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
   protected readonly variante: VarianteCertificado =
@@ -108,6 +114,10 @@ export class CertificadoRegular {
 
   protected volverAlPanel(): void {
     this.router.navigate(['/alumno/panel']);
+  }
+
+  constructor() {
+    this.campana.refrescar();
   }
 
   protected cerrarSesion(): void {

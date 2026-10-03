@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
+import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { ReconocimientoSaberesService } from '../../../core/reconocimiento-saberes/reconocimiento-saberes.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
@@ -39,11 +40,16 @@ type Adjunto = 'programa' | 'analitico';
 })
 export class ReconocimientoSaberes {
   private readonly auth = inject(AuthService);
+  private readonly campana = inject(CampanaService);
   private readonly servicio = inject(ReconocimientoSaberesService);
   private readonly router = inject(Router);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
+
+  /** La campana del encabezado, igual en todas las pantallas (`CampanaService`). */
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
   protected readonly materia = signal('');
@@ -135,6 +141,10 @@ export class ReconocimientoSaberes {
 
   protected volverAlPanel(): void {
     this.router.navigate(['/alumno/panel']);
+  }
+
+  constructor() {
+    this.campana.refrescar();
   }
 
   protected cerrarSesion(): void {

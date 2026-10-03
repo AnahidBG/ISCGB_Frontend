@@ -15,7 +15,8 @@ import {
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
-import { novedadesDelLegajo } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
+import { CampanaService } from '../../../core/notificaciones/campana.service';
+import { novedadesDelLegajo } from '../../../core/notificaciones/notificaciones-legajo';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { PasoTramite, ProgresoTramite } from '../../../shared/ui/progreso-tramite/progreso-tramite';
@@ -49,6 +50,7 @@ interface ProximoPaso {
 export class PanelDocente {
   private readonly auth = inject(AuthService);
   private readonly legajoService = inject(LegajoService);
+  private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
 
   protected readonly sesion = this.auth.sesion;
@@ -116,23 +118,28 @@ export class PanelDocente {
   );
 
   /**
-   * Lo que se despliega al tocar la campana (SCRUM-7): rechazos vigentes,
-   * anuales vencidos, obligatorios que faltan entregar y el aviso de legajo
-   * completo. Ver `novedadesDelLegajo`.
+   * La campana del encabezado sale de `CampanaService`, igual en todas las
+   * pantallas (SCRUM-7). Esta pantalla ya NO la calcula.
+   */
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
+
+  /**
+   * Las novedades del legajo con los datos que ESTA pantalla ya tiene. Se
+   * siguen calculando acá (aunque la campana salga del servicio) porque el
+   * cartel de "legajo completo" no puede depender de que la campana ya haya
+   * cargado: vacía, `every` daría `true` y avisaría un completo falso.
    */
   private readonly novedades = computed(() =>
-    novedadesDelLegajo(this.documentos(), this.requeridos(), { url: '/legajo/mis-documentos' }),
+    novedadesDelLegajo(this.documentos(), this.requeridos()),
   );
-
-  protected readonly notificaciones = computed(() => this.novedades().total);
-  protected readonly notificacionesDetalle = computed(() => this.novedades().detalle);
 
   /** Todo lo obligatorio aprobado, sin rechazos pendientes (SCRUM-153). */
   protected readonly legajoCompleto = computed(
     () =>
       !this.progreso().estimado &&
       this.progreso().porcentaje === 100 &&
-      this.notificacionesDetalle().every((novedad) => novedad.tono === 'aprobado'),
+      this.novedades().detalle.every((novedad) => novedad.tono === 'aprobado'),
   );
 
   /**
@@ -212,6 +219,11 @@ export class PanelDocente {
 
     return pasos;
   });
+
+  constructor() {
+    // La campana es la misma en todas las pantallas: se pide al entrar.
+    this.campana.refrescar();
+  }
 
   protected cerrarSesion(): void {
     this.auth.cerrarSesion();

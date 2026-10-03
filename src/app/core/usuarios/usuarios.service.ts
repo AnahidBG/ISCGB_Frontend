@@ -1,5 +1,6 @@
 import { Observable } from 'rxjs';
 import { PerfilUsuario } from './modelos/perfil-usuario';
+import { Provincia } from './modelos/provincia';
 import { UsuarioDetalle } from './modelos/usuario-detalle';
 import { UsuarioInstitucional } from './modelos/usuario-institucional';
 
@@ -53,6 +54,8 @@ export function mensajePerfilActualizado(nombre: string): string {
  *   · `POST /api/UsuariosAdmin/alta`           → `crear`    (rama CargaDeUsuarios)
  *   · `PUT  /api/UsuariosAdmin/modificar/{id}` → `actualizar` (rama CargaDeUsuarios)
  *   · `PUT  /api/UsuariosAdmin/baja/{id}`      → `darDeBaja` (rama CargaDeUsuarios)
+ *   · `GET  /api/Ubicaciones/paises` y `.../paises/{id}/provincias`
+ *                                              → `listarProvincias`
  */
 export abstract class UsuariosService {
   /** Todas las personas del instituto, activas e inactivas, con sus roles. */
@@ -82,4 +85,14 @@ export abstract class UsuariosService {
    * director suplente, deja de serlo.
    */
   abstract darDeBaja(idUsuario: number): Observable<string>;
+
+  /**
+   * Todas las provincias de todos los países, con el id real de la base y el
+   * nombre del país, para el desplegable "Lugar de nacimiento".
+   *
+   * El backend no tiene un endpoint "todas las provincias": se piden los
+   * países y después las provincias de cada uno. Un país sin provincias
+   * aporta cero (no es un error). Falla si no se pudo traer la lista.
+   */
+  abstract listarProvincias(): Observable<Provincia[]>;
 }

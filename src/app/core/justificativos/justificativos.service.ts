@@ -1,4 +1,5 @@
 import { Observable } from 'rxjs';
+import { OpcionesPedido } from '../comun/opciones-pedido';
 import {
   JustificativoPendiente,
   NuevoJustificativo,
@@ -29,8 +30,11 @@ export const MENSAJE_CARGA_POR_DEFECTO =
  * hace falta simular nada.
  */
 export abstract class JustificativosService {
-  /** Los que esperan revisión de Secretaría. */
-  abstract listarPendientes(): Observable<JustificativoPendiente[]>;
+  /**
+   * Los que esperan revisión de Secretaría.
+   * `opciones.enSegundoPlano`: pedido accesorio, que no bloquee la pantalla.
+   */
+  abstract listarPendientes(opciones?: OpcionesPedido): Observable<JustificativoPendiente[]>;
 
   /**
    * Aprobar o rechazar uno.

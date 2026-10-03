@@ -9,12 +9,9 @@ import {
   JustificativosService,
   VeredictoAuditoria,
 } from '../../../core/justificativos/justificativos.service';
+import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
-import {
-  EstructuraPanel,
-  NotificacionPanel,
-} from '../../../shared/ui/estructura-panel/estructura-panel';
-import { MAXIMO_NOTIFICACIONES } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
+import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 
 /**
@@ -45,6 +42,7 @@ import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga'
 export class PanelSecretario {
   private readonly auth = inject(AuthService);
   private readonly justificativos = inject(JustificativosService);
+  private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
 
   protected readonly sesion = this.auth.sesion;
@@ -70,33 +68,17 @@ export class PanelSecretario {
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
   /**
-   * Enciende el puntito rojo de la campana: cuántos justificativos están
-   * esperando que Secretaría los revise. Antes esta pantalla no le pasaba
-   * ningún número a `EstructuraPanel`, así que la campana nunca se
-   * encendía acá aunque hubiera pendientes reales.
+   * La campana sale de `CampanaService`, igual en todas las pantallas. Antes
+   * esta pantalla armaba la suya solo con los justificativos; ahora el
+   * servicio suma además los documentos de legajo esperando revisión (ver
+   * `novedadesPendientesDelInstituto`).
    */
-  protected readonly notificaciones = computed(() => this.pendientes().length);
-
-  /**
-   * El detalle que se despliega al tocar la campana: quién pidió justificar
-   * y por qué motivo.
-   *
-   * Sin `url`: los justificativos se revisan en ESTA misma pantalla, así que
-   * un enlace no llevaría a ningún lado nuevo. Se muestran los primeros
-   * `MAXIMO_NOTIFICACIONES` y el panelcito avisa solo cuántos quedan.
-   */
-  protected readonly notificacionesDetalle = computed<NotificacionPanel[]>(() =>
-    this.pendientes()
-      .slice(0, MAXIMO_NOTIFICACIONES)
-      .map((justificativo) => ({
-        titulo: `${justificativo.nombreDocente} pidió justificar una inasistencia`,
-        detalle: justificativo.tipoInasistencia,
-        tono: 'pendiente' as const,
-      })),
-  );
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
 
   constructor() {
     this.cargar();
+    this.campana.refrescar();
   }
 
   protected urlDelArchivo(justificativo: JustificativoPendiente): string | null {
@@ -151,6 +133,8 @@ export class PanelSecretario {
           );
           this.ultimoResuelto.set({ nombre: justificativo.nombreDocente, veredicto });
           this.guardando.set(null);
+          // Resolver uno baja el número de la campana.
+          this.campana.refrescar();
         },
         error: (fallo: Error) => {
           this.error.set(fallo.message);

@@ -3,7 +3,9 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ROLES, Rol } from '../../../core/auth/modelos/rol';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
+import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { PerfilUsuario } from '../../../core/usuarios/modelos/perfil-usuario';
+import { Provincia } from '../../../core/usuarios/modelos/provincia';
 import { UsuarioDetalle } from '../../../core/usuarios/modelos/usuario-detalle';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
@@ -52,12 +54,17 @@ const ORDEN_DE_ROLES: readonly Rol[] = [
 })
 export class EditarUsuario {
   private readonly auth = inject(AuthService);
+  private readonly campana = inject(CampanaService);
   private readonly usuarios = inject(UsuariosService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
+
+  /** La campana del encabezado, igual en todas las pantallas (`CampanaService`). */
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
   private readonly idUsuario = Number(this.route.snapshot.paramMap.get('idUsuario'));
@@ -105,8 +112,30 @@ export class EditarUsuario {
     };
   });
 
+  // Las provincias van por un pedido aparte del usuario y pueden llegar antes
+  // o después: el formulario preselecciona la del usuario en cualquiera de los
+  // dos órdenes. Si fallan, el resto de la pantalla sigue andando.
+  protected readonly provincias = signal<readonly Provincia[]>([]);
+  protected readonly cargandoProvincias = signal(true);
+  protected readonly falloProvincias = signal(false);
+
   constructor() {
+    this.campana.refrescar();
     this.cargarUsuario();
+    this.cargarProvincias();
+  }
+
+  private cargarProvincias(): void {
+    this.usuarios.listarProvincias().subscribe({
+      next: (provincias) => {
+        this.provincias.set(provincias);
+        this.cargandoProvincias.set(false);
+      },
+      error: () => {
+        this.falloProvincias.set(true);
+        this.cargandoProvincias.set(false);
+      },
+    });
   }
 
   private cargarUsuario(): void {

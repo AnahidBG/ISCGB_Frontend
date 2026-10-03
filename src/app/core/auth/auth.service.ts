@@ -18,6 +18,22 @@ export const MENSAJE_SIN_CONEXION =
   'No pudimos conectarnos con el servidor. Intentá de nuevo en un momento.';
 
 /**
+ * El enlace para crear la contraseña no sirve: no existe, ya se usó o venció.
+ *
+ * Es UN solo mensaje a propósito. El backend distingue "El enlace es inválido."
+ * de "El enlace ha expirado." con texto suelto en el body, y leerlo sería
+ * frágil (cualquier cambio de redacción rompería la distinción). Además el
+ * remedio para la persona es el mismo: no hay endpoint para reenviar el link,
+ * así que lo único que puede hacer es pedirlo a la Dirección.
+ */
+export const MENSAJE_ENLACE_INVALIDO =
+  'Este enlace no es válido o ya venció. Comunicate con la Dirección del instituto para que te envíen uno nuevo.';
+
+/** Falla inesperada al guardar la contraseña (5xx u otro status no previsto). */
+export const MENSAJE_ERROR_CREAR_PASSWORD =
+  'No pudimos guardar tu contraseña. Intentá de nuevo en un momento.';
+
+/**
  * Contrato de autenticación.
  *
  * Esto es una clase ABSTRACTA a propósito: define QUÉ se puede hacer,
@@ -51,6 +67,19 @@ export abstract class AuthService {
    * o con `Error(MENSAJE_SIN_CONEXION)` si el servidor no contesta.
    */
   abstract iniciarSesion(credenciales: CredencialesLogin): Observable<Sesion>;
+
+  /**
+   * Define la contraseña de un usuario recién dado de alta, con el token del
+   * enlace que le llegó por mail. No requiere sesión.
+   *
+   * Vive acá y no en `UsuariosService` porque es un asunto de credenciales,
+   * aunque el endpoint cuelgue de `UsuariosAdmin`.
+   *
+   * Falla con `Error(MENSAJE_ENLACE_INVALIDO)` si el token no sirve,
+   * `Error(MENSAJE_SIN_CONEXION)` si el servidor no contesta, o
+   * `Error(MENSAJE_ERROR_CREAR_PASSWORD)` ante cualquier otra falla.
+   */
+  abstract establecerPassword(token: string, nuevaPassword: string): Observable<void>;
 
   /** Borra la sesión actual. */
   abstract cerrarSesion(): void;

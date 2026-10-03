@@ -21,7 +21,7 @@ import { UsuarioDetalle } from '../../../core/usuarios/modelos/usuario-detalle';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
-import { novedadesDelLegajo } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
+import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { TarjetaMetrica } from '../../../shared/ui/tarjeta-metrica/tarjeta-metrica';
@@ -87,6 +87,7 @@ export class MisDocumentos {
   private readonly auth = inject(AuthService);
   private readonly legajos = inject(LegajoService);
   private readonly usuarios = inject(UsuariosService);
+  private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
@@ -252,21 +253,17 @@ export class MisDocumentos {
   );
 
   /**
-   * La campana (SCRUM-7): rechazos vigentes, vencidos, faltantes y legajo
-   * completo — ver `novedadesDelLegajo`. Sin `url` en los rechazos: ya
-   * estamos en la pantalla que los muestra.
-   *
-   * Con legajo ajeno no se arma nada: quien revisa no necesita que le avisen
-   * de rechazos que puso él mismo hace dos segundos.
+   * La campana (SCRUM-7) sale de `CampanaService`: es la de la SESIÓN, igual
+   * en todas las pantallas. Antes se calculaba acá con el legajo que se
+   * estaba mirando y, con legajo ajeno, quedaba vacía; ahora Secretaría y
+   * Dirección ven también acá lo que espera revisión en el instituto.
    */
-  private readonly novedades = computed(() =>
-    this.esLegajoAjeno()
-      ? { total: 0, detalle: [] }
-      : novedadesDelLegajo(this.documentosConOverrides(), this.requeridos()),
-  );
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
 
-  protected readonly notificaciones = computed(() => this.novedades().total);
-  protected readonly notificacionesDetalle = computed(() => this.novedades().detalle);
+  constructor() {
+    this.campana.refrescar();
+  }
 
   /**
    * Conteos del semáforo, sobre la versión VIGENTE de cada documento. Antes
@@ -528,7 +525,11 @@ export class MisDocumentos {
     this.errorAuditoria.set(null);
 
     this.legajos.auditar(idLegajo, veredicto, idAuditor, comentario).subscribe({
-      next: () => this.aplicarVeredictoLocal(idLegajo, veredicto, comentario),
+      next: () => {
+        this.aplicarVeredictoLocal(idLegajo, veredicto, comentario);
+        // Aprobar o rechazar cambia lo que espera revisión: la campana se entera.
+        this.campana.refrescar();
+      },
       error: (fallo: Error) => {
         this.errorAuditoria.set(fallo.message);
         this.marcarGuardando(idLegajo, false);

@@ -24,10 +24,9 @@ import { Rol, ROLES } from '../../auth/modelos/rol';
  *
  * Lo que NO está, y por qué:
  *
- *   · Contraseña: `CargaUsuarioDto` no la recibe. El backend guarda una
- *     contraseña provisoria fija y la persona no puede entrar hasta que
- *     exista "cambio/recuperación de contraseña" (Sprint 3). La pantalla lo
- *     avisa. Ver docs/alineacion-sprint-2.md.
+ *   · Contraseña: `CargaUsuarioDto` no la recibe. La persona nace con la
+ *     contraseña pendiente y la crea ella misma en `/crear-password`, con el
+ *     enlace que el backend le manda por correo. La pantalla lo avisa.
  *   · N° de legajo: el backend lo "autocompleta con el DNI" (devuelve
  *     `legajoAutocompletado = Dni`). Se muestra, no se carga.
  *   · Carrera/Especialidad: no hay columna ni campo en el DTO.

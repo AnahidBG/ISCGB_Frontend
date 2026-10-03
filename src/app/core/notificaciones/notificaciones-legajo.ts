@@ -1,20 +1,18 @@
-import { DocumentoLegajo } from '../../../core/legajos/modelos/documento-legajo';
-import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
+import { DocumentoLegajo } from '../legajos/modelos/documento-legajo';
+import { DocumentoRequerido } from '../legajos/modelos/documento-requerido';
 import {
   calcularProgresoLegajo,
   documentosSinCargar,
   ultimaVersionPorTipo,
-} from '../../../core/legajos/progreso-legajo';
-import { NotificacionPanel } from './estructura-panel';
-
-/** Cuántas novedades entran en el panelcito antes de resumir el resto. */
-export const MAXIMO_NOTIFICACIONES = 5;
+} from '../legajos/progreso-legajo';
+import { NotificacionPanel } from './modelos/notificacion-panel';
 
 /**
  * Los documentos rechazados de un legajo, como novedades de la campana.
  *
- * Es el caso más repetido del sistema — lo usan el panel del Docente, el del
- * Alumno y "Mis Documentos" — y por eso vive acá y no copiado en cada uno:
+ * Es el caso más repetido del sistema — lo usa `novedadesDelLegajo`, que a su
+ * vez alimenta la campana de Docente y Alumno vía `CampanaService` — y por
+ * eso vive acá y no copiado en cada uno:
  * si mañana cambia cómo se redacta el aviso, cambia en un solo lugar (mismo
  * criterio que `enlacesPorSesion` con el menú).
  *
@@ -25,16 +23,13 @@ export const MAXIMO_NOTIFICACIONES = 5;
  */
 export function notificacionesPorRechazos(
   documentos: readonly DocumentoLegajo[],
-  opciones: { url?: string; maximo?: number } = {},
+  opciones: { url?: string } = {},
 ): NotificacionPanel[] {
-  const maximo = opciones.maximo ?? MAXIMO_NOTIFICACIONES;
-
   return (
     documentos
       .filter((documento) => documento.estado === 'Rechazado')
       // Lo más nuevo primero: es lo que la persona todavía no vio.
       .sort((a, b) => b.fechaSubida.getTime() - a.fechaSubida.getTime())
-      .slice(0, maximo)
       .map((documento) => ({
         titulo: `Rechazaron ${documento.nombre}`,
         // El motivo es lo único que dice qué hay que corregir. Cuando quien
@@ -50,7 +45,7 @@ export function notificacionesPorRechazos(
 export interface NovedadesLegajo {
   /** Cuántas hay en total — lo que enciende el número de la campana. */
   total: number;
-  /** Las primeras `maximo`, en orden de urgencia. */
+  /** TODAS las novedades, en orden de urgencia: el recorte es de la presentación. */
   detalle: NotificacionPanel[];
 }
 
@@ -77,16 +72,12 @@ export interface NovedadesLegajo {
 export function novedadesDelLegajo(
   documentos: readonly DocumentoLegajo[],
   requeridos: readonly DocumentoRequerido[],
-  opciones: { url?: string; maximo?: number; ahora?: number } = {},
+  opciones: { url?: string; ahora?: number } = {},
 ): NovedadesLegajo {
-  const maximo = opciones.maximo ?? MAXIMO_NOTIFICACIONES;
   const ahora = opciones.ahora ?? Date.now();
   const vigentes = ultimaVersionPorTipo(documentos);
 
-  const rechazados = notificacionesPorRechazos(vigentes, {
-    url: opciones.url,
-    maximo: Number.MAX_SAFE_INTEGER,
-  });
+  const rechazados = notificacionesPorRechazos(vigentes, { url: opciones.url });
 
   const vencidos: NotificacionPanel[] = vigentes
     .filter(
@@ -134,5 +125,5 @@ export function novedadesDelLegajo(
       : []),
   ];
 
-  return { total: todas.length, detalle: todas.slice(0, maximo) };
+  return { total: todas.length, detalle: todas };
 }

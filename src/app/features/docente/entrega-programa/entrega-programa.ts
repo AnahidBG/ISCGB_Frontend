@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
+import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { ContextoDocente } from '../../../core/programas-materia/modelos/contexto-docente';
 import { ProgramaMateria } from '../../../core/programas-materia/modelos/programa-materia';
@@ -40,6 +41,7 @@ import { descargarArchivo } from '../../../core/comun/archivos';
 })
 export class EntregaPrograma {
   private readonly auth = inject(AuthService);
+  private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
   private readonly programasMateria = inject(ProgramasMateriaService);
 
@@ -47,6 +49,10 @@ export class EntregaPrograma {
 
   /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
+
+  /** La campana del encabezado, igual en todas las pantallas (`CampanaService`). */
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
 
   /** A dónde vuelve el "‹ Volver": el panel que le corresponde a esta sesión. */
   protected readonly rutaPanel = computed(() => destinoSegunRoles(this.sesion()));
@@ -100,6 +106,7 @@ export class EntregaPrograma {
   );
 
   constructor() {
+    this.campana.refrescar();
     this.cargarContexto();
   }
 

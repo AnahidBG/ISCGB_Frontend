@@ -7,6 +7,8 @@
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
   <div class="mx-auto max-w-3xl">
@@ -64,6 +66,9 @@
       <app-formulario-perfil-usuario
         modo="edicion"
         textoEnviar="Guardar cambios"
+        [provincias]="provincias()"
+        [cargandoProvincias]="cargandoProvincias()"
+        [falloProvincias]="falloProvincias()"
         [perfilInicial]="perfilInicial()"
         [enviando]="enviando()"
         [error]="error()"

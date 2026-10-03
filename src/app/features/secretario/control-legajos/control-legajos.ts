@@ -9,12 +9,9 @@ import { LegajoService } from '../../../core/legajos/legajo.service';
 import { ResumenUsuarioLegajo } from '../../../core/legajos/modelos/resumen-usuario-legajo';
 import { UsuarioInstitucional } from '../../../core/usuarios/modelos/usuario-institucional';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
+import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
-import {
-  EstructuraPanel,
-  NotificacionPanel,
-} from '../../../shared/ui/estructura-panel/estructura-panel';
-import { MAXIMO_NOTIFICACIONES } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
+import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 
@@ -72,6 +69,7 @@ export class ControlLegajos {
   private readonly auth = inject(AuthService);
   private readonly legajoService = inject(LegajoService);
   private readonly usuariosService = inject(UsuariosService);
+  private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
 
   protected readonly sesion = this.auth.sesion;
@@ -131,24 +129,13 @@ export class ControlLegajos {
   );
 
   /**
-   * El detalle que se despliega al tocar la campana: quiénes tienen
-   * documentos esperando revisión, de mayor a menor. Cada fila abre el perfil
-   * de esa persona, que es donde ahora se aprueba o se rechaza.
+   * La campana sale de `CampanaService`, igual en todas las pantallas. La
+   * lista de personas con documentos esperando revisión que se armaba acá
+   * ahora la arma `novedadesPendientesDelInstituto`, con el mismo texto y el
+   * mismo enlace al perfil de cada persona.
    */
-  protected readonly notificacionesDetalle = computed<NotificacionPanel[]>(() =>
-    [...this.resumen()]
-      .filter((usuario) => usuario.pendientes > 0)
-      .sort((a, b) => b.pendientes - a.pendientes)
-      .slice(0, MAXIMO_NOTIFICACIONES)
-      .map((usuario) => ({
-        titulo: usuario.nombreCompleto,
-        detalle: `${usuario.pendientes} ${
-          usuario.pendientes === 1 ? 'documento espera' : 'documentos esperan'
-        } revisión`,
-        url: `/legajo/usuario/${usuario.idUsuario}`,
-        tono: 'pendiente' as const,
-      })),
-  );
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
 
   /**
    * Lo que se dibuja, filtrado y ordenado. El orden importa: el endpoint
@@ -188,6 +175,7 @@ export class ControlLegajos {
 
   constructor() {
     this.cargar();
+    this.campana.refrescar();
   }
 
   protected cargar(): void {

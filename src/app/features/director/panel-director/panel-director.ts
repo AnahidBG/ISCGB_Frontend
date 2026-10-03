@@ -9,13 +9,9 @@ import { LegajoResumenUsuario } from '../../../core/legajos/modelos/legajo-resum
 import { estadoGeneralDelLegajo } from '../../../core/legajos/resumen-legajo';
 import { UsuarioInstitucional } from '../../../core/usuarios/modelos/usuario-institucional';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
+import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
-import {
-  AccionPanel,
-  EstructuraPanel,
-  NotificacionPanel,
-} from '../../../shared/ui/estructura-panel/estructura-panel';
-import { MAXIMO_NOTIFICACIONES } from '../../../shared/ui/estructura-panel/notificaciones-legajo';
+import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 
@@ -61,6 +57,7 @@ export class PanelDirector {
   private readonly auth = inject(AuthService);
   private readonly usuariosService = inject(UsuariosService);
   private readonly legajoService = inject(LegajoService);
+  private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
 
   protected readonly sesion = this.auth.sesion;
@@ -114,27 +111,17 @@ export class PanelDirector {
   });
 
   /**
-   * Enciende el puntito rojo de la campana con los legajos pendientes de
-   * todo el instituto. Antes esta pantalla no le pasaba ningún número a
-   * `EstructuraPanel`, así que la campana nunca se encendía acá.
+   * La campana sale de `CampanaService`, igual en todas las pantallas. Antes
+   * esta pantalla contaba las PERSONAS con legajo "Pendiente"; ahora el
+   * servicio suma justificativos y documentos esperando revisión de todo el
+   * instituto (ver `novedadesPendientesDelInstituto`).
    */
-  protected readonly notificaciones = computed(() => this.resumen().pendientes);
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
 
-  /**
-   * El detalle que se despliega al tocar la campana: qué personas tienen el
-   * legajo esperando revisión. Cada fila lleva a Control de Legajos, que es
-   * donde se resuelve.
-   */
-  protected readonly notificacionesDetalle = computed<NotificacionPanel[]>(() =>
-    this.listadoUsuarios()
-      .filter((usuario) => usuario.estadoLegajo === 'Pendiente')
-      .slice(0, MAXIMO_NOTIFICACIONES)
-      .map((usuario) => ({
-        titulo: `El legajo de ${usuario.nombreCompleto} espera revisión`,
-        url: `/legajo/usuario/${usuario.idUsuario}`,
-        tono: 'pendiente' as const,
-      })),
-  );
+  constructor() {
+    this.campana.refrescar();
+  }
 
   protected cerrarSesion(): void {
     this.auth.cerrarSesion();

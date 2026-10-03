@@ -21,8 +21,20 @@ export class RequisitosPassword {
   /** El DNI del mismo formulario, para la regla de "que no lo incluya". */
   readonly dni = input<string>('');
 
+  /**
+   * `clave` de las reglas que NO se dibujan. Por defecto ninguna.
+   *
+   * Sirve para las pantallas que no tienen el DNI a mano (crear contraseña
+   * desde el link del mail): ahí la regla "sin-dni" daría "cumple" siempre y
+   * mostrarla tildada sería mentirle a la persona. No cambia la política,
+   * solo qué se muestra.
+   */
+  readonly omitir = input<readonly string[]>([]);
+
   protected readonly requisitos = computed(() =>
-    evaluarPassword(this.password(), this.dni()),
+    evaluarPassword(this.password(), this.dni()).filter(
+      (requisito) => !this.omitir().includes(requisito.clave),
+    ),
   );
 
   protected readonly cumplidos = computed(
