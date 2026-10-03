@@ -253,21 +253,6 @@ El PDF arma las secciones 1 (Fundamentación), 2.1 (Objetivos generales),
 3 (Contenidos) y 4 (Estrategias metodológicas). El resto de los campos que
 recibe el `POST` se guardan pero **todavía no se imprimen**.
 
-## Problemas detectados
-
-| # | Problema | Gravedad |
-|---|---|---|
-| 0 | No hay CORS configurado en `Program.cs`: el navegador bloquea todas las llamadas desde `http://localhost:4200`. Con Postman funciona, desde Angular no. | 🔴 Bloqueante |
-| 0b | Faltan `UseAuthentication()` y `UseAuthorization()`: el JWT se emite pero nunca se valida | 🔴 Alta |
-| 0c | Los endpoints de programas no tienen `[Authorize]`, y `DescargarPdf` no verifica que quien pide sea el docente dueño: cambiando el número en la URL se baja el programa de cualquier otro | 🔴 Alta |
-| 1 | `crear-usuario-prueba` crea usuarios sin autenticación | 🔴 Alta |
-| 2 | Los 401 distinguen DNI inexistente de contraseña incorrecta, permitiendo averiguar qué DNIs existen | 🔴 Alta |
-| 3 | El claim `role` puede ser string o arreglo según la cantidad de roles | 🟡 El frontend ya usa `roles` del cuerpo del login |
-| 4 | El cuerpo del login y el JWT exponen roles con convenciones distintas | 🟡 El frontend los adapta en `AuthHttpService` |
-| 5 | `dni` es `varchar(20)`: acepta `"Lucas23"` | 🟡 Media |
-| 6 | `GET /weatherforecast` de la plantilla sigue expuesto | 🟡 Baja |
-| 7 | Nombres de campos con convenciones mezcladas | 🟡 Baja |
-
 ## La base de datos vs. el documento del MVP
 
 Base: `Autogestion_Docente` (SQL Server Express).
