@@ -104,6 +104,33 @@ Devuelve `{ "message": "Usuario de prueba creado con éxito." }`.
 
 Es un endpoint de testing. **No debe llegar a producción.**
 
+## `GET /api/ProgramasMateria/contexto-docente/{idUsuario}`
+
+Devuelve el docente y las materias que tiene asignadas. La pantalla
+"Entregar programa" usa este endpoint para llenar el selector de materias.
+
+```json
+{
+  "idDocente": 1,
+  "materias": [
+    {
+      "idMateria": 3,
+      "nombre": "…",
+      "carrera": "…",
+      "curso": "…",
+      "idComision": 1,
+      "nombreComision": "Comisión A"
+    }
+  ]
+}
+```
+
+Devuelve `404` cuando el usuario no está registrado como docente.
+
+La comisión identifica la cursada/horario de la asignación del docente y se
+muestra en el selector del frontend. No se envía en `POST /api/ProgramasMateria`
+porque el programa se guarda por docente y materia, no por comisión.
+
 ## `POST /api/ProgramasMateria`
 
 Relevado del **PR #4** del repositorio del backend (rama `programaMateria`),
