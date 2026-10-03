@@ -7,8 +7,8 @@
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
-  [notificaciones]="0"
-  [notificacionesDetalle]="[]"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
   <div class="mx-auto max-w-3xl">
