@@ -200,15 +200,26 @@
           id="idProvincia"
           formControlName="idProvincia"
           required
-          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+          class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none disabled:bg-fondo-panel disabled:text-texto-suave"
         >
-          <option value="" disabled>Elegí la provincia</option>
-          @for (provincia of provincias; track provincia.idProvincia) {
-            <option [value]="provincia.idProvincia">
-              {{ provincia.nombre }}, {{ provincia.pais }}
-            </option>
+          @if (cargandoProvincias()) {
+            <option value="" disabled>Cargando provincias…</option>
+          } @else {
+            <option value="" disabled>Elegí la provincia</option>
+          }
+          @for (grupo of provinciasPorPais(); track grupo.pais) {
+            <optgroup [label]="grupo.pais">
+              @for (provincia of grupo.provincias; track provincia.idProvincia) {
+                <option [value]="provincia.idProvincia">{{ provincia.nombre }}</option>
+              }
+            </optgroup>
           }
         </select>
+        @if (falloProvincias()) {
+          <span role="alert" class="text-sm text-rechazado">
+            No pudimos cargar las provincias. Recargá la página para reintentar.
+          </span>
+        }
         @if (errorProvincia; as mensaje) {
           <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
         }

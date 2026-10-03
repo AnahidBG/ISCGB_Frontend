@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
+import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
@@ -55,6 +56,7 @@ import { ZonaArchivo } from '../../../shared/ui/zona-archivo/zona-archivo';
 })
 export class SubirDocumento {
   private readonly auth = inject(AuthService);
+  private readonly campana = inject(CampanaService);
   private readonly legajos = inject(LegajoService);
   private readonly router = inject(Router);
 
@@ -62,6 +64,10 @@ export class SubirDocumento {
 
   /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
+
+  /** La campana del encabezado, igual en todas las pantallas (`CampanaService`). */
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
 
   /**
    * A dónde vuelve el "‹ Volver" (y el botón "Cancelar" del formulario).
@@ -104,6 +110,7 @@ export class SubirDocumento {
   );
 
   constructor() {
+    this.campana.refrescar();
     this.cargarTipos();
   }
 

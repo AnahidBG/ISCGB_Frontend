@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, delay, of, throwError } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
+import { OpcionesPedido } from '../comun/opciones-pedido';
 import { DocumentoLegajo } from './modelos/documento-legajo';
 import {
   DocumentoRequerido,
@@ -197,7 +198,7 @@ const MENSAJE_SOLO_LECTURA =
 export class LegajoMockService extends LegajoService {
   private readonly auth = inject(AuthService);
 
-  obtenerLegajoPropio(): Observable<DocumentoLegajo[]> {
+  obtenerLegajoPropio(_opciones?: OpcionesPedido): Observable<DocumentoLegajo[]> {
     const dni = this.auth.sesion()?.dni ?? '';
     const documentos = LEGAJOS_POR_DNI[dni] ?? LEGAJO_POR_DEFECTO;
     return of([...documentos]).pipe(delay(DEMORA_SIMULADA_MS));
@@ -207,7 +208,7 @@ export class LegajoMockService extends LegajoService {
     return this.obtenerLegajoPropio();
   }
 
-  documentosRequeridos(_idRol: number): Observable<DocumentoRequerido[]> {
+  documentosRequeridos(_idRol: number, _opciones?: OpcionesPedido): Observable<DocumentoRequerido[]> {
     return of([...REQUERIDOS_INVENTADOS]).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
@@ -227,7 +228,7 @@ export class LegajoMockService extends LegajoService {
    * que el backend real (los conteos de `resumen-usuarios` y los documentos
    * de `resumen-estado` salen de la misma tabla `legajo`).
    */
-  obtenerResumenUsuarios(): Observable<ResumenUsuarioLegajo[]> {
+  obtenerResumenUsuarios(_opciones?: OpcionesPedido): Observable<ResumenUsuarioLegajo[]> {
     // Mismo cálculo que `LegajoHttpService`: solo la versión vigente de cada documento.
     const resumen = RESUMEN_INSTITUCIONAL_INVENTADO.map((usuario) => ({
       idUsuario: usuario.idUsuario,

@@ -1,12 +1,19 @@
 import { Injectable, computed, signal } from '@angular/core';
 import { Observable, delay, of, throwError } from 'rxjs';
-import { AuthService, MENSAJE_CREDENCIALES_INVALIDAS } from './auth.service';
+import {
+  AuthService,
+  MENSAJE_CREDENCIALES_INVALIDAS,
+  MENSAJE_ENLACE_INVALIDO,
+} from './auth.service';
 import { CredencialesLogin } from './modelos/credenciales-login';
 import { Sesion } from './modelos/sesion';
 import { USUARIOS_DE_PRUEBA } from './usuarios-de-prueba';
 
 /** Cuánto tarda el login falso, para ver el estado "cargando" del botón. */
 const DEMORA_SIMULADA_MS = 800;
+
+/** Token que el mock trata como enlace vencido (`/crear-password?token=invalido`). */
+const TOKEN_MOCK_INVALIDO = 'invalido';
 
 /** Los tokens del backend duran 2 horas. El mock imita eso. */
 const DURACION_SESION_MS = 2 * 60 * 60 * 1000;
@@ -58,6 +65,17 @@ export class AuthMockService extends AuthService {
 
     this.sesionActual.set(sesion);
     return of(sesion).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  /**
+   * Acepta cualquier token no vacío, salvo el centinela `invalido`, que
+   * simula un enlace vencido para poder ver ese estado sin backend.
+   */
+  establecerPassword(token: string, _nuevaPassword: string): Observable<void> {
+    if (token.trim() === '' || token === TOKEN_MOCK_INVALIDO) {
+      return throwError(() => new Error(MENSAJE_ENLACE_INVALIDO)).pipe(delay(DEMORA_SIMULADA_MS));
+    }
+    return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
   cerrarSesion(): void {

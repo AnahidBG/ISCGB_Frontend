@@ -6,7 +6,7 @@
  *   { "nameid": "1", "DNI": "43880335", "role": "Docente",
  *     "nbf": 1787513839, "exp": 1787521039, "iat": 1787513839 }
  *
- * ⚠️ `role` viene con el NOMBRE del rol, no con su ID. Y puede llegar como
+ *  `role` viene con el NOMBRE del rol, no con su ID. Y puede llegar como
  * texto o como arreglo: el backend agrega un claim por cada rol del usuario,
  * y cuando hay más de uno el JWT los serializa juntos en un arreglo.
  *

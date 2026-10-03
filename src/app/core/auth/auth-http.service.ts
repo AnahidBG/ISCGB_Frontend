@@ -5,6 +5,8 @@ import { RUTAS_API } from '../configuracion/api';
 import {
   AuthService,
   MENSAJE_CREDENCIALES_INVALIDAS,
+  MENSAJE_ENLACE_INVALIDO,
+  MENSAJE_ERROR_CREAR_PASSWORD,
   MENSAJE_SIN_CONEXION,
 } from './auth.service';
 import { fechaDeVencimiento, leerPayloadJwt } from './jwt';
@@ -44,6 +46,26 @@ export class AuthHttpService extends AuthService {
         return throwError(() => new Error(mensaje));
       }),
     );
+  }
+
+  establecerPassword(token: string, nuevaPassword: string): Observable<void> {
+    return this.http
+      .post(RUTAS_API.establecerPassword, { token, nuevaPassword })
+      .pipe(
+        map(() => undefined),
+        catchError((error: HttpErrorResponse) => {
+          // El 400 del backend llega en tres formas (string pelado, `{ message }`
+          // o ProblemDetails). No se lee ninguna: cualquier 400 es "el enlace no
+          // sirve" y el body crudo nunca llega a la pantalla.
+          const mensaje =
+            error.status === 0
+              ? MENSAJE_SIN_CONEXION
+              : error.status === 400
+                ? MENSAJE_ENLACE_INVALIDO
+                : MENSAJE_ERROR_CREAR_PASSWORD;
+          return throwError(() => new Error(mensaje));
+        }),
+      );
   }
 
   cerrarSesion(): void {

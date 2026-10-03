@@ -2,11 +2,13 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
+import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { JustificativosService } from '../../../core/justificativos/justificativos.service';
 import {
   TIPOS_INASISTENCIA,
   exigeComprobante,
+  exigeNota,
 } from '../../../core/justificativos/modelos/tipo-inasistencia';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
@@ -35,6 +37,7 @@ const MAXIMO_NOTA = 500;
 })
 export class CargaJustificativo {
   private readonly auth = inject(AuthService);
+  private readonly campana = inject(CampanaService);
   private readonly justificativos = inject(JustificativosService);
   private readonly router = inject(Router);
 
@@ -43,6 +46,10 @@ export class CargaJustificativo {
   protected readonly maximoNota = MAXIMO_NOTA;
 
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
+
+  /** La campana del encabezado, igual en todas las pantallas (`CampanaService`). */
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
   protected readonly rutaPanel = computed(() => destinoSegunRoles(this.sesion()));
 
   protected readonly tipoElegido = signal('');
@@ -72,6 +79,9 @@ export class CargaJustificativo {
     () => this.tipoElegido() !== '' && exigeComprobante(this.tipoElegido()),
   );
 
+  /** `true` cuando el motivo elegido obliga a escribir la nota (solo lo valida el front). */
+  protected readonly pideNota = computed(() => exigeNota(this.tipoElegido()));
+
   /** La ayuda del motivo elegido, para mostrarla debajo del desplegable. */
   protected readonly ayudaDelTipo = computed(
     () => this.tipos.find((t) => t.valor === this.tipoElegido())?.ayuda ?? null,
@@ -89,6 +99,10 @@ export class CargaJustificativo {
     }
     if (this.fechaFin() !== '' && this.fechaFin() < this.fechaInicio()) {
       return 'La fecha de fin no puede ser anterior a la de inicio.';
+    }
+    // La nota va antes que el comprobante porque en la pantalla está arriba.
+    if (this.pideNota() && this.nota().trim() === '') {
+      return 'Con el motivo "Otros" tenés que escribir la nota aclaratoria.';
     }
     if (this.pideComprobante() && this.archivo() === null) {
       return 'Este motivo necesita que adjuntes el comprobante en PDF.';
@@ -183,6 +197,10 @@ export class CargaJustificativo {
 
   protected volverAlPanel(): void {
     this.router.navigate([this.rutaPanel()]);
+  }
+
+  constructor() {
+    this.campana.refrescar();
   }
 
   protected cerrarSesion(): void {

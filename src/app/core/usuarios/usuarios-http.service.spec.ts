@@ -171,3 +171,101 @@ describe('UsuariosHttpService', () => {
     expect(activo).toBe(false);
   });
 });
+
+describe('UsuariosHttpService.listarProvincias', () => {
+  let servicio: UsuariosHttpService;
+  let backend: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [UsuariosHttpService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    servicio = TestBed.inject(UsuariosHttpService);
+    backend = TestBed.inject(HttpTestingController);
+  });
+
+  // `forkJoin` cancela los pedidos pendientes cuando uno de ellos falla.
+  afterEach(() => backend.verify({ ignoreCancelled: true }));
+
+  const PAISES = [
+    { idPais: 7, nombre: 'Argentina' },
+    { idPais: 9, nombre: 'Uruguay' },
+  ];
+
+  it('pide los países y las provincias de cada uno, y las devuelve aplanadas con el país', () => {
+    let resultado: unknown = null;
+    servicio.listarProvincias().subscribe((r) => (resultado = r));
+
+    backend.expectOne(RUTAS_API.paises).flush(PAISES);
+    backend
+      .expectOne(RUTAS_API.provinciasDePais(7))
+      .flush([{ idProvincia: 31, nombre: 'Córdoba' }]);
+    backend
+      .expectOne(RUTAS_API.provinciasDePais(9))
+      .flush([{ idProvincia: 55, nombre: 'Colonia' }]);
+
+    expect(resultado).toEqual([
+      { idProvincia: 31, nombre: 'Córdoba', pais: 'Argentina' },
+      { idProvincia: 55, nombre: 'Colonia', pais: 'Uruguay' },
+    ]);
+  });
+
+  it('un país que responde 404 aporta cero provincias y no hace fallar al resto', () => {
+    let resultado: unknown = null;
+    let fallo = false;
+    servicio.listarProvincias().subscribe({
+      next: (r) => (resultado = r),
+      error: () => (fallo = true),
+    });
+
+    backend.expectOne(RUTAS_API.paises).flush(PAISES);
+    backend
+      .expectOne(RUTAS_API.provinciasDePais(7))
+      .flush({ message: 'No se encontraron provincias para este país.' }, { status: 404, statusText: 'Not Found' });
+    backend
+      .expectOne(RUTAS_API.provinciasDePais(9))
+      .flush([{ idProvincia: 55, nombre: 'Colonia' }]);
+
+    expect(fallo).toBe(false);
+    expect(resultado).toEqual([{ idProvincia: 55, nombre: 'Colonia', pais: 'Uruguay' }]);
+  });
+
+  it('sin países emite una lista vacía (no se queda sin emitir)', () => {
+    let resultado: unknown = null;
+    servicio.listarProvincias().subscribe((r) => (resultado = r));
+
+    backend.expectOne(RUTAS_API.paises).flush([]);
+
+    expect(resultado).toEqual([]);
+  });
+
+  it('si falla el pedido de países, el observable falla', () => {
+    let fallo = false;
+    servicio.listarProvincias().subscribe({ error: () => (fallo = true) });
+
+    backend.expectOne(RUTAS_API.paises).flush(null, { status: 500, statusText: 'Server Error' });
+
+    expect(fallo).toBe(true);
+  });
+
+  it('si falla el pedido de países sin respuesta (status 0), el observable falla', () => {
+    let fallo = false;
+    servicio.listarProvincias().subscribe({ error: () => (fallo = true) });
+
+    backend.expectOne(RUTAS_API.paises).error(new ProgressEvent('error'));
+
+    expect(fallo).toBe(true);
+  });
+
+  it('si las provincias de un país fallan con algo que no es 404, el observable falla', () => {
+    let fallo = false;
+    servicio.listarProvincias().subscribe({ error: () => (fallo = true) });
+
+    backend.expectOne(RUTAS_API.paises).flush(PAISES);
+    backend
+      .expectOne(RUTAS_API.provinciasDePais(7))
+      .flush(null, { status: 500, statusText: 'Server Error' });
+
+    expect(fallo).toBe(true);
+  });
+});

@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, delay, of, throwError } from 'rxjs';
 import { ID_ROL, ROLES } from '../auth/modelos/rol';
 import { PerfilUsuario } from './modelos/perfil-usuario';
+import { Provincia } from './modelos/provincia';
 import { UsuarioDetalle } from './modelos/usuario-detalle';
 import { UsuarioInstitucional } from './modelos/usuario-institucional';
 import { UsuariosService, mensajePerfilActualizado } from './usuarios.service';
@@ -96,6 +97,38 @@ const USUARIOS_INVENTADOS: readonly UsuarioInstitucional[] = [
     estadoLegajo: 'Pendiente',
   },
 ];
+
+/**
+ * Provincias de ejemplo para el desplegable cuando no hay backend. Los ids son
+ * inventados (1..24, alfabético) y NO coinciden con los de la base real: sirven
+ * para maquetar, no para dar de alta contra el backend.
+ */
+const PROVINCIAS_DE_EJEMPLO: readonly Provincia[] = [
+  'Buenos Aires',
+  'Catamarca',
+  'Chaco',
+  'Chubut',
+  'Ciudad Autónoma de Buenos Aires',
+  'Córdoba',
+  'Corrientes',
+  'Entre Ríos',
+  'Formosa',
+  'Jujuy',
+  'La Pampa',
+  'La Rioja',
+  'Mendoza',
+  'Misiones',
+  'Neuquén',
+  'Río Negro',
+  'Salta',
+  'San Juan',
+  'San Luis',
+  'Santa Cruz',
+  'Santa Fe',
+  'Santiago del Estero',
+  'Tierra del Fuego',
+  'Tucumán',
+].map((nombre, indice) => ({ idProvincia: indice + 1, nombre, pais: 'Argentina' }));
 
 @Injectable()
 export class UsuariosMockService extends UsuariosService {
@@ -195,6 +228,10 @@ export class UsuariosMockService extends UsuariosService {
     return of('El usuario ha sido dado de baja (inactivo) correctamente.').pipe(
       delay(DEMORA_SIMULADA_MS),
     );
+  }
+
+  listarProvincias(): Observable<Provincia[]> {
+    return of([...PROVINCIAS_DE_EJEMPLO]).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
   private fallar(mensaje: string): Observable<never> {

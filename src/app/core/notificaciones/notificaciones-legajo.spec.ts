@@ -1,5 +1,5 @@
-import { DocumentoLegajo } from '../../../core/legajos/modelos/documento-legajo';
-import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
+import { DocumentoLegajo } from '../legajos/modelos/documento-legajo';
+import { DocumentoRequerido } from '../legajos/modelos/documento-requerido';
 import { novedadesDelLegajo, notificacionesPorRechazos } from './notificaciones-legajo';
 
 function documento(parcial: Partial<DocumentoLegajo> & { id: number }): DocumentoLegajo {
@@ -75,11 +75,10 @@ describe('notificacionesPorRechazos', () => {
     ]);
   });
 
-  it('corta la lista en el máximo pedido', () => {
+  it('no recorta la lista: el tope es cosa de la presentación, no de core/', () => {
     const rechazados = [1, 2, 3, 4, 5, 6, 7].map((id) => documento({ id, estado: 'Rechazado' }));
 
-    expect(notificacionesPorRechazos(rechazados)).toHaveLength(5);
-    expect(notificacionesPorRechazos(rechazados, { maximo: 2 })).toHaveLength(2);
+    expect(notificacionesPorRechazos(rechazados)).toHaveLength(7);
   });
 
   it('le pone a cada fila el destino que le pasaron', () => {
@@ -181,13 +180,13 @@ describe('novedadesDelLegajo', () => {
     expect(novedades.total).toBe(0);
   });
 
-  it('el total cuenta todo aunque el detalle se corte en el máximo', () => {
+  it('el detalle trae TODAS las novedades, sin recortar, y coincide con el total', () => {
     const requeridos = ['A', 'BB', 'CCC', 'DDDD', 'EEEEE', 'FFFFFF', 'GGGGGGG'].map((n) =>
       requerido(n),
     );
     const novedades = novedadesDelLegajo([], requeridos);
 
     expect(novedades.total).toBe(7);
-    expect(novedades.detalle).toHaveLength(5);
+    expect(novedades.detalle).toHaveLength(7);
   });
 });

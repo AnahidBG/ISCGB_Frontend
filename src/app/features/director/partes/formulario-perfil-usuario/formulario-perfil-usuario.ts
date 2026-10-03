@@ -3,6 +3,7 @@ import {
   Component,
   OnInit,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -19,7 +20,7 @@ import {
   OPCIONES_DE_ROL,
   PerfilUsuario,
 } from '../../../../core/usuarios/modelos/perfil-usuario';
-import { PROVINCIAS } from '../../../../core/usuarios/modelos/provincia';
+import { Provincia } from '../../../../core/usuarios/modelos/provincia';
 
 /** Los datos con los que arranca el formulario en "Editar Usuario". Todo es opcional. */
 export type PerfilInicial = Partial<PerfilUsuario>;
@@ -75,12 +76,38 @@ export class FormularioPerfilUsuario implements OnInit {
   readonly error = input<string | null>(null);
   readonly textoEnviar = input('Guardar');
 
+  /**
+   * Las provincias las trae el contenedor (este componente no inyecta
+   * servicios). Pueden llegar DESPUÉS de `perfilInicial`: son dos pedidos
+   * independientes. No hace falta ningún `effect` para preseleccionar: el
+   * control ya tiene el id guardado y, cuando aparecen las `<option>`, el
+   * `<select>` se vuelve a sincronizar con el valor del control.
+   */
+  readonly provincias = input<readonly Provincia[]>([]);
+  readonly cargandoProvincias = input(false);
+  readonly falloProvincias = input(false);
+
+  /**
+   * Las mismas provincias agrupadas por país, en el orden en que llegaron
+   * (el backend ya las ordena por nombre). Un solo desplegable agrupado y no
+   * dos en cascada: el control sigue siendo uno solo (`idProvincia`) y la
+   * edición no necesita saber el país, que el backend no devuelve.
+   */
+  protected readonly provinciasPorPais = computed(() => {
+    const grupos = new Map<string, Provincia[]>();
+    for (const provincia of this.provincias()) {
+      const grupo = grupos.get(provincia.pais) ?? [];
+      grupo.push(provincia);
+      grupos.set(provincia.pais, grupo);
+    }
+    return Array.from(grupos, ([pais, provincias]) => ({ pais, provincias }));
+  });
+
   readonly guardar = output<PerfilUsuario>();
   readonly cancelar = output<void>();
 
   protected readonly opcionesDeRol = OPCIONES_DE_ROL;
   protected readonly opcionesDeGenero = OPCIONES_DE_GENERO;
-  protected readonly provincias = PROVINCIAS;
   protected readonly rolDocente = ROLES.docente;
 
   protected readonly seIntentoEnviar = signal(false);
@@ -122,6 +149,20 @@ export class FormularioPerfilUsuario implements OnInit {
 
   protected readonly esEdicion = computed(() => this.modo() === 'edicion');
 
+  constructor() {
+    // Se deshabilita el CONTROL y no solo el `<select>`: con formularios
+    // reactivos, Angular pisa el atributo `disabled` del DOM con el estado del
+    // control. Mientras carga, `enviar()` además no hace nada (ver abajo).
+    effect(() => {
+      const control = this.formulario.controls.idProvincia;
+      if (this.cargandoProvincias()) {
+        control.disable({ emitEvent: false });
+      } else {
+        control.enable({ emitEvent: false });
+      }
+    });
+  }
+
   ngOnInit(): void {
     const inicial = this.perfilInicial();
     if (inicial !== null) {
@@ -153,7 +194,14 @@ export class FormularioPerfilUsuario implements OnInit {
   protected enviar(): void {
     this.seIntentoEnviar.set(true);
 
-    if (this.formulario.invalid || this.hayErroresPropios() || this.enviando()) {
+    // Con las provincias cargando, el control de provincia está deshabilitado
+    // y no cuenta para la validez: sin este corte se podría enviar vacío.
+    if (
+      this.cargandoProvincias() ||
+      this.formulario.invalid ||
+      this.hayErroresPropios() ||
+      this.enviando()
+    ) {
       return;
     }
 

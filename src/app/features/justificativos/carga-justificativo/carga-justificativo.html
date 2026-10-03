@@ -7,6 +7,8 @@
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
   <div class="mx-auto max-w-3xl">
@@ -132,6 +134,9 @@
           <div class="flex items-baseline justify-between gap-3">
             <label for="nota" class="block text-sm font-semibold text-texto">
               Nota aclaratoria
+              @if (pideNota()) {
+                <span class="text-rechazado">*</span>
+              }
             </label>
             <span
               class="text-xs"
@@ -145,6 +150,7 @@
           <textarea
             id="nota"
             rows="4"
+            [attr.aria-required]="pideNota() ? 'true' : null"
             [attr.maxlength]="maximoNota"
             [value]="nota()"
             placeholder="Describí brevemente las circunstancias de la inasistencia."

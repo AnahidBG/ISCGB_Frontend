@@ -1,6 +1,8 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
+import { contextoDePedido } from '../carga/contexto-pedido';
+import { OpcionesPedido } from '../comun/opciones-pedido';
 import { RUTAS_API } from '../configuracion/api';
 import {
   JustificativoPendiente,
@@ -40,8 +42,9 @@ interface JustificativoApi {
 export class JustificativosHttpService extends JustificativosService {
   private readonly http = inject(HttpClient);
 
-  listarPendientes(): Observable<JustificativoPendiente[]> {
-    return this.http.get<JustificativoApi[]>(RUTAS_API.justificativosPendientes).pipe(
+  listarPendientes(opciones?: OpcionesPedido): Observable<JustificativoPendiente[]> {
+    const url = RUTAS_API.justificativosPendientes;
+    return this.http.get<JustificativoApi[]>(url, { context: contextoDePedido(opciones) }).pipe(
       // Este endpoint devuelve `[]` cuando no hay ninguno, NO 404 — al revés
       // que los de Legajos y Usuarios. Por eso acá no hay un catch de 404.
       map((justificativos) => justificativos.map(aJustificativoPendiente)),

@@ -1,0 +1,32 @@
+<!--
+  Con `url` la fila lleva a algún lado; sin `url` es solo el aviso. Las dos
+  ramas se dibujan igual para que la lista se lea pareja.
+-->
+@if (notificacion().url; as destino) {
+  <a
+    [attr.role]="rolEnlace()"
+    [routerLink]="destino"
+    class="flex gap-3 px-4 py-3 transition-colors hover:bg-fondo-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-principal"
+    (click)="seleccionada.emit()"
+  >
+    <ng-container *ngTemplateOutlet="contenido" />
+  </a>
+} @else {
+  <div class="flex gap-3 px-4 py-3">
+    <ng-container *ngTemplateOutlet="contenido" />
+  </div>
+}
+
+<ng-template #contenido>
+  <span
+    aria-hidden="true"
+    class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+    [class]="clasePunto()"
+  ></span>
+  <span class="min-w-0">
+    <span class="block text-sm font-medium text-texto">{{ notificacion().titulo }}</span>
+    @if (notificacion().detalle; as detalle) {
+      <span class="mt-0.5 block text-xs text-texto-suave">{{ detalle }}</span>
+    }
+  </span>
+</ng-template>

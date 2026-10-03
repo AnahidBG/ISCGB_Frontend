@@ -2,7 +2,9 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
+import { contextoDePedido } from '../carga/contexto-pedido';
 import { RUTAS_API } from '../configuracion/api';
+import { OpcionesPedido } from '../comun/opciones-pedido';
 import { DocumentoLegajo } from './modelos/documento-legajo';
 import { DocumentoRequerido, NuevoDocumentoLegajo } from './modelos/documento-requerido';
 import { LegajoResumenUsuario } from './modelos/legajo-resumen';
@@ -82,7 +84,7 @@ export class LegajoHttpService extends LegajoService {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthService);
 
-  obtenerLegajoPropio(): Observable<DocumentoLegajo[]> {
+  obtenerLegajoPropio(opciones?: OpcionesPedido): Observable<DocumentoLegajo[]> {
     const idUsuario = this.auth.sesion()?.idUsuario;
 
     // Sin sesión no hay de quién pedir el legajo. No debería pasar nunca
@@ -91,11 +93,12 @@ export class LegajoHttpService extends LegajoService {
       return of([]);
     }
 
-    return this.obtenerLegajoDeUsuario(idUsuario);
+    return this.obtenerLegajoDeUsuario(idUsuario, opciones);
   }
 
-  obtenerLegajoDeUsuario(idUsuario: number): Observable<DocumentoLegajo[]> {
-    return this.http.get<UsuarioDocumentosApi>(RUTAS_API.legajosPorUsuario(idUsuario)).pipe(
+  obtenerLegajoDeUsuario(idUsuario: number, opciones?: OpcionesPedido): Observable<DocumentoLegajo[]> {
+    const url = RUTAS_API.legajosPorUsuario(idUsuario);
+    return this.http.get<UsuarioDocumentosApi>(url, { context: contextoDePedido(opciones) }).pipe(
       map((respuesta) => (respuesta.documentos ?? []).map(aDocumentoLegajo)),
       catchError((error: HttpErrorResponse) => {
         if (error.status === 404) {
@@ -107,8 +110,9 @@ export class LegajoHttpService extends LegajoService {
     );
   }
 
-  documentosRequeridos(idRol: number): Observable<DocumentoRequerido[]> {
-    return this.http.get<RequeridosApi>(RUTAS_API.documentosRequeridosPorRol(idRol)).pipe(
+  documentosRequeridos(idRol: number, opciones?: OpcionesPedido): Observable<DocumentoRequerido[]> {
+    const url = RUTAS_API.documentosRequeridosPorRol(idRol);
+    return this.http.get<RequeridosApi>(url, { context: contextoDePedido(opciones) }).pipe(
       map((respuesta) => respuesta.documentos ?? []),
       catchError((error: HttpErrorResponse) => {
         // Un 404 acá significa "nadie configuró todavía qué documentos le
@@ -196,8 +200,9 @@ export class LegajoHttpService extends LegajoService {
    * `LegajoResumenUsuario`, pero igual pasa por el mapper para normalizar los
    * huecos (nombre vacío, `documentos` ausente).
    */
-  obtenerResumenInstitucional(): Observable<LegajoResumenUsuario[]> {
-    return this.http.get<LegajoResumenUsuario[]>(RUTAS_API.legajosResumenEstado).pipe(
+  obtenerResumenInstitucional(opciones?: OpcionesPedido): Observable<LegajoResumenUsuario[]> {
+    const url = RUTAS_API.legajosResumenEstado;
+    return this.http.get<LegajoResumenUsuario[]>(url, { context: contextoDePedido(opciones) }).pipe(
       map((resumen) => resumen.map(aLegajoResumenUsuario)),
       catchError((error: HttpErrorResponse) => {
         if (error.status === 404) {
@@ -235,11 +240,11 @@ export class LegajoHttpService extends LegajoService {
    * funciona HOY sin esperar al equipo de backend. Cuando `resumen-usuarios`
    * exista de verdad, esta función vuelve a ser una sola llamada directa.
    */
-  obtenerResumenUsuarios(): Observable<ResumenUsuarioLegajo[]> {
+  obtenerResumenUsuarios(opciones?: OpcionesPedido): Observable<ResumenUsuarioLegajo[]> {
     // `obtenerResumenInstitucional()` ya traduce el 404 de "nadie tiene
     // documentos" a `[]` y cualquier otro error a un mensaje legible — no
     // hace falta un `catchError` más acá arriba.
-    return this.obtenerResumenInstitucional().pipe(
+    return this.obtenerResumenInstitucional(opciones).pipe(
       map((usuarios) => usuarios.map(aResumenUsuarioLegajoDesdeInstitucional)),
     );
   }

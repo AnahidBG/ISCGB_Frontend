@@ -34,6 +34,17 @@ export const routes: Routes = [
       ),
   },
   {
+    // Pantalla pública, sin `authGuard` ni `roleGuard`: la persona llega desde
+    // el link del mail de alta SIN sesión, y todavía no tiene contraseña con
+    // qué iniciarla. Se llama `crear-password` (y no `crear-contrasena` como
+    // `recuperar-contrasena`) porque el link que arma el backend ya es el
+    // contrato: `/crear-password?token=...`. Ver features/crear-password/.
+    path: 'crear-password',
+    title: 'Crear contraseña · ISCGB',
+    loadComponent: () =>
+      import('./features/crear-password/crear-password').then((m) => m.CrearPassword),
+  },
+  {
     // Destino después de iniciar sesión para quien no tiene NINGÚN rol
     // asignado (existe: "Nadia Sinrol" en `usuarios-de-prueba.ts`) y el
     // destino de `roleGuard` cuando una sesión entra a una pantalla que no

@@ -2,6 +2,11 @@ export const URL_BASE_API = 'http://localhost:5231';
 
 export const RUTAS_API = {
   login: `${URL_BASE_API}/api/Auth/login`,
+  /**
+   * Define la contraseña con el token del mail de alta. Sin autenticación.
+   * Vive en `UsuariosAdmin` pero la consume `AuthService` — ver su contrato.
+   */
+  establecerPassword: `${URL_BASE_API}/api/UsuariosAdmin/establecer-password`,
   programasMateria: `${URL_BASE_API}/api/ProgramasMateria`,
 
   pdfPrograma: (idPrograma: number) => `${URL_BASE_API}/api/ProgramasMateria/${idPrograma}/pdf`,
@@ -70,6 +75,16 @@ export const RUTAS_API = {
 
   /** Baja lógica (estado inactivo). Sin body. */
   bajaUsuario: (id: number) => `${URL_BASE_API}/api/UsuariosAdmin/baja/${id}`,
+
+  // --- Ubicaciones (ISCGB_Backend/Controllers/UbicacionController.cs) ---
+  // Sin autenticación. No existe "todas las provincias" ni "provincia → país":
+  // hay que pedir los países y después las provincias de cada uno.
+
+  /** Países, ordenados por nombre. */
+  paises: `${URL_BASE_API}/api/Ubicaciones/paises`,
+
+  /** Provincias de un país. 404 = ese país no tiene ninguna cargada (lista vacía, no error). */
+  provinciasDePais: (idPais: number) => `${URL_BASE_API}/api/Ubicaciones/paises/${idPais}/provincias`,
 
   // --- Reconocimiento de saberes (SCRUM-30) ---
   // ⚠️ PROPUESTO: el backend todavía no tiene controlador. Ver

@@ -6,6 +6,8 @@
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
   <div

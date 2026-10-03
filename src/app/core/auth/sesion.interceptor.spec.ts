@@ -28,6 +28,10 @@ class AuthDePrueba extends AuthService {
     return of(this.sesionActual()!);
   }
 
+  establecerPassword(): Observable<void> {
+    return of(undefined);
+  }
+
   cerrarSesion(): void {
     this.sesionActual.set(null);
   }

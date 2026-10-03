@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../core/auth/rol-principal';
+import { CampanaService } from '../../core/notificaciones/campana.service';
 import { destinoSegunRoles } from '../../core/auth/destino-por-rol';
 import { enlacesPorSesion } from '../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../shared/ui/estructura-panel/estructura-panel';
@@ -41,6 +42,7 @@ export interface DatosProximamente {
 })
 export class Proximamente {
   private readonly auth = inject(AuthService);
+  private readonly campana = inject(CampanaService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
 
@@ -56,6 +58,10 @@ export class Proximamente {
   protected readonly datos = this.route.snapshot.data as DatosProximamente;
 
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
+
+  /** La campana del encabezado, igual en todas las pantallas (`CampanaService`). */
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
   protected readonly rutaPanel = computed(() => destinoSegunRoles(this.sesion()));
 
   /**
@@ -66,6 +72,10 @@ export class Proximamente {
    * comentario de esa función para el porqué).
    */
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
+
+  constructor() {
+    this.campana.refrescar();
+  }
 
   protected cerrarSesion(): void {
     this.auth.cerrarSesion();

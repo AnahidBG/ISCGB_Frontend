@@ -1,4 +1,5 @@
 import { Observable } from 'rxjs';
+import { OpcionesPedido } from '../comun/opciones-pedido';
 import { DocumentoLegajo } from './modelos/documento-legajo';
 import {
   DocumentoRequerido,
@@ -27,8 +28,12 @@ export const MENSAJE_ERROR_AUDITORIA_LEGAJO =
  * Control de Legajos.
  */
 export abstract class LegajoService {
-  /** El legajo de la persona que tiene la sesión abierta. */
-  abstract obtenerLegajoPropio(): Observable<DocumentoLegajo[]>;
+  /**
+   * El legajo de la persona que tiene la sesión abierta.
+   * `opciones.enSegundoPlano`: pedido accesorio, que no bloquee la pantalla.
+   * Lo mismo vale para `documentosRequeridos` y `obtenerResumenUsuarios`.
+   */
+  abstract obtenerLegajoPropio(opciones?: OpcionesPedido): Observable<DocumentoLegajo[]>;
 
   /** El legajo de un usuario concreto, para revisión por parte de Secretaría o Dirección. */
   abstract obtenerLegajoDeUsuario(idUsuario: number): Observable<DocumentoLegajo[]>;
@@ -45,7 +50,7 @@ export abstract class LegajoService {
    * responde 404 en ese caso y la implementación lo traduce, porque "todavía
    * nadie configuró qué le pedimos a este rol" no es un error de red.
    */
-  abstract documentosRequeridos(idRol: number): Observable<DocumentoRequerido[]>;
+  abstract documentosRequeridos(idRol: number, opciones?: OpcionesPedido): Observable<DocumentoRequerido[]>;
 
   /** Sube un PDF al legajo de alguien. Queda en estado Pendiente. */
   abstract subirDocumento(documento: NuevoDocumentoLegajo): Observable<void>;
@@ -107,5 +112,5 @@ export abstract class LegajoService {
    * El detalle documento por documento se pide recién al abrir el perfil de
    * una persona, con `obtenerLegajoDeUsuario()`.
    */
-  abstract obtenerResumenUsuarios(): Observable<ResumenUsuarioLegajo[]>;
+  abstract obtenerResumenUsuarios(opciones?: OpcionesPedido): Observable<ResumenUsuarioLegajo[]>;
 }

@@ -3,16 +3,21 @@ import {
   Component,
   computed,
   inject,
+  ElementRef,
   input,
   output,
   signal,
+  viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink, RouterLinkActive } from '@angular/router';
 import { map } from 'rxjs';
 import { PARAMETRO_ACCESO_DENEGADO } from '../../../core/auth/role.guard';
 import { inicialesDe } from '../../../core/comun/texto';
+import { NotificacionPanel } from '../../../core/notificaciones/modelos/notificacion-panel';
+import { FilaNotificacion } from '../fila-notificacion/fila-notificacion';
 import { Icono, NombreIcono } from '../icono/icono';
+import { PanelNotificaciones } from '../panel-notificaciones/panel-notificaciones';
 
 /** Un enlace del menú lateral de un panel. */
 export interface EnlacePanel {
@@ -29,30 +34,18 @@ export interface AccionPanel {
   icono?: NombreIcono;
 }
 
-/**
- * Una novedad de las que se despliegan al tocar la campana.
- *
- * Cada panel arma las suyas de sus propios datos: son cosas que YA pasaron y
- * que esta persona puede resolver (un documento rechazado, un justificativo
- * esperando revisión), no avisos genéricos. Ver `notificacionesPorRechazos`
- * para el caso más repetido.
- */
-export interface NotificacionPanel {
-  /** Qué pasó, en una línea. */
-  titulo: string;
-
-  /** La aclaración de abajo: el motivo, la fecha, de quién es. */
-  detalle?: string;
-
-  /** A dónde lleva al tocarla. Sin esto la fila no es un enlace. */
-  url?: string;
-
-  /** Colorea el puntito de la izquierda. Por defecto, `pendiente`. */
-  tono?: 'aprobado' | 'pendiente' | 'rechazado';
-}
+/** Se re-exporta para quien ya la importaba de acá: vive en `core/notificaciones/`. */
+export type { NotificacionPanel };
 
 /** Dónde se guarda si la persona prefiere el menú colapsado. Ver `leerPreferenciaColapso`. */
 const CLAVE_COLAPSADO = 'iscgb.panel.colapsado';
+
+/**
+ * Cuántas filas entran en el desplegable de la campana. El resto se ve en el
+ * panel lateral ("Ver todas"). El recorte vive acá, en la presentación, y no
+ * en `core/`: `CampanaService` entrega la lista completa.
+ */
+const MAXIMO_NOTIFICACIONES_EN_DESPLEGABLE = 5;
 
 /**
  * Estructura común a los paneles de cada rol: barra lateral + encabezado
@@ -86,22 +79,28 @@ const CLAVE_COLAPSADO = 'iscgb.panel.colapsado';
  */
 @Component({
   selector: 'app-estructura-panel',
-  imports: [RouterLink, RouterLinkActive, Icono],
+  imports: [RouterLink, RouterLinkActive, Icono, FilaNotificacion, PanelNotificaciones],
   templateUrl: './estructura-panel.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
-    // Un clic en cualquier lado cierra los desplegables del encabezado (el de
-    // la persona y el de la campana). Es lo que cualquiera espera de un menú
-    // desplegable: si no, queda abierto tapando cosas hasta que se vuelve a
-    // tocar el botón que lo abrió.
+    // Un clic en cualquier lado cierra SOLO el menú de la persona: es lo que
+    // cualquiera espera de un menú desplegable corto.
     //
-    // Escape cierra ESO y además el cajón de celular — un diálogo modal
+    // El panel de notificaciones NO se cierra con un clic afuera: se lee de a
+    // poco y tocar la pantalla de al lado por error lo hacía desaparecer. Se
+    // cierra con la X, con Escape, volviendo a tocar la campana, tocando un
+    // aviso (que navega) o abriendo el menú de la persona.
+    //
+    // El panel lateral de "Ver todas" sigue el mismo criterio: X, Escape o un
+    // aviso con enlace; el fondo oscuro NO lo cierra.
+    //
+    // Escape cierra ESOS dos y además el cajón de celular — un diálogo modal
     // (`role="dialog" aria-modal="true"`) tiene que poder cerrarse con Escape
     // (ARIA APG). El clic afuera NO cierra el cajón: para eso está su fondo
     // oscuro, que ya lo maneja. Meter el cajón en `cerrarMenusFlotantes()`
     // haría que el mismo clic que abre la hamburguesa lo cierre al burbujear
     // hasta el `document` — por eso Escape va por un método aparte.
-    '(document:click)': 'cerrarMenusFlotantes()',
+    '(document:click)': 'cerrarMenuPerfil()',
     '(document:keydown.escape)': 'cerrarConEscape()',
   },
 })
@@ -151,6 +150,11 @@ export class EstructuraPanel {
    * puntito rojo permanente que no corresponde a nada es peor que no tener
    * campana: la gente aprende a ignorarlo, y el día que sí importe tampoco lo
    * van a mirar.
+   *
+   * Los dos inputs de la campana (este y `notificacionesDetalle`) los llena el
+   * CONTENEDOR de cada pantalla con lo que dice `CampanaService`, que es lo
+   * mismo en todas porque depende de la sesión y no de la pantalla. Este
+   * componente no inyecta el servicio: sigue siendo presentacional.
    */
   readonly notificaciones = input<number>(0);
 
@@ -159,13 +163,14 @@ export class EstructuraPanel {
    * campana.
    *
    * Es opcional. Sin esto la campana sigue funcionando: se abre igual y dice
-   * cuántas cosas hay, solo que sin el detalle. Así ningún panel que todavía
-   * no arme la lista queda con un botón que no hace nada.
+   * cuántas cosas hay, solo que sin el detalle. Así ninguna pantalla queda con
+   * un botón que no hace nada si todavía no tiene la lista.
    *
-   * Puede traer MENOS ítems que `notificaciones()` — un panel que tiene
-   * cuarenta pendientes no debería volcar cuarenta filas acá. En ese caso el
-   * panelcito muestra los que le pasaron y avisa cuántos quedan afuera (ver
-   * `notificacionesNoListadas`).
+   * Trae la lista COMPLETA, una fila por aviso (puede ser MENOS filas que
+   * `notificaciones()`: una fila de Secretaría agrupa todos los documentos de
+   * una persona). El desplegable muestra solo las primeras y avisa cuántas
+   * FILAS quedan afuera (ver `notificacionesNoListadas`); el panel lateral
+   * ("Ver todas") las muestra todas.
    */
   readonly notificacionesDetalle = input<NotificacionPanel[]>([]);
 
@@ -201,6 +206,12 @@ export class EstructuraPanel {
   /** `true` con el panelcito de la campana desplegado. */
   protected readonly menuNotificacionesAbierto = signal(false);
 
+  /** `true` con el panel lateral de TODAS las notificaciones abierto. */
+  protected readonly panelNotificacionesAbierto = signal(false);
+
+  /** La campana: a ella vuelve el foco al cerrar el panel lateral. */
+  private readonly botonCampana = viewChild<ElementRef<HTMLButtonElement>>('botonCampana');
+
   /**
    * Cuántas novedades hay: el número que manda el panel o, si no mandó
    * ninguno pero sí la lista, cuántos ítems tiene esa lista. Así un panel
@@ -212,9 +223,19 @@ export class EstructuraPanel {
 
   protected readonly hayNotificaciones = computed(() => this.cantidadNotificaciones() > 0);
 
-  /** Cuántas novedades quedaron afuera de la lista del panelcito. */
-  protected readonly notificacionesNoListadas = computed(() =>
-    Math.max(0, this.cantidadNotificaciones() - this.notificacionesDetalle().length),
+  /** Las filas que entran en el desplegable: las primeras, sin tocar la lista original. */
+  protected readonly notificacionesDelDesplegable = computed(() =>
+    this.notificacionesDetalle().slice(0, MAXIMO_NOTIFICACIONES_EN_DESPLEGABLE),
+  );
+
+  /**
+   * Cuántas FILAS quedaron afuera del desplegable. Cuenta filas y no la
+   * diferencia con la insignia: para Secretaría la insignia cuenta documentos
+   * y una fila agrupa los de una persona, así que esa resta podía decir
+   * "Y 2 novedades más" sin ninguna fila oculta.
+   */
+  protected readonly notificacionesNoListadas = computed(
+    () => this.notificacionesDetalle().length - this.notificacionesDelDesplegable().length,
   );
 
   protected readonly mostrarSaludo = computed(
@@ -305,7 +326,22 @@ export class EstructuraPanel {
     this.menuNotificacionesAbierto.set(false);
   }
 
-  /** Un clic afuera cierra cualquiera de los dos desplegables del encabezado. */
+  /** "Ver todas": el desplegable cede el lugar al panel lateral. */
+  protected abrirPanelNotificaciones(): void {
+    this.menuNotificacionesAbierto.set(false);
+    this.panelNotificacionesAbierto.set(true);
+  }
+
+  /** Cierra el panel lateral y devuelve el foco a la campana que lo abrió. */
+  protected cerrarPanelNotificaciones(): void {
+    this.panelNotificacionesAbierto.set(false);
+    this.botonCampana()?.nativeElement.focus();
+  }
+
+  /**
+   * Cierra los dos desplegables del encabezado. Lo usa Escape; el clic afuera
+   * cierra solo el de la persona (ver el `host`).
+   */
   protected cerrarMenusFlotantes(): void {
     this.menuPerfilAbierto.set(false);
     this.menuNotificacionesAbierto.set(false);
@@ -318,6 +354,9 @@ export class EstructuraPanel {
   protected cerrarConEscape(): void {
     this.cerrarMenusFlotantes();
     this.menuAbierto.set(false);
+    if (this.panelNotificacionesAbierto()) {
+      this.cerrarPanelNotificaciones();
+    }
   }
 
   protected alternarColapso(): void {

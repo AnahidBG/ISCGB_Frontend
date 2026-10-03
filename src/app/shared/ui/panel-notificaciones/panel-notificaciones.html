@@ -1,0 +1,45 @@
+<!--
+  Fondo oscurecido. NO cierra al tocarlo (ver el comentario del componente):
+  solo tapa la página de atrás para que no se toque por error.
+-->
+<div data-fondo aria-hidden="true" class="fixed inset-0 z-40 bg-texto/50"></div>
+
+<div
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="titulo-panel-notificaciones"
+  class="panel-deslizante fixed inset-y-0 right-0 z-50 flex w-full flex-col border-l border-borde bg-superficie shadow-marca-lg sm:w-96"
+>
+  <div class="flex items-center justify-between gap-3 border-b border-borde px-4 py-4">
+    <h2 id="titulo-panel-notificaciones" class="text-base font-semibold text-texto">
+      Notificaciones
+    </h2>
+    <div class="flex items-center gap-2">
+      @if (cantidad() > 0) {
+        <span
+          class="rounded-full bg-rechazado/10 px-2.5 py-0.5 text-xs font-semibold text-rechazado"
+        >
+          {{ cantidad() }}
+        </span>
+      }
+      <button
+        #botonCerrar
+        type="button"
+        class="shrink-0 rounded p-1 text-texto-suave transition-colors hover:text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+        aria-label="Cerrar panel de notificaciones"
+        (click)="cerrar.emit()"
+      >
+        <app-icono nombre="cerrar" class="h-5 w-5" />
+      </button>
+    </div>
+  </div>
+
+  <!-- El scroll es de la lista y no de todo el panel: el encabezado queda fijo. -->
+  <ul class="min-h-0 flex-1 divide-y divide-borde overflow-y-auto">
+    @for (novedad of notificaciones(); track $index) {
+      <li>
+        <app-fila-notificacion [notificacion]="novedad" (seleccionada)="cerrar.emit()" />
+      </li>
+    }
+  </ul>
+</div>

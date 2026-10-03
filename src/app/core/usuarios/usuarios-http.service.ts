@@ -1,11 +1,12 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, of, throwError } from 'rxjs';
+import { Observable, catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
 import { ID_ROL, Rol, RolApi } from '../auth/modelos/rol';
 import { esEndpointInexistente, mensajeDelServidor } from '../comun/error-api';
 import { aFechaSola, desdeFechaSola } from '../comun/fechas';
 import { RUTAS_API } from '../configuracion/api';
 import { PerfilUsuario } from './modelos/perfil-usuario';
+import { Provincia } from './modelos/provincia';
 import { UsuarioDetalle } from './modelos/usuario-detalle';
 import { UsuarioInstitucional } from './modelos/usuario-institucional';
 import {
@@ -81,6 +82,18 @@ interface CargaUsuarioApi {
   esDirectorSuplente: boolean;
 }
 
+/** Cada fila de `GET /api/Ubicaciones/paises` (`UbicacionController.cs`). */
+interface PaisApi {
+  idPais: number;
+  nombre: string;
+}
+
+/** Cada fila de `GET /api/Ubicaciones/paises/{idPais}/provincias`. */
+interface ProvinciaApi {
+  idProvincia: number;
+  nombre: string;
+}
+
 /**
  * Cuántos usuarios pedir de una vez. `GET /api/Usuarios` pagina de a 10 por
  * default — con eso el panel del Director mostraría solo los primeros 10.
@@ -125,6 +138,46 @@ export class UsuariosHttpService extends UsuariosService {
       map(aUsuarioDetalle),
       catchError((error: HttpErrorResponse) => {
         console.error('Error al traer el detalle del usuario:', error);
+        return throwError(() => error);
+      }),
+    );
+  }
+
+  listarProvincias(): Observable<Provincia[]> {
+    return this.http.get<PaisApi[]>(RUTAS_API.paises).pipe(
+      switchMap((paises) => {
+        // `forkJoin([])` completa sin emitir nada: con una base sin países el
+        // desplegable se quedaría "cargando" para siempre.
+        if (paises.length === 0) {
+          return of([] as Provincia[]);
+        }
+        return forkJoin(paises.map((pais) => this.provinciasDe(pais))).pipe(
+          map((grupos) => grupos.flat()),
+        );
+      }),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error al traer países y provincias:', error);
+        return throwError(() => error);
+      }),
+    );
+  }
+
+  /** Las provincias de un país, con el país ya completado. 404 = ninguna. */
+  private provinciasDe(pais: PaisApi): Observable<Provincia[]> {
+    return this.http.get<ProvinciaApi[]>(RUTAS_API.provinciasDePais(pais.idPais)).pipe(
+      map((provincias) =>
+        provincias.map((provincia) => ({
+          idProvincia: provincia.idProvincia,
+          nombre: provincia.nombre,
+          pais: pais.nombre,
+        })),
+      ),
+      catchError((error: HttpErrorResponse) => {
+        // `GetProvinciasByPais` responde 404 cuando el país no tiene
+        // provincias cargadas: es una lista vacía, no un error.
+        if (error.status === 404) {
+          return of([] as Provincia[]);
+        }
         return throwError(() => error);
       }),
     );
