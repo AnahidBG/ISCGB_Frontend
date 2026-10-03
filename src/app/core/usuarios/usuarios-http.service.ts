@@ -13,6 +13,7 @@ import {
   MENSAJE_ERROR_ALTA_USUARIO,
   MENSAJE_ERROR_BAJA_USUARIO,
   MENSAJE_ERROR_EDITAR_USUARIO,
+  MENSAJE_ERROR_REACTIVAR_USUARIO,
   MENSAJE_GESTION_NO_DISPONIBLE,
   UsuariosService,
   mensajePerfilActualizado,
@@ -108,7 +109,7 @@ const REGISTROS_POR_PAGINA = 500;
  * Usuarios contra la API real.
  *
  * `listar` y `obtener` pegan contra `UsuariosController` (en `main`).
- * `crear`, `actualizar` y `darDeBaja` pegan contra `UsuariosAdminController`
+ * `crear`, `actualizar`, `darDeBaja` y `reactivar` pegan contra `UsuariosAdminController`
  * (rama `CargaDeUsuarios`, todavía sin mergear): contra un backend sin esa
  * rama responden 404 sin cuerpo, y se traduce a
  * `MENSAJE_GESTION_NO_DISPONIBLE` en vez de un error genérico.
@@ -222,6 +223,18 @@ export class UsuariosHttpService extends UsuariosService {
       ),
       catchError((error: HttpErrorResponse) =>
         throwError(() => new Error(traducirError(error, MENSAJE_ERROR_BAJA_USUARIO))),
+      ),
+    );
+  }
+
+  reactivar(idUsuario: number): Observable<string> {
+    return this.http.put<{ message?: string }>(RUTAS_API.reactivarUsuario(idUsuario), null).pipe(
+      map(
+        (respuesta) =>
+          respuesta?.message?.trim() || 'El usuario ha sido reactivado correctamente.',
+      ),
+      catchError((error: HttpErrorResponse) =>
+        throwError(() => new Error(traducirError(error, MENSAJE_ERROR_REACTIVAR_USUARIO))),
       ),
     );
   }

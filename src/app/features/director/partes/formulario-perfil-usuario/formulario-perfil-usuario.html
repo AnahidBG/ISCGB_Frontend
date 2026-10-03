@@ -267,7 +267,7 @@
 
       <p class="flex flex-col gap-1.5">
         <label for="afiliacionEmergencia" class="text-sm font-medium text-texto">
-          Afiliación (obra social) <span aria-hidden="true" class="text-rechazado">*</span>
+          Afiliación (parentesco) <span aria-hidden="true" class="text-rechazado">*</span>
         </label>
         <input
           id="afiliacionEmergencia"
@@ -275,7 +275,7 @@
           formControlName="afiliacionEmergencia"
           required
           class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
-          placeholder="Ej. APROSS"
+          placeholder="Ej. Madre, Padre, Hermano, etc."
         />
         @if (errorObligatorio('afiliacionEmergencia'); as mensaje) {
           <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>

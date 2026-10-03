@@ -230,6 +230,15 @@ export class UsuariosMockService extends UsuariosService {
     );
   }
 
+  reactivar(idUsuario: number): Observable<string> {
+    const usuario = this.usuarios.find((u) => u.idUsuario === idUsuario);
+    if (usuario === undefined) {
+      return this.fallar('Usuario no encontrado.');
+    }
+    usuario.activo = true;
+    return of('El usuario ha sido reactivado correctamente.').pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
   listarProvincias(): Observable<Provincia[]> {
     return of([...PROVINCIAS_DE_EJEMPLO]).pipe(delay(DEMORA_SIMULADA_MS));
   }

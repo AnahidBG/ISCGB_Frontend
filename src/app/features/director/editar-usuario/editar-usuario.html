@@ -7,8 +7,8 @@
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
-  [notificaciones]="notificaciones()"
-  [notificacionesDetalle]="notificacionesDetalle()"
+  [notificaciones]="0"
+  [notificacionesDetalle]="[]"
   (cerrarSesion)="cerrarSesion()"
 >
   <div class="mx-auto max-w-3xl">
@@ -76,7 +76,7 @@
         (cancelar)="volverAlPanel()"
       />
 
-      <!-- ── Baja ──────────────────────────────────────────────────────── -->
+      <!-- ── Estado de la cuenta ───────────────────────────────────────── -->
       @if (persona.estadoUsuario && !esUnoMismo()) {
         <section
           class="mt-6 rounded-2xl border border-rechazado/30 bg-superficie p-5 sm:p-8"
@@ -107,7 +107,7 @@
                 ¿Dar de baja a {{ nombreCompleto() }}?
               </p>
               <p class="mt-1 text-xs text-texto-suave">
-                Por ahora el sistema no permite reactivar una cuenta desde esta pantalla.
+                La cuenta podrá reactivarse desde esta misma pantalla si vuelve a ser necesaria.
               </p>
               <div class="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <button
@@ -138,6 +138,63 @@
               (click)="pedirConfirmacionBaja()"
             >
               Dar de baja
+            </button>
+          }
+        </section>
+      }
+
+      @if (!persona.estadoUsuario) {
+        <section
+          class="mt-6 rounded-2xl border border-aprobado/30 bg-superficie p-5 sm:p-8"
+          aria-labelledby="titulo-reactivacion"
+        >
+          <h2 id="titulo-reactivacion" class="text-base font-bold text-aprobado">
+            Reactivar cuenta
+          </h2>
+          <p class="mt-1 text-sm leading-relaxed text-texto-suave">
+            La persona volverá a poder iniciar sesión. Sus datos y documentación se conservan.
+          </p>
+
+          @if (errorReactivacion(); as mensaje) {
+            <p role="alert" class="mt-4 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+              {{ mensaje }}
+            </p>
+          }
+
+          @if (confirmandoReactivacion()) {
+            <div
+              class="mt-4 rounded-xl border border-borde bg-fondo-panel p-4"
+              role="alertdialog"
+              aria-labelledby="pregunta-reactivacion"
+            >
+              <p id="pregunta-reactivacion" class="text-sm font-semibold text-texto">
+                ¿Reactivar la cuenta de {{ nombreCompleto() }}?
+              </p>
+              <div class="mt-4 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  class="rounded-full px-5 py-2.5 text-sm font-medium text-texto-suave transition-colors hover:bg-superficie"
+                  (click)="cancelarReactivacion()"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  [disabled]="reactivando()"
+                  class="rounded-full bg-aprobado px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  (click)="confirmarReactivacion()"
+                >
+                  {{ reactivando() ? 'Reactivando…' : 'Sí, reactivar' }}
+                </button>
+              </div>
+            </div>
+          } @else {
+            <button
+              type="button"
+              class="mt-4 rounded-full border border-aprobado px-5 py-2.5 text-sm font-semibold text-aprobado transition-colors hover:bg-aprobado/10"
+              (click)="pedirConfirmacionReactivacion()"
+            >
+              Reactivar cuenta
             </button>
           }
         </section>

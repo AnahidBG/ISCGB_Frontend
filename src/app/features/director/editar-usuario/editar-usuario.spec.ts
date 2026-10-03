@@ -108,6 +108,7 @@ describe('EditarUsuario', () => {
   it('pide el refresco de la campana y le pasa al encabezado el total y el detalle del servicio', async () => {
     const fixture = TestBed.createComponent(EditarUsuario);
     await fixture.whenStable();
+    fixture.detectChanges();
     const encabezado = fixture.debugElement.query(
       (d) => d.componentInstance instanceof EstructuraPanel,
     ).componentInstance as EstructuraPanel;

@@ -76,6 +76,9 @@ export const RUTAS_API = {
   /** Baja lógica (estado inactivo). Sin body. */
   bajaUsuario: (id: number) => `${URL_BASE_API}/api/UsuariosAdmin/baja/${id}`,
 
+  /** Reactivación (estado activo). Sin body. */
+  reactivarUsuario: (id: number) => `${URL_BASE_API}/api/UsuariosAdmin/reactivar/${id}`,
+
   // --- Ubicaciones (ISCGB_Backend/Controllers/UbicacionController.cs) ---
   // Sin autenticación. No existe "todas las provincias" ni "provincia → país":
   // hay que pedir los países y después las provincias de cada uno.

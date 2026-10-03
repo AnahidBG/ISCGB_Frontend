@@ -77,11 +77,14 @@ export class EditarUsuario {
   protected readonly error = signal<string | null>(null);
   protected readonly mensajeExito = signal<string | null>(null);
 
-  // ── Baja ────────────────────────────────────────────────────────────────
+  // ── Estado de la cuenta ────────────────────────────────────────────────
   protected readonly confirmandoBaja = signal(false);
   protected readonly dandoDeBaja = signal(false);
   protected readonly errorBaja = signal<string | null>(null);
   protected readonly mensajeBaja = signal<string | null>(null);
+  protected readonly confirmandoReactivacion = signal(false);
+  protected readonly reactivando = signal(false);
+  protected readonly errorReactivacion = signal<string | null>(null);
 
   /** Nadie se da de baja a sí mismo: se quedaría afuera del sistema sin vuelta atrás. */
   protected readonly esUnoMismo = computed(() => this.sesion()?.idUsuario === this.idUsuario);
@@ -205,6 +208,35 @@ export class EditarUsuario {
       error: (fallo: Error) => {
         this.dandoDeBaja.set(false);
         this.errorBaja.set(fallo.message);
+      },
+    });
+  }
+
+  protected pedirConfirmacionReactivacion(): void {
+    this.errorReactivacion.set(null);
+    this.confirmandoReactivacion.set(true);
+  }
+
+  protected cancelarReactivacion(): void {
+    this.confirmandoReactivacion.set(false);
+  }
+
+  protected confirmarReactivacion(): void {
+    if (this.reactivando()) {
+      return;
+    }
+    this.reactivando.set(true);
+    this.errorReactivacion.set(null);
+
+    this.usuarios.reactivar(this.idUsuario).subscribe({
+      next: () => {
+        this.reactivando.set(false);
+        this.confirmandoReactivacion.set(false);
+        this.usuario.update((u) => (u === null ? u : { ...u, estadoUsuario: true }));
+      },
+      error: (fallo: Error) => {
+        this.reactivando.set(false);
+        this.errorReactivacion.set(fallo.message);
       },
     });
   }

@@ -29,6 +29,7 @@ usuarios…"*.
 | Alta | `POST /api/UsuariosAdmin/alta` | `CargaUsuarioDto` | `{ mensaje, legajoAutocompletado }` |
 | Modificación | `PUT /api/UsuariosAdmin/modificar/{id}` | `CargaUsuarioDto` | `{ message }` |
 | Baja | `PUT /api/UsuariosAdmin/baja/{id}` | — | `{ message }` |
+| Reactivación | `PUT /api/UsuariosAdmin/reactivar/{id}` | — | `{ message }` |
 
 ### `CargaUsuarioDto` (lo que manda el frontend)
 
@@ -107,4 +108,4 @@ usuarios…"*.
    particular, si se edita a un suplente y no se vuelve a tildar la casilla,
    el backend le quita la suplencia.
 7. **DNI y correo repetidos:** el alta no los controla (no hay índice único).
-8. **Reactivar una cuenta:** no hay endpoint.
+8. **Reactivar una cuenta:** `PUT /api/UsuariosAdmin/reactivar/{id}`.
