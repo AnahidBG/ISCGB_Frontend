@@ -7,15 +7,16 @@ export const RUTAS_API = {
    * Vive en `UsuariosAdmin` pero la consume `AuthService` — ver su contrato.
    */
   establecerPassword: `${URL_BASE_API}/api/UsuariosAdmin/establecer-password`,
-  programasMateria: `${URL_BASE_API}/api/ProgramasMateria`,
+  programasMateria: `${URL_BASE_API}/api/ProgramasMaterias`,
 
-  pdfPrograma: (idPrograma: number) => `${URL_BASE_API}/api/ProgramasMateria/${idPrograma}/pdf`,
+  pdfPrograma: (idPrograma: number) =>
+    `${URL_BASE_API}/api/ProgramasMaterias/${idPrograma}/pdf`,
 
   // Quién es el docente (su IdDocente) y qué materias dicta. Lo pide el
   // formulario de entrega del programa al abrirse, para no tener que pedir
   // el "ID Docente" y el "ID Materia" a mano. Ver `ContextoDocente`.
   contextoDocente: (idUsuario: number) =>
-    `${URL_BASE_API}/api/ProgramasMateria/contexto-docente/${idUsuario}`,
+    `${URL_BASE_API}/api/ProgramasMaterias/contexto-docente/${idUsuario}`,
 
   // --- Legajos (ISCGB_Backend/Controllers/LegajoController.cs) ---
   // Confirmado leyendo el código fuente real del backend el 27/08/2026.
