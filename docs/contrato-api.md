@@ -127,6 +127,10 @@ Devuelve el docente y las materias que tiene asignadas. La pantalla
 
 Devuelve `404` cuando el usuario no está registrado como docente.
 
+La comisión identifica la cursada/horario de la asignación del docente y se
+muestra en el selector del frontend. No se envía en `POST /api/ProgramasMateria`
+porque el programa se guarda por docente y materia, no por comisión.
+
 ## `POST /api/ProgramasMateria`
 
 Guarda el programa junto con sus unidades de contenido en un solo pedido.
