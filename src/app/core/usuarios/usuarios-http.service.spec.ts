@@ -118,6 +118,15 @@ describe('UsuariosHttpService', () => {
     pedido.flush({ message: 'ok' });
   });
 
+  it('la reactivación es un PUT sin cuerpo', () => {
+    servicio.reactivar(9).subscribe();
+
+    const pedido = backend.expectOne(RUTAS_API.reactivarUsuario(9));
+    expect(pedido.request.method).toBe('PUT');
+    expect(pedido.request.body).toBeNull();
+    pedido.flush({ message: 'El usuario fue reactivado.' });
+  });
+
   it('el detalle lee la fecha de nacimiento en hora local (no un día antes)', () => {
     let dia = 0;
     servicio.obtener(9).subscribe((usuario) => (dia = usuario.fechaNac!.getDate()));

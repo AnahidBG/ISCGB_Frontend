@@ -37,14 +37,15 @@ const ORDEN_DE_ROLES: readonly Rol[] = [
  *     Muestra "El perfil de X ha sido actualizado correctamente" (SCRUM-139).
  *   · Baja: `PUT /api/UsuariosAdmin/baja/{id}`. Es un cambio de estado a
  *     inactivo, nunca un borrado: los datos y la documentación histórica
- *     quedan (criterio de aceptación, SCRUM-135/143). No hay endpoint de
- *     reactivación, así que una cuenta dada de baja no ofrece "reactivar".
+ *     quedan (criterio de aceptación, SCRUM-135/143).
+ *   · Reactivación: `PUT /api/UsuariosAdmin/alta/{id}`.
  *
  * ⚠️ Limitaciones del backend que la pantalla dice en voz alta en vez de
  * esconder (ver docs/alineacion-sprint-2.md):
  *   · El GET no devuelve CUIL, género, afiliación ni si es director
  *     suplente: esos campos se vuelven a cargar al editar.
- *   · El PUT hoy guarda solo nombre, apellido y director suplente.
+ *   · El GET no devuelve CUIL, género, afiliación ni director suplente; esos
+ *     campos no pueden precargarse desde el detalle actual.
  */
 @Component({
   selector: 'app-editar-usuario',
@@ -77,11 +78,14 @@ export class EditarUsuario {
   protected readonly error = signal<string | null>(null);
   protected readonly mensajeExito = signal<string | null>(null);
 
-  // ── Baja ────────────────────────────────────────────────────────────────
+  // ── Estado de la cuenta ────────────────────────────────────────────────
   protected readonly confirmandoBaja = signal(false);
   protected readonly dandoDeBaja = signal(false);
   protected readonly errorBaja = signal<string | null>(null);
   protected readonly mensajeBaja = signal<string | null>(null);
+  protected readonly confirmandoReactivacion = signal(false);
+  protected readonly reactivando = signal(false);
+  protected readonly errorReactivacion = signal<string | null>(null);
 
   /** Nadie se da de baja a sí mismo: se quedaría afuera del sistema sin vuelta atrás. */
   protected readonly esUnoMismo = computed(() => this.sesion()?.idUsuario === this.idUsuario);
@@ -205,6 +209,35 @@ export class EditarUsuario {
       error: (fallo: Error) => {
         this.dandoDeBaja.set(false);
         this.errorBaja.set(fallo.message);
+      },
+    });
+  }
+
+  protected pedirConfirmacionReactivacion(): void {
+    this.errorReactivacion.set(null);
+    this.confirmandoReactivacion.set(true);
+  }
+
+  protected cancelarReactivacion(): void {
+    this.confirmandoReactivacion.set(false);
+  }
+
+  protected confirmarReactivacion(): void {
+    if (this.reactivando()) {
+      return;
+    }
+    this.reactivando.set(true);
+    this.errorReactivacion.set(null);
+
+    this.usuarios.reactivar(this.idUsuario).subscribe({
+      next: () => {
+        this.reactivando.set(false);
+        this.confirmandoReactivacion.set(false);
+        this.usuario.update((u) => (u === null ? u : { ...u, estadoUsuario: true }));
+      },
+      error: (fallo: Error) => {
+        this.reactivando.set(false);
+        this.errorReactivacion.set(fallo.message);
       },
     });
   }

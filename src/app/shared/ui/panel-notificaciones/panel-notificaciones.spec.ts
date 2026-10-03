@@ -73,6 +73,20 @@ describe('PanelNotificaciones', () => {
     expect(cerrar).toHaveBeenCalledTimes(1);
   });
 
+  it('una X descarta una notificación sin cerrar el panel', async () => {
+    const eliminada = vi.fn();
+    fixture.componentInstance.eliminada.subscribe(eliminada);
+    const notificacion = { titulo: 'Rechazaron DNI' };
+    await dibujar([notificacion]);
+
+    el()
+      .querySelector<HTMLButtonElement>('button[aria-label="Descartar notificación: Rechazaron DNI"]')!
+      .click();
+
+    expect(eliminada).toHaveBeenCalledWith(notificacion);
+    expect(dialogo()).not.toBeNull();
+  });
+
   it('al abrir, el foco pasa a la X', async () => {
     await dibujar(avisos(1));
 

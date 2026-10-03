@@ -58,6 +58,20 @@ describe('FilaNotificacion', () => {
     expect(seleccionada).toHaveBeenCalledTimes(1);
   });
 
+  it('muestra una X accesible para descartar la notificación', async () => {
+    const eliminada = vi.fn();
+    fixture.componentInstance.eliminada.subscribe(eliminada);
+    const notificacion = { titulo: 'Rechazaron DNI' };
+    await dibujar(notificacion);
+
+    const boton = el().querySelector<HTMLButtonElement>(
+      'button[aria-label="Descartar notificación: Rechazaron DNI"]',
+    );
+    boton!.click();
+
+    expect(eliminada).toHaveBeenCalledWith(notificacion);
+  });
+
   it('el rol del enlace es opcional: solo lo lleva si se lo piden', async () => {
     await dibujar({ titulo: 'x', url: '/a' });
     expect(el().querySelector('a')?.hasAttribute('role')).toBe(false);

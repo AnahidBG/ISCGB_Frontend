@@ -71,8 +71,9 @@ Ordenados por impacto en el Sprint 2.
 7. **`GET /api/Usuarios/{id}`**: devolver CUIL, género, afiliación y
    `DirectorSuplente`. Sin el último, editar a un suplente sin volver a
    tildar la casilla le quita la suplencia.
-8. **`PUT /api/UsuariosAdmin/modificar`** guarda solo nombre, apellido y
-   suplente, pero exige el DTO completo (incluido el rol, que ignora).
+8. **`PUT /api/UsuariosAdmin/alta/{id}`** reactiva cuentas dadas de baja.
+   `PUT /api/UsuariosAdmin/modificar/{id}` también actualiza el rol enviado
+   en `IdRol`.
 9. **`POST /api/ReconocimientoSaberes`** — contrato en
    `contrato-reconocimiento-saberes.md`.
 10. **`GET /api/ProgramasMateria/contexto-docente/{idUsuario}`** (Sprint 1):

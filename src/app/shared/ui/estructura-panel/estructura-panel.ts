@@ -47,6 +47,15 @@ const CLAVE_COLAPSADO = 'iscgb.panel.colapsado';
  */
 const MAXIMO_NOTIFICACIONES_EN_DESPLEGABLE = 5;
 
+function claveNotificacion(notificacion: NotificacionPanel): string {
+  return JSON.stringify([
+    notificacion.titulo,
+    notificacion.detalle ?? '',
+    notificacion.url ?? '',
+    notificacion.tono ?? 'pendiente',
+  ]);
+}
+
 /**
  * Estructura común a los paneles de cada rol: barra lateral + encabezado
  * superior, con el contenido de la pantalla proyectado por `<ng-content>`.
@@ -209,6 +218,9 @@ export class EstructuraPanel {
   /** `true` con el panel lateral de TODAS las notificaciones abierto. */
   protected readonly panelNotificacionesAbierto = signal(false);
 
+  /** Notificaciones descartadas mientras dura esta instancia del panel. */
+  private readonly notificacionesDescartadas = signal<Set<string>>(new Set());
+
   /** La campana: a ella vuelve el foco al cerrar el panel lateral. */
   private readonly botonCampana = viewChild<ElementRef<HTMLButtonElement>>('botonCampana');
 
@@ -218,14 +230,22 @@ export class EstructuraPanel {
    * puede pasar solo `notificacionesDetalle` y la campana igual se enciende.
    */
   protected readonly cantidadNotificaciones = computed(() =>
-    this.notificaciones() > 0 ? this.notificaciones() : this.notificacionesDetalle().length,
+    this.notificaciones() > 0
+      ? Math.max(0, this.notificaciones() - this.notificacionesDescartadas().size)
+      : this.notificacionesVisibles().length,
   );
 
   protected readonly hayNotificaciones = computed(() => this.cantidadNotificaciones() > 0);
 
   /** Las filas que entran en el desplegable: las primeras, sin tocar la lista original. */
   protected readonly notificacionesDelDesplegable = computed(() =>
-    this.notificacionesDetalle().slice(0, MAXIMO_NOTIFICACIONES_EN_DESPLEGABLE),
+    this.notificacionesVisibles().slice(0, MAXIMO_NOTIFICACIONES_EN_DESPLEGABLE),
+  );
+
+  protected readonly notificacionesVisibles = computed(() =>
+    this.notificacionesDetalle().filter(
+      (notificacion) => !this.notificacionesDescartadas().has(claveNotificacion(notificacion)),
+    ),
   );
 
   /**
@@ -336,6 +356,14 @@ export class EstructuraPanel {
   protected cerrarPanelNotificaciones(): void {
     this.panelNotificacionesAbierto.set(false);
     this.botonCampana()?.nativeElement.focus();
+  }
+
+  protected descartarNotificacion(notificacion: NotificacionPanel): void {
+    this.notificacionesDescartadas.update((descartadas) => {
+      const nuevas = new Set(descartadas);
+      nuevas.add(claveNotificacion(notificacion));
+      return nuevas;
+    });
   }
 
   /**

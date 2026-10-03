@@ -16,13 +16,17 @@ export const MENSAJE_ERROR_EDITAR_USUARIO =
 export const MENSAJE_ERROR_BAJA_USUARIO =
   'No pudimos dar de baja al usuario. Intentá de nuevo en un momento.';
 
+/** Cuando la reactivación falla por algo que no es culpa de quien la pidió. */
+export const MENSAJE_ERROR_REACTIVAR_USUARIO =
+  'No pudimos reactivar al usuario. Intentá de nuevo en un momento.';
+
 /**
  * El backend todavía no tiene publicados los endpoints de gestión de
- * usuarios.
+ * usuarios en todas sus ramas.
  *
- * `UsuariosAdminController` (alta, modificar, baja) existe en la rama
- * `CargaDeUsuarios` de ISCGB_Backend pero todavía no está en `main`. Contra
- * un backend sin esa rama, la ruta no existe y ASP.NET responde 404 sin
+ * `UsuariosAdminController` (alta, modificar, baja, alta/{id} para reactivar)
+ * existe en ISCGB_Backend. Contra un backend sin ese controlador, la ruta no
+ * existe y ASP.NET responde 404 sin
  * cuerpo. Se distingue del error genérico a propósito: reintentar no lo va a
  * arreglar, falta mergear del otro lado.
  */
@@ -54,6 +58,7 @@ export function mensajePerfilActualizado(nombre: string): string {
  *   · `POST /api/UsuariosAdmin/alta`           → `crear`    (rama CargaDeUsuarios)
  *   · `PUT  /api/UsuariosAdmin/modificar/{id}` → `actualizar` (rama CargaDeUsuarios)
  *   · `PUT  /api/UsuariosAdmin/baja/{id}`      → `darDeBaja` (rama CargaDeUsuarios)
+ *   · `PUT  /api/UsuariosAdmin/alta/{id}`      → `reactivar` (rama CargaDeUsuarios)
  *   · `GET  /api/Ubicaciones/paises` y `.../paises/{id}/provincias`
  *                                              → `listarProvincias`
  */
@@ -85,6 +90,9 @@ export abstract class UsuariosService {
    * director suplente, deja de serlo.
    */
   abstract darDeBaja(idUsuario: number): Observable<string>;
+
+  /** Reactiva una cuenta dada de baja sin modificar sus datos históricos. */
+  abstract reactivar(idUsuario: number): Observable<string>;
 
   /**
    * Todas las provincias de todos los países, con el id real de la base y el

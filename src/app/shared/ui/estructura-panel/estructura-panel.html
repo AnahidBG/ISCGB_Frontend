@@ -352,7 +352,7 @@
                 </div>
               </div>
 
-              @if (notificacionesDetalle().length > 0) {
+              @if (notificacionesVisibles().length > 0) {
                 <ul class="max-h-80 divide-y divide-borde overflow-y-auto">
                   @for (novedad of notificacionesDelDesplegable(); track $index) {
                     <li>
@@ -361,6 +361,7 @@
                         rolEnlace="menuitem"
                         [notificacion]="novedad"
                         (seleccionada)="cerrarMenuNotificaciones()"
+                        (eliminada)="descartarNotificacion($event)"
                       />
                     </li>
                   }
@@ -530,9 +531,10 @@
     -->
     @if (panelNotificacionesAbierto()) {
       <app-panel-notificaciones
-        [notificaciones]="notificacionesDetalle()"
+        [notificaciones]="notificacionesVisibles()"
         [cantidad]="cantidadNotificaciones()"
         (cerrar)="cerrarPanelNotificaciones()"
+        (eliminada)="descartarNotificacion($event)"
       />
     }
 
