@@ -24,7 +24,7 @@
     [attr.aria-label]="'Descartar notificación: ' + notificacion().titulo"
     (click)="eliminada.emit(notificacion())"
   >
-    <app-icono nombre="cerrar" class="h-4 w-4" />
+    <span aria-hidden="true" class="block text-lg font-medium leading-none">×</span>
   </button>
 </div>
 

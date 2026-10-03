@@ -49,10 +49,8 @@ export const appConfig: ApplicationConfig = {
     { provide: CertificadosService, useClass: CertificadosHttpService },
     { provide: ReconocimientoSaberesService, useClass: ReconocimientoSaberesHttpService },
 
-    // UsuariosHttpService: GET /api/Usuarios (real) y la gestión de usuarios
-    // contra /api/UsuariosAdmin (rama CargaDeUsuarios del backend, todavía no
-    // mergeada — sin ella, alta/modificación/baja avisan que no está
-    // habilitada). Ver docs/contrato-alta-usuario.md.
+    // UsuariosHttpService: GET /api/Usuarios (real) y gestión de usuarios
+    // contra /api/UsuariosAdmin. Ver docs/contrato-alta-usuario.md.
     { provide: UsuariosService, useClass: UsuariosHttpService },
 
     // LegajoHttpService: desde el 30/08/2026 las SEIS operaciones pegan

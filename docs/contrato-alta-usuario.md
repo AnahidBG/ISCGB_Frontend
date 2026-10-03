@@ -89,19 +89,18 @@ usuarios…"*.
 
 ## Pendientes del backend (no se tocan desde el frontend)
 
-1. **Mergear `CargaDeUsuarios` a `main`.**
-2. **Contraseña:** el alta guarda `PasswordHash = "AsignarContraseñaTemporal"`,
+1. **Contraseña:** el alta guarda `PasswordHash = "AsignarContraseñaTemporal"`,
    que no es un hash BCrypt. `BCrypt.Verify` va a tirar excepción en el login
    de esa persona (500). Hace falta generar una contraseña inicial real (o
    el flujo de recuperación del Sprint 3).
-3. **Seguridad:** `[Authorize(Roles = "Director,Secretario")]` está
+2. **Seguridad:** `[Authorize(Roles = "Director,Secretario")]` está
    comentado en el controlador; cualquiera con Postman puede crear usuarios.
-4. **`GET /api/Provincias`:** `idProvincia` es obligatorio y tiene clave
+3. **`GET /api/Provincias`:** `idProvincia` es obligatorio y tiene clave
    foránea, pero no hay endpoint ni datos semilla. El frontend usa una lista
    provisoria (24 provincias en orden alfabético, ids 1..24) — ver
    `core/usuarios/modelos/provincia.ts`. Si la tabla se cargó en otro orden,
    se guarda la provincia equivocada.
-5. **`GET /api/Usuarios/{id}` no devuelve** CUIL, género, afiliación ni
+4. **`GET /api/Usuarios/{id}` no devuelve** CUIL, género, afiliación ni
    `DirectorSuplente`, así que la edición no puede precargarlos. En
    particular, si se edita a un suplente y no se vuelve a tildar la casilla,
    el backend le quita la suplencia.

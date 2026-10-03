@@ -12,10 +12,10 @@ import { ProgramasMateriaService } from './programas-materia.service';
 const CONTEXTO_DOCENTE_INVENTADO: ContextoDocente = {
   idDocente: 1,
   materias: [
-    { idMateria: 3, nombre: 'Didáctica General', carrera: 'Profesorado de Primaria', curso: '2°' },
-    { idMateria: 7, nombre: 'Práctica Docente', carrera: 'Profesorado de Primaria', curso: '3°' },
-    { idMateria: 9, nombre: 'Práctica Docente', carrera: 'Profesorado de Inicial', curso: '3°' },
-    { idMateria: 12, nombre: 'Psicología Educacional', carrera: null, curso: null },
+    { idMateria: 3, nombre: 'Didáctica General', carrera: 'Profesorado de Primaria', curso: '2°', idComision: 1, nombreComision: 'Comisión A' },
+    { idMateria: 7, nombre: 'Práctica Docente', carrera: 'Profesorado de Primaria', curso: '3°', idComision: 2, nombreComision: 'Comisión A' },
+    { idMateria: 9, nombre: 'Práctica Docente', carrera: 'Profesorado de Inicial', curso: '3°', idComision: 3, nombreComision: 'Comisión B' },
+    { idMateria: 12, nombre: 'Psicología Educacional', carrera: null, curso: null, idComision: 4, nombreComision: 'Comisión Única' },
   ],
 };
 

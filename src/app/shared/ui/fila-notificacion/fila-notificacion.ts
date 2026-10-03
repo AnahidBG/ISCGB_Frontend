@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { NotificacionPanel } from '../../../core/notificaciones/modelos/notificacion-panel';
-import { Icono } from '../icono/icono';
 
 type Tono = NonNullable<NotificacionPanel['tono']>;
 
@@ -24,7 +23,7 @@ const CLASE_PUNTO_POR_TONO: Record<Tono, string> = {
  */
 @Component({
   selector: 'app-fila-notificacion',
-  imports: [NgTemplateOutlet, RouterLink, Icono],
+  imports: [NgTemplateOutlet, RouterLink],
   templateUrl: './fila-notificacion.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -9,7 +9,8 @@ export const RUTAS_API = {
   establecerPassword: `${URL_BASE_API}/api/UsuariosAdmin/establecer-password`,
   programasMateria: `${URL_BASE_API}/api/ProgramasMateria`,
 
-  pdfPrograma: (idPrograma: number) => `${URL_BASE_API}/api/ProgramasMateria/${idPrograma}/pdf`,
+  pdfPrograma: (idPrograma: number) =>
+    `${URL_BASE_API}/api/ProgramasMateria/${idPrograma}/pdf`,
 
   // Quién es el docente (su IdDocente) y qué materias dicta. Lo pide el
   // formulario de entrega del programa al abrirse, para no tener que pedir

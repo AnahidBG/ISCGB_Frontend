@@ -60,7 +60,7 @@ interface RespuestaUsuariosApi {
 }
 
 /**
- * `CargaUsuarioDto` del backend, campo por campo (rama `CargaDeUsuarios`).
+ * `CargaUsuarioDto` del backend, campo por campo.
  * ASP.NET no distingue mayúsculas al leer el JSON, así que el camelCase
  * entra bien en las propiedades PascalCase.
  */

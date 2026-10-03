@@ -9,6 +9,8 @@ export interface MateriaACargo {
    */
   carrera: string | null;
   curso: string | null;
+  idComision: number;
+  nombreComision: string;
 }
 
 /**
@@ -42,5 +44,6 @@ export function etiquetaDeMateria(materia: MateriaACargo): string {
     (dato): dato is string => dato !== null && dato.trim() !== '',
   );
 
-  return contexto.length === 0 ? materia.nombre : `${materia.nombre} (${contexto.join(' · ')})`;
+  const datos = [...contexto, materia.nombreComision];
+  return `${materia.nombre} (${datos.join(' · ')})`;
 }
