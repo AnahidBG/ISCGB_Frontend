@@ -22,11 +22,11 @@ export const MENSAJE_ERROR_REACTIVAR_USUARIO =
 
 /**
  * El backend todavía no tiene publicados los endpoints de gestión de
- * usuarios.
+ * usuarios en todas sus ramas.
  *
- * `UsuariosAdminController` (alta, modificar, baja, reactivar) existe en la rama
- * `CargaDeUsuarios` de ISCGB_Backend pero todavía no está en `main`. Contra
- * un backend sin esa rama, la ruta no existe y ASP.NET responde 404 sin
+ * `UsuariosAdminController` (alta, modificar, baja, alta/{id} para reactivar)
+ * existe en ISCGB_Backend. Contra un backend sin ese controlador, la ruta no
+ * existe y ASP.NET responde 404 sin
  * cuerpo. Se distingue del error genérico a propósito: reintentar no lo va a
  * arreglar, falta mergear del otro lado.
  */
@@ -58,6 +58,7 @@ export function mensajePerfilActualizado(nombre: string): string {
  *   · `POST /api/UsuariosAdmin/alta`           → `crear`    (rama CargaDeUsuarios)
  *   · `PUT  /api/UsuariosAdmin/modificar/{id}` → `actualizar` (rama CargaDeUsuarios)
  *   · `PUT  /api/UsuariosAdmin/baja/{id}`      → `darDeBaja` (rama CargaDeUsuarios)
+ *   · `PUT  /api/UsuariosAdmin/alta/{id}`      → `reactivar` (rama CargaDeUsuarios)
  *   · `GET  /api/Ubicaciones/paises` y `.../paises/{id}/provincias`
  *                                              → `listarProvincias`
  */

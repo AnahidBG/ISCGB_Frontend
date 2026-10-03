@@ -2,7 +2,7 @@
 
 > **Sprint 2** — SCRUM-16 "Gestión de usuarios y roles (Dirección)"
 > Subtareas: SCRUM-130 (frontend, Milena) · SCRUM-131 (backend, Angel)
-> **Actualizado:** 28/09/2026
+> **Actualizado:** 03/10/2026
 
 Este documento reemplaza la propuesta anterior (`POST /api/Usuarios`, del
 27/08/2026), que el backend nunca implementó. El backend publicó **otro
@@ -10,13 +10,13 @@ contrato** y el frontend se alineó a ese.
 
 ## Dónde está
 
-`Controllers/CargaUsuarioController.cs` en la rama **`CargaDeUsuarios`** de
-ISCGB_Backend (commit `d455a51`, 27/09/2026). **Todavía no está en `main`.**
+`Controllers/CargaUsuarioController.cs` en `ISCGB_Backend` (commit
+`be92dcf`, 03/10/2026).
 
 La clase se llama `UsuariosAdminController`, así que la ruta es
 `api/UsuariosAdmin` (no `api/CargaUsuario`).
 
-Contra un backend sin esa rama, las tres rutas responden 404 sin cuerpo y la
+Contra un backend sin ese controlador, las rutas responden 404 sin cuerpo y la
 pantalla muestra: *"El servidor todavía no tiene habilitada la gestión de
 usuarios…"*.
 
@@ -29,7 +29,7 @@ usuarios…"*.
 | Alta | `POST /api/UsuariosAdmin/alta` | `CargaUsuarioDto` | `{ mensaje, legajoAutocompletado }` |
 | Modificación | `PUT /api/UsuariosAdmin/modificar/{id}` | `CargaUsuarioDto` | `{ message }` |
 | Baja | `PUT /api/UsuariosAdmin/baja/{id}` | — | `{ message }` |
-| Reactivación | `PUT /api/UsuariosAdmin/reactivar/{id}` | — | `{ message }` |
+| Reactivación | `PUT /api/UsuariosAdmin/alta/{id}` | — | `{ message }` |
 
 ### `CargaUsuarioDto` (lo que manda el frontend)
 
@@ -101,11 +101,10 @@ usuarios…"*.
    provisoria (24 provincias en orden alfabético, ids 1..24) — ver
    `core/usuarios/modelos/provincia.ts`. Si la tabla se cargó en otro orden,
    se guarda la provincia equivocada.
-5. **`modificar` guarda solo nombre, apellido y director suplente.** Ignora
-   el resto del DTO (incluido el rol), pero igual lo exige completo.
-6. **`GET /api/Usuarios/{id}` no devuelve** CUIL, género, afiliación ni
+5. **`GET /api/Usuarios/{id}` no devuelve** CUIL, género, afiliación ni
    `DirectorSuplente`, así que la edición no puede precargarlos. En
    particular, si se edita a un suplente y no se vuelve a tildar la casilla,
    el backend le quita la suplencia.
-7. **DNI y correo repetidos:** el alta no los controla (no hay índice único).
-8. **Reactivar una cuenta:** `PUT /api/UsuariosAdmin/reactivar/{id}`.
+6. **DNI y correo repetidos:** el alta los valida en el controlador.
+7. **Reactivar una cuenta:** `PUT /api/UsuariosAdmin/alta/{id}`. Si ya está
+   activa responde 400; si no existe responde 404.

@@ -292,8 +292,8 @@
 
     @if (esEdicion()) {
       <p class="mt-1 text-sm text-texto-suave">
-        El rol no se cambia desde acá: el sistema todavía no guarda cambios de rol al modificar un
-        perfil. Si hace falta cambiarlo, lo tiene que hacer el equipo técnico.
+        Podés cambiar el rol de la persona. Se asigna un solo rol y Preceptoría está incluida en
+        Secretario.
       </p>
     } @else {
       <p class="mt-1 text-sm text-texto-suave">
@@ -304,9 +304,7 @@
     <div class="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Rol">
       @for (opcion of opcionesDeRol; track opcion.rol) {
         <label
-          class="flex items-start gap-3 rounded-xl border p-4 transition-colors"
-          [class.cursor-pointer]="!esEdicion()"
-          [class.opacity-60]="esEdicion() && rolElegido() !== opcion.rol"
+          class="cursor-pointer flex items-start gap-3 rounded-xl border p-4 transition-colors"
           [class.border-principal]="rolElegido() === opcion.rol"
           [class.bg-principal-suave]="rolElegido() === opcion.rol"
           [class.border-borde]="rolElegido() !== opcion.rol"

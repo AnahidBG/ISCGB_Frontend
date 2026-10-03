@@ -108,10 +108,9 @@ const REGISTROS_POR_PAGINA = 500;
 /**
  * Usuarios contra la API real.
  *
- * `listar` y `obtener` pegan contra `UsuariosController` (en `main`).
- * `crear`, `actualizar`, `darDeBaja` y `reactivar` pegan contra `UsuariosAdminController`
- * (rama `CargaDeUsuarios`, todavía sin mergear): contra un backend sin esa
- * rama responden 404 sin cuerpo, y se traduce a
+ * `listar` y `obtener` pegan contra `UsuariosController`.
+ * `crear`, `actualizar`, `darDeBaja` y `reactivar` pegan contra `UsuariosAdminController`:
+ * contra un backend sin ese controlador responden 404 sin cuerpo, y se traduce a
  * `MENSAJE_GESTION_NO_DISPONIBLE` en vez de un error genérico.
  */
 @Injectable()

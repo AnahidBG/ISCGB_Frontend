@@ -37,14 +37,15 @@ const ORDEN_DE_ROLES: readonly Rol[] = [
  *     Muestra "El perfil de X ha sido actualizado correctamente" (SCRUM-139).
  *   · Baja: `PUT /api/UsuariosAdmin/baja/{id}`. Es un cambio de estado a
  *     inactivo, nunca un borrado: los datos y la documentación histórica
- *     quedan (criterio de aceptación, SCRUM-135/143). No hay endpoint de
- *     reactivación, así que una cuenta dada de baja no ofrece "reactivar".
+ *     quedan (criterio de aceptación, SCRUM-135/143).
+ *   · Reactivación: `PUT /api/UsuariosAdmin/alta/{id}`.
  *
  * ⚠️ Limitaciones del backend que la pantalla dice en voz alta en vez de
  * esconder (ver docs/alineacion-sprint-2.md):
  *   · El GET no devuelve CUIL, género, afiliación ni si es director
  *     suplente: esos campos se vuelven a cargar al editar.
- *   · El PUT hoy guarda solo nombre, apellido y director suplente.
+ *   · El GET no devuelve CUIL, género, afiliación ni director suplente; esos
+ *     campos no pueden precargarse desde el detalle actual.
  */
 @Component({
   selector: 'app-editar-usuario',

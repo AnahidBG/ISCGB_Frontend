@@ -64,8 +64,7 @@ export const RUTAS_API = {
 
   // --- Gestión de usuarios (ISCGB_Backend/Controllers/CargaUsuarioController.cs) ---
   // La clase se llama `UsuariosAdminController`, así que la ruta es
-  // `api/UsuariosAdmin` aunque el archivo se llame distinto. Está en la rama
-  // `CargaDeUsuarios` del backend (27/09/2026), todavía no en `main`.
+  // `api/UsuariosAdmin` aunque el archivo se llame distinto.
 
   /** Alta. Body: `CargaUsuarioDto`. */
   altaUsuario: `${URL_BASE_API}/api/UsuariosAdmin/alta`,
@@ -76,8 +75,8 @@ export const RUTAS_API = {
   /** Baja lógica (estado inactivo). Sin body. */
   bajaUsuario: (id: number) => `${URL_BASE_API}/api/UsuariosAdmin/baja/${id}`,
 
-  /** Reactivación (estado activo). Sin body. */
-  reactivarUsuario: (id: number) => `${URL_BASE_API}/api/UsuariosAdmin/reactivar/${id}`,
+  /** Reactivación (alta de una cuenta inactiva). Sin body. */
+  reactivarUsuario: (id: number) => `${URL_BASE_API}/api/UsuariosAdmin/alta/${id}`,
 
   // --- Ubicaciones (ISCGB_Backend/Controllers/UbicacionController.cs) ---
   // Sin autenticación. No existe "todas las provincias" ni "provincia → país":

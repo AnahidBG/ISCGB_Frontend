@@ -57,9 +57,8 @@ type CampoObligatorio = keyof typeof OBLIGATORIOS;
  *
  * En modo edición:
  *   · El DNI no se toca: es el usuario del login y el N.° de legajo.
- *   · El rol se muestra pero no se cambia: `PUT /api/UsuariosAdmin/modificar`
- *     hoy guarda solo nombre, apellido y director suplente — ofrecer un
- *     selector de rol que el servidor ignora sería mentirle al Director.
+ *   · El rol también puede cambiarse: `PUT /api/UsuariosAdmin/modificar`
+ *     actualiza la asociación del usuario con el rol enviado.
  */
 @Component({
   selector: 'app-formulario-perfil-usuario',
@@ -187,7 +186,6 @@ export class FormularioPerfilUsuario implements OnInit {
 
     if (this.esEdicion()) {
       this.formulario.controls.dni.disable();
-      this.formulario.controls.rol.disable();
     }
   }
 
