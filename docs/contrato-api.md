@@ -44,7 +44,9 @@ El `dni` va sin puntos.
 }
 ```
 
-⚠️ **El rol no viene acá.** Viaja dentro del `token`.
+Los roles vienen en el cuerpo de la respuesta, en `roles`. El claim del token
+también contiene roles para autorización del backend, pero el frontend usa la
+lista del cuerpo para construir la sesión.
 
 ⚠️ Los nombres mezclan convenciones: `telefonoEmergencia` (camelCase),
 `estado_usuario` (snake_case) y `lugar_Nacimiento`. El frontend los replica
@@ -91,11 +93,10 @@ tal cual en `RespuestaLogin` y los ordena una sola vez al convertirlos a
 >   los serializa como **arreglo**, así que `payload.role` puede llegar como
 >   `string` o como `string[]`. `JwtPayload` lo tipa como `string` a secas y
 >   `AuthHttpService` lo asigna a `idRol` sin revisar — hay que corregirlo.
-> - El cuerpo del login ahora incluye además
->   `"roles": [{ "idRol": 1, "nombreRol": "Docente" }]`, que `RespuestaLogin`
->   todavía no declara. La ventaja es que **ya no hace falta sacar el rol del
->   token**: viene en la respuesta y con su nombre, lo que resuelve el
->   problema #3 de la tabla de abajo.
+> - El cuerpo del login incluye además
+>   `"roles": [{ "idRol": 3, "nombreRol": "Docente" }]`. La ventaja es que
+>   **ya no hace falta sacar el rol del token**: viene en la respuesta y con
+>   su nombre.
 >
 > El frontend ya adapta esta respuesta en `AuthHttpService` y conserva la
 > relación `idRol`/`nombreRol` en `Sesion.rolesConId`.
@@ -109,6 +110,38 @@ tal cual en `RespuestaLogin` y los ordena una sola vez al convertirlos a
 Devuelve `{ "message": "Usuario de prueba creado con éxito." }`.
 
 Es un endpoint de testing. **No debe llegar a producción.**
+
+## Gestión de usuarios
+
+El Director puede crear, editar, desactivar y reactivar cuentas desde la
+pantalla de edición de usuario. Desactivar no elimina el registro: es una
+baja lógica que deja `estadoUsuario = false`. Reactivar vuelve a dejar la
+cuenta disponible para iniciar sesión.
+
+### `POST /api/UsuariosAdmin/alta`
+
+Crea una cuenta nueva. Envía el `CargaUsuarioDto` completo y devuelve un
+mensaje de confirmación. Este endpoint es distinto de la reactivación: para
+una cuenta existente se usa `PUT /api/UsuariosAdmin/alta/{id}`.
+
+### `PUT /api/UsuariosAdmin/modificar/{id}`
+
+Actualiza el perfil completo del usuario indicado. El frontend envía el mismo
+`CargaUsuarioDto` que utiliza para el alta.
+
+### `PUT /api/UsuariosAdmin/baja/{id}`
+
+Desactiva lógicamente la cuenta. No recibe body. La fila continúa disponible
+en el listado de usuarios y muestra la acción para reactivarla.
+
+### `PUT /api/UsuariosAdmin/alta/{id}`
+
+Reactiva una cuenta previamente desactivada. No recibe body. La acción está
+disponible desde la misma pantalla de edición cuando el usuario tiene
+`estadoUsuario = false`.
+
+> El frontend traduce los errores de estos endpoints a mensajes de gestión de
+> usuarios y mantiene separados los métodos `darDeBaja()` y `reactivar()`.
 
 ## `GET /api/ProgramasMateria/contexto-docente/{idUsuario}`
 
@@ -219,21 +252,6 @@ segundo pisa al primero en la carpeta de descargas.
 El PDF arma las secciones 1 (Fundamentación), 2.1 (Objetivos generales),
 3 (Contenidos) y 4 (Estrategias metodológicas). El resto de los campos que
 recibe el `POST` se guardan pero **todavía no se imprimen**.
-
-## Problemas detectados
-
-| # | Problema | Gravedad |
-|---|---|---|
-| 0 | No hay CORS configurado en `Program.cs`: el navegador bloquea todas las llamadas desde `http://localhost:4200`. Con Postman funciona, desde Angular no. | 🔴 Bloqueante |
-| 0b | Faltan `UseAuthentication()` y `UseAuthorization()`: el JWT se emite pero nunca se valida | 🔴 Alta |
-| 0c | Los endpoints de programas no tienen `[Authorize]`, y `DescargarPdf` no verifica que quien pide sea el docente dueño: cambiando el número en la URL se baja el programa de cualquier otro | 🔴 Alta |
-| 1 | `crear-usuario-prueba` crea usuarios sin autenticación | 🔴 Alta |
-| 2 | Los 401 distinguen DNI inexistente de contraseña incorrecta, permitiendo averiguar qué DNIs existen | 🔴 Alta |
-| 3 | El claim `role` puede ser string o arreglo según la cantidad de roles | 🟡 El frontend ya usa `roles` del cuerpo del login |
-| 4 | El cuerpo del login y el JWT exponen roles con convenciones distintas | 🟡 El frontend los adapta en `AuthHttpService` |
-| 5 | `dni` es `varchar(20)`: acepta `"Lucas23"` | 🟡 Media |
-| 6 | `GET /weatherforecast` de la plantilla sigue expuesto | 🟡 Baja |
-| 7 | Nombres de campos con convenciones mezcladas | 🟡 Baja |
 
 ## La base de datos vs. el documento del MVP
 
