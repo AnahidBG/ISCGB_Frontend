@@ -96,6 +96,11 @@ Para alguien con más de un rol se eligió un orden de mayor a menor alcance
 (Director > Secretario > Docente > Alumno), documentado ya en
 `docs/alcance-dashboard-director.md` para el caso Director + Docente.
 
+Secretaría también cuenta con `/secretario/listados`, un listado real de
+alumnos y docentes con búsqueda por nombre, DNI o correo y filtros por rol y
+estado de cuenta. La vista consume `GET /api/Usuarios`; no crea un endpoint
+paralelo ni confunde el listado con el buscador global.
+
 ## Actualización 27/08/2026: el backend ya tiene endpoints reales
 
 Al conectar `ISCGB_Backend` apareció `LegajosController`, con estos

@@ -53,6 +53,13 @@ export function enlacesPorSesion(
   }
 
   if (tieneAlgunRol(sesion, [ROLES.director, ROLES.secretario])) {
+    if (tieneAlgunRol(sesion, [ROLES.secretario])) {
+      enlaces.push({
+        etiqueta: 'Listado de personas',
+        url: '/secretario/listados',
+        icono: 'usuarios',
+      });
+    }
     enlaces.push({
       etiqueta: 'Control de Legajos',
       url: '/secretario/control-legajos',

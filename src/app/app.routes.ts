@@ -101,6 +101,17 @@ export const routes: Routes = [
       ),
   },
   {
+    // Listado operativo de alumnos y docentes para Secretaría, con búsqueda
+    // local por nombre/DNI/correo y filtros por rol y estado.
+    path: 'secretario/listados',
+    title: 'Listado de personas · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.secretario)],
+    loadComponent: () =>
+      import('./features/secretario/listados/listados-secretario').then(
+        (m) => m.ListadosSecretario,
+      ),
+  },
+  {
     // Legajos de todo el instituto agrupados por persona, para aprobar o
     // rechazar. Secretario y Director (Sprint 2).
     path: 'secretario/control-legajos',
