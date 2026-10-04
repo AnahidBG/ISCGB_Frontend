@@ -1,6 +1,6 @@
 # Alcance de la pantalla de Login
 
-Fecha de análisis: **19/08/2026** · Sprint 1
+Fecha de análisis: **04/10/2026** · Sprint 1
 
 Este documento explica **por qué la pantalla implementada no es idéntica al
 diseño de Figma**. No es un olvido: es una decisión tomada con criterio.
@@ -61,7 +61,8 @@ acepta `{ dni, password }`: el rol lo decide el backend.
 **Esto no es un error del diseño — es más avanzado que la API.** La base de
 datos tiene `Usuarios_roles` como relación muchos-a-muchos y
 `Docentes.director_suplente`, o sea que una persona puede tener varios roles.
-El selector de perfil sería exactamente la forma de resolverlo.
+El selector de perfil sería exactamente la forma de resolverlo. Por ahora el
+frontend decide el destino usando la lista de roles que devuelve el login.
 
 ### Por qué se sacó del v1
 
@@ -72,8 +73,10 @@ Se llegó a dibujar y después se quitó. Dejarlo tenía tres problemas:
 2. **El enlace no llevaba a ningún lado.** No existe la pantalla de selección
    de perfil. Un botón que no hace nada es peor que no tener botón: el usuario
    lo aprieta, no pasa nada, y concluye que el sistema está roto.
-3. **La API no lo soporta.** `POST /api/Auth/login` solo acepta
-   `{ dni, password }`.
+3. **La API no recibe un rol.** `POST /api/Auth/login` solo acepta
+   `{ dni, password }`, pero desde el backend actualizado devuelve `roles`
+   con los roles asignados a la persona. No hace falta seleccionar un rol para
+   autenticar; la pantalla envía a la persona a su panel según esa lista.
 
 En el HTML de `formulario-login.html` quedó un comentario explicando dónde iba
 y por qué no está, para que nadie lo vuelva a agregar sin darse cuenta del
@@ -83,11 +86,13 @@ problema.
 
 Pendiente de definir con el equipo:
 
-- ¿El login acepta un rol, o devuelve la lista de roles del usuario?
-- Si alguien es Docente **y** Director suplente, ¿a qué dashboard entra?
+- ¿Se necesita una selección explícita cuando una persona tiene varios roles?
+- Si alguien es Docente **y** Director suplente, ¿debe existir un destino
+  preferido distinto del panel del primer rol?
 
-Cuando el backend devuelva los roles del usuario, la pantalla de selección de
-perfil pasa a tener sentido y el chip puede mostrar un dato real.
+El backend ya devuelve los roles del usuario. La pantalla de selección queda
+pendiente de una decisión funcional: hoy el destino se resuelve con la tabla
+`destinoSegunRoles` y los guards permiten cualquier rol asignado.
 
 ## Detalles de implementación que vienen del análisis
 
@@ -99,8 +104,9 @@ perfil pasa a tener sentido y el chip puede mostrar un dato real.
 
 ## Pendientes con el equipo de backend
 
-1. **Mapeo de roles** — el token trae `role: "1"`. Sin la equivalencia
-   id → nombre, el frontend no puede redirigir al dashboard correcto.
+1. **Ruta de login verificada** — el backend actual (commit `c048908`, PR #25)
+   conserva `[HttpPost("login")]` en `AuthController.Login`. El frontend usa
+   `POST /api/Auth/login`; no debe cambiarse a `POST /api/Auth`.
 2. **`POST /api/Auth/crear-usuario-prueba`** — crea usuarios sin
    autenticación. No puede llegar a producción.
 3. **Mensajes de error 401** — unificar en uno genérico.

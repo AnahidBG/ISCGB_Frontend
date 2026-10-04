@@ -36,7 +36,7 @@ export interface RespuestaLogin {
    */
   roles: RolApi[];
 
-  // ── Agregados por el backend el 04/10/2026 (commit `a3902df`, PR #24) ──
+  // ── Agregados por el backend el 04/10/2026 (commit `c048908`, PR #25) ──
   // Opcionales: un backend anterior no los manda. Hoy NO pasan a `Sesion`
   // porque ninguna pantalla los usa (no hay "Mi perfil"); quedan tipados acá
   // para que el contrato esté completo y sea un cambio de una línea cuando

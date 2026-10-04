@@ -1,7 +1,7 @@
 # Contrato de la API — ISCGB
 
 Relevado y actualizado el **04/10/2026** contra el código de `ISCGB_Backend`
-(`main` en `981508f`, PR #24) y los contratos que consume el frontend. Backend
+(`main` en `c048908`, PR #25) y los contratos que consume el frontend. Backend
 a cargo de Angel Silva.
 
 Dirección base de desarrollo: `http://localhost:5231`
@@ -11,14 +11,10 @@ Dirección base de desarrollo: `http://localhost:5231`
 
 ## `POST /api/Auth/login`
 
-> 🔴 **Bug bloqueante en `main` (commit `a3902df`, 04/10/2026):** al
-> `AuthController.Login` se le borró el atributo `[HttpPost("login")]`. Sin
-> él, ASP.NET le asigna la ruta del controlador (`api/Auth`, cualquier
-> verbo), así que `POST /api/Auth/login` responde **404** y **nadie puede
-> iniciar sesión**. Además Swagger no genera el documento ("Ambiguous HTTP
-> method"). Arreglo: volver a poner `[HttpPost("login")]` arriba del método.
-> El frontend NO cambia su URL: adaptarse a `POST /api/Auth` sería
-> esconder el bug.
+✅ **Ruta verificada en el backend actual (commit `c048908`, PR #25):**
+`AuthController.Login` tiene `[HttpPost("login")]`, por lo que el frontend
+debe continuar usando `POST /api/Auth/login`. No cambiar la URL a
+`POST /api/Auth`.
 
 Autentica **por DNI**, no por email.
 

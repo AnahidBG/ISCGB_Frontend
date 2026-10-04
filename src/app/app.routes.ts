@@ -19,6 +19,8 @@ export const routes: Routes = [
   {
     path: 'login',
     title: 'Iniciar sesión · ISCGB',
+    // El formulario consume POST /api/Auth/login; el endpoint fue verificado
+    // en el backend actualizado (commit c048908, PR #25).
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
   },
   {
@@ -96,6 +98,17 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/secretario/panel-secretario/panel-secretario').then(
         (m) => m.PanelSecretario,
+      ),
+  },
+  {
+    // Listado operativo de alumnos y docentes para Secretaría, con búsqueda
+    // local por nombre/DNI/correo y filtros por rol y estado.
+    path: 'secretario/listados',
+    title: 'Listado de personas · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.secretario)],
+    loadComponent: () =>
+      import('./features/secretario/listados/listados-secretario').then(
+        (m) => m.ListadosSecretario,
       ),
   },
   {
