@@ -33,7 +33,7 @@
 ## 2. Patrones que YA están en el código (respetarlos)
 
 ### 2.1 Strategy + inversión de dependencias: servicios abstractos con implementación HTTP y mock
-- **Dónde:** `core/<dominio>/<dominio>.service.ts` (clase abstracta) + `*-http.service.ts` + `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria y ReconocimientoSaberes.
+- **Dónde:** `core/<dominio>/<dominio>.service.ts` (clase abstracta) + `*-http.service.ts` + `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes y Materias.
 - **Regla:** todo dominio nuevo (por ejemplo `core/examenes/` para el calendario) sigue este mismo trío. Si el endpoint todavía no existe, se arranca con el mock.
 
 ### 2.2 Adapter: respuesta cruda de la API → modelo limpio
@@ -65,7 +65,7 @@
 - **Regla:** el estado global vive solo en servicios de `core/`. **Nada de variables mutables a nivel de módulo** ni `static` para compartir estado.
 
 ### 2.8 Tabla de estrategias por clave (Strategy liviano / reemplazo de condicionales)
-- **Dónde:** `APARIENCIA_POR_ESTADO: Record<EstadoDocumento, AparienciaEstado>` en `insignia-estado.ts`, con un valor por defecto (`APARIENCIA_DESCONOCIDA`) para un `estado` nulo o inesperado. También `enlacesPorSesion` (menú por rol), `destinoSegunRoles` y `rolPrincipalDe` (prioridad de roles).
+- **Dónde:** `APARIENCIA_POR_ESTADO: Record<EstadoDocumento, AparienciaEstado>` en `insignia-estado.ts`, con un valor por defecto (`APARIENCIA_DESCONOCIDA`) para un `estado` nulo o inesperado. También `enlacesPorSesion` (menú por rol), `destinoSegunRoles` y `rolPrincipalDe` (prioridad de roles), y `DECLARA_ENTREGA_EN_PAPEL` en `core/legajos/entrega-en-papel.ts` (qué rol ve la casilla "También entregué este documento en Secretaría": Docente sí, el resto no por defecto).
 - **Regla:** todo lo que cambia según el estado, el rol o el tipo se resuelve con **una tabla en un solo lugar**, nunca con `if` repetidos en cada pantalla. Siempre hay un caso por defecto, porque `estado` es `varchar NULL` en la BD.
 
 ### 2.9 Composite: árbol de componentes
@@ -91,7 +91,7 @@
 | **Cambios sin guardar** ("Cargaste documentación nueva, debes Guardar…") | **Memento** liviano + guard (Chain) | Guardar una foto del valor inicial del formulario y compararla con la actual. Un `canDeactivate` reutilizable pregunta antes de salir. |
 | **Requisitos de la contraseña nueva** (cambio de contraseña, CP35 y CP36) | **Strategy** por regla | Cada requisito es un objeto `{ texto, cumple(valor) }` en una lista. `requisitos-password` dibuja la lista y el botón se habilita cuando se cumplen todos. Si `core/auth/password.ts` ya lo resuelve así, se reusa y no se duplica. |
 | **Listados de Director y Secretario** (filtros y búsqueda) | Funciones puras de filtro + Facade | El filtrado (activos o de baja, búsqueda por nombre o DNI) va en una función pura con test. El servicio expone los datos y el componente solo une signals. |
-| **Endpoints que todavía no existen** (reconocimiento de saberes, calendario) | Strategy (mock) + Adapter | Mock con el contrato acordado en `docs/contrato-*.md`. Cuando llega el endpoint real se cambia `useClass` y se ajusta el Adapter, sin tocar pantallas. |
+| **Endpoints que todavía no existen** (calendario) | Strategy (mock) + Adapter | Mock con el contrato acordado en `docs/contrato-*.md`. Cuando llega el endpoint real se cambia `useClass` y se ajusta el Adapter, sin tocar pantallas. |
 
 ---
 

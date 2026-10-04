@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
+import { MateriasService } from '../../../core/materias/materias.service';
+import { MateriaDisponible } from '../../../core/materias/modelos/materia-disponible';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { ReconocimientoSaberesService } from '../../../core/reconocimiento-saberes/reconocimiento-saberes.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
@@ -21,16 +23,17 @@ type Adjunto = 'programa' | 'analitico';
  * otra institución:
  *
  *   · "Materia del ISCGB" con su comentario (el criterio pide poder escribir
- *     un comentario en esa sección).
+ *     un comentario en esa sección). La materia se ELIGE de la lista
+ *     (`GET /api/Asignaciones/materias-disponibles`): el backend la guarda
+ *     por id, así que el texto libre de antes no tenía a dónde ir.
  *   · Dos PDF: el programa de la otra institución y el analítico. Solo PDF,
  *     validado por `ZonaArchivo` (regla de negocio #1).
  *   · Barra de progreso: documentos cargados sobre los dos requeridos.
  *   · Botones Adjuntar (cada zona), Cancelar y Enviar solicitud.
  *
- * ⚠️ El backend todavía no tiene el endpoint (SCRUM-173, "Por hacer"). La
- * pantalla está completa y, si el servidor responde que la ruta no existe,
- * le dice al alumno que lo presente en Secretaría en vez de fingir que se
- * envió. El contrato propuesto está en docs/contrato-reconocimiento-saberes.md.
+ * Envía a `POST /api/ReconocimientoSaberes/solicitar` (PR #23 del backend).
+ * Si el servidor responde que la ruta no existe, le dice al alumno que lo
+ * presente en Secretaría en vez de fingir que se envió.
  */
 @Component({
   selector: 'app-reconocimiento-saberes',
@@ -42,6 +45,7 @@ export class ReconocimientoSaberes {
   private readonly auth = inject(AuthService);
   private readonly campana = inject(CampanaService);
   private readonly servicio = inject(ReconocimientoSaberesService);
+  private readonly materiasService = inject(MateriasService);
   private readonly router = inject(Router);
 
   protected readonly sesion = this.auth.sesion;
@@ -52,7 +56,12 @@ export class ReconocimientoSaberes {
   protected readonly notificacionesDetalle = this.campana.detalle;
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
-  protected readonly materia = signal('');
+  /** Las materias del ISCGB para el desplegable. */
+  protected readonly materias = signal<readonly MateriaDisponible[]>([]);
+  protected readonly cargandoMaterias = signal(true);
+  protected readonly errorMaterias = signal<string | null>(null);
+
+  protected readonly idMateria = signal<number | null>(null);
   protected readonly comentario = signal('');
   protected readonly programa = signal<File | null>(null);
   protected readonly analitico = signal<File | null>(null);
@@ -77,10 +86,15 @@ export class ReconocimientoSaberes {
   );
 
   protected readonly errorMateria = computed(() =>
-    this.seIntentoEnviar() && this.materia().trim() === ''
-      ? 'Escribí qué materia del ISCGB querés que te reconozcan.'
+    this.seIntentoEnviar() && this.idMateria() === null
+      ? 'Elegí qué materia del ISCGB querés que te reconozcan.'
       : null,
   );
+
+  protected alElegirMateria(evento: Event): void {
+    const valor = (evento.target as HTMLSelectElement).value;
+    this.idMateria.set(valor === '' ? null : Number(valor));
+  }
 
   protected elegir(adjunto: Adjunto, archivo: File): void {
     (adjunto === 'programa' ? this.programa : this.analitico).set(archivo);
@@ -104,12 +118,11 @@ export class ReconocimientoSaberes {
     this.seIntentoEnviar.set(true);
     this.error.set(null);
 
-    const sesion = this.sesion();
     const programa = this.programa();
     const analitico = this.analitico();
-    const materia = this.materia().trim();
+    const idMateria = this.idMateria();
 
-    if (sesion === null || programa === null || analitico === null || materia === '') {
+    if (programa === null || analitico === null || idMateria === null) {
       return;
     }
     if (this.enviando()) {
@@ -121,11 +134,10 @@ export class ReconocimientoSaberes {
 
     this.servicio
       .enviar({
-        idUsuario: sesion.idUsuario,
-        materiaIscgb: materia,
+        idMateria,
         comentario: comentario === '' ? null : comentario,
-        programaOtraInstitucion: programa,
-        analitico,
+        programaPdf: programa,
+        analiticoPdf: analitico,
       })
       .subscribe({
         next: (mensaje) => {
@@ -145,6 +157,16 @@ export class ReconocimientoSaberes {
 
   constructor() {
     this.campana.refrescar();
+    this.materiasService.listarDisponibles().subscribe({
+      next: (materias) => {
+        this.materias.set(materias);
+        this.cargandoMaterias.set(false);
+      },
+      error: (fallo: Error) => {
+        this.errorMaterias.set(fallo.message);
+        this.cargandoMaterias.set(false);
+      },
+    });
   }
 
   protected cerrarSesion(): void {

@@ -154,7 +154,7 @@ export class UsuariosMockService extends UsuariosService {
     if (this.usuarios.some((existente) => existente.dni === perfil.dni)) {
       return this.fallar('Ya existe un usuario con ese DNI.');
     }
-    if (perfil.rol === ROLES.docente && perfil.esDirectorSuplente && this.suplente !== null) {
+    if (perfil.roles.includes(ROLES.docente) && perfil.esDirectorSuplente && this.suplente !== null) {
       return this.fallar(
         `Ya existe un director suplente asignado con el nombre: ${this.suplente}.`,
       );
@@ -166,7 +166,7 @@ export class UsuariosMockService extends UsuariosService {
       nombreCompleto,
       dni: perfil.dni,
       email: perfil.email,
-      roles: [perfil.rol],
+      roles: [...perfil.roles],
       activo: true,
       estadoLegajo: null,
     });
@@ -216,6 +216,8 @@ export class UsuariosMockService extends UsuariosService {
       return this.fallar('Usuario no encontrado.');
     }
     usuario.nombreCompleto = `${perfil.nombre} ${perfil.apellido}`.trim();
+    // Igual que el backend: los roles enviados reemplazan a los que había.
+    usuario.roles = [...perfil.roles];
     return of(mensajePerfilActualizado(usuario.nombreCompleto)).pipe(delay(DEMORA_SIMULADA_MS));
   }
 

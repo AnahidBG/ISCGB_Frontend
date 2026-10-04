@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { map } from 'rxjs';
 import { esDniValido, formatearDni, normalizarDni } from '../../../../core/auth/dni';
 import { ROLES, Rol } from '../../../../core/auth/modelos/rol';
 import { aFechaSola, desdeFechaSola } from '../../../../core/comun/fechas';
@@ -39,6 +40,27 @@ const OBLIGATORIOS = {
 
 type CampoObligatorio = keyof typeof OBLIGATORIOS;
 
+/** Un tilde por rol: el valor del grupo `roles` del formulario. */
+type TildesDeRol = Record<Rol, boolean>;
+
+/** Director, Secretario, Docente, Alumno: el orden de sus ids (`ID_ROL`). */
+const TODOS_LOS_ROLES: readonly Rol[] = Object.values(ROLES);
+
+/** Los roles tildados, siempre en el mismo orden. */
+function rolesTildados(tildes: Partial<TildesDeRol>): Rol[] {
+  return TODOS_LOS_ROLES.filter((rol) => tildes[rol] === true);
+}
+
+/** Los tildes que corresponden a una lista de roles. */
+function tildesDe(roles: readonly Rol[]): TildesDeRol {
+  return {
+    [ROLES.director]: roles.includes(ROLES.director),
+    [ROLES.secretario]: roles.includes(ROLES.secretario),
+    [ROLES.docente]: roles.includes(ROLES.docente),
+    [ROLES.alumno]: roles.includes(ROLES.alumno),
+  };
+}
+
 /**
  * El formulario del perfil de una persona — Sprint 2, "Gestión de usuarios y
  * roles" (SCRUM-16). Lo comparten "Nuevo Usuario" y "Editar Usuario".
@@ -52,13 +74,18 @@ type CampoObligatorio = keyof typeof OBLIGATORIOS;
  * Las secciones siguen el criterio de aceptación al pie de la letra:
  * "Datos personales" (nombre, CUIL, DNI, correo, sexo/género, domicilio,
  * contacto de emergencia con afiliación, lugar de nacimiento) e
- * "Información académica" (rol, N.° de legajo autocompletado con el DNI,
+ * "Información académica" (roles, N.° de legajo autocompletado con el DNI,
  * director suplente).
+ *
+ * Roles: casillas, no radios. El backend recibe `IdsRoles` (una lista) desde
+ * el PR #24, y una persona puede ser, por ejemplo, Director y Docente a la
+ * vez. Al menos uno es obligatorio.
  *
  * En modo edición:
  *   · El DNI no se toca: es el usuario del login y el N.° de legajo.
- *   · El rol también puede cambiarse: `PUT /api/UsuariosAdmin/modificar`
- *     actualiza la asociación del usuario con el rol enviado.
+ *   · Los roles arrancan con TODOS los que la persona ya tiene: el
+ *     `PUT /api/UsuariosAdmin/modificar` borra los anteriores y deja solo los
+ *     enviados, así que destildar uno se lo quita.
  */
 @Component({
   selector: 'app-formulario-perfil-usuario',
@@ -107,7 +134,6 @@ export class FormularioPerfilUsuario implements OnInit {
 
   protected readonly opcionesDeRol = OPCIONES_DE_ROL;
   protected readonly opcionesDeGenero = OPCIONES_DE_GENERO;
-  protected readonly rolDocente = ROLES.docente;
 
   protected readonly seIntentoEnviar = signal(false);
 
@@ -125,7 +151,7 @@ export class FormularioPerfilUsuario implements OnInit {
     contactoEmergencia: ['', Validators.required],
     telefonoEmergencia: ['', Validators.required],
     afiliacionEmergencia: ['', Validators.required],
-    rol: ['' as Rol | '', Validators.required],
+    roles: this.fb.nonNullable.group(tildesDe([])),
     esDirectorSuplente: [false],
   });
 
@@ -133,9 +159,10 @@ export class FormularioPerfilUsuario implements OnInit {
     initialValue: '',
   });
 
-  protected readonly rolElegido = toSignal(this.formulario.controls.rol.valueChanges, {
-    initialValue: '' as Rol | '',
-  });
+  protected readonly rolesElegidos = toSignal(
+    this.formulario.controls.roles.valueChanges.pipe(map(rolesTildados)),
+    { initialValue: [] as Rol[] },
+  );
 
   /** "Que se autocomplete legajo con DNI": el backend usa el DNI como N.° de legajo. */
   protected readonly numeroLegajo = computed(() => {
@@ -144,7 +171,9 @@ export class FormularioPerfilUsuario implements OnInit {
   });
 
   /** Director suplente solo existe para Docentes (`Docentes.director_suplente`). */
-  protected readonly puedeSerSuplente = computed(() => this.rolElegido() === ROLES.docente);
+  protected readonly puedeSerSuplente = computed(() =>
+    this.rolesElegidos().includes(ROLES.docente),
+  );
 
   protected readonly esEdicion = computed(() => this.modo() === 'edicion');
 
@@ -179,7 +208,7 @@ export class FormularioPerfilUsuario implements OnInit {
         contactoEmergencia: inicial.contactoEmergencia ?? '',
         telefonoEmergencia: inicial.telefonoEmergencia ?? '',
         afiliacionEmergencia: inicial.afiliacionEmergencia ?? '',
-        rol: inicial.rol ?? '',
+        roles: tildesDe(inicial.roles ?? []),
         esDirectorSuplente: inicial.esDirectorSuplente ?? false,
       });
     }
@@ -204,7 +233,7 @@ export class FormularioPerfilUsuario implements OnInit {
     }
 
     const v = this.formulario.getRawValue();
-    const rol = v.rol as Rol;
+    const roles = rolesTildados(v.roles);
 
     this.guardar.emit({
       nombre: v.nombre.trim(),
@@ -220,8 +249,8 @@ export class FormularioPerfilUsuario implements OnInit {
       contactoEmergencia: v.contactoEmergencia.trim(),
       telefonoEmergencia: v.telefonoEmergencia.trim(),
       afiliacionEmergencia: v.afiliacionEmergencia.trim(),
-      rol,
-      esDirectorSuplente: rol === ROLES.docente && v.esDirectorSuplente,
+      roles,
+      esDirectorSuplente: roles.includes(ROLES.docente) && v.esDirectorSuplente,
     });
   }
 
@@ -284,22 +313,28 @@ export class FormularioPerfilUsuario implements OnInit {
   }
 
   protected get errorRol(): string | null {
-    return this.seIntentoEnviar() && this.formulario.controls.rol.getRawValue() === ''
-      ? 'Elegí un rol: sin rol la persona entra al sistema pero no puede hacer nada.'
+    return this.seIntentoEnviar() &&
+      rolesTildados(this.formulario.controls.roles.getRawValue()).length === 0
+      ? 'Tildá al menos un rol: sin rol la persona entra al sistema pero no puede hacer nada.'
       : null;
   }
 
   /**
-   * Validaciones que `Validators` no cubre: formato de DNI y CUIL, y textos
-   * hechos solo de espacios — `Validators.required` los deja pasar, pero
-   * después del `trim()` llegarían vacíos y el backend respondería 400.
+   * Validaciones que `Validators` no cubre: formato de DNI y CUIL, al menos un
+   * rol, y textos hechos solo de espacios — `Validators.required` los deja
+   * pasar, pero después del `trim()` llegarían vacíos y el backend
+   * respondería 400.
    */
   private hayErroresPropios(): boolean {
     const hayVacios = (Object.keys(OBLIGATORIOS) as CampoObligatorio[]).some(
       (campo) => this.errorObligatorio(campo) !== null,
     );
     return (
-      hayVacios || this.errorDni !== null || this.errorCuil !== null || this.errorEmail !== null
+      hayVacios ||
+      this.errorDni !== null ||
+      this.errorCuil !== null ||
+      this.errorEmail !== null ||
+      this.errorRol !== null
     );
   }
 }

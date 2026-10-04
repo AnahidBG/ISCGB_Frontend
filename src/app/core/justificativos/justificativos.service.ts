@@ -4,6 +4,7 @@ import {
   JustificativoPendiente,
   NuevoJustificativo,
 } from './modelos/justificativo-pendiente';
+import { JustificativoPropio } from './modelos/justificativo-propio';
 
 /** Los dos únicos veredictos posibles. Ver CLAUDE.md, regla de negocio #3. */
 export type VeredictoAuditoria = 'Aprobado' | 'Rechazado';
@@ -20,6 +21,9 @@ export const MENSAJE_ERROR_CARGA =
 /** Por si el backend contesta 200 sin `message`. Dice lo mismo que el suyo. */
 export const MENSAJE_CARGA_POR_DEFECTO =
   'Acordate de llevar el certificado en papel el día que te reincorpores.';
+
+export const MENSAJE_ERROR_MIS_JUSTIFICATIVOS =
+  'No pudimos traer tus justificativos. Intentá de nuevo en un momento.';
 
 /**
  * Justificativos de inasistencia.
@@ -57,4 +61,7 @@ export abstract class JustificativosService {
    * ahí viene la instrucción de llevar el certificado en papel.
    */
   abstract cargar(justificativo: NuevoJustificativo): Observable<string>;
+
+  /** Los justificativos de una persona con su estado, del más nuevo al más viejo. */
+  abstract listarDeUsuario(idUsuario: number): Observable<JustificativoPropio[]>;
 }

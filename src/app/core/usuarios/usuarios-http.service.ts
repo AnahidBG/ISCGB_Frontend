@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
-import { ID_ROL, Rol, RolApi } from '../auth/modelos/rol';
+import { ID_ROL, ROLES, Rol, RolApi } from '../auth/modelos/rol';
 import { esEndpointInexistente, mensajeDelServidor } from '../comun/error-api';
 import { aFechaSola, desdeFechaSola } from '../comun/fechas';
 import { RUTAS_API } from '../configuracion/api';
@@ -60,7 +60,7 @@ interface RespuestaUsuariosApi {
 }
 
 /**
- * `CargaUsuarioDto` del backend, campo por campo (rama `CargaDeUsuarios`).
+ * `CargaUsuarioDto` del backend, campo por campo (`main`, PR #24).
  * ASP.NET no distingue mayúsculas al leer el JSON, así que el camelCase
  * entra bien en las propiedades PascalCase.
  */
@@ -79,7 +79,11 @@ interface CargaUsuarioApi {
   contactoEmergencia: string;
   telefonoEmergencia: string;
   afiliacionEmergencia: string;
-  idRol: number;
+  /**
+   * Antes era `idRol: number`. Un `idRol` suelto hoy se ignora y el backend
+   * responde 400 "Debe asignar al menos un rol al usuario.".
+   */
+  idsRoles: number[];
   esDirectorSuplente: boolean;
 }
 
@@ -273,10 +277,12 @@ function aCargaUsuarioApi(perfil: PerfilUsuario): CargaUsuarioApi {
     contactoEmergencia: perfil.contactoEmergencia,
     telefonoEmergencia: perfil.telefonoEmergencia,
     afiliacionEmergencia: perfil.afiliacionEmergencia,
-    idRol: ID_ROL[perfil.rol],
-    // El backend lo ignora para cualquier rol que no sea Docente, pero
-    // mandarlo en `false` evita que un tilde olvidado viaje de más.
-    esDirectorSuplente: perfil.rol === 'Docente' && perfil.esDirectorSuplente,
+    // La lista COMPLETA: al modificar, el backend borra los roles que había y
+    // deja solo estos (ver `PerfilUsuario.roles`).
+    idsRoles: perfil.roles.map((rol) => ID_ROL[rol]),
+    // El backend lo ignora si no hay rol Docente, pero mandarlo en `false`
+    // evita que un tilde olvidado viaje de más.
+    esDirectorSuplente: perfil.roles.includes(ROLES.docente) && perfil.esDirectorSuplente,
   };
 }
 

@@ -1,7 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
-import { ROLES, Rol } from '../../../core/auth/modelos/rol';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { PerfilUsuario } from '../../../core/usuarios/modelos/perfil-usuario';
@@ -17,35 +16,28 @@ import {
   PerfilInicial,
 } from '../partes/formulario-perfil-usuario/formulario-perfil-usuario';
 
-/** Orden para elegir el rol que se muestra cuando la persona tiene más de uno. */
-const ORDEN_DE_ROLES: readonly Rol[] = [
-  ROLES.director,
-  ROLES.secretario,
-  ROLES.docente,
-  ROLES.alumno,
-];
-
 /**
  * Editar Usuario — Sprint 2, "Gestión de usuarios y roles" (SCRUM-16):
  * modificación del perfil y BAJA.
  *
  * CONTENEDOR. El formulario es el mismo de "Nuevo Usuario"
- * (`FormularioPerfilUsuario`) en modo edición: DNI y rol fijos.
+ * (`FormularioPerfilUsuario`) en modo edición: el DNI queda fijo.
  *
- *   · Precarga: `GET /api/Usuarios/{id}` (real, en `main`).
- *   · Guardar: `PUT /api/UsuariosAdmin/modificar/{id}` (rama `CargaDeUsuarios`).
+ *   · Precarga: `GET /api/Usuarios/{id}` (real, en `main`), con TODOS los
+ *     roles de la persona tildados.
+ *   · Guardar: `PUT /api/UsuariosAdmin/modificar/{id}`. Reemplaza todos los
+ *     roles por los tildados, por eso la precarga no puede elegir uno solo.
  *     Muestra "El perfil de X ha sido actualizado correctamente" (SCRUM-139).
  *   · Baja: `PUT /api/UsuariosAdmin/baja/{id}`. Es un cambio de estado a
  *     inactivo, nunca un borrado: los datos y la documentación histórica
  *     quedan (criterio de aceptación, SCRUM-135/143).
  *   · Reactivación: `PUT /api/UsuariosAdmin/alta/{id}`.
  *
- * ⚠️ Limitaciones del backend que la pantalla dice en voz alta en vez de
- * esconder (ver docs/alineacion-sprint-2.md):
- *   · El GET no devuelve CUIL, género, afiliación ni si es director
- *     suplente: esos campos se vuelven a cargar al editar.
- *   · El GET no devuelve CUIL, género, afiliación ni director suplente; esos
- *     campos no pueden precargarse desde el detalle actual.
+ * ⚠️ Limitación del backend que la pantalla dice en voz alta en vez de
+ * esconder (ver docs/contrato-api.md): el GET no devuelve CUIL, género,
+ * afiliación ni si es director suplente, así que esos campos se vuelven a
+ * cargar al editar. El login sí los devuelve, pero solo de quien inicia
+ * sesión, no de la persona que se está editando.
  */
 @Component({
   selector: 'app-editar-usuario',
@@ -112,7 +104,7 @@ export class EditarUsuario {
       fechaNacimiento: usuario.fechaNac,
       contactoEmergencia: usuario.contactoEmergencia ?? '',
       telefonoEmergencia: usuario.telefonoEmergencia ?? '',
-      rol: ORDEN_DE_ROLES.find((rol) => usuario.roles.includes(rol)),
+      roles: [...usuario.roles],
     };
   });
 

@@ -26,9 +26,9 @@ export interface DocumentoLegajo {
   propietario?: string;
 
   /**
-   * El PDF, para poder abrirlo antes de aprobar o rechazar. Opcional porque
-   * `/pendientes` no lo manda (ver `aDocumentoPendiente`) y los datos de
-   * prueba tampoco lo tienen cargado.
+   * El PDF, para poder abrirlo antes de aprobar o rechazar. Lo mandan tanto
+   * `usuario/{id}` como `/pendientes`. Opcional porque los datos de prueba
+   * no lo tienen cargado.
    */
   rutaArchivo?: string | null;
 
@@ -37,4 +37,11 @@ export interface DocumentoLegajo {
    * ya lo devuelve; antes se descartaba al mapear la respuesta.
    */
   presentadoFisico: boolean;
+
+  /**
+   * Nombre de quien lo aprobó o rechazó, o `null` si nadie lo revisó todavía.
+   * Lo manda `GET /api/Legajos/usuario/{id}` (`LegajoDetalleDto.Auditor`) y
+   * antes se descartaba. Opcional porque `/pendientes` no lo trae.
+   */
+  auditor?: string | null;
 }

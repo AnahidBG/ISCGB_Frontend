@@ -88,10 +88,44 @@ export const RUTAS_API = {
   /** Provincias de un país. 404 = ese país no tiene ninguna cargada (lista vacía, no error). */
   provinciasDePais: (idPais: number) => `${URL_BASE_API}/api/Ubicaciones/paises/${idPais}/provincias`,
 
-  // --- Reconocimiento de saberes (SCRUM-30) ---
-  // ⚠️ PROPUESTO: el backend todavía no tiene controlador. Ver
-  // docs/contrato-reconocimiento-saberes.md.
-  reconocimientoSaberes: `${URL_BASE_API}/api/ReconocimientoSaberes`,
+  // --- Reconocimiento de saberes (ISCGB_Backend/Controllers/ReconocimientoSaberesController.cs) ---
+  // `[Authorize(Roles = "Alumno")]`: el alumno sale del token, no del cuerpo.
+
+  /** El alumno envía la solicitud. multipart/form-data. */
+  solicitarReconocimiento: `${URL_BASE_API}/api/ReconocimientoSaberes/solicitar`,
+
+  /** Bandeja de Secretaría: las solicitudes sin docente asignado. Solo `Secretario`. */
+  reconocimientosPendientes: `${URL_BASE_API}/api/ReconocimientoSaberes/recibirSolicitudReconocimiento`,
+
+  /** Uno de los dos PDF de una solicitud (`application/pdf`). Solo `Secretario`. */
+  adjuntoReconocimiento: (idSolicitud: number, adjunto: 'programa' | 'analitico') =>
+    `${URL_BASE_API}/api/ReconocimientoSaberes/${idSolicitud}/${adjunto}`,
+
+  // --- Materias (ISCGB_Backend/Controllers/MateriasController.cs) ---
+  // La clase se llama `AsignacionesController`, así que la ruta es
+  // `api/Asignaciones` aunque el archivo se llame distinto. Sin autenticación.
+  // Los tres GET envuelven la lista en `{ data }`.
+
+  /** Todas las materias del instituto, ordenadas por nombre. */
+  materiasDisponibles: `${URL_BASE_API}/api/Asignaciones/materias-disponibles`,
+
+  /** Todos los docentes (fila en `Docentes`), ordenados por nombre. */
+  docentesDisponibles: `${URL_BASE_API}/api/Asignaciones/docentes-disponibles`,
+
+  /** Todas las comisiones, ordenadas por nombre. */
+  comisionesDisponibles: `${URL_BASE_API}/api/Asignaciones/comisiones-disponibles`,
+
+  /** Alta de una materia. Body: `CargarMateriaDto`. */
+  cargarMateria: `${URL_BASE_API}/api/Asignaciones/cargar-materia`,
+
+  /** Asigna una materia a un docente en una comisión. Body: `AsignarMateriaDto`. */
+  asignarMateria: `${URL_BASE_API}/api/Asignaciones/asignar`,
+
+  // --- Buscador (ISCGB_Backend/Controllers/BusquedaController.cs, clase `BuscadorController`) ---
+
+  /** Personas, materias y justificativos que contienen el término. Menos de 2 letras = vacío. */
+  busquedaGlobal: (termino: string) =>
+    `${URL_BASE_API}/api/Buscador/global?termino=${encodeURIComponent(termino)}`,
 
   // --- Certificados (ISCGB_Backend/Controllers/CertificadosController.cs) ---
   // `[Authorize]`: el alumno sale del propio token (claim NameIdentifier), no
@@ -111,6 +145,10 @@ export const RUTAS_API = {
   /** Aprobar/rechazar un justificativo. */
   auditarJustificativo: (idJustificativo: number) =>
     `${URL_BASE_API}/api/Justificativos/auditar/${idJustificativo}`,
+
+  /** Los justificativos de una persona, del más nuevo al más viejo. 404 = la persona no existe. */
+  justificativosDeUsuario: (idUsuario: number) =>
+    `${URL_BASE_API}/api/Justificativos/${idUsuario}/justificativos`,
 } as const;
 
 /**

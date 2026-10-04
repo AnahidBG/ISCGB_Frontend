@@ -11,6 +11,7 @@ import { urlArchivoSubido } from '../../../core/configuracion/api';
 import { LegajoService, VeredictoLegajo } from '../../../core/legajos/legajo.service';
 import { DocumentoLegajo } from '../../../core/legajos/modelos/documento-legajo';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
+import { declaraEntregaEnPapel } from '../../../core/legajos/entrega-en-papel';
 import {
   calcularProgresoLegajo,
   documentosSinCargar,
@@ -64,6 +65,8 @@ interface FilaDocumento {
   rutaArchivo: string | null;
   /** Si Secretaría tiene además el papel físico. `false` en las filas "faltante". */
   presentadoFisico: boolean;
+  /** Quién aprobó o rechazó la versión vigente. `null` si nadie la revisó todavía. */
+  auditor: string | null;
 }
 
 /**
@@ -112,6 +115,16 @@ export class MisDocumentos {
     () =>
       this.idUsuarioSeleccionado() !== null &&
       this.idUsuarioSeleccionado() !== this.sesion()?.idUsuario,
+  );
+
+  /**
+   * Si se muestra "Presentado físicamente" en cada fila. Secretaría y
+   * Dirección lo ven en cualquier legajo ajeno; en el propio, solo quien lo
+   * declara al subir (Docente). El Alumno no tiene esa casilla, así que en su
+   * legajo tampoco se muestra.
+   */
+  protected readonly muestraEntregaEnPapel = computed(
+    () => this.esLegajoAjeno() || declaraEntregaEnPapel(this.sesion()),
   );
   /**
    * La persona cuyo legajo se está revisando (solo con legajo ajeno), o
@@ -204,9 +217,16 @@ export class MisDocumentos {
     }
     return this.documentos().map((documento) => {
       const override = overrides.get(documento.id);
+      // Quien acaba de auditar en esta pantalla es la sesión: es lo mismo que
+      // el backend va a devolver como `auditor` la próxima vez.
       return override === undefined
         ? documento
-        : { ...documento, estado: override.estado, comentario: override.comentario };
+        : {
+            ...documento,
+            estado: override.estado,
+            comentario: override.comentario,
+            auditor: this.sesion()?.nombreCompleto || documento.auditor,
+          };
     });
   });
 
@@ -339,6 +359,7 @@ export class MisDocumentos {
         estadoParaOrden: estadoOriginalPorLegajo.get(ultima.id) ?? ultima.estado,
         rutaArchivo: ultima.rutaArchivo ?? null,
         presentadoFisico: ultima.presentadoFisico,
+        auditor: ultima.auditor ?? null,
       };
     });
 
@@ -356,6 +377,7 @@ export class MisDocumentos {
       estadoParaOrden: null,
       rutaArchivo: null,
       presentadoFisico: false,
+      auditor: null,
     }));
 
     return [...subidos, ...faltantes].sort(

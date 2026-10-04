@@ -35,7 +35,8 @@ interface LegajoApi {
   estado: string | null;
   presentadoFisico: boolean | null;
   comentario: string | null;
-  auditor: string;
+  /** Nombre y apellido del auditor, o el texto literal "Sin auditor asignado". */
+  auditor: string | null;
 }
 
 /**
@@ -250,7 +251,11 @@ export class LegajoHttpService extends LegajoService {
   }
 }
 
+/** Lo que manda el backend en `auditor` cuando el documento todavía no se revisó. */
+const SIN_AUDITOR = 'Sin auditor asignado';
+
 function aDocumentoLegajo(legajo: LegajoApi): DocumentoLegajo {
+  const auditor = legajo.auditor?.trim() ?? '';
   return {
     id: legajo.idLegajo,
     nombre: legajo.tipoDocumento ?? 'Documento sin nombre',
@@ -260,6 +265,7 @@ function aDocumentoLegajo(legajo: LegajoApi): DocumentoLegajo {
     fechaVencimiento: legajo.fechaVencimiento === null ? null : new Date(legajo.fechaVencimiento),
     rutaArchivo: legajo.rutaArchivo,
     presentadoFisico: legajo.presentadoFisico ?? false,
+    auditor: auditor === '' || auditor === SIN_AUDITOR ? null : auditor,
   };
 }
 
@@ -273,6 +279,8 @@ function aDocumentoPendiente(pendiente: LegajoPendienteApi): DocumentoLegajo {
     // `/pendientes` no manda ninguno de los dos.
     comentario: null,
     fechaVencimiento: null,
+    // Sí manda la ruta (`LegajoPendienteDto.RutaArchivo`): antes se perdía acá.
+    rutaArchivo: pendiente.rutaArchivo,
     presentadoFisico: pendiente.presentadoFisico ?? false,
   };
 }

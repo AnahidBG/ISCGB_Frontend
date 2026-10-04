@@ -4,6 +4,7 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
+import { declaraEntregaEnPapel } from '../../../core/legajos/entrega-en-papel';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
@@ -41,6 +42,11 @@ import { ZonaArchivo } from '../../../shared/ui/zona-archivo/zona-archivo';
  * Lo único que lograba era que la misma cosa se llamara distinto en cada
  * legajo — "Certificado de reincidencia" vs. el tipo real — y que la lista de
  * documentos mostrara dos nombres para un solo papel.
+ *
+ * ── Entrega en papel (04/10/2026) ─────────────────────────────────────────
+ * El Docente vuelve a tener la casilla "También entregué este documento en
+ * Secretaría" (`presentadoFisico`); el Alumno no, ve solo el recordatorio.
+ * Quién la ve lo decide `declaraEntregaEnPapel` (core/legajos).
  *
  * La validación de PDF que hace esta pantalla es SOLO por comodidad: avisa
  * antes de subir algo que va a fallar. La validación de verdad va del lado
@@ -87,6 +93,20 @@ export class SubirDocumento {
   protected readonly archivo = signal<File | null>(null);
   protected readonly fechaVencimiento = signal('');
 
+  /** Si esta persona ve la casilla de entrega en papel (Docente sí, Alumno no). */
+  protected readonly puedeDeclararEntrega = computed(() => declaraEntregaEnPapel(this.sesion()));
+
+  /** La casilla "También entregué este documento en Secretaría". */
+  protected readonly entregoEnPapel = signal(false);
+
+  /** Lo que viaja como `presentadoFisico`: solo cuenta si la casilla se mostró. */
+  private readonly presentadoFisico = computed(
+    () => this.puedeDeclararEntrega() && this.entregoEnPapel(),
+  );
+
+  /** El recordatorio rojo se ve siempre, salvo que el Docente ya haya tildado la entrega. */
+  protected readonly recordarEntrega = computed(() => !this.presentadoFisico());
+
   protected readonly enviando = signal(false);
   protected readonly error = signal<string | null>(null);
   protected readonly exito = signal(false);
@@ -123,6 +143,10 @@ export class SubirDocumento {
     this.fechaVencimiento.set((evento.target as HTMLInputElement).value);
   }
 
+  protected alMarcarEntrega(evento: Event): void {
+    this.entregoEnPapel.set((evento.target as HTMLInputElement).checked);
+  }
+
   protected alElegirArchivo(archivo: File): void {
     this.archivo.set(archivo);
     this.error.set(null);
@@ -150,10 +174,9 @@ export class SubirDocumento {
         idUsuario,
         idTipoDoc,
         fechaVencimiento: this.fechaAEnviar(),
-        // Siempre `false`: la pantalla ya no le pregunta a la persona si
-        // entregó el papel (ver el recordatorio rojo del template). Quien
-        // confirma la entrega física es Secretaría, que es la que la recibe.
-        presentadoFisico: false,
+        // El Docente lo declara con la casilla; para el Alumno es siempre
+        // `false` (no ve la casilla, solo el recordatorio).
+        presentadoFisico: this.presentadoFisico(),
         archivo: elegido,
       })
       .subscribe({
@@ -172,6 +195,7 @@ export class SubirDocumento {
     this.idTipoElegido.set(null);
     this.archivo.set(null);
     this.fechaVencimiento.set('');
+    this.entregoEnPapel.set(false);
     this.exito.set(false);
     this.error.set(null);
   }

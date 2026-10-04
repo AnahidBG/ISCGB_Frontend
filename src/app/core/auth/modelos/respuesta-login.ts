@@ -35,6 +35,25 @@ export interface RespuestaLogin {
    * (tabla `Usuarios_roles`), aunque hoy la mayoría tenga uno solo.
    */
   roles: RolApi[];
+
+  // ── Agregados por el backend el 04/10/2026 (commit `a3902df`, PR #24) ──
+  // Opcionales: un backend anterior no los manda. Hoy NO pasan a `Sesion`
+  // porque ninguna pantalla los usa (no hay "Mi perfil"); quedan tipados acá
+  // para que el contrato esté completo y sea un cambio de una línea cuando
+  // alguna los necesite.
+
+  /** Obra social / prepaga del contacto de emergencia. */
+  afiliacion_Emergencia?: string | null;
+  /** "YYYY-MM-DD", sin hora. Leer con `desdeFechaSola()`, nunca con `new Date()`. */
+  fecha_Nacimiento?: string | null;
+  cuil?: string | null;
+  genero?: string | null;
+  /**
+   * Si la persona es director suplente (`Docentes.director_suplente`).
+   * `false` también para quien no es Docente. NO da permisos de Director: los
+   * permisos salen de `roles`.
+   */
+  esDirectorSuplente?: boolean;
 }
 
 /**

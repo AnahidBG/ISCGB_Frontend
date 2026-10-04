@@ -1,0 +1,85 @@
+<form
+  class="flex flex-col gap-5"
+  [formGroup]="formulario"
+  (submit)="$event.preventDefault(); enviar()"
+>
+  @if (error(); as mensaje) {
+    <p role="alert" class="rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+      {{ mensaje }}
+    </p>
+  } @else if (exito(); as mensaje) {
+    <p role="status" class="rounded-xl bg-aprobado/10 px-4 py-3 text-sm text-texto">
+      {{ mensaje }}
+    </p>
+  }
+
+  <p class="flex flex-col gap-1.5">
+    <label for="materia-nombre" class="text-sm font-medium text-texto">
+      Nombre <span aria-hidden="true" class="text-rechazado">*</span>
+    </label>
+    <input
+      id="materia-nombre"
+      type="text"
+      formControlName="nombre"
+      autocomplete="off"
+      required
+      class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+      placeholder="Ej. Didáctica General"
+    />
+    @if (errorDe('nombre'); as mensaje) {
+      <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+    }
+  </p>
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    <p class="flex flex-col gap-1.5">
+      <label for="materia-carrera" class="text-sm font-medium text-texto">
+        Carrera <span aria-hidden="true" class="text-rechazado">*</span>
+      </label>
+      <input
+        id="materia-carrera"
+        type="text"
+        formControlName="carrera"
+        autocomplete="off"
+        required
+        class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+        placeholder="Ej. Profesorado de Inglés"
+      />
+      @if (errorDe('carrera'); as mensaje) {
+        <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+      }
+    </p>
+
+    <p class="flex flex-col gap-1.5">
+      <label for="materia-curso" class="text-sm font-medium text-texto">
+        Curso <span aria-hidden="true" class="text-rechazado">*</span>
+      </label>
+      <input
+        id="materia-curso"
+        type="text"
+        formControlName="curso"
+        autocomplete="off"
+        required
+        class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
+        placeholder="Ej. 1° año"
+      />
+      @if (errorDe('curso'); as mensaje) {
+        <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+      }
+    </p>
+  </div>
+
+  <div class="flex justify-end">
+    <button
+      type="submit"
+      [disabled]="enviando()"
+      class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      @if (enviando()) {
+        Guardando…
+      } @else {
+        Crear materia
+      }
+    </button>
+  </div>
+</form>
