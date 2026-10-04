@@ -19,6 +19,8 @@ export const routes: Routes = [
   {
     path: 'login',
     title: 'Iniciar sesión · ISCGB',
+    // El formulario consume POST /api/Auth/login; el endpoint fue verificado
+    // en el backend actualizado (commit c048908, PR #25).
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
   },
   {
