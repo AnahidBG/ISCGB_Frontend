@@ -103,24 +103,23 @@ export const RUTAS_API = {
     `${URL_BASE_API}/api/ReconocimientoSaberes/${idSolicitud}/${adjunto}`,
 
   // --- Materias (ISCGB_Backend/Controllers/MateriasController.cs) ---
-  // La clase se llama `AsignacionesController`, así que la ruta es
-  // `api/Asignaciones` aunque el archivo se llame distinto. Sin autenticación.
+  // Las rutas de materias viven bajo `api/Materias`.
   // Los tres GET envuelven la lista en `{ data }`.
 
   /** Todas las materias del instituto, ordenadas por nombre. */
-  materiasDisponibles: `${URL_BASE_API}/api/Asignaciones/materias-disponibles`,
+  materiasDisponibles: `${URL_BASE_API}/api/Materias/materias-disponibles`,
 
   /** Todos los docentes (fila en `Docentes`), ordenados por nombre. */
-  docentesDisponibles: `${URL_BASE_API}/api/Asignaciones/docentes-disponibles`,
+  docentesDisponibles: `${URL_BASE_API}/api/Materias/docentes-disponibles`,
 
   /** Todas las comisiones, ordenadas por nombre. */
-  comisionesDisponibles: `${URL_BASE_API}/api/Asignaciones/comisiones-disponibles`,
+  comisionesDisponibles: `${URL_BASE_API}/api/Materias/comisiones-disponibles`,
 
   /** Alta de una materia. Body: `CargarMateriaDto`. */
-  cargarMateria: `${URL_BASE_API}/api/Asignaciones/cargar-materia`,
+  cargarMateria: `${URL_BASE_API}/api/Materias/cargar-materia`,
 
   /** Asigna una materia a un docente en una comisión. Body: `AsignarMateriaDto`. */
-  asignarMateria: `${URL_BASE_API}/api/Asignaciones/asignar`,
+  asignarMateria: `${URL_BASE_API}/api/Materias/asignar`,
 
   // --- Buscador (ISCGB_Backend/Controllers/BusquedaController.cs, clase `BuscadorController`) ---
 
