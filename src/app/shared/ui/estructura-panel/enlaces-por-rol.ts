@@ -58,6 +58,20 @@ export function enlacesPorSesion(
       url: '/secretario/control-legajos',
       icono: 'legajo',
     });
+    enlaces.push({
+      etiqueta: 'Materias y asignaciones',
+      url: '/materias/asignaciones',
+      icono: 'tabla',
+    });
+  }
+
+  // Solo Secretario: el backend no deja a Dirección ver estas solicitudes.
+  if (tieneAlgunRol(sesion, [ROLES.secretario])) {
+    enlaces.push({
+      etiqueta: 'Solicitudes de reconocimiento',
+      url: '/secretario/reconocimiento-saberes',
+      icono: 'revision',
+    });
   }
 
   // "Mi Legajo" y "Subir Documento" son del legajo PROPIO: no van cuando la

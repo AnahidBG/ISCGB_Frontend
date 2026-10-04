@@ -292,28 +292,34 @@
 
     @if (esEdicion()) {
       <p class="mt-1 text-sm text-texto-suave">
-        Podés cambiar el rol de la persona. Se asigna un solo rol y Preceptoría está incluida en
-        Secretario.
+        Están tildados los roles que la persona tiene hoy. Si destildás uno, lo pierde al guardar.
+        Preceptoría está incluida en Secretario.
       </p>
     } @else {
       <p class="mt-1 text-sm text-texto-suave">
-        Se asigna un solo rol. Preceptoría está incluida en Secretario.
+        Tildá uno o más roles (por ejemplo, Docente y Director). Preceptoría está incluida en
+        Secretario.
       </p>
     }
 
-    <div class="mt-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Rol">
+    <div
+      class="mt-4 grid gap-3 sm:grid-cols-2"
+      formGroupName="roles"
+      role="group"
+      aria-label="Roles"
+    >
       @for (opcion of opcionesDeRol; track opcion.rol) {
         <label
           class="cursor-pointer flex items-start gap-3 rounded-xl border p-4 transition-colors"
-          [class.border-principal]="rolElegido() === opcion.rol"
-          [class.bg-principal-suave]="rolElegido() === opcion.rol"
-          [class.border-borde]="rolElegido() !== opcion.rol"
+          [class.border-principal]="rolesElegidos().includes(opcion.rol)"
+          [class.bg-principal-suave]="rolesElegidos().includes(opcion.rol)"
+          [class.border-borde]="!rolesElegidos().includes(opcion.rol)"
         >
           <input
-            type="radio"
-            formControlName="rol"
-            [value]="opcion.rol"
-            class="mt-0.5 h-4 w-4 shrink-0 accent-principal"
+            type="checkbox"
+            [formControlName]="opcion.rol"
+            [attr.data-rol]="opcion.rol"
+            class="mt-0.5 h-4 w-4 shrink-0 rounded border-borde accent-principal"
           />
           <span class="min-w-0">
             <span class="block text-sm font-semibold text-texto">{{ opcion.rol }}</span>

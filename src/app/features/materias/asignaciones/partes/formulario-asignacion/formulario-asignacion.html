@@ -1,0 +1,104 @@
+<form
+  class="flex flex-col gap-5"
+  [formGroup]="formulario"
+  (submit)="$event.preventDefault(); enviar()"
+>
+  @if (error(); as mensaje) {
+    <p role="alert" class="rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+      {{ mensaje }}
+    </p>
+  } @else if (exito(); as mensaje) {
+    <p role="status" class="rounded-xl bg-aprobado/10 px-4 py-3 text-sm text-texto">
+      {{ mensaje }}
+    </p>
+  }
+
+  <p class="flex flex-col gap-1.5">
+    <label for="asignacion-docente" class="text-sm font-medium text-texto">
+      Docente <span aria-hidden="true" class="text-rechazado">*</span>
+    </label>
+    <select
+      id="asignacion-docente"
+      formControlName="idDocente"
+      required
+      class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+    >
+      <option value="">Elegí un docente</option>
+      @for (docente of docentes(); track docente.idDocente) {
+        <option [value]="docente.idDocente">{{ docente.nombreCompleto }}</option>
+      }
+    </select>
+    @if (docentes().length === 0) {
+      <span class="text-xs text-texto-suave">
+        Todavía no hay docentes cargados: dalos de alta con el rol Docente en "Nuevo Usuario".
+      </span>
+    }
+    @if (errorDe('idDocente'); as mensaje) {
+      <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+    }
+  </p>
+
+  <p class="flex flex-col gap-1.5">
+    <label for="asignacion-materia" class="text-sm font-medium text-texto">
+      Materia <span aria-hidden="true" class="text-rechazado">*</span>
+    </label>
+    <select
+      id="asignacion-materia"
+      formControlName="idMateria"
+      required
+      class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+    >
+      <option value="">Elegí una materia</option>
+      @for (materia of materias(); track materia.idMateria) {
+        <option [value]="materia.idMateria">{{ materia.nombre }}</option>
+      }
+    </select>
+    @if (materias().length === 0) {
+      <span class="text-xs text-texto-suave">
+        Todavía no hay materias: creá la primera en "Nueva materia".
+      </span>
+    }
+    @if (errorDe('idMateria'); as mensaje) {
+      <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+    }
+  </p>
+
+  <p class="flex flex-col gap-1.5">
+    <label for="asignacion-comision" class="text-sm font-medium text-texto">
+      Comisión <span aria-hidden="true" class="text-rechazado">*</span>
+    </label>
+    <select
+      id="asignacion-comision"
+      formControlName="idComision"
+      required
+      class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+    >
+      <option value="">Elegí una comisión</option>
+      @for (comision of comisiones(); track comision.idComision) {
+        <option [value]="comision.idComision">{{ comision.nombre }}</option>
+      }
+    </select>
+    @if (comisiones().length === 0) {
+      <span class="text-xs text-texto-suave">
+        Todavía no hay comisiones cargadas en el sistema.
+      </span>
+    }
+    @if (errorDe('idComision'); as mensaje) {
+      <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+    }
+  </p>
+
+  <div class="flex justify-end">
+    <button
+      type="submit"
+      [disabled]="enviando()"
+      class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      @if (enviando()) {
+        Asignando…
+      } @else {
+        Asignar materia
+      }
+    </button>
+  </div>
+</form>

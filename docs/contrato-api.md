@@ -1,7 +1,8 @@
 # Contrato de la API — ISCGB
 
-Relevado y actualizado el **03/10/2026** contra el código y los contratos que
-consume el frontend. Backend a cargo de Angel Silva.
+Relevado y actualizado el **04/10/2026** contra el código de `ISCGB_Backend`
+(`main` en `981508f`, PR #24) y los contratos que consume el frontend. Backend
+a cargo de Angel Silva.
 
 Dirección base de desarrollo: `http://localhost:5231`
 
@@ -9,6 +10,15 @@ Dirección base de desarrollo: `http://localhost:5231`
 > estar. Los problemas detectados figuran al final.
 
 ## `POST /api/Auth/login`
+
+> 🔴 **Bug bloqueante en `main` (commit `a3902df`, 04/10/2026):** al
+> `AuthController.Login` se le borró el atributo `[HttpPost("login")]`. Sin
+> él, ASP.NET le asigna la ruta del controlador (`api/Auth`, cualquier
+> verbo), así que `POST /api/Auth/login` responde **404** y **nadie puede
+> iniciar sesión**. Además Swagger no genera el documento ("Ambiguous HTTP
+> method"). Arreglo: volver a poner `[HttpPost("login")]` arriba del método.
+> El frontend NO cambia su URL: adaptarse a `POST /api/Auth` sería
+> esconder el bug.
 
 Autentica **por DNI**, no por email.
 
@@ -40,13 +50,26 @@ El `dni` va sin puntos.
   "idUsuario": 1,
   "roles": [
     { "idRol": 3, "nombreRol": "Docente" }
-  ]
+  ],
+  "afiliacion_Emergencia": "APROSS",
+  "fecha_Nacimiento": "1990-05-14",
+  "cuil": "20438803357",
+  "genero": "Masculino",
+  "esDirectorSuplente": false
 }
 ```
 
 Los roles vienen en el cuerpo de la respuesta, en `roles`. El claim del token
 también contiene roles para autorización del backend, pero el frontend usa la
 lista del cuerpo para construir la sesión.
+
+Los últimos cinco campos llegaron con el PR #24. `RespuestaLogin` los tipa
+(opcionales, por si el backend es anterior), pero **no** pasan a `Sesion`:
+ninguna pantalla los usa todavía. `esDirectorSuplente` no da permisos de
+Director; los permisos salen de `roles`.
+
+**Devuelve también — 401** `"Debe configurar su contraseña por primera vez…"`
+si la cuenta todavía no pasó por `/crear-password`.
 
 ⚠️ Los nombres mezclan convenciones: `telefonoEmergencia` (camelCase),
 `estado_usuario` (snake_case) y `lugar_Nacimiento`. El frontend los replica
@@ -124,10 +147,18 @@ Crea una cuenta nueva. Envía el `CargaUsuarioDto` completo y devuelve un
 mensaje de confirmación. Este endpoint es distinto de la reactivación: para
 una cuenta existente se usa `PUT /api/UsuariosAdmin/alta/{id}`.
 
+Desde el PR #24 los roles van en una **lista**: `idsRoles: [1, 3]` (antes
+`idRol: 3`). Vacía o ausente → `400 "Debe asignar al menos un rol al
+usuario."`. El detalle campo por campo está en `contrato-alta-usuario.md`.
+
 ### `PUT /api/UsuariosAdmin/modificar/{id}`
 
 Actualiza el perfil completo del usuario indicado. El frontend envía el mismo
 `CargaUsuarioDto` que utiliza para el alta.
+
+⚠️ **Reemplaza todos los roles**: borra los que la persona tenía y deja solo
+los de `idsRoles`. Por eso "Editar Usuario" precarga todos los roles actuales
+tildados.
 
 ### `PUT /api/UsuariosAdmin/baja/{id}`
 
@@ -252,6 +283,50 @@ segundo pisa al primero en la carpeta de descargas.
 El PDF arma las secciones 1 (Fundamentación), 2.1 (Objetivos generales),
 3 (Contenidos) y 4 (Estrategias metodológicas). El resto de los campos que
 recibe el `POST` se guardan pero **todavía no se imprimen**.
+
+## Legajos: `POST /api/Legajos` y la entrega en papel
+
+`SubirLegajoDto.PresentadoFisico` dice si la persona además entregó el papel
+en Secretaría. Desde el 04/10/2026 el frontend lo manda así:
+
+| Quién sube | Qué ve | `presentadoFisico` |
+|---|---|---|
+| Docente (o Director/Secretario que también es Docente) | Casilla "También entregué este documento en Secretaría" + recordatorio mientras no la tilde | Lo que tilde |
+| Alumno | Solo el recordatorio rojo | Siempre `false` |
+
+Quién ve la casilla lo decide `declaraEntregaEnPapel` (`core/legajos/entrega-en-papel.ts`).
+Después no hay forma de cambiarlo: `AuditoriaLegajoDto` solo recibe
+`estado` y `comentario`.
+
+`GET /api/Legajos/usuario/{id}` devuelve además `auditor` (nombre de quien
+revisó, o el texto `"Sin auditor asignado"`): Mis Documentos lo muestra como
+"Revisado por X". `GET /api/Legajos/pendientes` devuelve `rutaArchivo`, que
+antes se descartaba al mapear.
+
+## Reconocimiento de saberes
+
+`POST /api/ReconocimientoSaberes/solicitar` (multipart: `idMateria`,
+`comentario`, `programaPdf`, `analiticoPdf`), con la materia elegida de
+`GET /api/Asignaciones/materias-disponibles`. Contrato completo y el 🔴 bug
+del claim `"id"` (siempre 401) en `contrato-reconocimiento-saberes.md`.
+
+## Endpoints del backend que el frontend todavía no consume
+
+Existen en `main` pero no tienen pantalla. Salvo los de reconocimiento de
+saberes (`[Authorize(Roles = "Secretario")]`), ninguno tiene `[Authorize]`.
+
+| Endpoint | Para qué serviría |
+|---|---|
+| `GET /api/Asignaciones/docentes-disponibles` → `{ data: [{ idDocente, nombreCompleto }] }` | Asignar materias a docentes (Dirección) |
+| `GET /api/Asignaciones/comisiones-disponibles` → `{ data: [{ idComision, nombreComision }] }` | Ídem |
+| `POST /api/Asignaciones/asignar` — `{ idDocente, idMateria, idComision }` | Ídem. 400 si ya está asignada en esa comisión |
+| `POST /api/Asignaciones/cargar-materia` — `{ nombreMateria, carrera, curso }` → `{ message, idMateria }` | Alta de materias. 400 si el nombre se repite |
+| `GET /api/Buscador/global?termino=xx` → `{ cantidad, data: [{ tipo, titulo, subtitulo, idReferencia }] }` | Buscador del encabezado. Busca personas (las etiqueta todas "Docente"), materias y justificativos |
+| `GET /api/Justificativos/{idUsuario}/justificativos` → `{ nombreUsuario, data: [...] }` | Que el Docente vea el estado de SUS justificativos |
+| `GET /api/Justificativos/todos` → `{ data: [...] }` | Historial completo de justificativos para Secretaría/Dirección |
+| `GET /api/Legajos/aprobados` | Listado de documentos aprobados del instituto |
+| `GET /api/Legajos/{idUsuario}/faltantes` | Faltantes calculados en el servidor. El front ya los calcula con `requeridos-por-rol`. ⚠️ Con legajo completo devuelve un objeto `{ message }` en vez de `[]` |
+| `GET /api/ReconocimientoSaberes/recibirSolicitudReconocimiento` y siguientes | Bandeja de Secretaría para reconocimiento de saberes |
 
 ## La base de datos vs. el documento del MVP
 

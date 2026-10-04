@@ -10,6 +10,9 @@ const PROVINCIAS_DE_PRUEBA: readonly Provincia[] = [
   { idProvincia: 55, nombre: 'Colonia', pais: 'Uruguay' },
 ];
 
+/** Los cuatro tildes de rol sin marcar: el valor del grupo `roles` del formulario. */
+const SIN_ROLES = { Director: false, Secretario: false, Docente: false, Alumno: false };
+
 describe('FormularioPerfilUsuario', () => {
   let fixture: ComponentFixture<FormularioPerfilUsuario>;
   let componente: any;
@@ -30,7 +33,7 @@ describe('FormularioPerfilUsuario', () => {
       contactoEmergencia: 'Juan Gómez',
       telefonoEmergencia: '3517654321',
       afiliacionEmergencia: 'APROSS',
-      rol: 'Docente',
+      roles: { ...SIN_ROLES, Docente: true },
       esDirectorSuplente: true,
       ...valores,
     });
@@ -57,7 +60,15 @@ describe('FormularioPerfilUsuario', () => {
     expect(emitido!.cuil).toBe('27123456780');
     expect(emitido!.idProvincia).toBe(31);
     expect(emitido!.fechaNacimiento!.getDate()).toBe(14);
-    expect(emitido!.rol).toBe('Docente');
+    expect(emitido!.roles).toEqual(['Docente']);
+    expect(emitido!.esDirectorSuplente).toBe(true);
+  });
+
+  it('con varios roles tildados los emite todos', () => {
+    completar({ roles: { ...SIN_ROLES, Docente: true, Director: true } });
+    componente.enviar();
+
+    expect(emitido!.roles).toEqual(['Director', 'Docente']);
     expect(emitido!.esDirectorSuplente).toBe(true);
   });
 
@@ -69,19 +80,39 @@ describe('FormularioPerfilUsuario', () => {
     expect(componente.errorCuil).not.toBeNull();
   });
 
-  it('no emite sin rol', () => {
-    completar({ rol: '' });
+  it('no emite sin ningún rol tildado', () => {
+    completar({ roles: SIN_ROLES });
     componente.enviar();
 
     expect(emitido).toBeNull();
     expect(componente.errorRol).not.toBeNull();
   });
 
-  it('director suplente se descarta si el rol no es Docente', () => {
-    completar({ rol: 'Alumno', esDirectorSuplente: true });
+  it('director suplente se descarta si ninguno de los roles es Docente', () => {
+    completar({ roles: { ...SIN_ROLES, Alumno: true }, esDirectorSuplente: true });
     componente.enviar();
 
     expect(emitido!.esDirectorSuplente).toBe(false);
+  });
+
+  it('en edición precarga TODOS los roles de la persona, no uno solo', async () => {
+    fixture = TestBed.createComponent(FormularioPerfilUsuario);
+    componente = fixture.componentInstance;
+    fixture.componentRef.setInput('modo', 'edicion');
+    fixture.componentRef.setInput('perfilInicial', { roles: ['Director', 'Docente'] });
+    await fixture.whenStable();
+
+    expect(componente.formulario.controls.roles.getRawValue()).toEqual({
+      ...SIN_ROLES,
+      Director: true,
+      Docente: true,
+    });
+    const tildados = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>(
+        'input[type="checkbox"][data-rol]:checked',
+      ),
+    ).map((casilla) => casilla.dataset['rol']);
+    expect(tildados.sort()).toEqual(['Director', 'Docente']);
   });
 
   it('exige los campos que el backend marca como obligatorios', () => {

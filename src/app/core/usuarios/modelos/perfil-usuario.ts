@@ -14,7 +14,8 @@ import { Rol, ROLES } from '../../auth/modelos/rol';
  *   · Sección "Datos personales": nombre, apellido, CUIL, DNI, correo,
  *     género, domicilio, teléfono, fecha de nacimiento, provincia.
  *   · Contacto de emergencia: nombre, teléfono y afiliación.
- *   · "Información académica": UN rol, y si es Docente, director suplente.
+ *   · "Información académica": uno o más roles, y si uno es Docente,
+ *     director suplente.
  *
  * ⚠️ Todos los textos son obligatorios: el proyecto del backend tiene
  * `<Nullable>enable</Nullable>` y en el DTO son `string` (no `string?`), así
@@ -60,13 +61,18 @@ export interface PerfilUsuario {
   afiliacionEmergencia: string;
 
   /**
-   * UN solo rol. El criterio de aceptación dice "solo se permite asignar UNO
-   * de los siguientes roles", y `CargaUsuarioDto.IdRol` es un `int`, no una
-   * lista. Viaja como id — ver `ID_ROL`.
+   * Los roles de la persona: al menos uno.
+   *
+   * Hasta el 03/10/2026 era UN rol (`CargaUsuarioDto.IdRol: int`). El
+   * backend pasó a `IdsRoles: List<int>` (commit `a3902df`, PR #24) y en la
+   * modificación BORRA todos los roles que la persona tenía y deja solo los
+   * enviados. Por eso es una lista completa y no "el rol principal": mandar
+   * uno solo al editar a un Director que además es Docente le quitaría un
+   * rol sin que nadie lo pidiera. Viaja como ids — ver `ID_ROL`.
    */
-  rol: Rol;
+  roles: Rol[];
 
-  /** Solo tiene sentido con `rol === 'Docente'`. El backend admite uno solo en todo el instituto. */
+  /** Solo tiene sentido si `roles` incluye Docente. El backend admite uno solo en todo el instituto. */
   esDirectorSuplente: boolean;
 }
 

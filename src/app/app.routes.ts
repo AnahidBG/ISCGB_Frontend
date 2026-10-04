@@ -110,6 +110,26 @@ export const routes: Routes = [
       ),
   },
   {
+    // Bandeja de reconocimiento de saberes. Solo Secretario: el backend tiene
+    // `[Authorize(Roles = "Secretario")]` (Dirección recibiría 403).
+    path: 'secretario/reconocimiento-saberes',
+    title: 'Solicitudes de reconocimiento · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.secretario)],
+    loadComponent: () =>
+      import('./features/secretario/solicitudes-reconocimiento/solicitudes-reconocimiento').then(
+        (m) => m.SolicitudesReconocimiento,
+      ),
+  },
+  {
+    // Alta de materias y asignación docente–materia–comisión
+    // (`AsignacionesController`). Dirección y Secretaría.
+    path: 'materias/asignaciones',
+    title: 'Materias y asignaciones · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.director, ROLES.secretario)],
+    loadComponent: () =>
+      import('./features/materias/asignaciones/asignaciones').then((m) => m.Asignaciones),
+  },
+  {
     // Legajo propio del Docente + progreso. Datos de ejemplo.
     path: 'docente/panel',
     title: 'Mi legajo · ISCGB',

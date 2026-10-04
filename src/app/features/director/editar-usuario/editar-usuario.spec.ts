@@ -31,8 +31,13 @@ const DETALLE: UsuarioDetalle = {
   idProvincia: 55,
   fechaNac: null,
   estadoUsuario: true,
-  roles: ['Docente'],
-  rolesConId: [{ idRol: 3, nombreRol: 'Docente' }],
+  // Dos roles a propósito: el backend reemplaza TODOS los roles al modificar,
+  // así que el formulario tiene que arrancar con los dos tildados.
+  roles: ['Director', 'Docente'],
+  rolesConId: [
+    { idRol: 1, nombreRol: 'Director' },
+    { idRol: 3, nombreRol: 'Docente' },
+  ],
 };
 
 describe('EditarUsuario', () => {
@@ -92,6 +97,16 @@ describe('EditarUsuario', () => {
     expect(hijo.provincias()).toEqual(PROVINCIAS);
     const select: HTMLSelectElement = fixture.nativeElement.querySelector('#idProvincia');
     expect(select.value).toBe('55');
+  });
+
+  it('precarga todos los roles de la persona, no solo el principal', async () => {
+    const fixture = TestBed.createComponent(EditarUsuario);
+    await fixture.whenStable();
+    const hijo = fixture.debugElement.query(
+      (d) => d.componentInstance instanceof FormularioPerfilUsuario,
+    ).componentInstance as FormularioPerfilUsuario;
+
+    expect(hijo.perfilInicial()?.roles).toEqual(['Director', 'Docente']);
   });
 
   it('si el pedido de provincias falla, el formulario lo muestra y sigue visible', async () => {

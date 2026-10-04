@@ -55,10 +55,10 @@ export function mensajePerfilActualizado(nombre: string): string {
  *
  *   · `GET  /api/Usuarios`                     → `listar`   (main)
  *   · `GET  /api/Usuarios/{id}`                → `obtener`  (main)
- *   · `POST /api/UsuariosAdmin/alta`           → `crear`
- *   · `PUT  /api/UsuariosAdmin/modificar/{id}` → `actualizar`
- *   · `PUT  /api/UsuariosAdmin/baja/{id}`      → `darDeBaja`
- *   · `PUT  /api/UsuariosAdmin/alta/{id}`      → `reactivar`
+ *   · `POST /api/UsuariosAdmin/alta`           → `crear`    (main)
+ *   · `PUT /api/UsuariosAdmin/modificar/{id}` → `actualizar` (main; reemplaza TODOS los roles)
+ *   · `PUT /api/UsuariosAdmin/baja/{id}`      → `darDeBaja` (main)
+ *   · `PUT /api/UsuariosAdmin/alta/{id}`      → `reactivar` (main)
  *   · `GET  /api/Ubicaciones/paises` y `.../paises/{id}/provincias`
  *                                              → `listarProvincias`
  */

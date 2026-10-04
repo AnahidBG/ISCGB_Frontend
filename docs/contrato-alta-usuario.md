@@ -2,7 +2,7 @@
 
 > **Sprint 2** — SCRUM-16 "Gestión de usuarios y roles (Dirección)"
 > Subtareas: SCRUM-130 (frontend, Milena) · SCRUM-131 (backend, Angel)
-> **Actualizado:** 03/10/2026
+> **Actualizado:** 04/10/2026 (roles múltiples, PR #24 del backend)
 
 Este documento reemplaza la propuesta anterior (`POST /api/Usuarios`, del
 27/08/2026), que el backend nunca implementó. El backend publicó **otro
@@ -10,8 +10,8 @@ contrato** y el frontend se alineó a ese.
 
 ## Dónde está
 
-`Controllers/CargaUsuarioController.cs` en `ISCGB_Backend` (commit
-`be92dcf`, 03/10/2026).
+`Controllers/CargaUsuarioController.cs` en `ISCGB_Backend`, `main` (último
+cambio: commit `a3902df`, PR #24, 04/10/2026).
 
 La clase se llama `UsuariosAdminController`, así que la ruta es
 `api/UsuariosAdmin` (no `api/CargaUsuario`).
@@ -48,15 +48,25 @@ usuarios…"*.
   "contactoEmergencia": "Juan Gómez",
   "telefonoEmergencia": "3517654321",
   "afiliacionEmergencia": "APROSS",
-  "idRol": 3,
+  "idsRoles": [1, 3],
   "esDirectorSuplente": true
 }
 ```
 
 - `dni` y `cuil` viajan **solo con dígitos**.
-- `idRol`: 1 Director, 2 Secretario, 3 Docente, 4 Alumno (lo fija el propio
-  DTO). Es **un solo rol** — el criterio de aceptación pide asignar uno.
-- `esDirectorSuplente` solo viaja en `true` si el rol es Docente.
+- `idsRoles`: lista con 1 Director, 2 Secretario, 3 Docente, 4 Alumno (lo fija
+  el propio DTO). **Al menos uno**: vacía responde 400. Hasta el PR #24 era
+  `idRol: number` (un solo rol); un `idRol` suelto hoy se ignora y el backend
+  responde 400 "Debe asignar al menos un rol al usuario.".
+- ⚠️ En la **modificación**, el backend **borra todos los roles** que tenía la
+  persona y deja solo los de `idsRoles`. Por eso "Editar Usuario" arranca con
+  TODOS los roles actuales tildados: mandar solo el principal le quitaría los
+  otros.
+- Con el 3 (Docente) crea la fila en `Docentes` si no existe; con el 4
+  (Alumno), la fila en `Alumnos` (legajo = DNI). Sacar un rol no borra esas
+  filas.
+- `esDirectorSuplente` solo viaja en `true` si uno de los roles es Docente. Si
+  se quita el rol Docente, el backend le saca la suplencia.
 - `fechaNac` es `DateOnly`: `"YYYY-MM-DD"` sin hora, o `null`.
 - **Todos los textos son obligatorios.** El proyecto tiene
   `<Nullable>enable</Nullable>` y en el DTO son `string` (no `string?`), así
@@ -67,7 +77,8 @@ usuarios…"*.
 | Situación | Lo que responde el backend | Lo que se ve |
 |---|---|---|
 | Ya hay un director suplente | `400 "Ya existe un director suplente asignado con el nombre: X."` | Ese mismo texto (SCRUM-138) |
-| Rol fuera de 1..4 | `400 "Rol inválido…"` | Ese mismo texto |
+| Sin roles | `400 "Debe asignar al menos un rol al usuario."` | No llega: el formulario exige al menos uno |
+| Rol fuera de 1..4 | `400 "Uno o más roles son inválidos…"` | Ese mismo texto |
 | Falta un campo | `400` `ValidationProblemDetails` | Los mensajes de validación |
 | Usuario inexistente | `404 "Usuario no encontrado."` | Ese mismo texto |
 | Ruta no publicada | `404` sin cuerpo | "La gestión de usuarios todavía no está habilitada" |
@@ -76,7 +87,7 @@ usuarios…"*.
 
 | Criterio (SCRUM-16) | Estado en el frontend |
 |---|---|
-| Asignar uno de los 4 roles | ✅ Selector de un solo rol; no existe "Preceptor" |
+| Asignar roles de los 4 existentes | ✅ Casillas: uno o más roles (el backend acepta una lista desde el PR #24); no existe "Preceptor" |
 | Baja = estado inactivo, sin borrar datos | ✅ Botón "Dar de baja" con confirmación; la fila queda "Dada de baja" |
 | Verificar el acceso con el token al navegar | ✅ `authGuard` revisa el vencimiento; `sesionInterceptor` maneja 401 |
 | Bloquear pantallas ajenas con mensaje | ✅ `roleGuard` → panel propio con cartel "Acceso denegado" |
@@ -89,21 +100,18 @@ usuarios…"*.
 
 ## Pendientes del backend (no se tocan desde el frontend)
 
-1. **Contraseña:** el alta guarda `PasswordHash = "AsignarContraseñaTemporal"`,
-   que no es un hash BCrypt. `BCrypt.Verify` va a tirar excepción en el login
-   de esa persona (500). Hace falta generar una contraseña inicial real (o
-   el flujo de recuperación del Sprint 3).
-2. **Seguridad:** `[Authorize(Roles = "Director,Secretario")]` está
+1. ~~Mergear `CargaDeUsuarios` a `main`.~~ Hecho (PR #18 y siguientes).
+2. ~~Contraseña inicial.~~ Resuelto: el alta deja la contraseña pendiente y
+   manda por correo el enlace a `/crear-password`.
+3. **Seguridad:** `[Authorize(Roles = "Director,Secretario")]` sigue
    comentado en el controlador; cualquiera con Postman puede crear usuarios.
-3. **`GET /api/Provincias`:** `idProvincia` es obligatorio y tiene clave
-   foránea, pero no hay endpoint ni datos semilla. El frontend usa una lista
-   provisoria (24 provincias en orden alfabético, ids 1..24) — ver
-   `core/usuarios/modelos/provincia.ts`. Si la tabla se cargó en otro orden,
-   se guarda la provincia equivocada.
-4. **`GET /api/Usuarios/{id}` no devuelve** CUIL, género, afiliación ni
+4. ~~Provincias.~~ Resuelto: `GET /api/Ubicaciones/paises` y
+   `.../paises/{id}/provincias`, con datos semilla (`DbSeeder`).
+5. **`GET /api/Usuarios/{id}` no devuelve** CUIL, género, afiliación ni
    `DirectorSuplente`, así que la edición no puede precargarlos. En
    particular, si se edita a un suplente y no se vuelve a tildar la casilla,
-   el backend le quita la suplencia.
+   el backend le quita la suplencia. (El login sí devuelve esos datos desde
+   el PR #24, pero solo de quien inicia sesión.)
 6. **DNI y correo repetidos:** el alta los valida en el controlador.
 7. **Reactivar una cuenta:** `PUT /api/UsuariosAdmin/alta/{id}`. Si ya está
    activa responde 400; si no existe responde 404.

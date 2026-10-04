@@ -20,7 +20,7 @@ const PERFIL: PerfilUsuario = {
   contactoEmergencia: 'Juan Gómez',
   telefonoEmergencia: '3517654321',
   afiliacionEmergencia: 'APROSS',
-  rol: 'Docente',
+  roles: ['Docente'],
   esDirectorSuplente: true,
 };
 
@@ -38,7 +38,7 @@ describe('UsuariosHttpService', () => {
 
   afterEach(() => backend.verify());
 
-  it('el alta manda CargaUsuarioDto con el id del rol y la fecha sin hora', () => {
+  it('el alta manda CargaUsuarioDto con los ids de los roles y la fecha sin hora', () => {
     let mensaje = '';
     servicio.crear(PERFIL).subscribe((m) => (mensaje = m));
 
@@ -58,7 +58,7 @@ describe('UsuariosHttpService', () => {
       contactoEmergencia: 'Juan Gómez',
       telefonoEmergencia: '3517654321',
       afiliacionEmergencia: 'APROSS',
-      idRol: 3,
+      idsRoles: [3],
       esDirectorSuplente: true,
     });
 
@@ -67,12 +67,30 @@ describe('UsuariosHttpService', () => {
   });
 
   it('director suplente solo viaja en true para Docentes', () => {
-    servicio.crear({ ...PERFIL, rol: 'Alumno' }).subscribe();
+    servicio.crear({ ...PERFIL, roles: ['Alumno'] }).subscribe();
 
     const pedido = backend.expectOne(RUTAS_API.altaUsuario);
     expect(pedido.request.body.esDirectorSuplente).toBe(false);
-    expect(pedido.request.body.idRol).toBe(4);
+    expect(pedido.request.body.idsRoles).toEqual([4]);
     pedido.flush({});
+  });
+
+  it('con varios roles manda todos los ids, y el suplente vale si uno es Docente', () => {
+    servicio.crear({ ...PERFIL, roles: ['Director', 'Docente'] }).subscribe();
+
+    const pedido = backend.expectOne(RUTAS_API.altaUsuario);
+    expect(pedido.request.body.idsRoles).toEqual([1, 3]);
+    expect(pedido.request.body.esDirectorSuplente).toBe(true);
+    expect(pedido.request.body.idRol).toBeUndefined();
+    pedido.flush({});
+  });
+
+  it('la modificación manda la lista completa de roles: el backend reemplaza los que había', () => {
+    servicio.actualizar(9, { ...PERFIL, roles: ['Secretario', 'Docente'] }).subscribe();
+
+    const pedido = backend.expectOne(RUTAS_API.modificarUsuario(9));
+    expect(pedido.request.body.idsRoles).toEqual([2, 3]);
+    pedido.flush({ message: 'ok' });
   });
 
   it('muestra el mensaje del backend cuando ya hay un director suplente', () => {

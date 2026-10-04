@@ -81,16 +81,31 @@
                 ¿Qué materia querés que te reconozcan?
                 <span aria-hidden="true" class="text-rechazado">*</span>
               </label>
-              <input
+              <select
                 id="materia"
-                type="text"
                 required
-                autocomplete="off"
-                [value]="materia()"
-                (input)="materia.set($any($event.target).value)"
-                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
-                placeholder="Ej. Programación I"
-              />
+                [disabled]="cargandoMaterias()"
+                (change)="alElegirMateria($event)"
+                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none disabled:bg-fondo-panel disabled:text-texto-suave"
+              >
+                @if (cargandoMaterias()) {
+                  <option value="">Cargando materias…</option>
+                } @else {
+                  <option value="">Elegí una materia</option>
+                }
+                @for (materia of materias(); track materia.idMateria) {
+                  <option [value]="materia.idMateria" [selected]="materia.idMateria === idMateria()">
+                    {{ materia.nombre }}
+                  </option>
+                }
+              </select>
+              @if (errorMaterias(); as mensaje) {
+                <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
+              } @else if (!cargandoMaterias() && materias().length === 0) {
+                <span role="alert" class="text-sm text-rechazado">
+                  Todavía no hay materias cargadas en el sistema. Consultá en Secretaría.
+                </span>
+              }
               @if (errorMateria(); as mensaje) {
                 <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
               }

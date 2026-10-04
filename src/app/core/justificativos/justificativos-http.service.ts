@@ -8,12 +8,14 @@ import {
   JustificativoPendiente,
   NuevoJustificativo,
 } from './modelos/justificativo-pendiente';
+import { JustificativoPropio } from './modelos/justificativo-propio';
 import {
   JustificativosService,
   MENSAJE_CARGA_POR_DEFECTO,
   MENSAJE_ERROR_AUDITORIA,
   MENSAJE_ERROR_CARGA,
   MENSAJE_ERROR_JUSTIFICATIVOS,
+  MENSAJE_ERROR_MIS_JUSTIFICATIVOS,
   VeredictoAuditoria,
 } from './justificativos.service';
 
@@ -37,7 +39,30 @@ interface JustificativoApi {
   fechaCarga: string;
 }
 
-/** Justificativos contra la API real. Los tres endpoints existen y andan. */
+/** Cada fila de `GET /api/Justificativos/{idUsuario}/justificativos` (`JustificativoResponseDto`). */
+interface JustificativoPropioApi {
+  idJustificativo: number;
+  tipoInasistencia: string | null;
+  rutaArchivo: string | null;
+  notaAdicional: string | null;
+  fechaCarga: string;
+  estado: string | null;
+  fechaInasistenciaInicio: string | null;
+  fechaInasistenciaFin: string | null;
+  idUsuarioAuditor: number | null;
+}
+
+/**
+ * Lo que envuelve a esa lista. Sin justificativos manda además un `message`
+ * ("El usuario no tiene justificativos presentados."); no es un error.
+ */
+interface JustificativosDeUsuarioApi {
+  nombreUsuario?: string;
+  message?: string;
+  data?: JustificativoPropioApi[];
+}
+
+/** Justificativos contra la API real. */
 @Injectable()
 export class JustificativosHttpService extends JustificativosService {
   private readonly http = inject(HttpClient);
@@ -111,6 +136,36 @@ export class JustificativosHttpService extends JustificativosService {
       }),
     );
   }
+
+  listarDeUsuario(idUsuario: number): Observable<JustificativoPropio[]> {
+    const url = RUTAS_API.justificativosDeUsuario(idUsuario);
+    return this.http.get<JustificativosDeUsuarioApi>(url).pipe(
+      map((respuesta) => (respuesta?.data ?? []).map(aJustificativoPropio)),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error al traer los justificativos de la persona:', error);
+        return throwError(() => new Error(MENSAJE_ERROR_MIS_JUSTIFICATIVOS));
+      }),
+    );
+  }
+}
+
+function fechaOpcional(texto: string | null): Date | null {
+  return texto === null ? null : new Date(texto);
+}
+
+function aJustificativoPropio(justificativo: JustificativoPropioApi): JustificativoPropio {
+  const nota = justificativo.notaAdicional?.trim() ?? '';
+  return {
+    idJustificativo: justificativo.idJustificativo,
+    tipoInasistencia: justificativo.tipoInasistencia?.trim() || 'Sin motivo cargado',
+    rutaArchivo: justificativo.rutaArchivo,
+    notaAdicional: nota === '' ? null : nota,
+    fechaCarga: new Date(justificativo.fechaCarga),
+    estado: justificativo.estado,
+    fechaInicio: fechaOpcional(justificativo.fechaInasistenciaInicio),
+    fechaFin: fechaOpcional(justificativo.fechaInasistenciaFin),
+    revisado: justificativo.idUsuarioAuditor !== null,
+  };
 }
 
 function aJustificativoPendiente(justificativo: JustificativoApi): JustificativoPendiente {

@@ -139,6 +139,10 @@
                   }
                 </p>
               }
+
+              @if (fila.auditor; as auditor) {
+                <p class="mt-1 text-xs text-texto-suave">Revisado por {{ auditor }}</p>
+              }
             </div>
           </div>
 
@@ -146,7 +150,7 @@
             <div class="flex items-center gap-3 sm:flex-col sm:items-end">
               <app-insignia-estado [estado]="fila.estado" />
 
-              @if (esLegajoAjeno() && !fila.faltante && fila.presentadoFisico) {
+              @if (muestraEntregaEnPapel() && !fila.faltante && fila.presentadoFisico) {
                 <span
                   class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-principal-suave px-2.5 py-1 text-xs font-medium text-principal"
                   title="Además del archivo digital, Secretaría tiene el papel físico de este documento"

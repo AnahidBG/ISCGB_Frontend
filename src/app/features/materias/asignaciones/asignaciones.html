@@ -1,0 +1,57 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Materias y asignaciones"
+  subtitulo="Cargá materias y asigná quién dicta cada una, en qué comisión."
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  @if (errorCarga(); as mensaje) {
+    <div role="alert" class="mb-6 rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+      {{ mensaje }}
+      <button type="button" class="ml-2 underline" (click)="cargar()">Reintentar</button>
+    </div>
+  }
+
+  @if (cargando()) {
+    <app-pantalla-carga tamano="md" mensaje="Cargando materias, docentes y comisiones…" />
+  } @else {
+    <div class="grid gap-5 sm:gap-6 lg:grid-cols-2">
+      <section class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
+        <h2 class="text-base font-semibold text-texto">Nueva materia</h2>
+        <p class="mt-1 mb-5 text-sm text-texto-suave">
+          {{ materias().length }} {{ materias().length === 1 ? 'materia cargada' : 'materias cargadas' }}.
+        </p>
+        <app-formulario-nueva-materia
+          [enviando]="creandoMateria()"
+          [error]="errorMateria()"
+          [exito]="exitoMateria()"
+          [reinicio]="reinicioMateria()"
+          (guardar)="crearMateria($event)"
+        />
+      </section>
+
+      <section class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
+        <h2 class="text-base font-semibold text-texto">Asignar materia a un docente</h2>
+        <p class="mt-1 mb-5 text-sm text-texto-suave">
+          El docente la va a ver en "Entregar programa de materia". El sistema todavía no permite
+          ver ni quitar las asignaciones ya hechas.
+        </p>
+        <app-formulario-asignacion
+          [docentes]="docentes()"
+          [materias]="materias()"
+          [comisiones]="comisiones()"
+          [enviando]="asignando()"
+          [error]="errorAsignacion()"
+          [exito]="exitoAsignacion()"
+          [reinicio]="reinicioAsignacion()"
+          (asignar)="asignar($event)"
+        />
+      </section>
+    </div>
+  }
+</app-estructura-panel>
