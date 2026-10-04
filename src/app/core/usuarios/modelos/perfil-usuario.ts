@@ -8,7 +8,7 @@ import { Rol, ROLES } from '../../auth/modelos/rol';
  * armado con un contrato propuesto desde el frontend (`POST /api/Usuarios`)
  * que el backend nunca implementó. El backend terminó publicando OTRO
  * contrato — `CargaUsuarioDto` en `UsuariosAdminController` (rama
- * `CargaDeUsuarios` de ISCGB_Backend, 27/09/2026) — y este modelo lo sigue
+ * contrato vigente de ISCGB_Backend, 27/09/2026) — y este modelo lo sigue
  * campo por campo:
  *
  *   · Sección "Datos personales": nombre, apellido, CUIL, DNI, correo,

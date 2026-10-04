@@ -55,8 +55,9 @@ export const appConfig: ApplicationConfig = {
     { provide: MateriasService, useClass: MateriasHttpService },
     { provide: BusquedaService, useClass: BusquedaHttpService },
 
-    // UsuariosHttpService: GET /api/Usuarios y la gestión de usuarios contra
-    // /api/UsuariosAdmin, los dos en `main`. Ver docs/contrato-api.md.
+    // UsuariosHttpService: GET /api/Usuarios (real) y gestión de usuarios
+    // contra /api/UsuariosAdmin. Ver docs/contrato-api.md y
+    // docs/contrato-alta-usuario.md.
     { provide: UsuariosService, useClass: UsuariosHttpService },
 
     // LegajoHttpService: desde el 30/08/2026 las SEIS operaciones pegan

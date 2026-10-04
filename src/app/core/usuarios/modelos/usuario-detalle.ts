@@ -6,7 +6,7 @@ import { Rol, RolApi } from '../../auth/modelos/rol';
  *
  * Es la base para precargar "Editar Usuario". Ojo con lo que NO trae:
  * CUIL, género y afiliación de emergencia no están en la respuesta (esas
- * columnas se agregaron en la rama `CargaDeUsuarios` del backend, pero el
+ * columnas se agregaron en el backend, pero el
  * `GET` no las devuelve), así que en la edición hay que volver a cargarlas.
  */
 export interface UsuarioDetalle {

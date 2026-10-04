@@ -4,7 +4,7 @@
 
 # Verificación frontend ↔ backend
 
-Fecha: **27/08/2026** · Revisado contra el código fuente real de `ISCGB_Backend`
+Fecha: **03/10/2026** · Revisado contra el código fuente real de `ISCGB_Backend`
 (no contra `docs/contrato-api.md`, que había quedado desactualizado).
 
 Esto es una revisión **estática**: se leyó el código de los dos lados y se
@@ -18,7 +18,7 @@ eso está la sección "Cómo probarlo a mano" al final, con el orden exacto.
 | | Estado |
 |---|---|
 | Puerto, CORS, formato JSON | ✅ Todo alineado |
-| Los 4 endpoints que el frontend consume | ✅ Coinciden campo por campo |
+| Los endpoints que el frontend consume | ✅ Coinciden campo por campo |
 | Datos semilla en la base | ⚠️ **Bloqueante si faltan** — ver abajo |
 | Archivos subidos (PDFs) | ❌ **No se pueden ver desde el navegador** |
 | Seguridad (JWT, roles) | ❌ Sin validar del lado del servidor |
@@ -53,11 +53,12 @@ Core ignora mayúsculas por defecto, así que nuestro `camelCase` entra sin
 problema en los DTOs `PascalCase`. Vale para `LoginRequestDto` y para
 `CrearProgramaDto`.
 
-**Los 4 endpoints que el frontend consume hoy:**
+**Los endpoints principales que el frontend consume hoy:**
 
 | Frontend | Endpoint real | Estado |
 |---|---|---|
 | `AuthHttpService.iniciarSesion()` | `POST /api/Auth/login` | ✅ |
+| `ProgramasMateriaHttpService.obtenerContextoDocente()` | `GET /api/ProgramasMateria/contexto-docente/{idUsuario}` | ✅ |
 | `ProgramasMateriaHttpService.enviarPrograma()` | `POST /api/ProgramasMateria` | ✅ |
 | `ProgramasMateriaHttpService.descargarPdf()` | `GET /api/ProgramasMateria/{id}/pdf` | ✅ |
 | `LegajoHttpService.obtenerLegajoPropio()` | `GET /api/Legajos/usuario/{id}` | ✅ |

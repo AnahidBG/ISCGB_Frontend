@@ -70,8 +70,8 @@ export const routes: Routes = [
   {
     // Alta de usuarios — Sprint 2, "Gestión de usuarios y roles" (SCRUM-16).
     // Solo Director: ISCGB-PROJECT.md le da a ese rol el alta/baja de
-    // usuarios y roles. Pega contra `POST /api/UsuariosAdmin/alta` (rama
-    // `CargaDeUsuarios` del backend) — ver docs/contrato-alta-usuario.md.
+    // usuarios y roles. Pega contra `POST /api/UsuariosAdmin/alta` —
+    // ver docs/contrato-alta-usuario.md.
     path: 'director/usuarios/nuevo',
     title: 'Nuevo usuario · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.director)],

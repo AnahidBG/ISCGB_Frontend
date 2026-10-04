@@ -32,12 +32,8 @@ interface RespuestaCrearPrograma {
  *   · `POST /api/ProgramasMateria`            → guarda y devuelve el id
  *   · `GET  /api/ProgramasMateria/{id}/pdf`   → devuelve el archivo
  *
- * ⚠️ Pendiente cuando el backend cierre los huecos conocidos:
- *   · Los dos endpoints están hoy sin `[Authorize]`, así que no mandamos
- *     token. Cuando lo pidan, el header va en un interceptor, no acá.
- *   · El `POST` devuelve 200 con un mensaje plano y no distingue errores de
- *     validación campo por campo. Mientras siga así, ante un 400 solo
- *     podemos mostrar un mensaje genérico.
+ * El contexto devuelve `{ idDocente, materias }`, que es la forma que usa la
+ * pantalla para identificar al docente y llenar el selector de materias.
  */
 @Injectable()
 export class ProgramasMateriaHttpService extends ProgramasMateriaService {
@@ -54,10 +50,12 @@ export class ProgramasMateriaHttpService extends ProgramasMateriaService {
           nombre: materia.nombre?.trim() || 'Materia sin nombre cargado',
           carrera: materia.carrera ?? null,
           curso: materia.curso ?? null,
+          idComision: materia.idComision,
+          nombreComision: materia.nombreComision?.trim() || `Comisión ${materia.idComision}`,
         })),
       })),
       catchError((error: HttpErrorResponse) => {
-        // 404 SIN cuerpo = la ruta no existe en el backend (hoy es así).
+        // 404 SIN cuerpo = la ruta no existe en el backend.
         // No es "no sos docente": se dice lo que pasa de verdad.
         if (esEndpointInexistente(error)) {
           return throwError(() => new Error(MENSAJE_CONTEXTO_NO_DISPONIBLE));
