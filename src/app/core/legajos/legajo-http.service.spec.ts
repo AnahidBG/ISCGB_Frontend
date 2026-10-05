@@ -161,7 +161,7 @@ describe('LegajoHttpService: campos del backend que no se pierden al mapear', ()
     expect(ruta).toBe('/uploads/legajos/ISCGB_AnaGomez_DNI.pdf');
   });
 
-  it('la subida manda presentadoFisico tal cual lo declaró la persona', () => {
+  it('la subida manda presentadoFisico tal cual se lo pasan', () => {
     servicio
       .subirDocumento({
         idUsuario: ID_USUARIO,

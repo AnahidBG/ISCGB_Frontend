@@ -11,7 +11,6 @@ import { urlArchivoSubido } from '../../../core/configuracion/api';
 import { LegajoService, VeredictoLegajo } from '../../../core/legajos/legajo.service';
 import { DocumentoLegajo } from '../../../core/legajos/modelos/documento-legajo';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
-import { declaraEntregaEnPapel } from '../../../core/legajos/entrega-en-papel';
 import {
   calcularProgresoLegajo,
   documentosSinCargar,
@@ -115,16 +114,6 @@ export class MisDocumentos {
     () =>
       this.idUsuarioSeleccionado() !== null &&
       this.idUsuarioSeleccionado() !== this.sesion()?.idUsuario,
-  );
-
-  /**
-   * Si se muestra "Presentado físicamente" en cada fila. Secretaría y
-   * Dirección lo ven en cualquier legajo ajeno; en el propio, solo quien lo
-   * declara al subir (Docente). El Alumno no tiene esa casilla, así que en su
-   * legajo tampoco se muestra.
-   */
-  protected readonly muestraEntregaEnPapel = computed(
-    () => this.esLegajoAjeno() || declaraEntregaEnPapel(this.sesion()),
   );
   /**
    * La persona cuyo legajo se está revisando (solo con legajo ajeno), o
@@ -432,6 +421,40 @@ export class MisDocumentos {
   // el propio (ver `app.routes.ts`, ruta `legajo/usuario/:idUsuario`). Por
   // eso alcanza con ese único chequeo para decidir si se muestran los
   // botones de aprobar/rechazar.
+  //
+  // Lo mismo vale para la casilla "Presentado físicamente" de cada fila: la
+  // ve y la tilda solo quien revisa (04/10/2026). Quien sube el documento ya
+  // no declara nada, y en su propio legajo tampoco se le muestra.
+
+  /**
+   * Lo que quien revisa tildó en "Presentado físicamente". Clave = `idLegajo`.
+   *
+   * ⚠️ Vive SOLO en esta pantalla: al recargar o salir se pierde. El backend
+   * guarda `presentado_fisico` únicamente al subir el documento y
+   * `AuditoriaLegajoDto` no lo recibe, así que hoy no hay a dónde mandarlo
+   * (docs/contrato-api.md, "la entrega en papel"). No depende del veredicto:
+   * se puede aprobar o rechazar con la casilla tildada o sin tildar.
+   */
+  protected readonly entregasEnPapel = signal<ReadonlyMap<number, boolean>>(new Map());
+
+  /** Lo tildado en esta pantalla; si no se tocó, lo que vino del backend. */
+  protected presentadoFisico(fila: FilaDocumento): boolean {
+    const marcado = fila.idLegajo === null ? undefined : this.entregasEnPapel().get(fila.idLegajo);
+    return marcado ?? fila.presentadoFisico;
+  }
+
+  protected alMarcarEntregaEnPapel(fila: FilaDocumento, evento: Event): void {
+    const idLegajo = fila.idLegajo;
+    if (idLegajo === null) {
+      return;
+    }
+    const marcado = (evento.target as HTMLInputElement).checked;
+    this.entregasEnPapel.update((mapa) => {
+      const nuevo = new Map(mapa);
+      nuevo.set(idLegajo, marcado);
+      return nuevo;
+    });
+  }
 
   /** `idLegajo` del documento con un pedido de auditoría en curso. */
   protected readonly guardando = signal<ReadonlySet<number>>(new Set());
