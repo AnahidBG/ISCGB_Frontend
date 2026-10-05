@@ -23,7 +23,10 @@ export interface NuevoDocumentoLegajo {
   /** Solo para documentos anuales. `null` en los que no vencen. */
   fechaVencimiento: Date | null;
 
-  /** `true` si además lo entregó en papel en Secretaría. */
+  /**
+   * Si Secretaría tiene además el papel. "Subir Documento" lo manda siempre
+   * en `false`: quien sube no lo declara, lo marca quien revisa el legajo.
+   */
   presentadoFisico: boolean;
 
   /**

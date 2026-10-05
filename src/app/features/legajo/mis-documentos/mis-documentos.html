@@ -150,16 +150,6 @@
             <div class="flex items-center gap-3 sm:flex-col sm:items-end">
               <app-insignia-estado [estado]="fila.estado" />
 
-              @if (muestraEntregaEnPapel() && !fila.faltante && fila.presentadoFisico) {
-                <span
-                  class="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-principal-suave px-2.5 py-1 text-xs font-medium text-principal"
-                  title="Además del archivo digital, Secretaría tiene el papel físico de este documento"
-                >
-                  <app-icono nombre="documento" class="h-3.5 w-3.5" />
-                  Presentado físicamente
-                </span>
-              }
-
               @if (!esLegajoAjeno() && (fila.faltante || fila.estado === 'Rechazado' || estaVencido(fila))) {
                 <button
                   type="button"
@@ -194,6 +184,33 @@
               } @else {
                 <p class="text-xs text-texto-suave sm:text-right">Sin archivo adjunto.</p>
               }
+
+              <!--
+                "Presentado físicamente": lo marca quien REVISA (Secretaría o
+                Dirección) después de cotejar el papel con el PDF, y antes de
+                aprobar o rechazar. Quien sube el documento ya no lo declara
+                (04/10/2026), por eso va acá y no en "Subir Documento".
+
+                ⚠️ Solo en pantalla: arranca con lo que hay en la base y se
+                puede tildar, pero NO se guarda. Hoy `presentado_fisico` solo
+                se escribe al subir (`POST /api/Legajos`) y
+                `AuditoriaLegajoDto` recibe únicamente `estado` y
+                `comentario` (docs/contrato-api.md, "la entrega en papel").
+                No traba el veredicto.
+              -->
+              <label
+                [attr.for]="'presentado-fisico-' + fila.idLegajo"
+                class="inline-flex cursor-pointer items-center gap-2 text-xs font-medium text-texto sm:justify-end"
+              >
+                <input
+                  type="checkbox"
+                  [id]="'presentado-fisico-' + fila.idLegajo"
+                  [checked]="presentadoFisico(fila)"
+                  (change)="alMarcarEntregaEnPapel(fila, $event)"
+                  class="h-4 w-4 shrink-0 cursor-pointer rounded border-borde accent-principal"
+                />
+                Presentado físicamente
+              </label>
 
               <div class="flex gap-2">
                 <button

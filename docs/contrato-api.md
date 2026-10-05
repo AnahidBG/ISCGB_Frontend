@@ -282,17 +282,37 @@ recibe el `POST` se guardan pero **todavía no se imprimen**.
 
 ## Legajos: `POST /api/Legajos` y la entrega en papel
 
-`SubirLegajoDto.PresentadoFisico` dice si la persona además entregó el papel
-en Secretaría. Desde el 04/10/2026 el frontend lo manda así:
+`presentado_fisico` dice si Secretaría tiene además el papel de ese documento.
+Desde el 04/10/2026 **quien sube no lo declara**: lo marca quien revisa.
 
-| Quién sube | Qué ve | `presentadoFisico` |
-|---|---|---|
-| Docente (o Director/Secretario que también es Docente) | Casilla "También entregué este documento en Secretaría" + recordatorio mientras no la tilde | Lo que tilde |
-| Alumno | Solo el recordatorio rojo | Siempre `false` |
+| Quién | Dónde | Qué ve | `presentadoFisico` |
+|---|---|---|---|
+| Docente o Alumno | Subir Documento | Solo el recordatorio rojo, sin casilla | `POST /api/Legajos` lo manda siempre en `false` |
+| Docente o Alumno | Mis Documentos (legajo propio) | Nada | — |
+| Secretario o Director | Revisión de un legajo ajeno (`legajo/usuario/:idUsuario`) | Casilla "Presentado físicamente" en cada documento, antes de Aprobar / Rechazar. Se puede tildar y no traba el veredicto | 🔴 **Solo en pantalla: no se guarda** (al recargar se pierde) |
 
-Quién ve la casilla lo decide `declaraEntregaEnPapel` (`core/legajos/entrega-en-papel.ts`).
-Después no hay forma de cambiarlo: `AuditoriaLegajoDto` solo recibe
-`estado` y `comentario`.
+🔴 **Pendiente de backend.** Hoy `presentado_fisico` solo se escribe en
+`POST /api/Legajos`. `AuditoriaLegajoDto` recibe únicamente `estado` y
+`comentario`, y `AuditarLegajo` no toca esa columna (`LegajoController.cs`,
+verificado el 04/10/2026). Con la casilla fuera de la subida, hoy **no queda
+ninguna forma de ponerlo en `true` desde la aplicación**: lo que tilda quien
+revisa vive en un signal de `MisDocumentos` (`entregasEnPapel`) y no viaja a
+ningún lado. El 04/10/2026 se decidió no tocar el backend por ahora. Cuando se
+retome, lo que hace falta acordar (ya figuraba como punto 5 de
+`alineacion-sprint-2.md`):
+
+```jsonc
+// PUT /api/Legajos/auditar/{idLegajo}?idUsuarioAuditor={id}
+{ "estado": "Aprobado", "comentario": null, "presentadoFisico": true }
+```
+
+con `PresentadoFisico` como `bool?` en `AuditoriaLegajoDto` (si viene `null`
+no se pisa) y `[Authorize(Roles = "Director,Secretario")]` en el endpoint.
+Cuando exista, lo tildado en `MisDocumentos` viaja junto con el veredicto.
+La pantalla no avisa que el tilde no se guarda (decisión del 04/10/2026).
+
+Ojo con los datos viejos: las filas que hoy tienen `presentado_fisico = 1` las
+tildó la propia persona al subir, no las verificó Secretaría.
 
 `GET /api/Legajos/usuario/{id}` devuelve además `auditor` (nombre de quien
 revisó, o el texto `"Sin auditor asignado"`): Mis Documentos lo muestra como

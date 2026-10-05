@@ -65,7 +65,7 @@
 - **Regla:** el estado global vive solo en servicios de `core/`. **Nada de variables mutables a nivel de módulo** ni `static` para compartir estado.
 
 ### 2.8 Tabla de estrategias por clave (Strategy liviano / reemplazo de condicionales)
-- **Dónde:** `APARIENCIA_POR_ESTADO: Record<EstadoDocumento, AparienciaEstado>` en `insignia-estado.ts`, con un valor por defecto (`APARIENCIA_DESCONOCIDA`) para un `estado` nulo o inesperado. También `enlacesPorSesion` (menú por rol), `destinoSegunRoles` y `rolPrincipalDe` (prioridad de roles), y `DECLARA_ENTREGA_EN_PAPEL` en `core/legajos/entrega-en-papel.ts` (qué rol ve la casilla "También entregué este documento en Secretaría": Docente sí, el resto no por defecto).
+- **Dónde:** `APARIENCIA_POR_ESTADO: Record<EstadoDocumento, AparienciaEstado>` en `insignia-estado.ts`, con un valor por defecto (`APARIENCIA_DESCONOCIDA`) para un `estado` nulo o inesperado. También `enlacesPorSesion` (menú por rol), `destinoSegunRoles` y `rolPrincipalDe` (prioridad de roles).
 - **Regla:** todo lo que cambia según el estado, el rol o el tipo se resuelve con **una tabla en un solo lugar**, nunca con `if` repetidos en cada pantalla. Siempre hay un caso por defecto, porque `estado` es `varchar NULL` en la BD.
 
 ### 2.9 Composite: árbol de componentes
