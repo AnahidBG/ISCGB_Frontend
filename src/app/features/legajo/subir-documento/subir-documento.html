@@ -27,32 +27,23 @@
           poder seguir su estado desde tu panel.
         </p>
 
-        <!--
-          El mismo aviso del formulario, acá donde recién se termina el envío.
-          No sale si el Docente ya tildó que entregó el papel.
-        -->
-        @if (recordarEntrega()) {
-          <div
-            role="note"
-            class="mx-auto mt-5 flex max-w-md items-start gap-3 rounded-xl border-2 border-rechazado bg-rechazado/10 px-4 py-3.5 text-left"
+        <!-- El mismo aviso del formulario, acá donde recién se termina el envío. -->
+        <div
+          role="note"
+          class="mx-auto mt-5 flex max-w-md items-start gap-3 rounded-xl border-2 border-rechazado bg-rechazado/10 px-4 py-3.5 text-left"
+        >
+          <span
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rechazado text-white"
           >
-            <span
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rechazado text-white"
-            >
-              <app-icono nombre="alerta" class="h-5 w-5" />
+            <app-icono nombre="alerta" class="h-5 w-5" />
+          </span>
+          <p class="text-sm leading-relaxed text-texto">
+            <span class="block font-bold text-rechazado">
+              Recordá presentar este documento en Secretaría.
             </span>
-            <p class="text-sm leading-relaxed text-texto">
-              <span class="block font-bold text-rechazado">
-                Recordá presentar este documento en Secretaría.
-              </span>
-              La copia digital no reemplaza la entrega del papel.
-            </p>
-          </div>
-        } @else {
-          <p class="mx-auto mt-5 max-w-md text-sm leading-relaxed text-texto-suave">
-            Quedó registrado que también lo entregaste en papel en Secretaría.
+            La copia digital no reemplaza la entrega del papel.
           </p>
-        }
+        </div>
 
         <div class="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
           <button
@@ -157,61 +148,36 @@ class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
         </div>
 
         <!--
-          Entrega en papel.
+          Recordatorio de la entrega en papel.
 
-          Docente: casilla "También entregué este documento en Secretaría"
-          (`presentadoFisico`). Se había sacado para todos el 02/09/2026 y
-          volvió el 04/10/2026, pero SOLO para Docentes (ver
-          `core/legajos/entrega-en-papel.ts`).
+          Acá NO hay casilla "también entregué este documento en Secretaría",
+          ni para el Docente ni para el Alumno. La casilla le preguntaba a la
+          persona algo que el instituto no puede verificar desde acá: quien la
+          tildaba sin haber llevado el papel quedaba igual de "presentado" en
+          el sistema. Que el papel está lo marca quien lo recibe —Secretaría o
+          Dirección— al revisar el legajo.
 
-          Alumno: no hay casilla, solo el recordatorio rojo. Se ve siempre, no
+          Como aviso, en cambio, le sirve a todo el mundo: se ve siempre, no
           se puede tildar por costumbre, y deja en claro que subir el PDF no
-          cierra el trámite. El Docente lo ve mientras no tilde la casilla.
+          cierra el trámite.
         -->
-        @if (puedeDeclararEntrega()) {
-          <label
-            for="entregoEnPapel"
-            class="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border border-borde p-4 transition-colors"
-            [class.border-principal]="entregoEnPapel()"
-            [class.bg-principal-suave]="entregoEnPapel()"
+        <div
+          role="note"
+          class="mt-6 flex items-start gap-3 rounded-xl border-2 border-rechazado bg-rechazado/10 px-4 py-3.5"
+        >
+          <span
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rechazado text-white"
           >
-            <input
-              id="entregoEnPapel"
-              type="checkbox"
-              [checked]="entregoEnPapel()"
-              (change)="alMarcarEntrega($event)"
-              class="mt-0.5 h-4 w-4 shrink-0 rounded border-borde accent-principal"
-            />
-            <span class="min-w-0">
-              <span class="block text-sm font-semibold text-texto">
-                También entregué este documento en Secretaría
-              </span>
-              <span class="mt-0.5 block text-xs leading-relaxed text-texto-suave">
-                Tildalo solo si ya dejaste el papel. Secretaría lo ve al revisar tu legajo.
-              </span>
-            </span>
-          </label>
-        }
+            <app-icono nombre="alerta" class="h-5 w-5" />
+          </span>
 
-        @if (recordarEntrega()) {
-          <div
-            role="note"
-            class="mt-6 flex items-start gap-3 rounded-xl border-2 border-rechazado bg-rechazado/10 px-4 py-3.5"
-          >
-            <span
-              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rechazado text-white"
-            >
-              <app-icono nombre="alerta" class="h-5 w-5" />
+          <p class="text-sm leading-relaxed text-texto">
+            <span class="block font-bold text-rechazado">
+              Recordá presentar este documento en Secretaría.
             </span>
-
-            <p class="text-sm leading-relaxed text-texto">
-              <span class="block font-bold text-rechazado">
-                Recordá presentar este documento en Secretaría.
-              </span>
-              La copia digital no reemplaza la entrega del papel.
-            </p>
-          </div>
-        }
+            La copia digital no reemplaza la entrega del papel.
+          </p>
+        </div>
 
         <div class="mt-8 flex flex-col-reverse items-stretch gap-3 border-t border-borde pt-6 sm:flex-row sm:justify-end">
           <button

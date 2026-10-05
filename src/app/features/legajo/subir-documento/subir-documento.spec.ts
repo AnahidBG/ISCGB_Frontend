@@ -15,6 +15,8 @@ const TIPOS: DocumentoRequerido[] = [
   { idTipoDoc: 7, nombreDocumento: 'DNI', obligatorio: true, anual: false },
 ];
 
+const RECORDATORIO = 'Recordá presentar este documento en Secretaría.';
+
 function sesionCon(rolesConId: RolApi[]): Sesion {
   return {
     token: 't',
@@ -28,10 +30,20 @@ function sesionCon(rolesConId: RolApi[]): Sesion {
   };
 }
 
-const DOCENTE = sesionCon([{ idRol: 3, nombreRol: 'Docente' }]);
-const ALUMNO = sesionCon([{ idRol: 4, nombreRol: 'Alumno' }]);
+/** Todos los que pueden llegar a esta pantalla: ninguno declara la entrega. */
+const QUIENES_SUBEN: [string, Sesion][] = [
+  ['el Docente', sesionCon([{ idRol: 3, nombreRol: 'Docente' }])],
+  ['el Alumno', sesionCon([{ idRol: 4, nombreRol: 'Alumno' }])],
+  [
+    'el Director que además da clase',
+    sesionCon([
+      { idRol: 1, nombreRol: 'Director' },
+      { idRol: 3, nombreRol: 'Docente' },
+    ]),
+  ],
+];
 
-describe('SubirDocumento: casilla "también lo entregué en Secretaría"', () => {
+describe('SubirDocumento: quien sube no declara la entrega en papel', () => {
   let enviados: NuevoDocumentoLegajo[];
 
   async function montar(sesion: Sesion): Promise<ComponentFixture<SubirDocumento>> {
@@ -61,8 +73,8 @@ describe('SubirDocumento: casilla "también lo entregué en Secretaría"', () =>
     return fixture;
   }
 
-  function casilla(fixture: ComponentFixture<SubirDocumento>): HTMLInputElement | null {
-    return (fixture.nativeElement as HTMLElement).querySelector('#entregoEnPapel');
+  function casillas(fixture: ComponentFixture<SubirDocumento>): NodeListOf<HTMLInputElement> {
+    return (fixture.nativeElement as HTMLElement).querySelectorAll('input[type="checkbox"]');
   }
 
   function texto(fixture: ComponentFixture<SubirDocumento>): string {
@@ -82,53 +94,30 @@ describe('SubirDocumento: casilla "también lo entregué en Secretaría"', () =>
     await fixture.whenStable();
   }
 
-  it('el Docente ve la casilla, sin tildar de entrada', async () => {
-    const fixture = await montar(DOCENTE);
+  it.each(QUIENES_SUBEN)('%s no tiene casilla para tildar: solo el recordatorio', async (_quien, sesion) => {
+    const fixture = await montar(sesion);
 
-    expect(casilla(fixture)).not.toBeNull();
-    expect(casilla(fixture)!.checked).toBe(false);
+    expect(casillas(fixture)).toHaveLength(0);
+    expect(texto(fixture)).not.toContain('También entregué este documento en Secretaría');
+    expect(texto(fixture)).toContain(RECORDATORIO);
   });
 
-  it('el Docente que la tilda manda presentadoFisico en true y deja de ver el recordatorio', async () => {
-    const fixture = await montar(DOCENTE);
-    expect(texto(fixture)).toContain('Recordá presentar este documento en Secretaría.');
-
-    casilla(fixture)!.click();
-    await fixture.whenStable();
-    expect(texto(fixture)).not.toContain('Recordá presentar este documento en Secretaría.');
+  it.each(QUIENES_SUBEN)('lo que sube %s viaja con presentadoFisico en false', async (_quien, sesion) => {
+    const fixture = await montar(sesion);
 
     await enviar(fixture);
+
     expect(enviados).toHaveLength(1);
-    expect(enviados[0].presentadoFisico).toBe(true);
-  });
-
-  it('el Docente que no la tilda manda false y sigue viendo el recordatorio', async () => {
-    const fixture = await montar(DOCENTE);
-
-    await enviar(fixture);
-
-    expect(enviados[0].presentadoFisico).toBe(false);
-    expect(texto(fixture)).toContain('Recordá presentar este documento en Secretaría.');
-  });
-
-  it('el Alumno NO ve la casilla: solo el recordatorio, y manda siempre false', async () => {
-    const fixture = await montar(ALUMNO);
-
-    expect(casilla(fixture)).toBeNull();
-    expect(texto(fixture)).toContain('Recordá presentar este documento en Secretaría.');
-
-    await enviar(fixture);
     expect(enviados[0].presentadoFisico).toBe(false);
   });
 
-  it('"Subir otro documento" vuelve a dejar la casilla sin tildar', async () => {
-    const fixture = await montar(DOCENTE);
-    casilla(fixture)!.click();
+  it('el recordatorio sigue a la vista en la pantalla de confirmación', async () => {
+    const fixture = await montar(QUIENES_SUBEN[0][1]);
+
     await enviar(fixture);
 
-    (fixture.componentInstance as unknown as { subirOtro(): void }).subirOtro();
-    await fixture.whenStable();
-
-    expect(casilla(fixture)!.checked).toBe(false);
+    expect(texto(fixture)).toContain('Documento enviado');
+    expect(texto(fixture)).toContain(RECORDATORIO);
+    expect(texto(fixture)).not.toContain('Quedó registrado que también lo entregaste');
   });
 });

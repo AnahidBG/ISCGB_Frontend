@@ -24,7 +24,7 @@ pantalla lo dice con todas las letras y queda anotado acá abajo.
 | Criterio | Historia | Qué falta |
 |---|---|---|
 | Rechazar dispara un mail al docente con el motivo (regla de negocio #4) | SCRUM-19 / SCRUM-7 | `IEmailService` no existe. La pantalla de revisión avisa que el mail todavía no sale. |
-| Marcar la documentación presentada físicamente al revisar | SCRUM-19 (SCRUM-167/171) | `AuditoriaLegajoDto` solo recibe `estado` y `comentario`; `presentadoFisico` se carga al subir y no se puede cambiar después. |
+| Marcar la documentación presentada físicamente al revisar | SCRUM-19 (SCRUM-167/171) | `AuditoriaLegajoDto` solo recibe `estado` y `comentario`. Desde el 04/10/2026 quien sube ya no lo declara (va siempre en `false`), y lo marca quien revisa: la casilla de la revisión se puede tildar pero solo en pantalla, no se guarda hasta que el backend lo acepte. Ver `contrato-api.md`. |
 | Registrar un correo para avisos, envío automático y frecuencia configurable | SCRUM-7 (SCRUM-151/155/156/157) | No hay endpoints ni job de envío (SCRUM-149 en curso). |
 | Carrera / Especialidad en el perfil | SCRUM-16 | No hay columna ni campo en `CargaUsuarioDto`. |
 | Horarios de cursada reales en el certificado | SCRUM-12 | El backend deja las líneas en blanco para que las complete Preceptoría. |
