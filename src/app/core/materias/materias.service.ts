@@ -28,6 +28,9 @@ export abstract class MateriasService {
   /** Todas las materias, ordenadas por nombre. */
   abstract listarDisponibles(): Observable<MateriaDisponible[]>;
 
+  /** Materias asignadas al alumno autenticado. */
+  abstract listarMisMaterias(): Observable<MateriaDisponible[]>;
+
   /** Todos los docentes del instituto, ordenados por nombre. */
   abstract listarDocentes(): Observable<DocenteDisponible[]>;
 
