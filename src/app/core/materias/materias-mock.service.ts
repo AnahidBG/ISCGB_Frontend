@@ -43,6 +43,10 @@ export class MateriasMockService extends MateriasService {
     return of(ordenadas).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
+  listarMisMaterias(): Observable<MateriaDisponible[]> {
+    return this.listarDisponibles();
+  }
+
   listarDocentes(): Observable<DocenteDisponible[]> {
     return of([...DOCENTES_DE_EJEMPLO]).pipe(delay(DEMORA_SIMULADA_MS));
   }

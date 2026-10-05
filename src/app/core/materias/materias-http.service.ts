@@ -65,6 +65,16 @@ export class MateriasHttpService extends MateriasService {
     );
   }
 
+  listarMisMaterias(): Observable<MateriaDisponible[]> {
+    return this.http.get<MateriaDisponible[]>(RUTAS_API.misMaterias).pipe(
+      map((materias) => materias ?? []),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error al traer las materias del alumno:', error);
+        return throwError(() => new Error(MENSAJE_ERROR_MATERIAS));
+      }),
+    );
+  }
+
   listarDocentes(): Observable<DocenteDisponible[]> {
     return this.http.get<ListaApi<DocenteApi>>(RUTAS_API.docentesDisponibles).pipe(
       map((respuesta) =>

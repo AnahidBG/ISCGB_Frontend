@@ -35,7 +35,7 @@ describe('ReconocimientoSaberes', () => {
           provide: CampanaService,
           useValue: { total: signal(0), detalle: signal<NotificacionPanel[]>([]), refrescar: () => {} },
         },
-        { provide: MateriasService, useValue: { listarDisponibles: materias } },
+        { provide: MateriasService, useValue: { listarDisponibles: materias, listarMisMaterias: materias, } },
         {
           provide: ReconocimientoSaberesService,
           useValue: {
