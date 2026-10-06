@@ -107,7 +107,10 @@ export const RUTAS_API = {
   // Los tres GET envuelven la lista en `{ data }`.
 
   /** Todas las materias del instituto, ordenadas por nombre. */
-  materiasDisponibles: `${URL_BASE_API}/api/Materias/materias-disponibles`,
+  materiasDisponibles: `${URL_BASE_API}/api/Asignaciones/materias-disponibles`,
+  
+  /** Materias asignadas al alumno autenticado. */
+  misMaterias: `${URL_BASE_API}/api/Materias/mis-materias`,
 
   /** Todos los docentes (fila en `Docentes`), ordenados por nombre. */
   docentesDisponibles: `${URL_BASE_API}/api/Materias/docentes-disponibles`,

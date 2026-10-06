@@ -157,7 +157,17 @@ export class ReconocimientoSaberes {
 
   constructor() {
     this.campana.refrescar();
-    this.materiasService.listarDisponibles().subscribe({
+    /*this.materiasService.listarDisponibles().subscribe({
+      next: (materias) => {
+        this.materias.set(materias);
+        this.cargandoMaterias.set(false);
+      },
+      error: (fallo: Error) => {
+        this.errorMaterias.set(fallo.message);
+        this.cargandoMaterias.set(false);
+      },
+    });*/ //ESTO VA EN PANTALLA DE ADMINISTRACIÓN DE MATERIAS
+    this.materiasService.listarMisMaterias().subscribe({
       next: (materias) => {
         this.materias.set(materias);
         this.cargandoMaterias.set(false);
