@@ -24,6 +24,11 @@
     </p>
   }
 
+  <!-- Arriba de todo: es lo único del panel que pide hacer algo (SCRUM-150). -->
+  @if (porEntregar().length > 0) {
+    <app-documentacion-por-entregar class="mb-5 block sm:mb-6" [documentos]="porEntregar()" />
+  }
+
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
     <app-tarjeta-metrica etiqueta="Documentos Totales" [valor]="resumen().total" tono="neutro" />
     <app-tarjeta-metrica etiqueta="Aprobados" [valor]="resumen().aprobados" tono="aprobado" />

@@ -9,7 +9,7 @@ import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import {
   calcularProgresoLegajo,
-  documentosSinCargar,
+  obligatoriosSinCargar,
   ultimaVersionPorTipo,
 } from '../../../core/legajos/progreso-legajo';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
@@ -17,6 +17,7 @@ import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-po
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { novedadesDelLegajo } from '../../../core/notificaciones/notificaciones-legajo';
+import { DocumentacionPorEntregar } from '../../../shared/ui/documentacion-por-entregar/documentacion-por-entregar';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { PasoTramite, ProgresoTramite } from '../../../shared/ui/progreso-tramite/progreso-tramite';
@@ -41,7 +42,15 @@ const ACCION_ALUMNO: AccionPanel = {
  */
 @Component({
   selector: 'app-panel-alumno',
-  imports: [EstructuraPanel, InsigniaEstado, DatePipe, ProgresoTramite, Icono, RouterLink],
+  imports: [
+    EstructuraPanel,
+    InsigniaEstado,
+    DatePipe,
+    ProgresoTramite,
+    Icono,
+    RouterLink,
+    DocumentacionPorEntregar,
+  ],
   templateUrl: './panel-alumno.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -103,6 +112,11 @@ export class PanelAlumno {
       this.novedades().detalle.every((novedad) => novedad.tono === 'aprobado'),
   );
 
+  /** Lo obligatorio que nunca se subió (SCRUM-150). Ver `PanelDocente`. */
+  protected readonly porEntregar = computed(() =>
+    obligatoriosSinCargar(this.documentos(), this.requeridos()),
+  );
+
   /** El detalle documento por documento del "Mapa del trámite" (`ProgresoTramite`). */
   protected readonly pasosTramite = computed<PasoTramite[]>(() => {
     const subidos: PasoTramite[] = ultimaVersionPorTipo(this.documentos()).map((documento) => ({
@@ -111,10 +125,11 @@ export class PanelAlumno {
       faltante: false,
     }));
 
-    const faltantes: PasoTramite[] = documentosSinCargar(
-      this.documentos(),
-      this.requeridos().filter((requerido) => requerido.obligatorio),
-    ).map((requerido) => ({ nombre: requerido.nombreDocumento, estado: null, faltante: true }));
+    const faltantes: PasoTramite[] = this.porEntregar().map((requerido) => ({
+      nombre: requerido.nombreDocumento,
+      estado: null,
+      faltante: true,
+    }));
 
     return [...subidos, ...faltantes];
   });

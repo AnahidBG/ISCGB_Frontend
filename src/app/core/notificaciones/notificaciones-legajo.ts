@@ -2,9 +2,11 @@ import { DocumentoLegajo } from '../legajos/modelos/documento-legajo';
 import { DocumentoRequerido } from '../legajos/modelos/documento-requerido';
 import {
   calcularProgresoLegajo,
-  documentosSinCargar,
+  obligatoriosSinCargar,
+  requeridoDelDocumento,
   ultimaVersionPorTipo,
 } from '../legajos/progreso-legajo';
+import { consultaConTipo } from '../legajos/tipo-en-url';
 import { NotificacionPanel } from './modelos/notificacion-panel';
 
 /**
@@ -86,22 +88,29 @@ export function novedadesDelLegajo(
         documento.fechaVencimiento !== null &&
         documento.fechaVencimiento.getTime() < ahora,
     )
-    .map((documento) => ({
-      titulo: `Se venció ${documento.nombre}`,
-      detalle: 'Es un documento anual: volvé a presentarlo.',
-      url: '/legajo/subir-documento',
-      tono: 'pendiente' as const,
-    }));
+    .map((documento) => {
+      // El legajo no trae el id del tipo: se busca por nombre entre los del
+      // rol. Si ya no está entre ellos, el formulario abre sin tipo elegido.
+      const tipo = requeridoDelDocumento(documento, requeridos);
+      return {
+        titulo: `Se venció ${documento.nombre}`,
+        detalle: 'Es un documento anual: volvé a presentarlo.',
+        url: '/legajo/subir-documento',
+        consulta: tipo === null ? undefined : consultaConTipo(tipo.idTipoDoc),
+        tono: 'pendiente' as const,
+      };
+    });
 
-  const faltantes: NotificacionPanel[] = documentosSinCargar(
-    documentos,
-    requeridos.filter((requerido) => requerido.obligatorio),
-  ).map((requerido) => ({
-    titulo: `Falta entregar ${requerido.nombreDocumento}`,
-    detalle: 'Cargalo desde Subir Documento y entregalo en papel en Secretaría.',
-    url: '/legajo/subir-documento',
-    tono: 'pendiente' as const,
-  }));
+  const faltantes: NotificacionPanel[] = obligatoriosSinCargar(documentos, requeridos).map(
+    (requerido) => ({
+      titulo: `Falta entregar ${requerido.nombreDocumento}`,
+      detalle: 'Cargalo desde Subir Documento y entregalo en papel en Secretaría.',
+      url: '/legajo/subir-documento',
+      // Abre el formulario con este tipo ya elegido.
+      consulta: consultaConTipo(requerido.idTipoDoc),
+      tono: 'pendiente' as const,
+    }),
+  );
 
   const progreso = calcularProgresoLegajo(documentos, requeridos);
   const completo =

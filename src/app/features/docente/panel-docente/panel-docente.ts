@@ -9,7 +9,7 @@ import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import {
   calcularProgresoLegajo,
-  documentosSinCargar,
+  obligatoriosSinCargar,
   ultimaVersionPorTipo,
 } from '../../../core/legajos/progreso-legajo';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
@@ -17,6 +17,7 @@ import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-po
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { novedadesDelLegajo } from '../../../core/notificaciones/notificaciones-legajo';
+import { DocumentacionPorEntregar } from '../../../shared/ui/documentacion-por-entregar/documentacion-por-entregar';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { PasoTramite, ProgresoTramite } from '../../../shared/ui/progreso-tramite/progreso-tramite';
@@ -43,7 +44,15 @@ interface ProximoPaso {
  */
 @Component({
   selector: 'app-panel-docente',
-  imports: [EstructuraPanel, InsigniaEstado, TarjetaMetrica, Icono, DatePipe, ProgresoTramite],
+  imports: [
+    EstructuraPanel,
+    InsigniaEstado,
+    TarjetaMetrica,
+    Icono,
+    DatePipe,
+    ProgresoTramite,
+    DocumentacionPorEntregar,
+  ],
   templateUrl: './panel-docente.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -143,6 +152,14 @@ export class PanelDocente {
   );
 
   /**
+   * Lo obligatorio que nunca se subió (SCRUM-150): la tarjeta
+   * "Documentación por entregar" y los "Sin cargar" del mapa del trámite.
+   */
+  protected readonly porEntregar = computed(() =>
+    obligatoriosSinCargar(this.documentos(), this.requeridos()),
+  );
+
+  /**
    * El detalle documento por documento del "Mapa del trámite"
    * (`ProgresoTramite`): los ya subidos (con su última versión, sin
    * duplicar por resubidas) más los que todavía faltan.
@@ -154,10 +171,11 @@ export class PanelDocente {
       faltante: false,
     }));
 
-    const faltantes: PasoTramite[] = documentosSinCargar(
-      this.documentos(),
-      this.requeridos().filter((requerido) => requerido.obligatorio),
-    ).map((requerido) => ({ nombre: requerido.nombreDocumento, estado: null, faltante: true }));
+    const faltantes: PasoTramite[] = this.porEntregar().map((requerido) => ({
+      nombre: requerido.nombreDocumento,
+      estado: null,
+      faltante: true,
+    }));
 
     return [...subidos, ...faltantes];
   });

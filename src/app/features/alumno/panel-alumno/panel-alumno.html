@@ -24,6 +24,11 @@
     </p>
   }
 
+  <!-- Arriba de todo: es lo único del panel que pide hacer algo (SCRUM-150). -->
+  @if (porEntregar().length > 0) {
+    <app-documentacion-por-entregar class="mb-5 block sm:mb-6" [documentos]="porEntregar()" />
+  }
+
   <!--
     "Mapa del trámite": el mismo resumen que antes ("3 de 8 documentos
     obligatorios") pero desplegable — toca la tarjeta y ves, documento por
