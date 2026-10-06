@@ -1,0 +1,24 @@
+<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+  <div
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="dialogo-confirmacion-titulo"
+    aria-describedby="dialogo-confirmacion-mensaje"
+    class="w-full max-w-md rounded-xl border border-borde bg-superficie p-6 shadow-lg"
+  >
+    <h2 id="dialogo-confirmacion-titulo" class="text-lg font-bold text-texto">{{ titulo() }}</h2>
+
+    <div id="dialogo-confirmacion-mensaje" class="mt-2 text-sm text-texto-suave">
+      <ng-content />
+    </div>
+
+    <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+      <app-boton nivel="terciario" [conFlecha]="false" (click)="confirmar.emit()">
+        {{ textoConfirmar() }}
+      </app-boton>
+      <app-boton #botonCancelar nivel="primario" [conFlecha]="false" (click)="cancelar.emit()">
+        {{ textoCancelar() }}
+      </app-boton>
+    </div>
+  </div>
+</div>

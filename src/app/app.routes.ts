@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
 import { ROLES } from './core/auth/modelos/rol';
 import { roleGuard } from './core/auth/role.guard';
+import { confirmarSalidaGuard } from './core/comun/confirmar-salida.guard';
 
 /**
  * Rutas de la aplicación.
@@ -160,6 +161,8 @@ export const routes: Routes = [
     path: 'docente/entrega-programa',
     title: 'Entregar programa de materia · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.docente)],
+    // El programa es largo: salir sin enviarlo pierde todo lo cargado.
+    canDeactivate: [confirmarSalidaGuard],
     loadComponent: () =>
       import('./features/docente/entrega-programa/entrega-programa').then(
         (m) => m.EntregaPrograma,

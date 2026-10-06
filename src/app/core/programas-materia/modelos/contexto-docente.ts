@@ -1,3 +1,5 @@
+import { FormatoCurricular } from './formato-curricular';
+
 /** Una materia que el docente tiene a cargo, para elegirla de una lista. */
 export interface MateriaACargo {
   idMateria: number;
@@ -11,6 +13,21 @@ export interface MateriaACargo {
   curso: string | null;
   idComision: number;
   nombreComision: string;
+
+  // ── Datos del plan de estudios (Res. 166/23) ─────────────────────────────
+  //
+  // Existen en la tabla `materias` (`formato`, `horasCatedra`,
+  // `horasTotales`), pero HOY `contexto-docente` no los manda: llegan en
+  // `null` y el formulario los deja para cargar a mano. El día que el
+  // backend los sume al `MateriaDocenteDto`, el formulario los autocompleta
+  // solo, sin tocar el frontend.
+
+  /** `null` si no vino o si el valor no es uno de la Res. 166/23. */
+  formato: FormatoCurricular | null;
+  /** Horas cátedra semanales. */
+  horasCatedra: number | null;
+  /** Horas totales de la materia según el plan. */
+  horasTotales: number | null;
 }
 
 /**

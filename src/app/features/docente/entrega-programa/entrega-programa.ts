@@ -11,8 +11,10 @@ import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-po
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Boton } from '../../../shared/ui/boton/boton';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
+import { DialogoConfirmacion } from '../../../shared/ui/dialogo-confirmacion/dialogo-confirmacion';
 import { FormularioProgramaMateria } from './partes/formulario-programa-materia/formulario-programa-materia';
 import { descargarArchivo } from '../../../core/comun/archivos';
+import { ConCambiosSinEnviar } from '../../../core/comun/confirmar-salida.guard';
 
 /**
  * Pantalla de entrega del programa de materia (Docente).
@@ -32,14 +34,27 @@ import { descargarArchivo } from '../../../core/comun/archivos';
  * Usa `EstructuraPanel` (barra lateral + encabezado), igual que el resto de
  * las pantallas del Docente — antes esta pantalla era un `<main>` suelto sin
  * el shell común, por eso no se veía como las demás y no tenía "‹ Volver".
+ *
+ * ── Salir sin enviar ───────────────────────────────────────────────────────
+ * Si la persona empezó a cargar el programa y quiere irse sin enviarlo, se
+ * le pregunta antes. Son dos caminos distintos y cada uno tiene su límite:
+ *
+ *   · Navegar dentro de la app ("‹ Volver", barra lateral, cerrar sesión)
+ *     pasa por `confirmarSalidaGuard` → diálogo propio con nuestro texto.
+ *   · Cerrar la pestaña o recargar no pasa por el router → `beforeunload`.
+ *     Ahí el navegador muestra SU diálogo genérico: ninguno deja poner un
+ *     texto propio desde hace años, para que los sitios no lo usen de trampa.
  */
 @Component({
   selector: 'app-entrega-programa',
-  imports: [EstructuraPanel, Boton, PantallaCarga, FormularioProgramaMateria],
+  imports: [EstructuraPanel, Boton, PantallaCarga, FormularioProgramaMateria, DialogoConfirmacion],
   templateUrl: './entrega-programa.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(window:beforeunload)': 'alSalirDelSitio($event)',
+  },
 })
-export class EntregaPrograma {
+export class EntregaPrograma implements ConCambiosSinEnviar {
   private readonly auth = inject(AuthService);
   private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
@@ -105,9 +120,54 @@ export class EntregaPrograma {
     () => (this.contexto()?.materias.length ?? 0) > 0,
   );
 
+  // ── Salir sin enviar ──────────────────────────────────────────────────────
+
+  /** `true` si el formulario tiene algo cargado. Lo avisa el propio formulario. */
+  protected readonly cambiosSinEnviar = signal(false);
+
+  /** `true` mientras se muestra el diálogo de "¿seguro querés salir?". */
+  protected readonly preguntandoSalida = signal(false);
+
+  /** Resuelve la navegación pendiente con la respuesta del diálogo. */
+  private resolverSalida: ((salir: boolean) => void) | null = null;
+
   constructor() {
     this.campana.refrescar();
     this.cargarContexto();
+  }
+
+  /** Solo hay algo que perder si se cargó algo y todavía no se envió. */
+  private hayAlgoSinEnviar(): boolean {
+    return this.cambiosSinEnviar() && !this.enviadoConExito();
+  }
+
+  confirmarSalida(): boolean | Promise<boolean> {
+    if (!this.hayAlgoSinEnviar()) {
+      return true;
+    }
+
+    // Si ya había una pregunta abierta (por ejemplo, la persona apretó
+    // "atrás" en el navegador con el diálogo a la vista), esa navegación
+    // quedó vieja: se cierra como "no salir" antes de abrir la nueva.
+    this.resolverSalida?.(false);
+
+    this.preguntandoSalida.set(true);
+    return new Promise<boolean>((resolver) => (this.resolverSalida = resolver));
+  }
+
+  protected responderSalida(salir: boolean): void {
+    this.preguntandoSalida.set(false);
+    this.resolverSalida?.(salir);
+    this.resolverSalida = null;
+  }
+
+  /** Cerrar la pestaña o recargar: le pide al navegador su diálogo de confirmación. */
+  protected alSalirDelSitio(evento: BeforeUnloadEvent): void {
+    if (this.hayAlgoSinEnviar()) {
+      evento.preventDefault();
+      // Chrome y Edge viejos solo muestran el diálogo si además se asigna esto.
+      evento.returnValue = '';
+    }
   }
 
   protected cargarContexto(): void {
@@ -181,10 +241,19 @@ export class EntregaPrograma {
     this.enviadoConExito.set(false);
     this.idPrograma.set(null);
     this.errorPdf.set(null);
+    // El formulario vuelve a dibujarse vacío: no hay nada sin enviar todavía.
+    this.cambiosSinEnviar.set(false);
   }
 
   protected cerrarSesion(): void {
-    this.auth.cerrarSesion();
-    this.router.navigate(['/login']);
+    // Al revés que en las otras pantallas: primero se navega y recién después
+    // se corta la sesión. Si el guard pregunta y la persona elige quedarse,
+    // la navegación se cancela y la sesión tiene que seguir viva — si se
+    // cortaba antes, quedaba en la pantalla con la sesión ya cerrada.
+    this.router.navigate(['/login']).then((salio) => {
+      if (salio) {
+        this.auth.cerrarSesion();
+      }
+    });
   }
 }
