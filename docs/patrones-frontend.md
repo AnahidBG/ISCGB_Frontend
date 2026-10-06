@@ -33,7 +33,7 @@
 ## 2. Patrones que YA están en el código (respetarlos)
 
 ### 2.1 Strategy + inversión de dependencias: servicios abstractos con implementación HTTP y mock
-- **Dónde:** `core/<dominio>/<dominio>.service.ts` (clase abstracta) + `*-http.service.ts` + `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes y Materias.
+- **Dónde:** `core/<dominio>/<dominio>.service.ts` (clase abstracta) + `*-http.service.ts` + `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes, Materias y FrecuenciaAvisos (`core/notificaciones/`, SCRUM-151).
 - **Regla:** todo dominio nuevo (por ejemplo `core/examenes/` para el calendario) sigue este mismo trío. Si el endpoint todavía no existe, se arranca con el mock.
 
 ### 2.2 Adapter: respuesta cruda de la API → modelo limpio

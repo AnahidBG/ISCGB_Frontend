@@ -35,12 +35,30 @@ Envía un número entero positivo:
 
 Devuelve `200 OK` con `{ "message": "Frecuencia actualizada a 14 días exitosamente." }`.
 Si `diasFrecuencia` es menor o igual a cero, devuelve `400 Bad Request` con
-un mensaje de validación.
+`{ "message": "La frecuencia debe ser mayor a 0 días." }`. Si el cuerpo no trae
+un entero (un decimal o un texto), el 400 lo arma ASP.NET y llega como
+`ValidationProblemDetails` (`{ title, errors }`), sin `message`.
 
-⚠️ En el backend verificado (`f856989`), `ConfiguracionController` no tiene
-`[Authorize]`; ambos endpoints están sin autenticación. El frontend centraliza
-la URL en `RUTAS_API.frecuenciaNotificaciones`, pero todavía no ofrece una
-pantalla para consultar o cambiar este valor.
+**En el frontend (SCRUM-151, 06/10/2026):** pantalla "Frecuencia de avisos" en
+`/secretario/frecuencia-avisos`, solo para Secretario (`roleGuard`), con
+`FrecuenciaAvisosService` (`core/notificaciones/`). Valida un entero entre 1 y
+365 antes de enviar y, si el backend rechaza el valor, muestra su mensaje.
+
+El envío no es inmediato: `NotificadorFaltantesWorker` corre al arrancar el
+servidor y después una vez cada 24 horas, así que un cambio rige desde la
+próxima pasada. La pantalla lo aclara.
+
+⚠️ Pendientes del backend verificado (`f856989`):
+
+- `ConfiguracionController` no tiene `[Authorize]`: los dos endpoints
+  responden sin autenticación. El `roleGuard` del frontend no lo reemplaza.
+- El `PUT` no tiene tope máximo. Con un valor muy grande el worker falla al
+  calcular la fecha límite (`AddDays`) y no envía ningún aviso. El tope de 365
+  días es solo del frontend.
+- El worker compara contra todos los `TiposDocumentos`, no contra los
+  obligatorios del rol (`roles_tipos_documentos`), y recorre a todos los
+  usuarios. El mail puede listar documentos distintos de los que el frontend
+  muestra como faltantes.
 
 ## `POST /api/Auth/login`
 
@@ -438,7 +456,6 @@ saberes (`[Authorize(Roles = "Secretario")]`), ninguno tiene `[Authorize]`.
 | `GET /api/Justificativos/todos` → `{ data: [...] }` | Historial completo de justificativos para Secretaría/Dirección |
 | `GET /api/Legajos/aprobados` | Listado de documentos aprobados del instituto |
 | `GET /api/Legajos/{idUsuario}/faltantes` | Faltantes calculados en el servidor. El front ya los calcula con `requeridos-por-rol`. ⚠️ Con legajo completo devuelve un objeto `{ message }` en vez de `[]` |
-| `GET/PUT /api/Configuracion/frecuencia-notificaciones` | Consultar/actualizar cada cuántos días se envía el aviso automático de documentación faltante. URL centralizada en `RUTAS_API`; falta un consumidor/pantalla en el frontend |
 | `GET /api/ReconocimientoSaberes/recibirSolicitudReconocimiento` y siguientes | Bandeja de Secretaría para reconocimiento de saberes |
 
 ## La base de datos vs. el documento del MVP

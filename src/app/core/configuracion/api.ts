@@ -8,6 +8,8 @@ export const RUTAS_API = {
    */
   establecerPassword: `${URL_BASE_API}/api/UsuariosAdmin/establecer-password`,
   programasMateria: `${URL_BASE_API}/api/ProgramasMateria`,
+  /** GET/PUT de la frecuencia del envío automático de avisos de faltantes. */
+  frecuenciaNotificaciones: `${URL_BASE_API}/api/Configuracion/frecuencia-notificaciones`,
 
   pdfPrograma: (idPrograma: number) =>
     `${URL_BASE_API}/api/ProgramasMateria/${idPrograma}/pdf`,
