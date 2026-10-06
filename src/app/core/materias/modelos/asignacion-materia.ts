@@ -2,7 +2,7 @@
  * Lo que necesita "Materias y asignaciones" además de las materias: quién
  * puede dictarlas, en qué comisión, y lo que se manda al guardar.
  *
- * Todo sale de `AsignacionesController` (ruta `api/Asignaciones`).
+ * Todo sale de `MateriasController` (ruta `api/Materias`).
  */
 
 /** Un docente para el desplegable. `idDocente` es el de la tabla `Docentes`, no el de `Usuarios`. */

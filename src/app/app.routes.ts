@@ -148,7 +148,7 @@ export const routes: Routes = [
   },
   {
     // Alta de materias y asignación docente–materia–comisión
-    // (`AsignacionesController`). Dirección y Secretaría.
+    // (`MateriasController`). Dirección y Secretaría.
     path: 'materias/asignaciones',
     title: 'Materias y asignaciones · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.director, ROLES.secretario)],

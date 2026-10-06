@@ -3,7 +3,7 @@
  *
  * Se obtiene decodificando la parte del medio del token. Ejemplo real:
  *
- *   { "nameid": "1", "DNI": "43880335", "role": "Docente",
+ *   { "nameid": "1", "DNI": "12345678", "role": "Docente",
  *     "nbf": 1787513839, "exp": 1787521039, "iat": 1787513839 }
  *
  *  `role` viene con el NOMBRE del rol, no con su ID. Y puede llegar como
