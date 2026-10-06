@@ -1,83 +1,143 @@
 # Alcance de los paneles de Secretario, Docente y Alumno
 
-Analizado el 26/08/2026, en el Sprint 1, y actualizado el **06/10/2026**.
-Continúa `docs/alcance-dashboard-director.md` con las mismas tres preguntas.
+Fecha de análisis: **26/08/2026** · Sprint 1
+Actualizado: **27/08/2026** — ver "Actualización: el backend ya tiene endpoints reales" al final.
 
-Los tres paneles arrancaron maquetados con datos falsos, porque estaban en el
-roadmap pero no había endpoints. El 27/08 apareció `LegajosController` y desde
-el 30/08 todo lo que muestran sale de la API.
+Continúa `docs/alcance-dashboard-director.md` con el mismo triage de 3
+preguntas, aplicado a los tres roles que faltaban.
 
-## Panel del Docente y del Alumno
+## Resultado del triage (26/08/2026)
 
-Muestran el legajo propio (`GET /api/Legajos/usuario/{id}`) y el progreso de
-entrega.
+| Elemento | Sprint | API | Base | Decisión |
+|---|:---:|:---:|:---:|---|
+| Panel del Secretario: tarjetas + actividad reciente + próximos pasos | ✅¹ | ❌ | ⚠️² | **Maquetado con datos falsos** |
+| Panel del Docente: legajo propio + progreso | ✅¹ | ❌ | ⚠️² | **Maquetado con datos falsos** |
+| Panel del Alumno: legajo propio + progreso | ✅¹ | ❌ | ⚠️² | **Maquetado con datos falsos** |
+| Botones de aprobar/rechazar en el panel del Secretario | ✅¹ | ❌ | ❌ | **Archivado por ahora** — ver más abajo |
+| Justificativos de inasistencia, reconocimiento de saberes, enlace a SIAADE (Alumno) | Parcial³ | ❌ | ❌ | **Archivado** — sin pantalla propia todavía |
 
-El progreso es documentos aprobados sobre documentos obligatorios del rol. Los
-obligatorios salen de `GET /api/Legajos/requeridos-por-rol/{idRol}`, que lee la
-tabla `roles_tipos_documentos`. Al principio se calculaba como aprobados sobre
-cargados, que daba un número optimista porque no contaba lo que faltaba subir.
-Si no se sabe qué le pide el instituto al rol, el panel lo marca como
-aproximado.
+¹ Sprint 1 incluye explícitamente "Recepción y validación de justificación
+(Secretario)" y "Revisión de documentación entregada (Docente)"
+(`ISCGB-PROJECT.md` → Cronograma de Sprints).
 
-Arriba de todo va lo que pide hacer algo: los documentos rechazados con su
-motivo, la documentación que falta entregar y, cuando corresponde, el aviso de
-legajo completo.
+² Igual que con el Director: no hay entidad `Documento` en la base, cada
+fila de `legajo` es un documento, y no hay endpoint que la exponga
+(`docs/contrato-api.md`). **Parcialmente resuelto el 27/08 — ver la
+actualización al final.**
 
-El Alumno tiene además los accesos al certificado de alumno regular, al
-reconocimiento de saberes y a justificar una inasistencia. El enlace a SIAADE
-no tiene URL definida con el instituto y es del Sprint 3.
+³ Justificativos está en Sprint 1; reconocimiento de saberes en Sprint 2. El
+enlace a SIAADE no tiene URL definida con el instituto todavía.
 
-## Panel del Secretario
+## Por qué no hay botones de aprobar/rechazar
 
-Lista los justificativos de inasistencia que esperan revisión
-(`GET /api/Justificativos/pendientes`) y permite aprobarlos o rechazarlos.
+Se pensó agregarlos al panel del Secretario, pero cambiar el estado de un
+documento de mentira a "Aprobado" con un click no prueba nada real, y puede
+dar la sensación de que el flujo ya funciona cuando en realidad falta lo
+más delicado: la regla de negocio #4 (`CLAUDE.md`) obliga a que rechazar un
+documento dispare un email automático vía `IEmailService`, y eso vive en el
+backend. Un botón que solo cambia una variable en memoria del navegador
+sería peor que no tenerlo — el mismo argumento que ya usó
+`docs/alcance-login.md` para sacar "Solicitar acceso" del v1. Se deja
+para cuando exista el endpoint de cambio de estado.
 
-Secretaría tiene también `/secretario/listados`, con alumnos y docentes,
-búsqueda por nombre, DNI o correo y filtros por rol y estado de la cuenta. Usa
-`GET /api/Usuarios`, sin un endpoint paralelo.
+**27/08:** ese endpoint ya existe del lado del backend
+(`PUT /api/Legajos/auditar/{idLegajo}`), pero tampoco dispara el email
+automático de la regla #4 — se leyó el código del controlador y `Auditar
+Legajo` solo actualiza `Estado`, `Comentario` e `IdUsuarioAuditor`, sin
+ningún `IEmailService` de por medio. El argumento de arriba sigue siendo
+válido: agregar el botón ahora daría la falsa sensación de que rechazar
+notifica a la persona, cuando todavía no lo hace. Queda pendiente de
+backend antes de construir el botón.
 
-## Dónde se aprueba o se rechaza un documento del legajo
+## `LegajoService`: una fuente para dos preguntas
 
-En un primer momento no se construyeron los botones. Cambiar a "Aprobado" un
-documento de mentira no probaba nada y daba la sensación de que el flujo ya
-funcionaba.
+`core/legajos/` tiene dos métodos en el mismo contrato:
 
-Hoy la revisión está en el legajo de cada persona
-(`/legajo/usuario/:idUsuario`), al que se llega desde Control de Legajos. Usa
-`PUT /api/Legajos/auditar/{idLegajo}` y exige un motivo para rechazar.
+- `obtenerLegajoPropio()` — el legajo de quien tiene la sesión abierta.
+  Lo usan `PanelDocente` y `PanelAlumno`.
+- `listarParaRevision()` — documentos de todo el instituto con su dueño.
+  Lo usa `PanelSecretario`.
 
-**El backend todavía no manda el mail de rechazo** que pide la regla de negocio
-4: `AuditarLegajo` guarda el estado, el comentario y el auditor, y nada más.
+Quedó separado de `UsuariosService` (el que usa el Director) porque
+responden preguntas distintas: uno lista PERSONAS, el otro lista
+DOCUMENTOS.
 
-## `LegajoService`
+## Progreso del legajo — simplificado a propósito
 
-Responde dos preguntas distintas con el mismo contrato: el legajo de una
-persona (`obtenerLegajoPropio`, `obtenerLegajoDeUsuario`) y los documentos de
-todo el instituto (`obtenerResumenUsuarios`, que usa Control de Legajos).
+`docs/contrato-api.md` ya documentó la fórmula real:
 
-Está separado de `UsuariosService` porque uno lista documentos y el otro lista
-personas.
+```
+progreso = documentos aprobados del usuario / documentos obligatorios de su rol
+```
 
-## A qué panel va cada sesión
+usando la tabla `roles_tipos_documentos` (qué tipos de documento son
+obligatorios para cada rol). Hoy el frontend no consume esa tabla todavía,
+así que `PanelDocente` y `PanelAlumno` calculan el progreso como
+`aprobados / cargados` — un número optimista, porque no cuenta lo que
+todavía falta subir. Queda comentado en el código (`panel-docente.ts`,
+`panel-alumno.ts`) para que quien lo retome sepa exactamente qué cambiar.
 
-Lo decide `destinoSegunRoles`: Director a `/director/panel`, Secretario a
-`/secretario/panel`, Docente a `/docente/panel` y Alumno a `/alumno/panel`. Con
-más de un rol gana el de mayor alcance, en ese orden.
+**27/08:** el endpoint para leer esa tabla ya existe
+(`GET /api/Legajos/requeridos-por-rol/{idRol}`, confirmado leyendo
+`LegajoController.cs`), así que la fórmula real ya se puede construir. No
+se conectó todavía en esta pasada — quedó afuera para no mezclar el
+alcance de "consumir Legajos y Usuarios" con "arreglar el cálculo de
+progreso", pero es la próxima pieza obvia.
 
-Sin ningún rol va a `/inicio`, que es también adonde `roleGuard` manda a quien
-entra a una pantalla que no es suya.
+## Ruteo por rol — orden de prioridad
 
-## Un riesgo conocido
+`Login.destinoSegunRoles` ahora manda a cada sesión a su panel:
+Director → `/director/panel`, Secretario → `/secretario/panel`, Docente →
+`/docente/panel`, Alumno → `/alumno/panel`, y sin ningún rol → `/inicio`
+(que sigue existiendo para ese caso y para cuando `roleGuard` rebota a
+alguien de una pantalla que no es suya).
 
-`GET /api/Legajos/usuario/{id}` devuelve el nombre del tipo de documento y no
-su id. El frontend cruza por nombre contra los obligatorios del rol, así que
-corregir una tilde en `tipos_documentos` cambia el cálculo. Si el backend
-agrega `idTipoDoc` a esa respuesta, el cruce pasa a ser por id.
+Para alguien con más de un rol se eligió un orden de mayor a menor alcance
+(Director > Secretario > Docente > Alumno), documentado ya en
+`docs/alcance-dashboard-director.md` para el caso Director + Docente.
 
-## Pendientes del backend
+Secretaría también cuenta con `/secretario/listados`, un listado real de
+alumnos y docentes con búsqueda por nombre, DNI o correo y filtros por rol y
+estado de cuenta. La vista consume `GET /api/Usuarios`; no crea un endpoint
+paralelo ni confunde el listado con el buscador global.
 
-1. Que `PUT /api/Legajos/auditar/{id}` mande el mail de rechazo.
-2. Un endpoint liviano con los conteos por persona. Hoy Control de Legajos pide
-   `GET /api/Legajos/resumen-estado`, que trae el legajo de todo el instituto,
-   y cuenta en el navegador.
-3. Agregar `idTipoDoc` a la respuesta del legajo de una persona.
+## Actualización 27/08/2026: el backend ya tiene endpoints reales
+
+Al conectar `ISCGB_Backend` apareció `LegajosController`, con estos
+endpoints reales (confirmados leyendo el código fuente, no solo la
+documentación):
+
+| Endpoint | Qué hace | ¿Se conectó? |
+|---|---|---|
+| `GET /api/Legajos/usuario/{id}` | Documentos de UN usuario | ✅ Sí — `LegajoHttpService.obtenerLegajoPropio()` |
+| `POST /api/Legajos` | Subir un documento (multipart) | ❌ No — no hay pantalla de "Subir documento" todavía |
+| `PUT /api/Legajos/auditar/{id}` | Aprobar/rechazar | ❌ No — sin email automático de la regla #4, ver arriba |
+| `GET /api/Legajos/requeridos-por-rol/{idRol}` | Documentos obligatorios de un rol | ❌ No — próxima pieza para el cálculo de progreso real |
+
+**`LegajoService` (`app.config.ts`) ahora es `LegajoHttpService`, mitad real
+mitad simulada:**
+
+- `obtenerLegajoPropio()` (usado por `PanelDocente` y `PanelAlumno`) es
+  **real**. Maneja el 404 del backend ("no se encontraron documentos para
+  este usuario") como legajo vacío, no como error.
+- `listarParaRevision()` (usado por `PanelSecretario`) **sigue simulado**,
+  con la misma data inventada de siempre: el backend no tiene un endpoint
+  que junte documentos de todo el instituto, solo por usuario. Está
+  documentado en el código de `legajo-http.service.ts`, no escondido.
+
+**Riesgo conocido de `tipoDocumento`:** el backend devuelve el NOMBRE del
+tipo de documento (`"DNI"`, `"Título de Grado"`, etc.), no un ID — así que
+si dos instalaciones del backend nombran los tipos distinto, el frontend no
+se entera. No es un problema hoy, pero vale tenerlo presente si en algún
+momento se filtra o agrupa por tipo de documento.
+
+## Pendientes con el equipo de backend
+
+1. ~~Endpoint de documentos por usuario (legajo propio)~~ — ya existe y está
+   conectado. Sigue faltando un endpoint de documentos pendientes de
+   revisión para TODO el instituto (o un filtro sobre el existente).
+2. Que `PUT /api/Legajos/auditar/{id}` dispare el email automático de la
+   regla de negocio #4 antes de construir los botones de aprobar/rechazar.
+3. Conectar `GET /api/Legajos/requeridos-por-rol/{idRol}` para calcular el
+   progreso real (ya no es un bloqueo de backend, es trabajo de frontend
+   pendiente).

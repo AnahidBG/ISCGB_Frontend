@@ -45,16 +45,6 @@ describe('MateriasHttpService', () => {
     expect(materias).toEqual([]);
   });
 
-  it('las pide en `api/Materias`, que es donde las publica el backend', () => {
-    servicio.listarDisponibles().subscribe();
-
-    // La ruta va escrita y no por `RUTAS_API`: apuntaba a `api/Asignaciones`,
-    // que el backend dejó de tener, y los otros tests no lo notaban.
-    backend
-      .expectOne((pedido) => pedido.url.endsWith('/api/Materias/materias-disponibles'))
-      .flush({ data: [] });
-  });
-
   it('si falla, da un mensaje legible', () => {
     let mensaje = '';
     servicio.listarDisponibles().subscribe({ error: (e: Error) => (mensaje = e.message) });

@@ -1,66 +1,132 @@
 # Alcance del panel del Director
 
-Analizado el 26/08/2026, en el Sprint 1, y actualizado el **06/10/2026**.
-Aplica al panel del Director las tres preguntas de `docs/alcance-login.md`:
-si está en un sprint, si existe el endpoint y si existe el dato en la base.
+Fecha de análisis: **26/08/2026** · Sprint 1
+Actualizado: **27/08/2026** — ver "Actualización: el backend ya tiene endpoints reales" al final.
 
-## Qué se construyó
+Este documento aplica el mismo triage de `docs/alcance-login.md` al panel
+del Director: qué se construyó, con qué datos, y qué queda pendiente.
 
-El panel lista a todas las personas del instituto con su rol y el estado
-general de su legajo, y arriba muestra los totales por estado.
+## El triage de 3 preguntas (recordatorio)
 
-Las personas salen de `GET /api/Usuarios` y los documentos de
-`GET /api/Legajos/resumen-estado`. El backend no devuelve el estado del legajo
-por persona, así que el frontend cruza las dos respuestas y lo calcula con
-`estadoGeneralDelLegajo`. Quien no tiene ningún documento queda sin estado, y
-`insignia-estado` lo muestra como "Sin estado" en vez de inventar un color.
+1. ¿Está en algún sprint del roadmap? → `docs/ISCGB-PROJECT.md`
+2. ¿Existe el endpoint? → colección de Postman del QA
+3. ¿Existe la tabla o el campo en la base? → script SQL
 
-Desde el panel se llega a "Nuevo Usuario" y a la edición de cada persona. Ese
-alcance está en `docs/contrato-alta-usuario.md`.
+| Resultado | Qué se hace |
+|---|---|
+| Las tres en ✅ | **Construir** |
+| Está en sprint pero falta backend | **Maquetar con datos falsos** |
+| No está en ningún sprint | **Archivar** en Figma, no construir |
 
-## Por qué se arrancó con datos falsos
+## Resultado aplicado al panel del Director (26/08/2026)
 
-Cuando se analizó no había endpoints, pero el panel sí estaba en el roadmap.
-Por eso no se archivó, como "Solicitar acceso" en el login: se maquetó con
-`UsuariosMockService` para no frenar el frontend por un backend en
-construcción. El 27/08 apareció `UsuariosController` y se pasó a datos reales.
+| Elemento | Sprint | API | Base | Decisión |
+|---|:---:|:---:|:---:|---|
+| Estructura de panel (barra lateral + encabezado) | ✅ | — | — | **Construido** — es solo frontend |
+| Listado de usuarios con rol y estado de legajo | Sprint 2/3¹ | ❌ | ⚠️² | **Maquetado con datos falsos** |
+| Tarjetas de resumen (totales por estado) | Sprint 2/3¹ | ❌ | ⚠️² | **Maquetado con datos falsos** (se calculan del listado falso) |
+| Acceso a "Entregar programa" si la sesión también es Docente | ✅ | ✅ | ✅ | **Construido** — reusa lo que ya existía para `Inicio` |
+| ¿Olvidaste tu contraseña? → pantalla de recuperación | Sprint 3 | ❌ | ✅ | **Construido con datos falsos** — antes estaba deshabilitado |
 
-El mock sigue en el repo. Para volver a datos de mentira alcanza con cambiar en
-`app.config.ts` la clase que provee `UsuariosService`.
+¹ `ISCGB-PROJECT.md` ubica "Gestión de usuarios y roles" en Sprint 2 y
+"Visualización de docentes, alumnos y secretarios (Director)" en Sprint 3.
+Sprint 1 (01/08–31/08/2026) está en curso al escribir esto.
 
-## Varios roles en una misma sesión
+² La base no tiene una entidad `Documento`: cada fila de `legajo` es un
+documento, y no hay un endpoint que liste usuarios con su legajo asociado
+(ver `docs/contrato-api.md`). **Esto cambió el 27/08 — ver la actualización
+al final.**
 
-Una sesión con el rol Director entra a `/director/panel`, tenga los otros roles
-que tenga. No se construyeron dos paneles ni una fusión de dashboards: se toma
-el rol de mayor alcance como pantalla base y se le suman los accesos que
-habilitan los demás. Si además es Docente, el menú agrega "Entregar programa de
-materia".
+## Por qué se construyó igual, con datos falsos
 
-El orden es Director, Secretario, Docente y Alumno, y lo resuelve
-`destinoSegunRoles`. Si aparece un caso de dos roles sin jerarquía clara, como
-Secretario y Alumno, hay que revisar la decisión y no dar por bueno el mismo
-criterio.
+A diferencia de "Solicitar acceso" en el login (que se archivó porque no
+está en ningún sprint), el panel del Director **sí** está en el roadmap:
+solo que un poco más adelante y sin backend todavía. El mismo criterio que
+ya usa `AuthMockService` — avanzar con el frontend sin bloquearse por un
+backend en construcción, y poder decir con certeza "si falla con datos
+falsos, el problema es nuestro" — aplica acá.
 
-Para probarlo está el usuario simulado `55555555`, "Dora Directora y Docente".
+## Multi-rol: cómo se resolvió
+
+`login.ts` manda a cualquier sesión con el rol Director a `/director/panel`,
+sea cual sea el resto de sus roles. Si esa sesión tiene además el rol
+Docente, `PanelDirector` agrega "Entregar programa de materia" a su propio
+menú (ver el componente, sección `enlaces`) reusando la ruta
+`docente/entrega-programa` que ya existía.
+
+**No se construyeron dos paneles ni una fusión de dashboards.** Se eligió
+el rol de mayor alcance (Director) como pantalla base, y se le suman los
+accesos puntuales que los otros roles de la sesión habilitan — el mismo
+patrón que ya usaba `Inicio` con `puedeEntregarPrograma`. Si en el futuro
+aparece un caso de dos roles sin relación de jerarquía clara (por ejemplo
+Secretario y Alumno), esta decisión hay que revisarla explícitamente, no
+asumir que el mismo criterio alcanza.
+
+Hay un usuario de prueba armado para este caso: DNI `55555555`, "Dora
+Directora y Docente" (`usuarios-de-prueba.ts`).
 
 ## Recuperar contraseña
 
-`features/recuperar-contrasena/` es una pantalla pública, sin `authGuard`, que
-simula el envío con un `setTimeout` y no manda ningún correo. Se lo dice a
-quien la usa. El enlace del login pasó de un botón deshabilitado a un enlace a
-`/recuperar-contrasena`.
+`docs/alcance-login.md` había dejado el enlace "¿Olvidaste tu contraseña?"
+visible pero deshabilitado, a la espera del endpoint de Sprint 3. Ahora
+existe `features/recuperar-contrasena/`, una pantalla pública (sin
+`authGuard`) que simula el envío con un `setTimeout` y no manda ningún
+correo real — se lo dice explícitamente a quien la usa.
 
-## Lo que hay que saber
+`formulario-login.html` y `formulario-login.ts` ya se actualizaron: el
+control pasó de `<button disabled>` a `<a routerLink="/recuperar-contrasena">`
+(navega a otro lado, así que es enlace y no botón — misma distinción que
+usa `design-system.md` para `<app-boton>`).
 
-`GET /api/Usuarios` pagina de a 10. `UsuariosHttpService` pide
-`registrosPorPagina=500` para traer todo el instituto de una vez. **Si el
-instituto supera los 500 usuarios, el listado queda incompleto sin avisar.** La
-solución es paginar en el panel, no subir ese número.
+## Actualización 27/08/2026: el backend ya tiene endpoints reales
 
-## Pendientes del backend
+Al conectar la carpeta `ISCGB_Backend` se pudo leer el código fuente real
+del backend (antes solo se conocía por `docs/contrato-api.md`, que había
+quedado desactualizado). Aparecieron dos controladores que no existían
+cuando se escribió este documento:
 
-1. Que `GET /api/Usuarios`, o un endpoint nuevo, devuelva el estado del legajo
-   por persona. Hoy el frontend trae el legajo de todo el instituto para
-   calcularlo.
-2. El endpoint de recuperación de contraseña, del Sprint 3. La base ya tiene
-   `Usuarios.token_recuperacion` y `expiracion_token`.
+- **`UsuariosController`** (`GET /api/Usuarios`) — listado paginado de
+  personas con su DNI, nombre completo y roles.
+- **`LegajosController`** (`GET /api/Legajos/usuario/{id}`, entre otros) —
+  documentos de un usuario puntual.
+
+Esto cambia la fila 2 de la tabla de arriba: **el listado de usuarios ya no
+es 100% inventado.** `UsuariosHttpService` (`core/usuarios/`) reemplazó a
+`UsuariosMockService` en `app.config.ts` y pega contra `GET /api/Usuarios`
+de verdad.
+
+**Pero con un límite importante, a propósito no oculto:** `GET /api/Usuarios`
+NO devuelve el estado del legajo de cada persona — ese cruce
+(Usuario × su Legajo) no existe todavía del lado del backend, porque
+`LegajosController` solo puede traer los documentos de UN usuario por vez,
+no de todo el instituto junto. Por eso `estadoLegajo` queda `null` para
+todas las filas del panel; `app-insignia-estado` ya muestra `null` como
+"sin datos" en vez de inventar un color.
+
+Antes (con `UsuariosMockService`) cada fila mostraba un estado de legajo
+inventado — se veía "más completo" para hacer una demo, pero no
+correspondía a ningún dato real. Se prefirió el listado real con el hueco
+visible antes que seguir mostrando datos de mentira sin decirlo. Si para
+una demo puntual conviene volver a ver los tres estados llenos, alcanza con
+cambiar una línea en `app.config.ts` (`UsuariosService` → de nuevo
+`UsuariosMockService`).
+
+**Pendiente real ahora:** que el backend agregue, al `GET /api/Usuarios` (o
+a un endpoint nuevo), el estado de legajo agregado por persona. Recién ahí
+tiene sentido escribir la versión definitiva de `estadoLegajo`.
+
+**Paginación:** `GET /api/Usuarios` pagina de a 10 registros por default.
+`UsuariosHttpService` pide `registrosPorPagina=500` para traer "todo" el
+instituto de una vez, como pide la "visualización global" de
+`ISCGB-PROJECT.md`. Si el instituto real supera los 500 usuarios, el
+listado queda incompleto en silencio — está comentado en el código
+(`usuarios-http.service.ts`) para que se note cuando haga falta paginación
+de verdad en el panel.
+
+## Pendientes con el equipo de backend
+
+1. ~~Endpoint para listar usuarios del instituto con rol y estado de
+   legajo.~~ El listado de usuarios ya existe (`GET /api/Usuarios`); falta
+   que incluya el estado de legajo por persona.
+2. Endpoint de recuperación de contraseña (Sprint 3) —
+   `Usuarios.token_recuperacion` y `expiracion_token` ya existen en la base.

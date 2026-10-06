@@ -21,7 +21,7 @@ const OBLIGATORIOS = {
 type Campo = keyof typeof OBLIGATORIOS;
 
 /**
- * Alta de una materia (`POST /api/Materias/cargar-materia`).
+ * Alta de una materia (`POST /api/Asignaciones/cargar-materia`).
  *
  * PRESENTACIONAL: no conoce `MateriasService`. Emite la `NuevaMateria` ya
  * limpia y el contenedor decide qué hacer. Cuando el alta sale bien, el

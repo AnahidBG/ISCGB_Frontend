@@ -123,43 +123,6 @@ export function documentosSinCargar(
 }
 
 /**
- * La documentación que falta por entregar (SCRUM-150): lo OBLIGATORIO del
- * rol que nunca se subió.
- *
- * Es la única definición de "falta entregar": la usan la campana
- * (`novedadesDelLegajo`), el mapa del trámite y la tarjeta
- * `DocumentacionPorEntregar` de los paneles. Así la campana y el panel nunca
- * muestran listas distintas.
- */
-export function obligatoriosSinCargar(
-  documentos: readonly DocumentoLegajo[],
-  requeridos: readonly DocumentoRequerido[],
-): DocumentoRequerido[] {
-  return documentosSinCargar(
-    documentos,
-    requeridos.filter((requerido) => requerido.obligatorio),
-  );
-}
-
-/**
- * El tipo (`DocumentoRequerido`) de un documento que ya está en el legajo.
- *
- * El legajo trae el NOMBRE del tipo y no su id, así que se cruza por nombre
- * normalizado, igual que `documentosSinCargar`. Sirve para volver a subir un
- * documento con su tipo ya elegido (por ejemplo, uno anual que se venció).
- * `null` si su tipo no está entre los que el instituto le pide a este rol.
- */
-export function requeridoDelDocumento(
-  documento: DocumentoLegajo,
-  requeridos: readonly DocumentoRequerido[],
-): DocumentoRequerido | null {
-  const nombre = normalizarTexto(documento.nombre);
-  return (
-    requeridos.find((requerido) => normalizarTexto(requerido.nombreDocumento) === nombre) ?? null
-  );
-}
-
-/**
  * De cada tipo de documento (por nombre normalizado), la versión más nueva.
  *
  * El backend crea una fila nueva cada vez que se resube un documento, nunca
@@ -184,47 +147,6 @@ export function ultimaVersionPorTipo(
   }
 
   return [...porTipo.values()];
-}
-
-/** `true` si es un documento aprobado cuya fecha de vencimiento ya pasó. */
-export function estaVencido(documento: DocumentoLegajo, ahora: number): boolean {
-  return (
-    documento.estado === 'Aprobado' &&
-    documento.fechaVencimiento !== null &&
-    documento.fechaVencimiento.getTime() < ahora
-  );
-}
-
-/**
- * ¿Está completo el legajo? (SCRUM-153)
- *
- * Es la única definición: la usan el aviso de la campana
- * (`novedadesDelLegajo`) y el cartel de los paneles. Para afirmarlo hacen
- * falta las cuatro cosas:
- *
- *   1. Saber qué le pide el instituto al rol (progreso real, no estimado).
- *   2. Cada obligatorio aprobado.
- *   3. Ningún rechazo sin corregir.
- *   4. Ningún aprobado vencido.
- *
- * Mira la versión VIGENTE de cada documento, no todas. `calcularProgresoLegajo`
- * cuenta un tipo como aprobado si ALGUNA de sus versiones lo está, y eso acá
- * daba un completo falso: un anual vencido que se volvió a subir conserva su
- * versión vieja aprobada mientras la nueva espera revisión.
- */
-export function legajoEstaCompleto(
-  documentos: readonly DocumentoLegajo[],
-  requeridos: readonly DocumentoRequerido[],
-  ahora: number = Date.now(),
-): boolean {
-  const vigentes = ultimaVersionPorTipo(documentos);
-  const progreso = calcularProgresoLegajo(vigentes, requeridos);
-
-  return (
-    !progreso.estimado &&
-    progreso.aprobados === progreso.total &&
-    !vigentes.some((documento) => documento.estado === 'Rechazado' || estaVencido(documento, ahora))
-  );
 }
 
 /**

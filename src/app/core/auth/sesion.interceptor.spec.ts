@@ -16,7 +16,7 @@ class AuthDePrueba extends AuthService {
     token: 'token',
     idUsuario: 3,
     nombreCompleto: 'Anahid Giaquinta',
-    dni: '11111111',
+    dni: '40555111',
     email: 'anahid@iscgb.edu.ar',
     roles: ['Alumno'],
     venceEl: new Date(Date.now() + 60_000),

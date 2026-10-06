@@ -6,15 +6,15 @@ import { esDniValido, formatearDni, normalizarDni } from './dni';
  */
 describe('normalizarDni', () => {
   it('saca los puntos', () => {
-    expect(normalizarDni('12.345.678')).toBe('12345678');
+    expect(normalizarDni('43.880.335')).toBe('43880335');
   });
 
   it('saca los espacios', () => {
-    expect(normalizarDni(' 12 345 678 ')).toBe('12345678');
+    expect(normalizarDni(' 43 880 335 ')).toBe('43880335');
   });
 
   it('deja igual un DNI que ya viene limpio', () => {
-    expect(normalizarDni('12345678')).toBe('12345678');
+    expect(normalizarDni('43880335')).toBe('43880335');
   });
 
   it('descarta las letras', () => {
@@ -26,7 +26,7 @@ describe('normalizarDni', () => {
 
 describe('formatearDni', () => {
   it('pone los puntos para mostrar', () => {
-    expect(formatearDni('12345678')).toBe('12.345.678');
+    expect(formatearDni('43880335')).toBe('43.880.335');
   });
 
   it('funciona con 7 dígitos', () => {
@@ -36,7 +36,7 @@ describe('formatearDni', () => {
 
 describe('esDniValido', () => {
   it('acepta 8 dígitos', () => {
-    expect(esDniValido('12345678')).toBe(true);
+    expect(esDniValido('43880335')).toBe(true);
   });
 
   it('acepta 7 dígitos', () => {
@@ -44,7 +44,7 @@ describe('esDniValido', () => {
   });
 
   it('acepta un DNI escrito con puntos', () => {
-    expect(esDniValido('12.345.678')).toBe(true);
+    expect(esDniValido('43.880.335')).toBe(true);
   });
 
   it('rechaza uno demasiado corto', () => {

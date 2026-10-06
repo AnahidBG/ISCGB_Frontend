@@ -27,7 +27,7 @@ type Campo = keyof typeof OBLIGATORIOS;
 
 /**
  * Asignar una materia a un docente en una comisión
- * (`POST /api/Materias/asignar`).
+ * (`POST /api/Asignaciones/asignar`).
  *
  * PRESENTACIONAL: recibe las tres listas del contenedor y emite los tres ids.
  * La asignación es lo que después le aparece al docente en "Entregar
