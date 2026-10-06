@@ -15,7 +15,15 @@
     <app-aviso-legajo-completo class="mb-5 block sm:mb-6" />
   }
 
-  <!-- Arriba de todo: es lo único del panel que pide hacer algo (SCRUM-150). -->
+  <!--
+    Arriba de todo va lo que pide hacer algo, en orden de urgencia, igual que
+    en la campana: primero lo rechazado (SCRUM-152), después lo que falta
+    entregar (SCRUM-150).
+  -->
+  @if (rechazados().length > 0) {
+    <app-documentos-rechazados class="mb-5 block sm:mb-6" [rechazos]="rechazados()" />
+  }
+
   @if (mostrarPorEntregar()) {
     <app-documentacion-por-entregar
       class="mb-5 block sm:mb-6"

@@ -155,6 +155,32 @@ describe('PanelDocente: documentación por entregar (SCRUM-150)', () => {
   });
 });
 
+describe('PanelDocente: documentación rechazada (SCRUM-152)', () => {
+  function rechazados(fixture: ComponentFixture<PanelDocente>): HTMLElement | null {
+    return raiz(fixture).querySelector('app-documentos-rechazados');
+  }
+
+  it('muestra el rechazo vigente con su motivo y un acceso para volver a subirlo', async () => {
+    const fixture = await montar([
+      { ...documento(101, 'DNI', 'Rechazado'), comentario: 'Falta sello y/o firma' },
+    ]);
+
+    expect(rechazados(fixture)?.textContent).toContain('Falta sello y/o firma');
+    expect(rechazados(fixture)?.querySelector('li a')?.getAttribute('href')).toBe(
+      '/legajo/subir-documento?tipo=1',
+    );
+  });
+
+  it('un rechazo que ya se corrigió subiendo una versión nueva deja de aparecer', async () => {
+    const fixture = await montar([
+      { ...documento(101, 'DNI', 'Rechazado'), fechaSubida: new Date('2026-09-01T10:00:00') },
+      documento(102, 'DNI', 'Pendiente'),
+    ]);
+
+    expect(rechazados(fixture)).toBeNull();
+  });
+});
+
 describe('PanelDocente: aviso de legajo completo (SCRUM-153)', () => {
   function aviso(fixture: ComponentFixture<PanelDocente>): HTMLElement | null {
     return raiz(fixture).querySelector('app-aviso-legajo-completo');

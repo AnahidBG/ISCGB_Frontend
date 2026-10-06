@@ -19,12 +19,14 @@ import {
   obligatoriosSinCargar,
   ultimaVersionPorTipo,
 } from '../../../core/legajos/progreso-legajo';
+import { rechazosVigentes } from '../../../core/legajos/rechazos-legajo';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { AvisoLegajoCompleto } from '../../../shared/ui/aviso-legajo-completo/aviso-legajo-completo';
 import { DocumentacionPorEntregar } from '../../../shared/ui/documentacion-por-entregar/documentacion-por-entregar';
+import { DocumentosRechazados } from '../../../shared/ui/documentos-rechazados/documentos-rechazados';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { PasoTramite, ProgresoTramite } from '../../../shared/ui/progreso-tramite/progreso-tramite';
@@ -60,6 +62,7 @@ interface ProximoPaso {
     ProgresoTramite,
     DocumentacionPorEntregar,
     AvisoLegajoCompleto,
+    DocumentosRechazados,
   ],
   templateUrl: './panel-docente.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -160,6 +163,15 @@ export class PanelDocente {
    */
   protected readonly legajoCompleto = computed(() =>
     legajoEstaCompleto(this.documentos(), this.requeridos()),
+  );
+
+  /**
+   * Los rechazos que todavía hay que corregir (SCRUM-152): la tarjeta
+   * "Documentación rechazada", con el motivo y el acceso para volver a subir.
+   * Uno que ya se corrigió (se subió una versión nueva) no figura.
+   */
+  protected readonly rechazados = computed(() =>
+    rechazosVigentes(this.documentos(), this.requeridos()),
   );
 
   /**

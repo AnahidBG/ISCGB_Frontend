@@ -159,6 +159,20 @@ describe('PanelAlumno: documentación por entregar (SCRUM-150)', () => {
   });
 });
 
+describe('PanelAlumno: documentación rechazada (SCRUM-152)', () => {
+  it('muestra el rechazo vigente con su motivo y un acceso para volver a subirlo', async () => {
+    const fixture = await montar([
+      { ...documento(101, 'DNI', 'Rechazado'), comentario: 'Documento incompleto' },
+    ]);
+
+    const tarjetaRechazados = raiz(fixture).querySelector('app-documentos-rechazados');
+    expect(tarjetaRechazados?.textContent).toContain('Documento incompleto');
+    expect(tarjetaRechazados?.querySelector('li a')?.getAttribute('href')).toBe(
+      '/legajo/subir-documento?tipo=1',
+    );
+  });
+});
+
 describe('PanelAlumno: aviso de legajo completo (SCRUM-153)', () => {
   function aviso(fixture: ComponentFixture<PanelAlumno>): HTMLElement | null {
     return raiz(fixture).querySelector('app-aviso-legajo-completo');
