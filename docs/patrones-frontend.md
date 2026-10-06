@@ -59,7 +59,6 @@
 ### 2.6 Observer: signals y RxJS
 - **Dónde:** `signal`, `computed` y `toSignal` en todo el front (por ejemplo `mis-documentos.ts` y `CargaService.activo`). Los servicios exponen `Observable` para las operaciones HTTP.
 - **Regla:** el estado de la UI es un `signal` y lo derivado es un `computed`; no se copia a mano. Para leer un `Observable` en un componente se prefiere `toSignal`. Si hace falta un `subscribe`, que sea para una acción puntual (enviar o guardar) y que no quede vivo después de destruir el componente (`takeUntilDestroyed`).
-- **Pedido con fases (State liviano):** cuando una pantalla tiene que distinguir cargando, error y listo, el pedido se modela como una unión discriminada por `fase`, no como tres signals sueltos (`cargando`, `error`, `datos`) que pueden contradecirse. Ejemplo: `cargarLegajoPropio(...)` (`core/legajos/legajo-propio.ts`) devuelve `LegajoPropio`: `cargando`, `error` con su mensaje o `listo` con los datos. Nunca falla: el error es una fase más, así `toSignal` no lanza al dibujar. El contenedor lo lee con `toSignal` y un `Subject` de reintento (`startWith` + `switchMap`); el presentacional recibe la `fase` por `input()` y resuelve qué dibujar con una tabla por clave (§2.8), como `documentacion-por-entregar`.
 - **Valor derivado que la persona puede cambiar:** `linkedSignal`, no `signal` + `effect`. Ejemplo: `SubirDocumento.idTipoElegido` arranca con el `?tipo=` de la URL (`tipoPedidoEn`), se recalcula cuando cambian la URL o la lista de tipos, y en el medio conserva lo que se eligió en el select. La URL se lee del observable `queryParamMap` con `toSignal`, no del `snapshot`: si se navega a la misma pantalla con otro `?tipo=`, Angular reutiliza el componente.
 
 ### 2.7 Singleton (vía la DI de Angular)
@@ -81,6 +80,7 @@
 ### 2.11 Fábricas simples (funciones puras que construyen objetos)
 - **Dónde:** `enlacesPorSesion(...)`, `novedadesDelLegajo(...)`, `notificacionesPorRechazos(...)`, `contarPorEstado(...)`, `ultimasVersionesPorTipo(...)`, `validarArchivoPdf(...)`, `comentarioDeRechazo(...)`.
 - **Regla:** la lógica de negocio del front (conteos, progreso, validaciones, armado de menús) va en **funciones puras en `core/`** con su `*.spec.ts`, no adentro del componente. Así se prueban sin `TestBed`.
+- **Legajo completo (SCRUM-153):** `legajoEstaCompleto(...)` es la única definición de "legajo completo". La usan el aviso de la campana (`novedadesDelLegajo`) y el cartel de los paneles (`shared/ui/aviso-legajo-completo`). Mira la versión vigente de cada documento: progreso real, cada obligatorio aprobado, sin rechazos y sin vencidos (`estaVencido(...)`).
 - **Documentación por entregar (SCRUM-150):** `obligatoriosSinCargar(...)` es la única definición de "falta entregar" (la usan la campana, la tarjeta y el mapa del trámite). `requeridoDelDocumento(...)` encuentra el tipo de un documento del legajo por su nombre. `consultaConTipo(...)` y `tipoPedidoEn(...)` (`core/legajos/tipo-en-url.ts`) arman y validan el `?tipo=` de "Subir Documento", con el nombre del parámetro escrito en un solo lugar.
 
 ---

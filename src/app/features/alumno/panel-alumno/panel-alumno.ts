@@ -15,6 +15,7 @@ import {
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import {
   calcularProgresoLegajo,
+  legajoEstaCompleto,
   obligatoriosSinCargar,
   ultimaVersionPorTipo,
 } from '../../../core/legajos/progreso-legajo';
@@ -22,7 +23,7 @@ import { idRolDocumental } from '../../../core/legajos/rol-documental';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
-import { novedadesDelLegajo } from '../../../core/notificaciones/notificaciones-legajo';
+import { AvisoLegajoCompleto } from '../../../shared/ui/aviso-legajo-completo/aviso-legajo-completo';
 import { DocumentacionPorEntregar } from '../../../shared/ui/documentacion-por-entregar/documentacion-por-entregar';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
@@ -56,6 +57,7 @@ const ACCION_ALUMNO: AccionPanel = {
     Icono,
     RouterLink,
     DocumentacionPorEntregar,
+    AvisoLegajoCompleto,
   ],
   templateUrl: './panel-alumno.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -111,22 +113,9 @@ export class PanelAlumno {
   protected readonly notificaciones = this.campana.total;
   protected readonly notificacionesDetalle = this.campana.detalle;
 
-  /**
-   * Las novedades del legajo con los datos que ESTA pantalla ya tiene. Se
-   * siguen calculando acá (aunque la campana salga del servicio) porque el
-   * cartel de "legajo completo" no puede depender de que la campana ya haya
-   * cargado: vacía, `every` daría `true` y avisaría un completo falso.
-   */
-  private readonly novedades = computed(() =>
-    novedadesDelLegajo(this.documentos(), this.requeridos()),
-  );
-
-  /** Todo lo obligatorio aprobado, sin rechazos pendientes (SCRUM-153). */
-  protected readonly legajoCompleto = computed(
-    () =>
-      !this.progreso().estimado &&
-      this.progreso().porcentaje === 100 &&
-      this.novedades().detalle.every((novedad) => novedad.tono === 'aprobado'),
+  /** El cartel "¡Tu legajo está completo!" (SCRUM-153). Ver `PanelDocente`. */
+  protected readonly legajoCompleto = computed(() =>
+    legajoEstaCompleto(this.documentos(), this.requeridos()),
   );
 
   /** Lo obligatorio que nunca se subió (SCRUM-150). Ver `PanelDocente`. */

@@ -186,6 +186,47 @@ export function ultimaVersionPorTipo(
   return [...porTipo.values()];
 }
 
+/** `true` si es un documento aprobado cuya fecha de vencimiento ya pasó. */
+export function estaVencido(documento: DocumentoLegajo, ahora: number): boolean {
+  return (
+    documento.estado === 'Aprobado' &&
+    documento.fechaVencimiento !== null &&
+    documento.fechaVencimiento.getTime() < ahora
+  );
+}
+
+/**
+ * ¿Está completo el legajo? (SCRUM-153)
+ *
+ * Es la única definición: la usan el aviso de la campana
+ * (`novedadesDelLegajo`) y el cartel de los paneles. Para afirmarlo hacen
+ * falta las cuatro cosas:
+ *
+ *   1. Saber qué le pide el instituto al rol (progreso real, no estimado).
+ *   2. Cada obligatorio aprobado.
+ *   3. Ningún rechazo sin corregir.
+ *   4. Ningún aprobado vencido.
+ *
+ * Mira la versión VIGENTE de cada documento, no todas. `calcularProgresoLegajo`
+ * cuenta un tipo como aprobado si ALGUNA de sus versiones lo está, y eso acá
+ * daba un completo falso: un anual vencido que se volvió a subir conserva su
+ * versión vieja aprobada mientras la nueva espera revisión.
+ */
+export function legajoEstaCompleto(
+  documentos: readonly DocumentoLegajo[],
+  requeridos: readonly DocumentoRequerido[],
+  ahora: number = Date.now(),
+): boolean {
+  const vigentes = ultimaVersionPorTipo(documentos);
+  const progreso = calcularProgresoLegajo(vigentes, requeridos);
+
+  return (
+    !progreso.estimado &&
+    progreso.aprobados === progreso.total &&
+    !vigentes.some((documento) => documento.estado === 'Rechazado' || estaVencido(documento, ahora))
+  );
+}
+
 /**
  * Redondea y corta en 100.
  *

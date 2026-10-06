@@ -204,6 +204,31 @@ describe('novedadesDelLegajo', () => {
     expect(novedades.total).toBe(0);
   });
 
+  it('un anual vencido que se volvió a subir no anuncia el legajo completo', () => {
+    // La versión vieja sigue aprobada en la base, pero la vigente espera revisión.
+    const novedades = novedadesDelLegajo(
+      [
+        documento({
+          id: 1,
+          nombre: 'Apto médico',
+          estado: 'Aprobado',
+          fechaSubida: new Date('2025-03-01'),
+          fechaVencimiento: new Date('2026-01-01'),
+        }),
+        documento({
+          id: 2,
+          nombre: 'Apto médico',
+          estado: 'Pendiente',
+          fechaSubida: new Date('2026-09-20'),
+        }),
+      ],
+      [requerido('Apto médico')],
+      { ahora: new Date('2026-09-28').getTime() },
+    );
+
+    expect(novedades.detalle).toEqual([]);
+  });
+
   it('el detalle trae TODAS las novedades, sin recortar, y coincide con el total', () => {
     const requeridos = ['A', 'BB', 'CCC', 'DDDD', 'EEEEE', 'FFFFFF', 'GGGGGGG'].map((n) =>
       requerido(n),

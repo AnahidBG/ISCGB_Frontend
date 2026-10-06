@@ -1,7 +1,8 @@
 import { DocumentoLegajo } from '../legajos/modelos/documento-legajo';
 import { DocumentoRequerido } from '../legajos/modelos/documento-requerido';
 import {
-  calcularProgresoLegajo,
+  estaVencido,
+  legajoEstaCompleto,
   obligatoriosSinCargar,
   requeridoDelDocumento,
   ultimaVersionPorTipo,
@@ -66,7 +67,8 @@ export interface NovedadesLegajo {
  *   3. Faltantes (SCRUM-150/154): obligatorios del rol que nunca se subieron.
  *      El texto sigue el mail que pide SCRUM-156: cargarlo desde Autogestión
  *      y entregarlo en papel en Secretaría.
- *   4. Legajo completo (SCRUM-153): todo lo obligatorio está aprobado.
+ *   4. Legajo completo (SCRUM-153): todo lo obligatorio está aprobado. La
+ *      condición vive en `legajoEstaCompleto`, la misma del cartel del panel.
  *
  * Trabaja sobre la versión VIGENTE de cada documento: un rechazo que la
  * persona ya corrigió (volvió a subir el documento) no se avisa más.
@@ -82,12 +84,7 @@ export function novedadesDelLegajo(
   const rechazados = notificacionesPorRechazos(vigentes, { url: opciones.url });
 
   const vencidos: NotificacionPanel[] = vigentes
-    .filter(
-      (documento) =>
-        documento.estado === 'Aprobado' &&
-        documento.fechaVencimiento !== null &&
-        documento.fechaVencimiento.getTime() < ahora,
-    )
+    .filter((documento) => estaVencido(documento, ahora))
     .map((documento) => {
       // El legajo no trae el id del tipo: se busca por nombre entre los del
       // rol. Si ya no está entre ellos, el formulario abre sin tipo elegido.
@@ -112,12 +109,7 @@ export function novedadesDelLegajo(
     }),
   );
 
-  const progreso = calcularProgresoLegajo(documentos, requeridos);
-  const completo =
-    !progreso.estimado &&
-    progreso.porcentaje === 100 &&
-    rechazados.length === 0 &&
-    vencidos.length === 0;
+  const completo = legajoEstaCompleto(documentos, requeridos, ahora);
 
   const todas: NotificacionPanel[] = [
     ...rechazados,
