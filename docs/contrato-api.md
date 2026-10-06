@@ -193,6 +193,14 @@ Devuelve el docente y las materias que tiene asignadas. La pantalla
 
 Devuelve `404` cuando el usuario no está registrado como docente.
 
+**Pendiente en el backend — datos del plan de estudios.** El frontend ya lee
+tres campos más de cada materia, si vienen: `formato` (código de la Res.
+166/23 como `"A"`, `"T"`, `"MT"`, `"MA"`, o el nombre completo),
+`horasCatedra` y `horasTotales`. Existen en la tabla `materias`, pero el
+`MateriaDocenteDto` todavía no los incluye. Mientras no lleguen, el formulario
+deja formato y horas para cargar a mano. Cuando lleguen, los autocompleta y
+los bloquea, sin cambios en el frontend.
+
 La comisión identifica la cursada/horario de la asignación del docente y se
 muestra en el selector del frontend. No se envía en `POST /api/ProgramasMateria`
 porque el programa se guarda por docente y materia, no por comisión.
@@ -210,13 +218,13 @@ Guarda el programa junto con sus unidades de contenido en un solo pedido.
 {
   "idDocente": 1,
   "idMateria": 3,
-  "condicion": "Cuatrimestral",
+  "condicion": "Regular",
   "fundamentacion": "…",
   "objetivosGenerales": "…",
   "objetivosEspecificos": "…",
   "horasSemanales": "4",
   "horasCuatrimestrales": "64",
-  "formatoCurricular": "Materia teórico-práctica",
+  "formatoCurricular": "Asignatura",
   "cicloLectivo": "2026",
   "evaluacion": "…",
   "criteriosEvaluacion": "…",
