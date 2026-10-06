@@ -41,6 +41,47 @@ export function validarArchivoPdf(archivo: File): string | null {
   return null;
 }
 
+/** Tope de la foto de perfil: alcanza de sobra para un avatar. */
+export const TAMANO_MAXIMO_FOTO_BYTES = 2 * 1024 * 1024;
+
+export const MENSAJE_FOTO_FORMATO =
+  'La foto debe ser una imagen JPG, PNG o GIF.';
+
+export const MENSAJE_FOTO_MUY_GRANDE =
+  'La foto supera los 2 MB. Probá con una imagen más liviana.';
+
+const TIPOS_FOTO: Record<string, string[]> = {
+  'image/jpeg': ['.jpg', '.jpeg'],
+  'image/png': ['.png'],
+  'image/gif': ['.gif'],
+};
+
+/**
+ * Valida una foto de perfil con los criterios habituales de plataformas como
+ * Moodle: JPG, PNG o GIF y un peso acotado. No restringe dimensiones (se
+ * reescalan al mostrarlas). Devuelve el mensaje de error o `null`.
+ *
+ * ⚠️ Igual que `validarArchivoPdf`, no es seguridad: la validación real por
+ * contenido corresponde al servidor.
+ */
+export function validarFotoPerfil(archivo: File): string | null {
+  const nombre = archivo.name.toLowerCase();
+  const extensiones = TIPOS_FOTO[archivo.type];
+  const esImagen = extensiones
+    ? extensiones.some((e) => nombre.endsWith(e))
+    : archivo.type === '' && Object.values(TIPOS_FOTO).flat().some((e) => nombre.endsWith(e));
+
+  if (!esImagen) {
+    return MENSAJE_FOTO_FORMATO;
+  }
+
+  if (archivo.size > TAMANO_MAXIMO_FOTO_BYTES) {
+    return MENSAJE_FOTO_MUY_GRANDE;
+  }
+
+  return null;
+}
+
 /** El tamaño en algo legible, para mostrarlo al lado del nombre. */
 export function tamanoLegible(archivo: File): string {
   const mb = archivo.size / (1024 * 1024);
