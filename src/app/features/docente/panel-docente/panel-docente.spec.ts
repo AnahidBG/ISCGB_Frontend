@@ -196,6 +196,8 @@ describe('PanelDocente: aviso de legajo completo (SCRUM-153)', () => {
     const fixture = await montar(TODO_APROBADO);
 
     expect(aviso(fixture)?.textContent).toContain('¡Tu legajo está completo!');
+    // "Próximos Pasos" dice lo mismo que el cartel: usan la misma condición.
+    expect(raiz(fixture).textContent).toContain('Legajo al día');
   });
 
   it('con un obligatorio todavía en revisión no lo muestra', async () => {
@@ -239,5 +241,20 @@ describe('PanelDocente: aviso de legajo completo (SCRUM-153)', () => {
     const fixture = await montar(() => NEVER);
 
     expect(aviso(fixture)).toBeNull();
+  });
+
+  it('con un anual aprobado pero vencido, Próximos Pasos pide renovarlo y no dice "Legajo al día"', async () => {
+    const fixture = await montar([
+      documento(101, 'DNI', 'Aprobado'),
+      documento(102, 'Título', 'Aprobado'),
+      {
+        ...documento(103, 'Apto médico', 'Aprobado'),
+        fechaVencimiento: new Date('2020-03-01T10:00:00'),
+      },
+    ]);
+
+    const texto = raiz(fixture).textContent ?? '';
+    expect(texto).not.toContain('Legajo al día');
+    expect(texto).toContain('Renovar documentación');
   });
 });

@@ -15,6 +15,7 @@ import {
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import {
   calcularProgresoLegajo,
+  estaVencido,
   legajoEstaCompleto,
   obligatoriosSinCargar,
   ultimaVersionPorTipo,
@@ -118,11 +119,14 @@ export class PanelDocente {
   /** Conteos sobre la versión VIGENTE de cada documento (un rechazo ya corregido no suma). */
   protected readonly resumen = computed(() => {
     const documentos = ultimaVersionPorTipo(this.documentos());
+    const ahora = Date.now();
     return {
       total: documentos.length,
       aprobados: documentos.filter((d) => d.estado === 'Aprobado').length,
       pendientes: documentos.filter((d) => d.estado === 'Pendiente').length,
       rechazados: documentos.filter((d) => d.estado === 'Rechazado').length,
+      /** Aprobados cuya fecha ya pasó: hay que volver a presentarlos. */
+      vencidos: documentos.filter((d) => estaVencido(d, ahora)).length,
     };
   });
 
@@ -217,7 +221,7 @@ export class PanelDocente {
   });
 
   protected readonly proximosPasos = computed<ProximoPaso[]>(() => {
-    const { total, aprobados, pendientes, rechazados } = this.resumen();
+    const { total, aprobados, pendientes, rechazados, vencidos } = this.resumen();
     const progreso = this.progreso();
     const pasos: ProximoPaso[] = [];
 
@@ -249,11 +253,31 @@ export class PanelDocente {
       });
     }
 
-    // "Al día" es tener el 100% de lo OBLIGATORIO, no "todo lo que subí está
-    // aprobado": con el criterio viejo, alguien que subió un solo documento y
-    // se lo aprobaron veía "Legajo al día" con siete documentos sin
-    // presentar, justo al lado del paso que le dice que le faltan.
-    if (total > 0 && aprobados === total && progreso.porcentaje === 100) {
+    // Un anual aprobado que venció: hay que volver a presentarlo. Mismo tono
+    // que el aviso "Se venció X" de la campana.
+    if (vencidos > 0) {
+      pasos.push({
+        tono: 'pendiente',
+        titulo: 'Renovar documentación',
+        detalle:
+          vencidos === 1
+            ? 'Un documento anual venció: volvé a presentarlo.'
+            : `${vencidos} documentos anuales vencieron: volvé a presentarlos.`,
+      });
+    }
+
+    // "Al día" es lo mismo que el cartel de arriba: la única definición es
+    // `legajoEstaCompleto` (todo lo OBLIGATORIO aprobado, sin rechazos ni
+    // vencidos). Antes este paso hacía su propia cuenta, que no miraba los
+    // vencimientos: decía "Legajo al día" con un anual vencido.
+    //
+    // Con progreso estimado no se sabe qué pide el instituto: ahí solo se
+    // puede decir que todo lo que subió está aprobado y vigente.
+    const alDia = progreso.estimado
+      ? total > 0 && aprobados === total && vencidos === 0
+      : this.legajoCompleto();
+
+    if (alDia) {
       pasos.push({
         tono: 'aprobado',
         titulo: 'Legajo al día',
