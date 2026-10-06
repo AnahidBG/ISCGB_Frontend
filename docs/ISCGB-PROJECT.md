@@ -16,7 +16,7 @@ Proyecto de Práctica Profesionalizante II (Tecnicatura Superior en Desarrollo d
 | **ORM** | Entity Framework Core 10 |
 | **Auth** | JWT Bearer (2 h) + BCrypt + RBAC por nombre de rol |
 | **PDF** | QuestPDF (backend): certificados y programa de materia |
-| **Email** | `IEmailService` / `EmailService` (hoy solo el enlace para crear la contraseña) |
+| **Email** | `IEmailService` / `EmailService` (enlace de alta y avisos automáticos de documentación faltante; el mail por rechazo sigue pendiente) |
 | **Tests** | Vitest (front) |
 | **Contenedores** | Docker multi-stage (nginx para el front; aspnet:10.0 en el puerto 8080 para el back) |
 | **Repos** | GitHub `AnahidBG/ISCGB_Frontend` y `AnahidBG/ISCGB_Backend`; migración en curso a GitLab `git.icgb.com.ar` |

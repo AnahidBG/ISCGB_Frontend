@@ -56,8 +56,8 @@ export interface NovedadesLegajo {
  * documentación faltante (Sistema)" (SCRUM-7, subtarea frontend SCRUM-148).
  *
  * Es la parte del aviso que vive dentro del sistema: la campana del panel.
- * El mail automático (y su frecuencia) es trabajo del backend (SCRUM-149,
- * en curso): acá no se inventa ningún envío.
+ * El backend incorporó el envío automático y la frecuencia configurable en
+ * SCRUM-149 (PR #29); esta función solo arma los avisos visibles en el front.
  *
  * En orden de urgencia:
  *
