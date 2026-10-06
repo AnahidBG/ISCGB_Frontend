@@ -1,13 +1,64 @@
 # Contrato de la API — ISCGB
 
-Relevado y actualizado el **04/10/2026** contra el código de `ISCGB_Backend`
-(`main` en `c048908`, PR #25) y los contratos que consume el frontend. Backend
+Relevado y actualizado el **06/10/2026** contra el código de `ISCGB_Backend`
+(`main` en `f856989`, PR #29) y los contratos que consume el frontend. Backend
 a cargo de Angel Silva.
 
 Dirección base de desarrollo: `http://localhost:5231`
 
 > Este documento describe la API **tal como está hoy**, no como debería
 > estar. Los problemas detectados figuran al final.
+
+## Frecuencia de notificaciones de documentación faltante
+
+El backend envía avisos automáticos por email para la documentación faltante.
+La frecuencia se consulta y actualiza en el mismo recurso:
+
+### `GET /api/Configuracion/frecuencia-notificaciones`
+
+Devuelve `200 OK`:
+
+```json
+{ "diasFrecuencia": 7 }
+```
+
+Si aún no hay una configuración guardada, devuelve el valor predeterminado de
+7 días.
+
+### `PUT /api/Configuracion/frecuencia-notificaciones`
+
+Envía un número entero positivo:
+
+```json
+{ "diasFrecuencia": 14 }
+```
+
+Devuelve `200 OK` con `{ "message": "Frecuencia actualizada a 14 días exitosamente." }`.
+Si `diasFrecuencia` es menor o igual a cero, devuelve `400 Bad Request` con
+`{ "message": "La frecuencia debe ser mayor a 0 días." }`. Si el cuerpo no trae
+un entero (un decimal o un texto), el 400 lo arma ASP.NET y llega como
+`ValidationProblemDetails` (`{ title, errors }`), sin `message`.
+
+**En el frontend (SCRUM-151, 06/10/2026):** pantalla "Frecuencia de avisos" en
+`/secretario/frecuencia-avisos`, solo para Secretario (`roleGuard`), con
+`FrecuenciaAvisosService` (`core/notificaciones/`). Valida un entero entre 1 y
+365 antes de enviar y, si el backend rechaza el valor, muestra su mensaje.
+
+El envío no es inmediato: `NotificadorFaltantesWorker` corre al arrancar el
+servidor y después una vez cada 24 horas, así que un cambio rige desde la
+próxima pasada. La pantalla lo aclara.
+
+⚠️ Pendientes del backend verificado (`f856989`):
+
+- `ConfiguracionController` no tiene `[Authorize]`: los dos endpoints
+  responden sin autenticación. El `roleGuard` del frontend no lo reemplaza.
+- El `PUT` no tiene tope máximo. Con un valor muy grande el worker falla al
+  calcular la fecha límite (`AddDays`) y no envía ningún aviso. El tope de 365
+  días es solo del frontend.
+- El worker compara contra todos los `TiposDocumentos`, no contra los
+  obligatorios del rol (`roles_tipos_documentos`), y recorre a todos los
+  usuarios. El mail puede listar documentos distintos de los que el frontend
+  muestra como faltantes.
 
 ## `POST /api/Auth/login`
 
@@ -376,10 +427,11 @@ rechazos viejos, con motivo libre, se siguen mostrando igual.
   `comentario`** (verificado el 05/10/2026). El motivo no tiene a dónde ir sin
   agregar el campo en el DTO y la columna en el backend. Cuando exista, el
   cuadro de rechazo y `MOTIVOS_RECHAZO` se pueden reusar.
-- **Mail automático de rechazo** (`IEmailService`). Hoy la interfaz solo tiene
-  `EnviarLinkConfiguracionAsync`, así que ningún rechazo manda correo. Mis
-  Documentos sigue mostrando a quien revisa el aviso de que hay que avisarle a
-  la persona por otro medio.
+- **Mail automático de rechazo** (`IEmailService`). La interfaz ya incluye
+  `EnviarAvisoFaltantesAsync` para el worker de documentación faltante, pero
+  `AuditarLegajo` y `AuditarJustificativo` no la invocan ni envían correo al
+  rechazar. Mis Documentos sigue mostrando a quien revisa el aviso de que hay
+  que avisarle a la persona por otro medio.
 
 ## Reconocimiento de saberes
 

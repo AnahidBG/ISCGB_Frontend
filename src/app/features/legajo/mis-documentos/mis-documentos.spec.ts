@@ -92,6 +92,7 @@ let auditorias: unknown[][];
 async function montar(
   sesion: Sesion,
   idUsuarioEnUrl: number | null,
+  legajo: DocumentoLegajo[] = LEGAJO,
 ): Promise<ComponentFixture<MisDocumentos>> {
   const parametros: Record<string, string> =
     idUsuarioEnUrl === null ? {} : { idUsuario: String(idUsuarioEnUrl) };
@@ -120,8 +121,8 @@ async function montar(
       {
         provide: LegajoService,
         useValue: {
-          obtenerLegajoPropio: (): Observable<DocumentoLegajo[]> => of(LEGAJO),
-          obtenerLegajoDeUsuario: (): Observable<DocumentoLegajo[]> => of(LEGAJO),
+          obtenerLegajoPropio: (): Observable<DocumentoLegajo[]> => of(legajo),
+          obtenerLegajoDeUsuario: (): Observable<DocumentoLegajo[]> => of(legajo),
           documentosRequeridos: (): Observable<DocumentoRequerido[]> => of(REQUERIDOS),
           auditar: (...argumentos: unknown[]): Observable<void> => {
             auditorias.push(argumentos);
@@ -139,6 +140,24 @@ async function montar(
 function raiz(fixture: ComponentFixture<MisDocumentos>): HTMLElement {
   return fixture.nativeElement as HTMLElement;
 }
+
+describe('MisDocumentos: volver a subir (SCRUM-152)', () => {
+  it('"Resubir" y "Cargar" abren Subir Documento con el tipo de ese documento ya elegido', async () => {
+    const fixture = await montar(DOCENTE, null, [
+      { ...LEGAJO[0], estado: 'Rechazado', comentario: 'Documento incompleto' },
+      LEGAJO[1],
+    ]);
+
+    const destinos = Array.from(raiz(fixture).querySelectorAll<HTMLAnchorElement>('main li a'))
+      .filter((enlace) => enlace.getAttribute('href')?.includes('?tipo='))
+      .map((enlace) => [enlace.textContent?.trim(), enlace.getAttribute('href')]);
+
+    // El DNI está rechazado y el Apto médico nunca se subió.
+    expect(destinos).toContainEqual(['Resubir', '/legajo/subir-documento?tipo=1']);
+    expect(destinos).toContainEqual(['Cargar', '/legajo/subir-documento?tipo=3']);
+    expect(destinos).toHaveLength(2);
+  });
+});
 
 describe('MisDocumentos: "Presentado físicamente" lo marca quien revisa', () => {
   function casilla(fixture: ComponentFixture<MisDocumentos>, idLegajo: number): HTMLInputElement | null {

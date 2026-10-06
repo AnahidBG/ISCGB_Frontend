@@ -1,10 +1,10 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import { NEVER, Observable, of, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Sesion } from '../../../core/auth/modelos/sesion';
-import { LegajoService } from '../../../core/legajos/legajo.service';
+import { LegajoService, MENSAJE_ERROR_LEGAJO } from '../../../core/legajos/legajo.service';
 import { DocumentoLegajo } from '../../../core/legajos/modelos/documento-legajo';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
@@ -41,7 +41,15 @@ function documento(id: number, nombre: string, estado: string): DocumentoLegajo 
   };
 }
 
-async function montar(legajo: DocumentoLegajo[]): Promise<ComponentFixture<PanelDocente>> {
+/** El legajo ya resuelto, o la función que lo pide (para simular carga, error y reintento). */
+type FuenteLegajo = DocumentoLegajo[] | (() => Observable<DocumentoLegajo[]>);
+
+async function montar(
+  fuente: FuenteLegajo,
+  requeridos: DocumentoRequerido[] = REQUERIDOS,
+): Promise<ComponentFixture<PanelDocente>> {
+  const obtenerLegajoPropio = typeof fuente === 'function' ? fuente : () => of(fuente);
+
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
@@ -57,8 +65,8 @@ async function montar(legajo: DocumentoLegajo[]): Promise<ComponentFixture<Panel
       {
         provide: LegajoService,
         useValue: {
-          obtenerLegajoPropio: (): Observable<DocumentoLegajo[]> => of(legajo),
-          documentosRequeridos: (): Observable<DocumentoRequerido[]> => of(REQUERIDOS),
+          obtenerLegajoPropio,
+          documentosRequeridos: (): Observable<DocumentoRequerido[]> => of(requeridos),
         },
       },
     ],
@@ -68,28 +76,168 @@ async function montar(legajo: DocumentoLegajo[]): Promise<ComponentFixture<Panel
   return fixture;
 }
 
+function raiz(fixture: ComponentFixture<PanelDocente>): HTMLElement {
+  return fixture.nativeElement as HTMLElement;
+}
+
 function tarjeta(fixture: ComponentFixture<PanelDocente>): HTMLElement | null {
-  return (fixture.nativeElement as HTMLElement).querySelector('app-documentacion-por-entregar');
+  return raiz(fixture).querySelector('app-documentacion-por-entregar');
+}
+
+function porEntregar(fixture: ComponentFixture<PanelDocente>): (string | undefined)[] {
+  return Array.from(tarjeta(fixture)?.querySelectorAll('li') ?? []).map((li) =>
+    li.querySelector('span')?.textContent?.trim(),
+  );
 }
 
 describe('PanelDocente: documentación por entregar (SCRUM-150)', () => {
   it('muestra los obligatorios que nunca se subieron', async () => {
     const fixture = await montar([documento(101, 'DNI', 'Rechazado')]);
 
-    const nombres = Array.from(tarjeta(fixture)?.querySelectorAll('li') ?? []).map((li) =>
-      li.querySelector('span')?.textContent?.trim(),
-    );
     // El DNI se subió (aunque esté rechazado) y el Curriculum no es obligatorio.
-    expect(nombres).toEqual(['Título', 'Apto médico']);
+    expect(porEntregar(fixture)).toEqual(['Título', 'Apto médico']);
   });
 
-  it('con todo lo obligatorio cargado no muestra la tarjeta', async () => {
+  it('con todo lo obligatorio cargado lo dice, en vez de listar', async () => {
     const fixture = await montar([
       documento(101, 'DNI', 'Aprobado'),
       documento(102, 'Título', 'Pendiente'),
       documento(103, 'Apto médico', 'Aprobado'),
     ]);
 
+    expect(tarjeta(fixture)?.textContent).toContain(
+      'Ya cargaste toda la documentación obligatoria.',
+    );
+    expect(porEntregar(fixture)).toEqual([]);
+  });
+
+  it('con el legajo completo no muestra la tarjeta: eso ya lo dice el cartel', async () => {
+    const fixture = await montar([
+      documento(101, 'DNI', 'Aprobado'),
+      documento(102, 'Título', 'Aprobado'),
+      documento(103, 'Apto médico', 'Aprobado'),
+    ]);
+
     expect(tarjeta(fixture)).toBeNull();
+  });
+
+  it('mientras el legajo carga lo dice, y el resto del panel espera', async () => {
+    const fixture = await montar(() => NEVER);
+
+    expect(tarjeta(fixture)?.textContent).toContain('Cargando tu documentación…');
+    // Sin esto las métricas dirían "0 documentos" antes de saberlo.
+    expect(raiz(fixture).querySelector('app-tarjeta-metrica')).toBeNull();
+  });
+
+  it('si el legajo no se puede traer lo avisa, en vez de romper el panel', async () => {
+    const fixture = await montar(() => throwError(() => new Error(MENSAJE_ERROR_LEGAJO)));
+
+    expect(tarjeta(fixture)?.querySelector('[role="alert"]')?.textContent).toContain(
+      MENSAJE_ERROR_LEGAJO,
+    );
+    expect(raiz(fixture).querySelector('app-tarjeta-metrica')).toBeNull();
+  });
+
+  it('"Reintentar" vuelve a pedir el legajo y muestra lo que llegó', async () => {
+    let pedidos = 0;
+    const fixture = await montar(() =>
+      ++pedidos === 1
+        ? throwError(() => new Error(MENSAJE_ERROR_LEGAJO))
+        : of([documento(101, 'DNI', 'Aprobado')]),
+    );
+
+    tarjeta(fixture)!.querySelector<HTMLButtonElement>('[role="alert"] button')!.click();
+    await fixture.whenStable();
+
+    expect(pedidos).toBe(2);
+    expect(porEntregar(fixture)).toEqual(['Título', 'Apto médico']);
+    expect(raiz(fixture).querySelector('app-tarjeta-metrica')).not.toBeNull();
+  });
+});
+
+describe('PanelDocente: documentación rechazada (SCRUM-152)', () => {
+  function rechazados(fixture: ComponentFixture<PanelDocente>): HTMLElement | null {
+    return raiz(fixture).querySelector('app-documentos-rechazados');
+  }
+
+  it('muestra el rechazo vigente con su motivo y un acceso para volver a subirlo', async () => {
+    const fixture = await montar([
+      { ...documento(101, 'DNI', 'Rechazado'), comentario: 'Falta sello y/o firma' },
+    ]);
+
+    expect(rechazados(fixture)?.textContent).toContain('Falta sello y/o firma');
+    expect(rechazados(fixture)?.querySelector('li a')?.getAttribute('href')).toBe(
+      '/legajo/subir-documento?tipo=1',
+    );
+  });
+
+  it('un rechazo que ya se corrigió subiendo una versión nueva deja de aparecer', async () => {
+    const fixture = await montar([
+      { ...documento(101, 'DNI', 'Rechazado'), fechaSubida: new Date('2026-09-01T10:00:00') },
+      documento(102, 'DNI', 'Pendiente'),
+    ]);
+
+    expect(rechazados(fixture)).toBeNull();
+  });
+});
+
+describe('PanelDocente: aviso de legajo completo (SCRUM-153)', () => {
+  function aviso(fixture: ComponentFixture<PanelDocente>): HTMLElement | null {
+    return raiz(fixture).querySelector('app-aviso-legajo-completo');
+  }
+
+  const TODO_APROBADO = [
+    documento(101, 'DNI', 'Aprobado'),
+    documento(102, 'Título', 'Aprobado'),
+    documento(103, 'Apto médico', 'Aprobado'),
+  ];
+
+  it('con todo lo obligatorio aprobado muestra el aviso en el cuerpo del panel', async () => {
+    const fixture = await montar(TODO_APROBADO);
+
+    expect(aviso(fixture)?.textContent).toContain('¡Tu legajo está completo!');
+  });
+
+  it('con un obligatorio todavía en revisión no lo muestra', async () => {
+    const fixture = await montar([
+      documento(101, 'DNI', 'Aprobado'),
+      documento(102, 'Título', 'Pendiente'),
+      documento(103, 'Apto médico', 'Aprobado'),
+    ]);
+
+    expect(aviso(fixture)).toBeNull();
+  });
+
+  it('con un rechazo sin corregir no lo muestra, aunque sea de un documento opcional', async () => {
+    const fixture = await montar([...TODO_APROBADO, documento(104, 'Curriculum', 'Rechazado')]);
+
+    expect(aviso(fixture)).toBeNull();
+  });
+
+  it('sin saber qué le pide el instituto al rol no lo muestra: el progreso es estimado', async () => {
+    const fixture = await montar(TODO_APROBADO, []);
+
+    expect(aviso(fixture)).toBeNull();
+  });
+
+  it('un anual vencido y vuelto a subir, todavía en revisión, no lo muestra', async () => {
+    const fixture = await montar([
+      documento(101, 'DNI', 'Aprobado'),
+      documento(102, 'Título', 'Aprobado'),
+      {
+        ...documento(103, 'Apto médico', 'Aprobado'),
+        fechaSubida: new Date('2019-03-01T10:00:00'),
+        fechaVencimiento: new Date('2020-03-01T10:00:00'),
+      },
+      documento(105, 'Apto médico', 'Pendiente'),
+    ]);
+
+    expect(aviso(fixture)).toBeNull();
+  });
+
+  it('mientras el legajo carga no lo muestra', async () => {
+    const fixture = await montar(() => NEVER);
+
+    expect(aviso(fixture)).toBeNull();
   });
 });

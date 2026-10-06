@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, map, of, switchAll, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
@@ -14,9 +14,11 @@ import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requ
 import {
   calcularProgresoLegajo,
   documentosSinCargar,
+  requeridoDelDocumento,
   ultimaVersionPorTipo,
 } from '../../../core/legajos/progreso-legajo';
 import { idRolDocumental, idRolDocumentalDe } from '../../../core/legajos/rol-documental';
+import { consultaConTipo } from '../../../core/legajos/tipo-en-url';
 import { UsuarioDetalle } from '../../../core/usuarios/modelos/usuario-detalle';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
@@ -67,6 +69,11 @@ interface FilaDocumento {
   presentadoFisico: boolean;
   /** Quién aprobó o rechazó la versión vigente. `null` si nadie la revisó todavía. */
   auditor: string | null;
+  /**
+   * El `?tipo=` de "Cargar" / "Resubir": abre Subir Documento con este tipo
+   * ya elegido (SCRUM-152). `null` si el tipo no está entre los de su rol.
+   */
+  consultaSubir: Record<string, string> | null;
 }
 
 /**
@@ -82,7 +89,15 @@ interface FilaDocumento {
  */
 @Component({
   selector: 'app-mis-documentos',
-  imports: [EstructuraPanel, InsigniaEstado, TarjetaMetrica, Icono, DatePipe, CuadroRechazo],
+  imports: [
+    EstructuraPanel,
+    InsigniaEstado,
+    TarjetaMetrica,
+    Icono,
+    DatePipe,
+    CuadroRechazo,
+    RouterLink,
+  ],
   templateUrl: './mis-documentos.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -334,6 +349,7 @@ export class MisDocumentos {
         (a, b) => b.fechaSubida.getTime() - a.fechaSubida.getTime(),
       );
       const ultima = ordenadas[0];
+      const tipo = requeridoDelDocumento(ultima, this.requeridos());
 
       return {
         clave: `doc-${ultima.id}`,
@@ -350,6 +366,7 @@ export class MisDocumentos {
         rutaArchivo: ultima.rutaArchivo ?? null,
         presentadoFisico: ultima.presentadoFisico,
         auditor: ultima.auditor ?? null,
+        consultaSubir: tipo === null ? null : consultaConTipo(tipo.idTipoDoc),
       };
     });
 
@@ -368,6 +385,7 @@ export class MisDocumentos {
       rutaArchivo: null,
       presentadoFisico: false,
       auditor: null,
+      consultaSubir: consultaConTipo(requerido.idTipoDoc),
     }));
 
     return [...subidos, ...faltantes].sort(
@@ -395,10 +413,6 @@ export class MisDocumentos {
 
   protected cambiarFiltro(filtro: Filtro): void {
     this.filtro.set(filtro);
-  }
-
-  protected irASubir(): void {
-    this.router.navigate(['/legajo/subir-documento']);
   }
 
   protected cerrarSesion(): void {

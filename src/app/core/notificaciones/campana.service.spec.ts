@@ -150,11 +150,13 @@ describe('CampanaService', () => {
 
       expect(llamadas.requeridos).toHaveBeenCalledWith(ID_ROL[rol], EN_SEGUNDO_PLANO);
       expect(servicio().total()).toBe(1);
+      // El rechazo abre Subir Documento con su tipo ya elegido (SCRUM-152).
       expect(servicio().detalle()).toEqual([
         {
           titulo: 'Rechazaron DNI',
           detalle: 'Borroso.',
-          url: '/legajo/mis-documentos',
+          url: '/legajo/subir-documento',
+          consulta: { tipo: '1' },
           tono: 'rechazado',
         },
       ]);
@@ -206,6 +208,8 @@ describe('CampanaService', () => {
       servicio().refrescar();
 
       expect(servicio().total()).toBe(1);
+      // Sin saber el tipo no puede abrir el formulario armado: lleva a donde se ve el rechazo.
+      expect(servicio().detalle()[0].url).toBe('/legajo/mis-documentos');
     });
   });
 

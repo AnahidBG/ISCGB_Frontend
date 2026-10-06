@@ -1,0 +1,40 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Frecuencia de avisos"
+  subtitulo="Cada cuánto se le recuerda a cada persona la documentación que le falta entregar."
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  @let dias = diasActuales();
+
+  @if (carga().fase === 'cargando') {
+    <app-pantalla-carga tamano="md" mensaje="Cargando la frecuencia…" />
+  } @else if (errorCarga(); as mensaje) {
+    <div
+      role="alert"
+      class="flex max-w-2xl flex-wrap items-center justify-between gap-3 rounded-2xl border border-rechazado/30 bg-superficie px-5 py-4 sm:px-6"
+    >
+      <p class="min-w-0 text-sm text-texto">{{ mensaje }}</p>
+      <button
+        type="button"
+        class="shrink-0 rounded-full border border-principal/30 px-3 py-1 text-xs font-semibold text-principal transition-colors hover:bg-principal/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+        (click)="recargar()"
+      >
+        Reintentar
+      </button>
+    </div>
+  } @else if (dias !== null) {
+    <app-formulario-frecuencia
+      [diasActuales]="dias"
+      [guardando]="guardando()"
+      [confirmacion]="confirmacion()"
+      [errorServidor]="errorGuardado()"
+      (guardar)="guardar($event)"
+    />
+  }
+</app-estructura-panel>

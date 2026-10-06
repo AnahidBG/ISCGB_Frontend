@@ -2,6 +2,7 @@ import { DocumentoLegajo } from './modelos/documento-legajo';
 import { DocumentoRequerido } from './modelos/documento-requerido';
 import {
   calcularProgresoLegajo,
+  legajoEstaCompleto,
   obligatoriosSinCargar,
   requeridoDelDocumento,
   ultimaVersionPorTipo,
@@ -207,5 +208,80 @@ describe('requeridoDelDocumento', () => {
     expect(
       requeridoDelDocumento(documento('Curriculum', 'Aprobado'), [requerido('DNI')]),
     ).toBeNull();
+  });
+});
+
+describe('legajoEstaCompleto (SCRUM-153)', () => {
+  const AHORA = new Date('2026-10-06').getTime();
+  const REQUERIDOS = [requerido('DNI'), requerido('Apto médico'), requerido('Curriculum', false)];
+
+  function vencido(base: DocumentoLegajo): DocumentoLegajo {
+    return { ...base, fechaVencimiento: new Date('2026-01-01') };
+  }
+
+  it('con cada obligatorio aprobado está completo, aunque falte un opcional', () => {
+    const documentos = [documento('DNI', 'Aprobado'), documento('Apto médico', 'Aprobado')];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(true);
+  });
+
+  it('con un obligatorio todavía en revisión no lo está', () => {
+    const documentos = [documento('DNI', 'Aprobado'), documento('Apto médico', 'Pendiente')];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(false);
+  });
+
+  it('con un obligatorio sin subir no lo está', () => {
+    expect(legajoEstaCompleto([documento('DNI', 'Aprobado')], REQUERIDOS, AHORA)).toBe(false);
+  });
+
+  it('sin saber qué le pide el instituto al rol no se puede afirmar', () => {
+    expect(legajoEstaCompleto([documento('DNI', 'Aprobado')], [], AHORA)).toBe(false);
+  });
+
+  it('con un rechazo vigente no lo está, aunque sea de un documento opcional', () => {
+    const documentos = [
+      documento('DNI', 'Aprobado'),
+      documento('Apto médico', 'Aprobado'),
+      documento('Curriculum', 'Rechazado'),
+    ];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(false);
+  });
+
+  it('un rechazo que ya se corrigió y se aprobó no lo impide', () => {
+    const documentos = [
+      documento('DNI', 'Rechazado', new Date('2026-08-01')),
+      documento('DNI', 'Aprobado', new Date('2026-09-01')),
+      documento('Apto médico', 'Aprobado'),
+    ];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(true);
+  });
+
+  it('con un aprobado ya vencido no lo está', () => {
+    const documentos = [documento('DNI', 'Aprobado'), vencido(documento('Apto médico', 'Aprobado'))];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(false);
+  });
+
+  it('un anual vencido que se volvió a subir y espera revisión NO lo completa', () => {
+    // La versión vieja sigue aprobada en la base, pero la vigente es la nueva.
+    const documentos = [
+      documento('DNI', 'Aprobado'),
+      vencido(documento('Apto médico', 'Aprobado', new Date('2025-03-01'))),
+      documento('Apto médico', 'Pendiente', new Date('2026-10-01')),
+    ];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(false);
+  });
+
+  it('un aprobado con vencimiento a futuro no lo impide', () => {
+    const documentos = [
+      documento('DNI', 'Aprobado'),
+      { ...documento('Apto médico', 'Aprobado'), fechaVencimiento: new Date('2027-03-01') },
+    ];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(true);
   });
 });

@@ -4,8 +4,8 @@
 
 # Verificación frontend ↔ backend
 
-Fecha: **03/10/2026** · Revisado contra el código fuente real de `ISCGB_Backend`
-(no contra `docs/contrato-api.md`, que había quedado desactualizado).
+Fecha: **06/10/2026** · Revisado contra el código fuente real de `ISCGB_Backend`
+(la verificación del 03/10 se actualizó para incorporar el PR #29 de notificaciones).
 
 Esto es una revisión **estática**: se leyó el código de los dos lados y se
 comparó campo por campo. No se levantó el servidor ni se ejecutó nada — para
@@ -181,7 +181,7 @@ documento:
 |---|---|
 | #1 · Validar PDF por contenido, no por extensión | ❌ `Legajos` no valida nada. `Justificativos` valida `ContentType`, que lo manda el cliente y se puede falsear. Falta chequear los *magic bytes* (`%PDF-`) |
 | #2 · Renombrar a `ISCGB_NombreyApellido_NombreDocumento` | ⚠️ A medias: `Justificativos` **sí** lo hace (`ISCGB_AngelSilva_doc.pdf`, se ve en la carpeta). `Legajos` **no**: usa `{Guid}_{nombre original}` |
-| #4 · Email automático al rechazar | ❌ Ni `AuditarLegajo` ni `AuditarJustificativo` disparan nada. No existe `IEmailService` en el proyecto |
+| #4 · Email automático al rechazar | ❌ `IEmailService` existe (PR #29) y se usa para avisos automáticos de faltantes, pero ni `AuditarLegajo` ni `AuditarJustificativo` lo invocan al rechazar |
 | #5 · `[Authorize(Roles = ...)]` | ❌ Ver punto 4 |
 
 La #2 es la más fácil de cerrar: la lógica ya está escrita en

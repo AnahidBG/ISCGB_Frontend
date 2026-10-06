@@ -33,7 +33,7 @@
 ## 2. Patrones que YA están en el código (respetarlos)
 
 ### 2.1 Strategy + inversión de dependencias: servicios abstractos con implementación HTTP y mock
-- **Dónde:** `core/<dominio>/<dominio>.service.ts` (clase abstracta) + `*-http.service.ts` + `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes y Materias.
+- **Dónde:** `core/<dominio>/<dominio>.service.ts` (clase abstracta) + `*-http.service.ts` + `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes, Materias y FrecuenciaAvisos (`core/notificaciones/`, SCRUM-151).
 - **Regla:** todo dominio nuevo (por ejemplo `core/examenes/` para el calendario) sigue este mismo trío. Si el endpoint todavía no existe, se arranca con el mock.
 
 ### 2.2 Adapter: respuesta cruda de la API → modelo limpio
@@ -80,6 +80,8 @@
 ### 2.11 Fábricas simples (funciones puras que construyen objetos)
 - **Dónde:** `enlacesPorSesion(...)`, `novedadesDelLegajo(...)`, `notificacionesPorRechazos(...)`, `contarPorEstado(...)`, `ultimasVersionesPorTipo(...)`, `validarArchivoPdf(...)`, `comentarioDeRechazo(...)`.
 - **Regla:** la lógica de negocio del front (conteos, progreso, validaciones, armado de menús) va en **funciones puras en `core/`** con su `*.spec.ts`, no adentro del componente. Así se prueban sin `TestBed`.
+- **Legajo completo (SCRUM-153):** `legajoEstaCompleto(...)` es la única definición de "legajo completo". La usan el aviso de la campana (`novedadesDelLegajo`) y el cartel de los paneles (`shared/ui/aviso-legajo-completo`). Mira la versión vigente de cada documento: progreso real, cada obligatorio aprobado, sin rechazos y sin vencidos (`estaVencido(...)`).
+- **Documentación rechazada (SCRUM-152):** `rechazosVigentes(...)` (`core/legajos/rechazos-legajo.ts`) es la única definición de "tiene un rechazo". Devuelve cada rechazo de la versión vigente con su motivo y su tipo. La usan el aviso de la campana (`notificacionesPorRechazos`) y la tarjeta `shared/ui/documentos-rechazados` de los paneles; los dos abren "Subir Documento" con el tipo ya elegido.
 - **Documentación por entregar (SCRUM-150):** `obligatoriosSinCargar(...)` es la única definición de "falta entregar" (la usan la campana, la tarjeta y el mapa del trámite). `requeridoDelDocumento(...)` encuentra el tipo de un documento del legajo por su nombre. `consultaConTipo(...)` y `tipoPedidoEn(...)` (`core/legajos/tipo-en-url.ts`) arman y validan el `?tipo=` de "Subir Documento", con el nombre del parámetro escrito en un solo lugar.
 
 ---

@@ -135,6 +135,18 @@ export const routes: Routes = [
       ),
   },
   {
+    // Cada cuántos días el sistema le recuerda por mail a cada persona la
+    // documentación que le falta (SCRUM-151). Solo Secretario: es quien la
+    // configura. `GET`/`PUT /api/Configuracion/frecuencia-notificaciones`.
+    path: 'secretario/frecuencia-avisos',
+    title: 'Frecuencia de avisos · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.secretario)],
+    loadComponent: () =>
+      import('./features/secretario/frecuencia-avisos/frecuencia-avisos').then(
+        (m) => m.FrecuenciaAvisos,
+      ),
+  },
+  {
     // Alta de materias y asignación docente–materia–comisión
     // (`AsignacionesController`). Dirección y Secretaría.
     path: 'materias/asignaciones',
