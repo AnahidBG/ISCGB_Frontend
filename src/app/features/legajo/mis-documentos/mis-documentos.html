@@ -272,51 +272,13 @@
               }
 
               @if (accionAbiertaPara(fila) === 'rechazar') {
-                <div class="w-full rounded-lg border border-borde bg-fondo-panel p-3 sm:w-72">
-                  <label
-                    class="text-xs font-medium text-texto-suave"
-                    [attr.for]="'motivo-' + fila.idLegajo"
-                  >
-                    Motivo del rechazo (lo va a ver la persona)
-                  </label>
-                  <textarea
-                    [id]="'motivo-' + fila.idLegajo"
-                    [value]="motivoRechazo()"
-                    (input)="motivoRechazo.set($any($event.target).value)"
-                    rows="2"
-                    [attr.aria-invalid]="errorMotivoRechazo() !== null"
-                    [attr.aria-describedby]="errorMotivoRechazo() ? 'motivo-error-' + fila.idLegajo : null"
-                    [class.border-rechazado]="errorMotivoRechazo() !== null"
-                    [class.border-borde]="errorMotivoRechazo() === null"
-                    class="mt-1 w-full resize-none rounded-md border bg-superficie px-2 py-1.5 text-sm text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rechazado"
-                    placeholder="Ej: el certificado está vencido, subí uno emitido este año."
-                  ></textarea>
-                  @if (errorMotivoRechazo(); as error) {
-                    <p
-                      [id]="'motivo-error-' + fila.idLegajo"
-                      role="alert"
-                      class="mt-1 text-xs text-rechazado"
-                    >
-                      {{ error }}
-                    </p>
-                  }
-                  <div class="mt-2 flex justify-end gap-2">
-                    <button
-                      type="button"
-                      class="rounded-full px-3 py-1 text-xs text-texto-suave hover:text-texto"
-                      (click)="cancelarAccion()"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="button"
-                      class="rounded-full bg-rechazado px-3 py-1 text-xs font-semibold text-white hover:brightness-90"
-                      (click)="confirmarRechazo()"
-                    >
-                      Confirmar rechazo
-                    </button>
-                  </div>
-                </div>
+                <!-- Motivos de la institución + aclaración (regla #4). -->
+                <app-cuadro-rechazo
+                  class="block w-full sm:w-80"
+                  [prefijoId]="'rechazo-' + fila.idLegajo"
+                  (confirmar)="confirmarRechazo($event)"
+                  (cancelar)="cancelarAccion()"
+                />
               }
             }
           </div>

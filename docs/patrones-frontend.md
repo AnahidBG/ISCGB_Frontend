@@ -77,7 +77,7 @@
 - **Regla:** formularios siempre reactivos y tipados, con los validadores declarados en la construcción. El payload para la API lo arma el servicio (Adapter), no el template.
 
 ### 2.11 Fábricas simples (funciones puras que construyen objetos)
-- **Dónde:** `enlacesPorSesion(...)`, `novedadesDelLegajo(...)`, `notificacionesPorRechazos(...)`, `contarPorEstado(...)`, `ultimasVersionesPorTipo(...)`, `validarArchivoPdf(...)`.
+- **Dónde:** `enlacesPorSesion(...)`, `novedadesDelLegajo(...)`, `notificacionesPorRechazos(...)`, `contarPorEstado(...)`, `ultimasVersionesPorTipo(...)`, `validarArchivoPdf(...)`, `comentarioDeRechazo(...)`.
 - **Regla:** la lógica de negocio del front (conteos, progreso, validaciones, armado de menús) va en **funciones puras en `core/`** con su `*.spec.ts`, no adentro del componente. Así se prueban sin `TestBed`.
 
 ---
@@ -87,7 +87,7 @@
 | Necesidad | Patrón sugerido | Cómo |
 |---|---|---|
 | **Calendario de exámenes:** día 🟢 libre / 🟡 1 examen / 🔴 completo | **State** (estados derivados) + tabla (§2.8) | Una función pura `estadoDelDia(examenes, fecha, comision)` devuelve `'Libre' \| 'UnExamen' \| 'Completo'` (máximo 2 por fecha y comisión). Una tabla `APARIENCIA_POR_DIA` define el color y si permite cargar. Servicio nuevo `core/examenes/` con abstracto + HTTP + mock (§2.1). |
-| **Rechazo con motivo obligatorio** | Tabla de constantes + validador | Catálogo único `MOTIVOS_RECHAZO` en `core/legajos/` con los 7 motivos de la institución, más "Otro" con texto libre si se acuerda. El formulario no deja confirmar el rechazo sin motivo (CP23). El mismo catálogo se usa en legajos y en justificativos. |
+| **Rechazo con motivo obligatorio** | Tabla de constantes + función pura | ✅ **Hecho en legajos (05/10/2026).** Catálogo único `MOTIVOS_RECHAZO` en `core/legajos/motivos-rechazo.ts` con los 7 motivos de la institución. En lugar de "Otro", hay una aclaración opcional. `comentarioDeRechazo(motivos, aclaracion)` arma el texto. El presentacional `mis-documentos/partes/cuadro-rechazo` no confirma sin al menos un motivo (CP23). 🔴 **Falta justificativos:** el catálogo es el mismo, pero hoy el PUT no recibe comentario (`docs/contrato-api.md`). |
 | **Cambios sin guardar** ("Cargaste documentación nueva, debes Guardar…") | **Memento** liviano + guard (Chain) | Guardar una foto del valor inicial del formulario y compararla con la actual. Un `canDeactivate` reutilizable pregunta antes de salir. |
 | **Requisitos de la contraseña nueva** (cambio de contraseña, CP35 y CP36) | **Strategy** por regla | Cada requisito es un objeto `{ texto, cumple(valor) }` en una lista. `requisitos-password` dibuja la lista y el botón se habilita cuando se cumplen todos. Si `core/auth/password.ts` ya lo resuelve así, se reusa y no se duplica. |
 | **Listados de Director y Secretario** (filtros y búsqueda) | Funciones puras de filtro + Facade | El filtrado (activos o de baja, búsqueda por nombre o DNI) va en una función pura con test. El servicio expone los datos y el componente solo une signals. |
@@ -99,7 +99,7 @@
 
 1. **Conteo de estados duplicado.** `panel-docente.ts` (~líneas 90-92) y `mis-documentos.ts` (~líneas 280-282) cuentan con `filter(d => d.estado === '...')`, pero ya existe `contarPorEstado()` en `core/legajos/resumen-legajo.ts` (que además considera solo la última versión de cada tipo). Usar la función compartida.
 2. **Estados como texto suelto.** Hay comparaciones con `'Aprobado'`, `'Pendiente'` y `'Rechazado'` repartidas en features. Conviene un único `EstadoDocumento` con sus constantes en `core/legajos/`; hoy el tipo está definido en `shared/ui/insignia-estado`. Las pantallas importarían de ahí.
-3. **`mis-documentos.ts` tiene unas 580 líneas** y mezcla carga de datos, armado de filas, orden y auditoría. Candidato a separar en funciones puras en `core/legajos/` (armado y orden de filas) y a partir la UI en `partes/`.
+3. **`mis-documentos.ts` tiene unas 580 líneas** y mezcla carga de datos, armado de filas, orden y auditoría. Candidato a separar en funciones puras en `core/legajos/` (armado y orden de filas) y a partir la UI en `partes/`. El primer paso ya está: el cuadro de rechazo vive en `partes/cuadro-rechazo` (05/10/2026).
 
 > No se refactoriza "de paso": cada punto va en su propio commit `refactor:` con sus tests, sin mezclarlo con features.
 

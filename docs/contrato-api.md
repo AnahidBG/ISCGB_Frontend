@@ -319,6 +319,60 @@ revisó, o el texto `"Sin auditor asignado"`): Mis Documentos lo muestra como
 "Revisado por X". `GET /api/Legajos/pendientes` devuelve `rutaArchivo`, que
 antes se descartaba al mapear.
 
+## Legajos: el comentario de rechazo (regla #4)
+
+Desde el 05/10/2026, al rechazar un documento en la revisión de un legajo
+ajeno (`legajo/usuario/:idUsuario`), quien revisa ya no escribe el motivo a mano:
+- marca uno o más de los **7 motivos de la institución**,
+- puede agregar una **aclaración** opcional ("qué hoja falta").
+
+El texto armado viaja en `comentario`, como antes. **El contrato no cambió.**
+
+```jsonc
+// PUT /api/Legajos/auditar/{idLegajo}?idUsuarioAuditor={id}
+{
+  "estado": "Rechazado",
+  "comentario": "Falta sello y/o firma; Documento incompleto. Aclaración: falta la hoja 2"
+}
+```
+
+**Formato del `comentario`:**
+- Los motivos marcados van unidos con `"; "`, en el orden de la lista oficial, no en el que se marcaron.
+- Si hay aclaración, se agrega `". Aclaración: <texto>"`.
+- La aclaración se recorta y se pasa a una sola línea. Si viene vacía o con solo espacios, no se agrega.
+- Sin ningún motivo marcado, "Confirmar rechazo" muestra el error y no envía nada.
+
+La lista y el armado del texto viven solo en `core/legajos/motivos-rechazo.ts`
+(`MOTIVOS_RECHAZO` y `comentarioDeRechazo`). El cuadro es
+`features/legajo/mis-documentos/partes/cuadro-rechazo`.
+
+**Largo:** `legajo.comentario` es `varchar(max)`. Lo verifiqué en tres lugares
+el 05/10/2026:
+- `bbdd/BASE_DATOS_DEFINITIVA_.sql`, línea 303;
+- `TuDbContextModelSnapshot.cs`, que declara `HasColumnType("varchar(max)")`;
+- `TuDbContext.cs`, sin `HasMaxLength`.
+
+`AuditoriaLegajoDto.Comentario` tampoco tiene `[MaxLength]`. Los 7 motivos
+juntos, con sus separadores, suman 228 caracteres, así que **la aclaración no
+lleva `maxlength`**. Como es `varchar` y no `nvarchar`, las tildes y la ñ se guardan
+bien con una collation Latin1, pero un emoji se perdería.
+
+**Quién lo ve:** Docente y Alumno lo ven tal cual como "Motivo del rechazo:"
+en Mis Documentos y como detalle de la notificación en la campana
+(`notificacionesPorRechazos`). Ninguno de los dos lugares recorta el texto. Los
+rechazos viejos, con motivo libre, se siguen mostrando igual.
+
+🔴 **Pendientes fuera de este cambio (no se tocaron):**
+- **Rechazo de justificativos** (`panel-secretario`). `PUT /api/Justificativos/auditar/{id}`
+  recibe `AuditarJustificativoDto { idUsuarioAuditor, estado }`: **no tiene
+  `comentario`** (verificado el 05/10/2026). El motivo no tiene a dónde ir sin
+  agregar el campo en el DTO y la columna en el backend. Cuando exista, el
+  cuadro de rechazo y `MOTIVOS_RECHAZO` se pueden reusar.
+- **Mail automático de rechazo** (`IEmailService`). Hoy la interfaz solo tiene
+  `EnviarLinkConfiguracionAsync`, así que ningún rechazo manda correo. Mis
+  Documentos sigue mostrando a quien revisa el aviso de que hay que avisarle a
+  la persona por otro medio.
+
 ## Reconocimiento de saberes
 
 `POST /api/ReconocimientoSaberes/solicitar` (multipart: `idMateria`,
