@@ -1,6 +1,11 @@
 import { DocumentoLegajo } from './modelos/documento-legajo';
 import { DocumentoRequerido } from './modelos/documento-requerido';
-import { calcularProgresoLegajo, ultimaVersionPorTipo } from './progreso-legajo';
+import {
+  calcularProgresoLegajo,
+  obligatoriosSinCargar,
+  requeridoDelDocumento,
+  ultimaVersionPorTipo,
+} from './progreso-legajo';
 
 function documento(
   nombre: string,
@@ -135,5 +140,72 @@ describe('ultimaVersionPorTipo', () => {
 
     expect(version).toHaveLength(1);
     expect(version[0].estado).toBe('Aprobado');
+  });
+});
+
+describe('obligatoriosSinCargar', () => {
+  it('devuelve los obligatorios del rol que nunca se subieron, en el orden del rol', () => {
+    const faltan = obligatoriosSinCargar(
+      [documento('Título', 'Aprobado')],
+      [requerido('DNI'), requerido('Título'), requerido('CUIL')],
+    );
+
+    expect(faltan.map((r) => r.nombreDocumento)).toEqual(['DNI', 'CUIL']);
+  });
+
+  it('no cuenta los que no son obligatorios', () => {
+    const faltan = obligatoriosSinCargar([], [requerido('DNI'), requerido('Curriculum', false)]);
+
+    expect(faltan.map((r) => r.nombreDocumento)).toEqual(['DNI']);
+  });
+
+  it('un documento subido no falta, esté en el estado que esté', () => {
+    // Rechazado o pendiente ya se ENTREGÓ: lo que corresponde ahí es corregirlo
+    // o esperar la revisión, y eso lo avisan otras novedades.
+    const faltan = obligatoriosSinCargar(
+      [documento('DNI', 'Rechazado'), documento('CUIL', 'Pendiente')],
+      [requerido('DNI'), requerido('CUIL')],
+    );
+
+    expect(faltan).toEqual([]);
+  });
+
+  it('compara el nombre sin mayúsculas ni tildes', () => {
+    const faltan = obligatoriosSinCargar(
+      [documento('titulo ', 'Pendiente')],
+      [requerido('Título')],
+    );
+
+    expect(faltan).toEqual([]);
+  });
+
+  it('sin requeridos no inventa faltantes', () => {
+    // Si no se sabe qué pide el instituto (falló el pedido, rol sin legajo),
+    // no hay lista contra la cual decir que algo falta.
+    expect(obligatoriosSinCargar([documento('DNI', 'Aprobado')], [])).toEqual([]);
+  });
+});
+
+describe('requeridoDelDocumento', () => {
+  it('encuentra el tipo de un documento del legajo por su nombre', () => {
+    const requeridos = [requerido('DNI'), requerido('Apto médico')];
+
+    expect(requeridoDelDocumento(documento('Apto médico', 'Aprobado'), requeridos)).toBe(
+      requeridos[1],
+    );
+  });
+
+  it('compara el nombre sin mayúsculas ni tildes', () => {
+    const requeridos = [requerido('Apto médico')];
+
+    expect(requeridoDelDocumento(documento('APTO MEDICO ', 'Aprobado'), requeridos)).toBe(
+      requeridos[0],
+    );
+  });
+
+  it('si el tipo no está entre los de su rol, no inventa uno', () => {
+    expect(
+      requeridoDelDocumento(documento('Curriculum', 'Aprobado'), [requerido('DNI')]),
+    ).toBeNull();
   });
 });

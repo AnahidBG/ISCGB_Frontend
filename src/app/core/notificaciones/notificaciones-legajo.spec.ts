@@ -128,6 +128,8 @@ describe('novedadesDelLegajo', () => {
         titulo: 'Falta entregar Apto médico',
         detalle: 'Cargalo desde Subir Documento y entregalo en papel en Secretaría.',
         url: '/legajo/subir-documento',
+        // Abre el formulario con el tipo elegido (`requerido` usa el largo del nombre como id).
+        consulta: { tipo: '11' },
         tono: 'pendiente',
       },
     ]);
@@ -157,6 +159,28 @@ describe('novedadesDelLegajo', () => {
     );
 
     expect(novedades.detalle[0].titulo).toBe('Se venció Apto médico');
+    // Abre Subir Documento con el mismo tipo elegido (el id de `requerido` es el largo del nombre).
+    expect(novedades.detalle[0].url).toBe('/legajo/subir-documento');
+    expect(novedades.detalle[0].consulta).toEqual({ tipo: '11' });
+  });
+
+  it('un vencido cuyo tipo ya no está entre los de su rol abre Subir Documento sin tipo elegido', () => {
+    const novedades = novedadesDelLegajo(
+      [
+        documento({
+          id: 1,
+          nombre: 'Apto médico',
+          estado: 'Aprobado',
+          fechaVencimiento: new Date('2026-01-01'),
+        }),
+      ],
+      [requerido('DNI')],
+      { ahora: new Date('2026-09-28').getTime() },
+    );
+
+    const vencido = novedades.detalle.find((n) => n.titulo === 'Se venció Apto médico')!;
+    expect(vencido.url).toBe('/legajo/subir-documento');
+    expect(vencido.consulta).toBeUndefined();
   });
 
   it('con todo lo obligatorio aprobado avisa que el legajo está completo (SCRUM-153)', () => {

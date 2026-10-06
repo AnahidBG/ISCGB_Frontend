@@ -123,6 +123,43 @@ export function documentosSinCargar(
 }
 
 /**
+ * La documentación que falta por entregar (SCRUM-150): lo OBLIGATORIO del
+ * rol que nunca se subió.
+ *
+ * Es la única definición de "falta entregar": la usan la campana
+ * (`novedadesDelLegajo`), el mapa del trámite y la tarjeta
+ * `DocumentacionPorEntregar` de los paneles. Así la campana y el panel nunca
+ * muestran listas distintas.
+ */
+export function obligatoriosSinCargar(
+  documentos: readonly DocumentoLegajo[],
+  requeridos: readonly DocumentoRequerido[],
+): DocumentoRequerido[] {
+  return documentosSinCargar(
+    documentos,
+    requeridos.filter((requerido) => requerido.obligatorio),
+  );
+}
+
+/**
+ * El tipo (`DocumentoRequerido`) de un documento que ya está en el legajo.
+ *
+ * El legajo trae el NOMBRE del tipo y no su id, así que se cruza por nombre
+ * normalizado, igual que `documentosSinCargar`. Sirve para volver a subir un
+ * documento con su tipo ya elegido (por ejemplo, uno anual que se venció).
+ * `null` si su tipo no está entre los que el instituto le pide a este rol.
+ */
+export function requeridoDelDocumento(
+  documento: DocumentoLegajo,
+  requeridos: readonly DocumentoRequerido[],
+): DocumentoRequerido | null {
+  const nombre = normalizarTexto(documento.nombre);
+  return (
+    requeridos.find((requerido) => normalizarTexto(requerido.nombreDocumento) === nombre) ?? null
+  );
+}
+
+/**
  * De cada tipo de documento (por nombre normalizado), la versión más nueva.
  *
  * El backend crea una fila nueva cada vez que se resube un documento, nunca

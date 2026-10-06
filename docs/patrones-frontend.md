@@ -59,6 +59,7 @@
 ### 2.6 Observer: signals y RxJS
 - **Dónde:** `signal`, `computed` y `toSignal` en todo el front (por ejemplo `mis-documentos.ts` y `CargaService.activo`). Los servicios exponen `Observable` para las operaciones HTTP.
 - **Regla:** el estado de la UI es un `signal` y lo derivado es un `computed`; no se copia a mano. Para leer un `Observable` en un componente se prefiere `toSignal`. Si hace falta un `subscribe`, que sea para una acción puntual (enviar o guardar) y que no quede vivo después de destruir el componente (`takeUntilDestroyed`).
+- **Valor derivado que la persona puede cambiar:** `linkedSignal`, no `signal` + `effect`. Ejemplo: `SubirDocumento.idTipoElegido` arranca con el `?tipo=` de la URL (`tipoPedidoEn`), se recalcula cuando cambian la URL o la lista de tipos, y en el medio conserva lo que se eligió en el select. La URL se lee del observable `queryParamMap` con `toSignal`, no del `snapshot`: si se navega a la misma pantalla con otro `?tipo=`, Angular reutiliza el componente.
 
 ### 2.7 Singleton (vía la DI de Angular)
 - **Dónde:** los servicios de `core/` son una única instancia por app (`providedIn: 'root'` o provistos en `app.config.ts`). `CargaService` usa un contador para que dos esperas simultáneas no se pisen.
@@ -79,6 +80,7 @@
 ### 2.11 Fábricas simples (funciones puras que construyen objetos)
 - **Dónde:** `enlacesPorSesion(...)`, `novedadesDelLegajo(...)`, `notificacionesPorRechazos(...)`, `contarPorEstado(...)`, `ultimasVersionesPorTipo(...)`, `validarArchivoPdf(...)`.
 - **Regla:** la lógica de negocio del front (conteos, progreso, validaciones, armado de menús) va en **funciones puras en `core/`** con su `*.spec.ts`, no adentro del componente. Así se prueban sin `TestBed`.
+- **Documentación por entregar (SCRUM-150):** `obligatoriosSinCargar(...)` es la única definición de "falta entregar" (la usan la campana, la tarjeta y el mapa del trámite). `requeridoDelDocumento(...)` encuentra el tipo de un documento del legajo por su nombre. `consultaConTipo(...)` y `tipoPedidoEn(...)` (`core/legajos/tipo-en-url.ts`) arman y validan el `?tipo=` de "Subir Documento", con el nombre del parámetro escrito en un solo lugar.
 
 ---
 
