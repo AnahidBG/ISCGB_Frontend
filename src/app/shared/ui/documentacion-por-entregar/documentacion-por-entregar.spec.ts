@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { Routes, provideRouter } from '@angular/router';
+import { MENSAJE_ERROR_LEGAJO } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import { DocumentacionPorEntregar } from './documentacion-por-entregar';
 
@@ -71,5 +72,55 @@ describe('DocumentacionPorEntregar', () => {
     expect(el().textContent).toContain(
       'Cargalos desde Subir Documento y entregalos en papel en Secretaría.',
     );
+  });
+
+  describe('estados (SCRUM-150)', () => {
+    it('mientras carga lo anuncia y no lista nada', async () => {
+      fixture.componentRef.setInput('fase', 'cargando');
+      await dibujar([]);
+
+      expect(el().querySelector('[role="status"]')?.textContent?.trim()).toBe(
+        'Cargando tu documentación…',
+      );
+      expect(el().querySelectorAll('li')).toHaveLength(0);
+    });
+
+    it('si falló muestra el motivo y un Reintentar que avisa al contenedor', async () => {
+      let reintentos = 0;
+      fixture.componentInstance.reintentar.subscribe(() => reintentos++);
+      fixture.componentRef.setInput('fase', 'error');
+      fixture.componentRef.setInput('mensajeError', 'No pudimos traer el legajo.');
+      await dibujar([]);
+
+      expect(el().querySelector('[role="alert"]')?.textContent).toContain(
+        'No pudimos traer el legajo.',
+      );
+
+      el().querySelector<HTMLButtonElement>('[role="alert"] button')!.click();
+      expect(reintentos).toBe(1);
+    });
+
+    it('un error sin mensaje propio usa el genérico del legajo', async () => {
+      fixture.componentRef.setInput('fase', 'error');
+      await dibujar([]);
+
+      expect(el().querySelector('[role="alert"]')?.textContent).toContain(MENSAJE_ERROR_LEGAJO);
+    });
+
+    it('sin nada por entregar lo dice, en vez de dibujar una lista vacía', async () => {
+      await dibujar([]);
+
+      expect(el().textContent).toContain('Ya cargaste toda la documentación obligatoria.');
+      expect(el().querySelectorAll('li')).toHaveLength(0);
+      // Sin contador: un "0" al lado del título no le dice nada a nadie.
+      expect(el().querySelector('header')?.textContent?.trim()).toBe('Documentación por entregar');
+    });
+
+    it('con documentos por entregar no anuncia ni error ni carga', async () => {
+      await dibujar([requerido(1, 'DNI')]);
+
+      expect(el().querySelector('[role="alert"]')).toBeNull();
+      expect(el().querySelector('[role="status"]')).toBeNull();
+    });
   });
 });

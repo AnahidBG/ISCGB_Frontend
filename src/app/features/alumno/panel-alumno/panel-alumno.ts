@@ -2,11 +2,17 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { of } from 'rxjs';
+import { Subject, startWith, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
+import {
+  LEGAJO_CARGANDO,
+  cargarLegajoPropio,
+  documentosDe,
+  errorDe,
+  requeridosDe,
+} from '../../../core/legajos/legajo-propio';
 import { LegajoService } from '../../../core/legajos/legajo.service';
-import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import {
   calcularProgresoLegajo,
   obligatoriosSinCargar,
@@ -68,19 +74,30 @@ export class PanelAlumno {
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
   protected readonly accion = ACCION_ALUMNO;
 
-  protected readonly documentos = toSignal(this.legajoService.obtenerLegajoPropio(), {
-    initialValue: [],
-  });
-
-  /** El denominador del progreso. Ver el comentario en `PanelDocente`. */
+  /** El rol con el que se le piden documentos. Ver el comentario en `PanelDocente`. */
   private readonly idRol = idRolDocumental(this.auth.sesion());
 
-  protected readonly requeridos = toSignal(
-    this.idRol === null
-      ? of<DocumentoRequerido[]>([])
-      : this.legajoService.documentosRequeridos(this.idRol),
-    { initialValue: [] as DocumentoRequerido[] },
+  /** Cada `next` vuelve a pedir el legajo: es el "Reintentar" de la tarjeta. */
+  private readonly reintento = new Subject<void>();
+
+  /**
+   * El legajo propio y lo que le pide el instituto, con su fase de carga
+   * (SCRUM-150). Un fallo llega como fase `error`, no como excepción.
+   */
+  protected readonly legajo = toSignal(
+    this.reintento.pipe(
+      startWith(undefined),
+      switchMap(() => cargarLegajoPropio(this.legajoService, this.idRol)),
+    ),
+    { initialValue: LEGAJO_CARGANDO },
   );
+
+  protected readonly documentos = computed(() => documentosDe(this.legajo()));
+
+  /** El denominador del progreso. Ver el comentario en `PanelDocente`. */
+  protected readonly requeridos = computed(() => requeridosDe(this.legajo()));
+
+  protected readonly errorLegajo = computed(() => errorDe(this.legajo()));
 
   /** Misma fórmula que en `PanelDocente`: aprobados / obligatorios del rol. */
   protected readonly progreso = computed(() =>
@@ -117,6 +134,12 @@ export class PanelAlumno {
     obligatoriosSinCargar(this.documentos(), this.requeridos()),
   );
 
+  /** Cuándo va la tarjeta "Documentación por entregar". Ver `PanelDocente`. */
+  protected readonly mostrarPorEntregar = computed(
+    () =>
+      this.legajo().fase !== 'listo' || (!this.progreso().estimado && !this.legajoCompleto()),
+  );
+
   /** El detalle documento por documento del "Mapa del trámite" (`ProgresoTramite`). */
   protected readonly pasosTramite = computed<PasoTramite[]>(() => {
     const subidos: PasoTramite[] = ultimaVersionPorTipo(this.documentos()).map((documento) => ({
@@ -150,6 +173,10 @@ export class PanelAlumno {
   constructor() {
     // La campana es la misma en todas las pantallas: se pide al entrar.
     this.campana.refrescar();
+  }
+
+  protected recargarLegajo(): void {
+    this.reintento.next();
   }
 
   protected cerrarSesion(): void {
