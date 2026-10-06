@@ -2,31 +2,21 @@ import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { Subject, startWith, switchMap } from 'rxjs';
+import { of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
-import {
-  LEGAJO_CARGANDO,
-  cargarLegajoPropio,
-  documentosDe,
-  errorDe,
-  requeridosDe,
-} from '../../../core/legajos/legajo-propio';
 import { LegajoService } from '../../../core/legajos/legajo.service';
+import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import {
   calcularProgresoLegajo,
-  legajoEstaCompleto,
-  obligatoriosSinCargar,
+  documentosSinCargar,
   ultimaVersionPorTipo,
 } from '../../../core/legajos/progreso-legajo';
-import { rechazosVigentes } from '../../../core/legajos/rechazos-legajo';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
-import { AvisoLegajoCompleto } from '../../../shared/ui/aviso-legajo-completo/aviso-legajo-completo';
-import { DocumentacionPorEntregar } from '../../../shared/ui/documentacion-por-entregar/documentacion-por-entregar';
-import { DocumentosRechazados } from '../../../shared/ui/documentos-rechazados/documentos-rechazados';
+import { novedadesDelLegajo } from '../../../core/notificaciones/notificaciones-legajo';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { PasoTramite, ProgresoTramite } from '../../../shared/ui/progreso-tramite/progreso-tramite';
@@ -51,17 +41,7 @@ const ACCION_ALUMNO: AccionPanel = {
  */
 @Component({
   selector: 'app-panel-alumno',
-  imports: [
-    EstructuraPanel,
-    InsigniaEstado,
-    DatePipe,
-    ProgresoTramite,
-    Icono,
-    RouterLink,
-    DocumentacionPorEntregar,
-    AvisoLegajoCompleto,
-    DocumentosRechazados,
-  ],
+  imports: [EstructuraPanel, InsigniaEstado, DatePipe, ProgresoTramite, Icono, RouterLink],
   templateUrl: './panel-alumno.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -79,30 +59,19 @@ export class PanelAlumno {
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
   protected readonly accion = ACCION_ALUMNO;
 
-  /** El rol con el que se le piden documentos. Ver el comentario en `PanelDocente`. */
-  private readonly idRol = idRolDocumental(this.auth.sesion());
-
-  /** Cada `next` vuelve a pedir el legajo: es el "Reintentar" de la tarjeta. */
-  private readonly reintento = new Subject<void>();
-
-  /**
-   * El legajo propio y lo que le pide el instituto, con su fase de carga
-   * (SCRUM-150). Un fallo llega como fase `error`, no como excepción.
-   */
-  protected readonly legajo = toSignal(
-    this.reintento.pipe(
-      startWith(undefined),
-      switchMap(() => cargarLegajoPropio(this.legajoService, this.idRol)),
-    ),
-    { initialValue: LEGAJO_CARGANDO },
-  );
-
-  protected readonly documentos = computed(() => documentosDe(this.legajo()));
+  protected readonly documentos = toSignal(this.legajoService.obtenerLegajoPropio(), {
+    initialValue: [],
+  });
 
   /** El denominador del progreso. Ver el comentario en `PanelDocente`. */
-  protected readonly requeridos = computed(() => requeridosDe(this.legajo()));
+  private readonly idRol = idRolDocumental(this.auth.sesion());
 
-  protected readonly errorLegajo = computed(() => errorDe(this.legajo()));
+  protected readonly requeridos = toSignal(
+    this.idRol === null
+      ? of<DocumentoRequerido[]>([])
+      : this.legajoService.documentosRequeridos(this.idRol),
+    { initialValue: [] as DocumentoRequerido[] },
+  );
 
   /** Misma fórmula que en `PanelDocente`: aprobados / obligatorios del rol. */
   protected readonly progreso = computed(() =>
@@ -116,25 +85,22 @@ export class PanelAlumno {
   protected readonly notificaciones = this.campana.total;
   protected readonly notificacionesDetalle = this.campana.detalle;
 
-  /** El cartel "¡Tu legajo está completo!" (SCRUM-153). Ver `PanelDocente`. */
-  protected readonly legajoCompleto = computed(() =>
-    legajoEstaCompleto(this.documentos(), this.requeridos()),
+  /**
+   * Las novedades del legajo con los datos que ESTA pantalla ya tiene. Se
+   * siguen calculando acá (aunque la campana salga del servicio) porque el
+   * cartel de "legajo completo" no puede depender de que la campana ya haya
+   * cargado: vacía, `every` daría `true` y avisaría un completo falso.
+   */
+  private readonly novedades = computed(() =>
+    novedadesDelLegajo(this.documentos(), this.requeridos()),
   );
 
-  /** Los rechazos que todavía hay que corregir (SCRUM-152). Ver `PanelDocente`. */
-  protected readonly rechazados = computed(() =>
-    rechazosVigentes(this.documentos(), this.requeridos()),
-  );
-
-  /** Lo obligatorio que nunca se subió (SCRUM-150). Ver `PanelDocente`. */
-  protected readonly porEntregar = computed(() =>
-    obligatoriosSinCargar(this.documentos(), this.requeridos()),
-  );
-
-  /** Cuándo va la tarjeta "Documentación por entregar". Ver `PanelDocente`. */
-  protected readonly mostrarPorEntregar = computed(
+  /** Todo lo obligatorio aprobado, sin rechazos pendientes (SCRUM-153). */
+  protected readonly legajoCompleto = computed(
     () =>
-      this.legajo().fase !== 'listo' || (!this.progreso().estimado && !this.legajoCompleto()),
+      !this.progreso().estimado &&
+      this.progreso().porcentaje === 100 &&
+      this.novedades().detalle.every((novedad) => novedad.tono === 'aprobado'),
   );
 
   /** El detalle documento por documento del "Mapa del trámite" (`ProgresoTramite`). */
@@ -145,11 +111,10 @@ export class PanelAlumno {
       faltante: false,
     }));
 
-    const faltantes: PasoTramite[] = this.porEntregar().map((requerido) => ({
-      nombre: requerido.nombreDocumento,
-      estado: null,
-      faltante: true,
-    }));
+    const faltantes: PasoTramite[] = documentosSinCargar(
+      this.documentos(),
+      this.requeridos().filter((requerido) => requerido.obligatorio),
+    ).map((requerido) => ({ nombre: requerido.nombreDocumento, estado: null, faltante: true }));
 
     return [...subidos, ...faltantes];
   });
@@ -170,10 +135,6 @@ export class PanelAlumno {
   constructor() {
     // La campana es la misma en todas las pantallas: se pide al entrar.
     this.campana.refrescar();
-  }
-
-  protected recargarLegajo(): void {
-    this.reintento.next();
   }
 
   protected cerrarSesion(): void {

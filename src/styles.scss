@@ -1,75 +1,94 @@
 @use 'tailwindcss';
 
-/* Clases que Tailwind no encuentra por su cuenta.
+/* ---------------------------------------------------------------------------
+   SAFELIST — clases que Tailwind no ve escritas "sueltas".
 
    Tailwind v4 arma el CSS leyendo el texto de los archivos: si una utilidad
-   no aparece escrita tal cual, no la genera. Las que se aplican con un
-   binding de Angular (`[class.lg:w-20]="colapsado()"`) pueden no reconocerse.
-   La clase queda en el HTML sin ninguna regla detrás y el elemento no
-   reacciona, como pasó con el menú lateral en celular.
+   no aparece literalmente en ningún lado, no la genera. Las que se aplican
+   con un binding de Angular (`[class.lg:w-20]="colapsado()"`) quedan pegadas
+   al `class.` del binding y pueden no reconocerse, y entonces la clase existe
+   en el HTML pero no tiene ninguna regla CSS detrás — el síntoma es un
+   elemento que "no reacciona" (fue el caso del menú lateral en celular).
 
-   Declararlas acá las genera siempre. Si una deja de usarse en un binding, se
-   saca de la lista. */
+   Declararlas acá las genera siempre. Si una utilidad deja de usarse en un
+   binding, se saca de esta lista.
+   --------------------------------------------------------------------------- */
 @source inline("lg:w-20 lg:w-64 lg:hidden lg:block lg:flex-col lg:gap-0 lg:gap-2 lg:px-2 lg:px-3 lg:justify-center rotate-180");
 
-/* Sistema de diseño de ISCGB.
+/* ---------------------------------------------------------------------------
+   SISTEMA DE DISEÑO ISCGB — fuente única de verdad.
 
-   Todo lo visual sale de acá: colores, tipografías y grilla. Ningún
-   componente escribe a mano un hexadecimal, un nombre de fuente o un ancho de
-   columna.
+   Todo lo visual del sistema nace de acá: colores, tipografías y grilla.
+   Ningún componente escribe un hexadecimal, un nombre de fuente o un ancho
+   de columna a mano.
 
-   Viene del Manual de Identidad ICGB y del Design System de Figma. El detalle
-   y las decisiones están en docs/design-system.md. */
+   Origen: Manual de Identidad ICGB (Figma) + Design System.
+   Ver docs/design-system.md para el detalle y las decisiones.
+   --------------------------------------------------------------------------- */
 @theme {
-  /* Colores oficiales del manual de identidad */
-  --color-principal: #46695f; /* Verde grisáceo oscuro, el color principal */
-  --color-acento-verde: #90c997; /* Verde claro */
-  --color-acento-lima: #cfd18d; /* Amarillo verdoso suave */
+  /* ── Colores oficiales del manual de identidad ──────────────────────── */
+  --color-principal: #46695f; /* Verde grisáceo oscuro — color principal */
+  --color-acento-verde: #90c997; /* Verde claro — acento */
+  --color-acento-lima: #cfd18d; /* Amarillo verdoso suave — acento */
   --color-menta: #cbffd1; /* Verde menta */
   --color-humo: #f5f5f5; /* Blanco humo */
   --color-gris-marca: #919d99; /* Gris verdoso suave */
 
-  /* Derivados. No están en el manual: hacían falta estados (hover, press) que
-     el manual no define y un gris de texto que cumpla accesibilidad. Mantienen
-     el matiz. */
-  --color-principal-oscuro: #35504a; /* Hover y press del botón principal */
+  /* ── Derivados ───────────────────────────────────────────────────────────
+     No están en el manual. Se derivaron manteniendo el matiz, por dos
+     motivos: hacen falta estados (hover, press) que el manual no define
+     como valores, y hace falta un gris de texto que cumpla accesibilidad. */
+  --color-principal-oscuro: #35504a; /* Hover / press del botón principal */
   --color-principal-suave: #eaf0ee; /* Fondo tenue del color principal */
   --color-acento-verde-claro: #b8ddb4; /* Botón primario en reposo */
   --color-acento-verde-press: #7aab80; /* Botón primario presionado */
 
-  /* El gris de marca #919D99 sobre blanco da 2,80:1 y WCAG AA pide 4,5:1 para
-     texto. Va solo en trazos decorativos y bordes. Para texto secundario se
-     usa este, que mantiene el matiz y da 4,81:1. */
+  /* ⚠️ El gris de marca #919D99 sobre blanco da 2.80:1 de contraste y NO
+     alcanza el mínimo de 4.5:1 que exige WCAG AA para texto. Se usa solo
+     para trazos decorativos y bordes, nunca para texto que haya que leer.
+     Para texto secundario va este, que mantiene el matiz y da 4.81:1. */
   --color-texto-suave: #666e6b;
 
-  /* Superficies, líneas y texto */
+  /* ── Superficies, líneas y texto ─────────────────────────────────────── */
   --color-fondo: #f5f5f5;
   --color-superficie: #ffffff;
   --color-borde: #e2e8e4;
   --color-texto: #2d2d2d;
 
-  /* Fondo de los paneles internos. En el Figma del dashboard no es el blanco
-     humo del manual sino uno cálido, apenas amarillento, que despega las
-     tarjetas blancas sin necesidad de sombra. Va como token aparte porque
-     `--color-fondo` sigue siendo el del manual y lo usa el sitio público. */
+  /* Fondo de los paneles internos del sistema.
+     En el Figma del dashboard el fondo no es el blanco humo frío del manual
+     (#F5F5F5) sino uno cálido, apenas amarillento, que hace que las tarjetas
+     blancas se despeguen sin necesidad de sombra. Es el mismo "hueso" que
+     define el Brochero Design System. Se agrega como token aparte en vez de
+     cambiar `--color-fondo`: ese sigue siendo el del manual y lo usa el sitio
+     público. */
   --color-fondo-panel: #faf9f5;
 
-  /* Azul apagado para la tarjeta de totales del dashboard. No está en el
-     manual: se derivó para seguir el Figma, donde el total se distingue por
-     color de los tres estados. En verde se confundiría con "Aprobados". Si
-     diseño define uno oficial, se reemplaza acá. */
+  /* Azul apagado para la tarjeta de "totales" del dashboard.
+     ⚠️ NO está en el manual de identidad — se derivó para seguir el Figma,
+     donde el total se distingue de los tres estados del semáforo por color.
+     Usar verde ahí lo confundiría con "Aprobados". Está bajado en saturación
+     y llevado hacia el gris verdoso de la marca para que no cante al lado del
+     resto. Si diseño define uno oficial, se reemplaza acá y listo. */
   --color-info: #4a6fa5;
 
-  /* Estados de un documento. Como texto, `aprobado` y `pendiente` no llegan a
-     contraste AA: van en íconos y bordes. Ver docs/design-system.md. */
-  --color-aprobado: #2f8f5b;
-  --color-pendiente: #b07d0a;
-  --color-rechazado: #c0392b;
+  /* ── Estados de documento — regla de negocio del MVP ─────────────────── */
+  --color-aprobado: #2f8f5b; /* 🟢 Aprobado */
+  --color-pendiente: #b07d0a; /* 🟡 Pendiente */
+  --color-rechazado: #c0392b; /* 🔴 Rechazado */
 
-  /* Escala completa de `principal`, `acento-lima` y `gris-marca`, sumada el
-     27/08/2026 desde el Brochero Design System, cuyos tres colores de marca
-     son estos mismos. Son tokens nuevos: lo que ya usaba el color base no
-     cambia. El 100 equivale al derivado "-suave" y el 600 al "-oscuro". */
+  /* ── Escala completa de "principal" / "acento-lima" / "gris-marca" ─────
+     Agregado el 27/08/2026 al incorporar el "Brochero Design System"
+     (generado en otra sesión a partir del isotipo y la lockup — ver
+     docs/design-system.md, sección "Brochero Design System"). Sus tres
+     colores de marca son EXACTAMENTE estos tres — mismo hex, confirmado
+     dígito por dígito — así que lo que aporta de nuevo no es el color, es
+     la ESCALA: 9 tonos por color en vez de uno solo más un par de
+     derivados sueltos. Son tokens NUEVOS y ADITIVOS: nada de lo que ya
+     usaba `principal`, `acento-lima` o `gris-marca` cambia.
+     100 ≈ "-suave", 600 ≈ "-oscuro" — pensados para reemplazar a esos
+     derivados ad-hoc el día que se audite `boton.ts` y el resto de
+     `shared/ui/`, no reemplazados automáticamente acá. */
   --color-principal-50: #eef2f0;
   --color-principal-100: #dae3df;
   --color-principal-200: #b5c6bf;
@@ -103,38 +122,53 @@
   --color-gris-marca-800: #303734;
   --color-gris-marca-900: #1b1f1d;
 
-  /* Radio y sombra de marca, también del Brochero Design System. Tienen
-     nombre propio (`rounded-tarjeta`, `rounded-control`, `shadow-marca-*`) y
-     no pisan la escala de Tailwind. `rounded-control` equivale a
-     `rounded-full`, que es lo que usa `<app-boton>`. */
+  /* ── Radio y sombra de marca — del Brochero Design System ───────────────
+     Tokens NUEVOS con nombre propio (`rounded-tarjeta`, `rounded-control`,
+     `shadow-marca-*`): no pisan la escala de Tailwind (`rounded-lg`,
+     `shadow-md`, etc.), así que no cambian nada que ya esté dibujado.
+     `rounded-control` es lo mismo que `rounded-full`, que `<app-boton>` ya
+     usa — queda documentado acá como alternativa con nombre semántico. */
   --radius-tarjeta: 20px;
   --radius-control: 9999px;
   --shadow-marca-sm: 0 2px 6px color-mix(in oklab, #16231f 8%, transparent);
   --shadow-marca-md: 0 6px 18px color-mix(in oklab, #16231f 10%, transparent);
   --shadow-marca-lg: 0 18px 44px color-mix(in oklab, #16231f 12%, transparent);
 
-  /* Tipografía. Gasoek One y Geist están confirmadas desde el Figma del
-     Design System. El Brochero Design System propone Barlow, pero como
-     reemplazo a falta de dato: se armó sin los archivos de fuente. Por eso no
-     se cambió. Si un día se decide por Barlow, es una línea acá. */
+  /* ── Tipografía ──────────────────────────────────────────────────────── */
   --font-titulo: 'Gasoek One', 'Arial Black', sans-serif;
   --font-cuerpo: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, 'Cascadia Code', monospace;
 
-  /* Grilla.
-     Escritorio: 12 columnas, margen de 120px, separación de 32px, lienzo de 1440px.
-     Celular: 4 columnas, margen de 16px, separación de 16px, lienzo de 392px. */
+  /* ⚠️ El "Brochero Design System" recomienda Barlow / Barlow Semi
+     Condensed / Barlow Condensed en vez de Gasoek One / Geist — pero lo
+     dice como SUSTITUCIÓN A FALTA DE DATO: a esa sesión solo le llegaron
+     4 imágenes de marca, sin tipografía real ("No font binaries were
+     provided... please send the real font files"). Gasoek One/Geist, en
+     cambio, están confirmados acá arriba desde el Figma real del Design
+     System (ver docs/design-system.md, "Tipografía"). Por eso NO se
+     reemplazaron: adoptar Barlow sería cambiar un dato confirmado por una
+     adivinanza. Si en algún momento se decide que Barlow es lo correcto
+     de verdad, es un cambio de una sola línea acá. */
+
+  /* ── Grilla ──────────────────────────────────────────────────────────────
+     Escritorio: 12 columnas · margen 120px · separación 32px · lienzo 1440px
+     Celular:     4 columnas · margen  16px · separación 16px · lienzo  392px */
   --spacing-margen-desktop: 120px;
   --spacing-margen-mobile: 16px;
   --container-lienzo: 1440px;
 }
 
-/* Contenedor de página.
+/* ---------------------------------------------------------------------------
+   Contenedor de página.
 
-   El Figma está dibujado a 1440px, pero una MacBook de 16" tiene 1728px de
-   ancho útil. Si el contenido se estirara hasta el borde, las líneas de texto
-   quedarían demasiado largas para leer cómodo. Por eso se limita a 1440px y
-   se centra: en pantallas más grandes sobra aire a los costados. */
+   El diseño de Figma está dibujado a 1440px, pero una MacBook 16" tiene
+   1728px de ancho útil. Si estiráramos el contenido a lo que dé la pantalla,
+   las líneas de texto quedarían larguísimas e incómodas de leer.
+
+   Por eso el contenido se limita a 1440px y se centra: en pantallas más
+   grandes sobra aire a los costados, que es exactamente lo que se ve en
+   cualquier sitio bien hecho.
+   --------------------------------------------------------------------------- */
 .contenedor {
   width: 100%;
   max-width: var(--container-lienzo);
@@ -158,19 +192,27 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Los títulos no usan Gasoek One por defecto.
+/* ---------------------------------------------------------------------------
+   Tipografía de títulos — a mano, no automática.
 
-   El manual dice "Gasoek One para títulos", pero en el diseño del login el
-   título grande y "Bienvenido" están dibujados con la tipografía de contenido
-   en negrita. Gasoek One es muy pesada, pensada para piezas de comunicación
-   como placas, portadas y campañas. En una pantalla donde alguien viene a
-   hacer un trámite resulta ruidosa.
+   El manual de identidad dice "Gasoek One para títulos". Pero en el diseño
+   del login, tanto el título grande como "Bienvenido" están dibujados con
+   la tipografía de contenido en negrita, no con Gasoek One.
 
-   Por eso `font-titulo` no se fuerza en los h1, h2 y h3. Las piezas de marca
-   lo piden con class="font-titulo" y las pantallas del sistema quedan con la
-   tipografía de contenido.
+   No es un error de nadie: Gasoek One es una display muy pesada, pensada
+   para piezas de comunicación (placas, portadas, campañas). En una pantalla
+   de sistema, donde el usuario viene a hacer un trámite, resulta demasiado
+   ruidosa.
 
-   Falta confirmarlo con diseño y dejarlo escrito en el manual. */
+   Por eso NO se fuerza `font-titulo` en todos los h1/h2/h3. Cada pantalla
+   elige, y queda explícito en su HTML:
+
+     · Piezas de marca y comunicación → class="font-titulo"
+     · Pantallas del sistema          → la tipografía de contenido (por defecto)
+
+   Pendiente: confirmarlo con el equipo de diseño y dejarlo escrito en el
+   manual, para que no se decida distinto en cada pantalla.
+   --------------------------------------------------------------------------- */
 h1,
 h2,
 h3 {

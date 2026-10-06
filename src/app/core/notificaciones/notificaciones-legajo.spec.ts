@@ -1,6 +1,5 @@
 import { DocumentoLegajo } from '../legajos/modelos/documento-legajo';
 import { DocumentoRequerido } from '../legajos/modelos/documento-requerido';
-import { RechazoVigente } from '../legajos/rechazos-legajo';
 import { novedadesDelLegajo, notificacionesPorRechazos } from './notificaciones-legajo';
 
 function documento(parcial: Partial<DocumentoLegajo> & { id: number }): DocumentoLegajo {
@@ -15,67 +14,85 @@ function documento(parcial: Partial<DocumentoLegajo> & { id: number }): Document
   };
 }
 
-function requerido(nombreDocumento: string, obligatorio = true): DocumentoRequerido {
-  return { idTipoDoc: nombreDocumento.length, nombreDocumento, obligatorio, anual: false };
-}
-
-/** Un rechazo ya resuelto, como los que arma `rechazosVigentes`. */
-function rechazo(parcial: Partial<RechazoVigente> & { nombre: string }): RechazoVigente {
-  const { nombre, ...resto } = parcial;
-  return {
-    documento: documento({ id: 1, nombre, estado: 'Rechazado' }),
-    motivo: 'Está vencido.',
-    tipo: null,
-    ...resto,
-  };
-}
-
 describe('notificacionesPorRechazos', () => {
-  it('sin rechazos no hay avisos', () => {
-    expect(notificacionesPorRechazos([])).toEqual([]);
+  it('ignora todo lo que no esté rechazado', () => {
+    const novedades = notificacionesPorRechazos([
+      documento({ id: 1, estado: 'Aprobado' }),
+      documento({ id: 2, estado: 'Pendiente' }),
+      documento({ id: 3, estado: null }),
+    ]);
+
+    expect(novedades).toEqual([]);
   });
 
   it('arma el aviso con el motivo del rechazo', () => {
-    const novedades = notificacionesPorRechazos([rechazo({ nombre: 'Título terciario' })]);
+    const novedades = notificacionesPorRechazos([
+      documento({
+        id: 1,
+        nombre: 'Título terciario',
+        estado: 'Rechazado',
+        comentario: 'Está vencido.',
+      }),
+    ]);
 
     expect(novedades).toEqual([
       {
         titulo: 'Rechazaron Título terciario',
         detalle: 'Está vencido.',
         url: undefined,
-        consulta: undefined,
         tono: 'rechazado',
       },
     ]);
   });
 
-  it('con el tipo del documento, abre Subir Documento con ese tipo ya elegido (SCRUM-152)', () => {
-    const [novedad] = notificacionesPorRechazos(
-      [rechazo({ nombre: 'DNI', tipo: requerido('DNI') })],
-      { url: '/legajo/mis-documentos' },
-    );
+  it('cuando no hay motivo cargado lo dice en vez de dejar la fila muda', () => {
+    const [novedad] = notificacionesPorRechazos([
+      documento({ id: 1, estado: 'Rechazado', comentario: null }),
+    ]);
 
-    expect(novedad.url).toBe('/legajo/subir-documento');
-    expect(novedad.consulta).toEqual({ tipo: '3' });
+    expect(novedad.detalle).toBe('Sin motivo cargado: consultá en Secretaría.');
   });
 
-  it('sin el tipo lleva al destino que le pasaron, donde se ve el rechazo', () => {
-    const [novedad] = notificacionesPorRechazos([rechazo({ nombre: 'Curriculum' })], {
+  it('pone lo más nuevo primero', () => {
+    const novedades = notificacionesPorRechazos([
+      documento({
+        id: 1,
+        nombre: 'Viejo',
+        estado: 'Rechazado',
+        fechaSubida: new Date('2026-01-01'),
+      }),
+      documento({
+        id: 2,
+        nombre: 'Nuevo',
+        estado: 'Rechazado',
+        fechaSubida: new Date('2026-08-01'),
+      }),
+    ]);
+
+    expect(novedades.map((novedad) => novedad.titulo)).toEqual([
+      'Rechazaron Nuevo',
+      'Rechazaron Viejo',
+    ]);
+  });
+
+  it('no recorta la lista: el tope es cosa de la presentación, no de core/', () => {
+    const rechazados = [1, 2, 3, 4, 5, 6, 7].map((id) => documento({ id, estado: 'Rechazado' }));
+
+    expect(notificacionesPorRechazos(rechazados)).toHaveLength(7);
+  });
+
+  it('le pone a cada fila el destino que le pasaron', () => {
+    const [novedad] = notificacionesPorRechazos([documento({ id: 1, estado: 'Rechazado' })], {
       url: '/legajo/mis-documentos',
     });
 
     expect(novedad.url).toBe('/legajo/mis-documentos');
-    expect(novedad.consulta).toBeUndefined();
-  });
-
-  it('respeta el orden y no recorta la lista: el tope es cosa de la presentación', () => {
-    const rechazos = ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((nombre) => rechazo({ nombre }));
-
-    expect(notificacionesPorRechazos(rechazos).map((novedad) => novedad.titulo)).toEqual(
-      ['A', 'B', 'C', 'D', 'E', 'F', 'G'].map((nombre) => `Rechazaron ${nombre}`),
-    );
   });
 });
+
+function requerido(nombreDocumento: string, obligatorio = true): DocumentoRequerido {
+  return { idTipoDoc: nombreDocumento.length, nombreDocumento, obligatorio, anual: false };
+}
 
 describe('novedadesDelLegajo', () => {
   it('no avisa un rechazo que la persona ya corrigió volviendo a subir el documento', () => {
@@ -111,27 +128,7 @@ describe('novedadesDelLegajo', () => {
         titulo: 'Falta entregar Apto médico',
         detalle: 'Cargalo desde Subir Documento y entregalo en papel en Secretaría.',
         url: '/legajo/subir-documento',
-        // Abre el formulario con el tipo elegido (`requerido` usa el largo del nombre como id).
-        consulta: { tipo: '11' },
         tono: 'pendiente',
-      },
-    ]);
-  });
-
-  it('un rechazo vigente se avisa con su motivo y abre Subir Documento con su tipo (SCRUM-152)', () => {
-    const novedades = novedadesDelLegajo(
-      [documento({ id: 1, nombre: 'DNI', estado: 'Rechazado', comentario: 'Documento incompleto' })],
-      [requerido('DNI')],
-      { url: '/legajo/mis-documentos' },
-    );
-
-    expect(novedades.detalle).toEqual([
-      {
-        titulo: 'Rechazaron DNI',
-        detalle: 'Documento incompleto',
-        url: '/legajo/subir-documento',
-        consulta: { tipo: '3' },
-        tono: 'rechazado',
       },
     ]);
   });
@@ -160,28 +157,6 @@ describe('novedadesDelLegajo', () => {
     );
 
     expect(novedades.detalle[0].titulo).toBe('Se venció Apto médico');
-    // Abre Subir Documento con el mismo tipo elegido (el id de `requerido` es el largo del nombre).
-    expect(novedades.detalle[0].url).toBe('/legajo/subir-documento');
-    expect(novedades.detalle[0].consulta).toEqual({ tipo: '11' });
-  });
-
-  it('un vencido cuyo tipo ya no está entre los de su rol abre Subir Documento sin tipo elegido', () => {
-    const novedades = novedadesDelLegajo(
-      [
-        documento({
-          id: 1,
-          nombre: 'Apto médico',
-          estado: 'Aprobado',
-          fechaVencimiento: new Date('2026-01-01'),
-        }),
-      ],
-      [requerido('DNI')],
-      { ahora: new Date('2026-09-28').getTime() },
-    );
-
-    const vencido = novedades.detalle.find((n) => n.titulo === 'Se venció Apto médico')!;
-    expect(vencido.url).toBe('/legajo/subir-documento');
-    expect(vencido.consulta).toBeUndefined();
   });
 
   it('con todo lo obligatorio aprobado avisa que el legajo está completo (SCRUM-153)', () => {
@@ -203,31 +178,6 @@ describe('novedadesDelLegajo', () => {
     const novedades = novedadesDelLegajo([documento({ id: 1, estado: 'Aprobado' })], []);
 
     expect(novedades.total).toBe(0);
-  });
-
-  it('un anual vencido que se volvió a subir no anuncia el legajo completo', () => {
-    // La versión vieja sigue aprobada en la base, pero la vigente espera revisión.
-    const novedades = novedadesDelLegajo(
-      [
-        documento({
-          id: 1,
-          nombre: 'Apto médico',
-          estado: 'Aprobado',
-          fechaSubida: new Date('2025-03-01'),
-          fechaVencimiento: new Date('2026-01-01'),
-        }),
-        documento({
-          id: 2,
-          nombre: 'Apto médico',
-          estado: 'Pendiente',
-          fechaSubida: new Date('2026-09-20'),
-        }),
-      ],
-      [requerido('Apto médico')],
-      { ahora: new Date('2026-09-28').getTime() },
-    );
-
-    expect(novedades.detalle).toEqual([]);
   });
 
   it('el detalle trae TODAS las novedades, sin recortar, y coincide con el total', () => {

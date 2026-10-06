@@ -48,16 +48,6 @@ describe('FilaNotificacion', () => {
     expect(el().querySelector('a')).toBeNull();
   });
 
-  it('con consulta, el enlace lleva sus query params', async () => {
-    await dibujar({
-      titulo: 'Falta entregar DNI',
-      url: '/legajo/subir-documento',
-      consulta: { tipo: '7' },
-    });
-
-    expect(el().querySelector('a')?.getAttribute('href')).toBe('/legajo/subir-documento?tipo=7');
-  });
-
   it('tocar el enlace avisa que la fila fue seleccionada', async () => {
     const seleccionada = vi.fn();
     fixture.componentInstance.seleccionada.subscribe(seleccionada);

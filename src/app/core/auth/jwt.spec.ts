@@ -1,20 +1,18 @@
 import { estaVencido, fechaDeVencimiento, leerPayloadJwt } from './jwt';
 
 /**
- * Token con la forma exacta de los que emite la API (capturado el
- * 23/08/2026). El DNI se cambió por uno inventado, así que la firma ya no
- * corresponde: no hace falta, acá solo se lee el contenido.
- * Contenido: { nameid: "1", DNI: "12345678", role: "Director",
+ * Token real capturado de la API el 23/08/2026, contra el backend corriendo.
+ * Contenido: { nameid: "1", DNI: "43880335", role: "Director",
  *              nbf: 1787517118, exp: 1787524318, iat: 1787517118 }
  *
  * Reemplaza al token del 18/08, que traía `role: "1"`. El backend pasó a
  * mandar el NOMBRE del rol en vez del ID, y este archivo es el que deja
  * constancia de ese cambio de contrato.
  */
-const TOKEN_CON_UN_ROL =
+const TOKEN_REAL =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
-  'eyJuYW1laWQiOiIxIiwiRE5JIjoiMTIzNDU2NzgiLCJyb2xlIjoiRGlyZWN0b3IiLCJuYmYiOjE3ODc1MTcxMTgsImV4cCI6MTc4NzUyNDMxOCwiaWF0IjoxNzg3NTE3MTE4fQ.' +
-  'firma-de-mentira';
+  'eyJuYW1laWQiOiIxIiwiRE5JIjoiNDM4ODAzMzUiLCJyb2xlIjoiRGlyZWN0b3IiLCJuYmYiOjE3ODc1MTcxMTgsImV4cCI6MTc4NzUyNDMxOCwiaWF0IjoxNzg3NTE3MTE4fQ.' +
+  'GwrTlEgs2T-vj3hp0WPpfVZAKBHI9NVUUAioo9Aaa7M';
 
 /**
  * Token con DOS roles, armado a mano con la misma forma que produce el
@@ -27,15 +25,15 @@ const TOKEN_CON_UN_ROL =
  */
 const TOKEN_CON_DOS_ROLES =
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.' +
-  'eyJuYW1laWQiOiIzIiwiRE5JIjoiMTExMTExMTEiLCJyb2xlIjpbIkRpcmVjdG9yIiwiRG9jZW50ZSJdLCJuYmYiOjE3ODc1MTcxMTgsImV4cCI6MTc4NzUyNDMxOCwiaWF0IjoxNzg3NTE3MTE4fQ.' +
+  'eyJuYW1laWQiOiIzIiwiRE5JIjoiNDA1NTUxMTEiLCJyb2xlIjpbIkRpcmVjdG9yIiwiRG9jZW50ZSJdLCJuYmYiOjE3ODc1MTcxMTgsImV4cCI6MTc4NzUyNDMxOCwiaWF0IjoxNzg3NTE3MTE4fQ.' +
   'firma-de-mentira';
 
 describe('leerPayloadJwt', () => {
-  it('lee el contenido de un token como los que emite la API', () => {
-    const payload = leerPayloadJwt(TOKEN_CON_UN_ROL);
+  it('lee el contenido de un token real de la API', () => {
+    const payload = leerPayloadJwt(TOKEN_REAL);
 
     expect(payload).not.toBeNull();
-    expect(payload!.DNI).toBe('12345678');
+    expect(payload!.DNI).toBe('43880335');
     expect(payload!.nameid).toBe('1');
     // El rol llega con su NOMBRE, no con el ID. Ver JwtPayload.
     expect(payload!.role).toBe('Director');
@@ -63,12 +61,12 @@ describe('leerPayloadJwt', () => {
 
 describe('fechaDeVencimiento', () => {
   it('convierte el exp del token en una fecha', () => {
-    const payload = leerPayloadJwt(TOKEN_CON_UN_ROL)!;
+    const payload = leerPayloadJwt(TOKEN_REAL)!;
     expect(fechaDeVencimiento(payload).getTime()).toBe(1787524318 * 1000);
   });
 
   it('confirma que los tokens de ISCGB duran 2 horas', () => {
-    const payload = leerPayloadJwt(TOKEN_CON_UN_ROL)!;
+    const payload = leerPayloadJwt(TOKEN_REAL)!;
     const duracionEnHoras = (payload.exp - payload.iat) / 3600;
     expect(duracionEnHoras).toBe(2);
   });
@@ -76,12 +74,12 @@ describe('fechaDeVencimiento', () => {
 
 describe('estaVencido', () => {
   it('marca como vencido un token del pasado', () => {
-    const payload = leerPayloadJwt(TOKEN_CON_UN_ROL)!;
+    const payload = leerPayloadJwt(TOKEN_REAL)!;
     expect(estaVencido({ ...payload, exp: 1 })).toBe(true);
   });
 
   it('no marca como vencido un token que todavía no venció', () => {
-    const payload = leerPayloadJwt(TOKEN_CON_UN_ROL)!;
+    const payload = leerPayloadJwt(TOKEN_REAL)!;
     const dentroDeUnaHora = Math.floor(Date.now() / 1000) + 3600;
     expect(estaVencido({ ...payload, exp: dentroDeUnaHora })).toBe(false);
   });

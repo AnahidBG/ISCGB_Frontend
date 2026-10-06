@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, map, of, switchAll, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
@@ -14,11 +14,9 @@ import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requ
 import {
   calcularProgresoLegajo,
   documentosSinCargar,
-  requeridoDelDocumento,
   ultimaVersionPorTipo,
 } from '../../../core/legajos/progreso-legajo';
 import { idRolDocumental, idRolDocumentalDe } from '../../../core/legajos/rol-documental';
-import { consultaConTipo } from '../../../core/legajos/tipo-en-url';
 import { UsuarioDetalle } from '../../../core/usuarios/modelos/usuario-detalle';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
@@ -27,7 +25,6 @@ import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { TarjetaMetrica } from '../../../shared/ui/tarjeta-metrica/tarjeta-metrica';
-import { CuadroRechazo } from './partes/cuadro-rechazo/cuadro-rechazo';
 
 /** Las pestañas de arriba de la lista. */
 type Filtro = 'todos' | 'Aprobado' | 'Pendiente' | 'Rechazado' | 'sin-cargar';
@@ -69,11 +66,6 @@ interface FilaDocumento {
   presentadoFisico: boolean;
   /** Quién aprobó o rechazó la versión vigente. `null` si nadie la revisó todavía. */
   auditor: string | null;
-  /**
-   * El `?tipo=` de "Cargar" / "Resubir": abre Subir Documento con este tipo
-   * ya elegido (SCRUM-152). `null` si el tipo no está entre los de su rol.
-   */
-  consultaSubir: Record<string, string> | null;
 }
 
 /**
@@ -89,15 +81,7 @@ interface FilaDocumento {
  */
 @Component({
   selector: 'app-mis-documentos',
-  imports: [
-    EstructuraPanel,
-    InsigniaEstado,
-    TarjetaMetrica,
-    Icono,
-    DatePipe,
-    CuadroRechazo,
-    RouterLink,
-  ],
+  imports: [EstructuraPanel, InsigniaEstado, TarjetaMetrica, Icono, DatePipe],
   templateUrl: './mis-documentos.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -349,7 +333,6 @@ export class MisDocumentos {
         (a, b) => b.fechaSubida.getTime() - a.fechaSubida.getTime(),
       );
       const ultima = ordenadas[0];
-      const tipo = requeridoDelDocumento(ultima, this.requeridos());
 
       return {
         clave: `doc-${ultima.id}`,
@@ -366,7 +349,6 @@ export class MisDocumentos {
         rutaArchivo: ultima.rutaArchivo ?? null,
         presentadoFisico: ultima.presentadoFisico,
         auditor: ultima.auditor ?? null,
-        consultaSubir: tipo === null ? null : consultaConTipo(tipo.idTipoDoc),
       };
     });
 
@@ -385,7 +367,6 @@ export class MisDocumentos {
       rutaArchivo: null,
       presentadoFisico: false,
       auditor: null,
-      consultaSubir: consultaConTipo(requerido.idTipoDoc),
     }));
 
     return [...subidos, ...faltantes].sort(
@@ -413,6 +394,10 @@ export class MisDocumentos {
 
   protected cambiarFiltro(filtro: Filtro): void {
     this.filtro.set(filtro);
+  }
+
+  protected irASubir(): void {
+    this.router.navigate(['/legajo/subir-documento']);
   }
 
   protected cerrarSesion(): void {
@@ -483,6 +468,22 @@ export class MisDocumentos {
     modo: 'aprobar' | 'rechazar';
   } | null>(null);
 
+  protected readonly motivoRechazo = signal('');
+
+  /** `true` desde que se intentó confirmar un rechazo sin motivo. */
+  protected readonly intentoConfirmarRechazo = signal(false);
+
+  /**
+   * El motivo es OBLIGATORIO al rechazar: la persona necesita saber qué
+   * corregir, y sin esto el rechazo llegaba mudo (regla de negocio, no algo
+   * que se pueda dejar "por si después escriben algo").
+   */
+  protected readonly errorMotivoRechazo = computed(() =>
+    this.intentoConfirmarRechazo() && this.motivoRechazo().trim().length === 0
+      ? 'Contale a la persona qué tiene que corregir.'
+      : null,
+  );
+
   protected estaGuardando(idLegajo: number | null): boolean {
     return idLegajo !== null && this.guardando().has(idLegajo);
   }
@@ -505,14 +506,10 @@ export class MisDocumentos {
     if (fila.idLegajo === null || this.estaGuardando(fila.idLegajo) || fila.estado === 'Aprobado') {
       return;
     }
+    this.motivoRechazo.set('');
     this.accionEnCurso.set({ idLegajo: fila.idLegajo, modo: 'aprobar' });
   }
 
-  /**
-   * Abre `CuadroRechazo`. Lo que se marca vive en el cuadro: al cancelar o
-   * confirmar el cuadro se destruye, así que cada rechazo arranca sin nada
-   * marcado.
-   */
   protected iniciarRechazo(fila: FilaDocumento): void {
     if (
       fila.idLegajo === null ||
@@ -521,11 +518,15 @@ export class MisDocumentos {
     ) {
       return;
     }
+    this.motivoRechazo.set('');
+    this.intentoConfirmarRechazo.set(false);
     this.accionEnCurso.set({ idLegajo: fila.idLegajo, modo: 'rechazar' });
   }
 
   protected cancelarAccion(): void {
     this.accionEnCurso.set(null);
+    this.motivoRechazo.set('');
+    this.intentoConfirmarRechazo.set(false);
   }
 
   protected confirmarAprobacion(): void {
@@ -537,20 +538,22 @@ export class MisDocumentos {
     this.enviarAuditoria(accion.idLegajo, 'Aprobado', null);
   }
 
-  /**
-   * Recibe el `comentario` ya armado por `CuadroRechazo` (motivos de la
-   * institución + aclaración, ver `comentarioDeRechazo`). El motivo es
-   * OBLIGATORIO (regla #4): el cuadro no emite sin uno, y por las dudas acá
-   * tampoco se manda un rechazo mudo.
-   */
-  protected confirmarRechazo(comentario: string): void {
+  protected confirmarRechazo(): void {
     const accion = this.accionEnCurso();
-    if (accion === null || comentario.trim() === '') {
+    if (accion === null) {
+      return;
+    }
+
+    const texto = this.motivoRechazo().trim();
+    if (texto.length === 0) {
+      this.intentoConfirmarRechazo.set(true);
       return;
     }
 
     this.accionEnCurso.set(null);
-    this.enviarAuditoria(accion.idLegajo, 'Rechazado', comentario);
+    this.motivoRechazo.set('');
+    this.intentoConfirmarRechazo.set(false);
+    this.enviarAuditoria(accion.idLegajo, 'Rechazado', texto);
   }
 
   private enviarAuditoria(

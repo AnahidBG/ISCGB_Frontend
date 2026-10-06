@@ -19,16 +19,6 @@ export interface NotificacionPanel {
   /** A dónde lleva al tocarla. Sin esto la fila no es un enlace. */
   url?: string;
 
-  /**
-   * Los `queryParams` de ese enlace, por ejemplo `{ tipo: '7' }` para abrir
-   * "Subir Documento" con el tipo elegido (`consultaConTipo`).
-   *
-   * Van aparte y no pegados a `url` por dos razones: `routerLink` codificaría
-   * el `?`, y `url` es parte de la clave con la que la campana recuerda qué
-   * avisos ya se leyeron. Así, sumar una consulta no hace reaparecer nada.
-   */
-  consulta?: Readonly<Record<string, string>>;
-
   /** Colorea el puntito de la izquierda. Por defecto, `pendiente`. */
   tono?: 'aprobado' | 'pendiente' | 'rechazado';
 }

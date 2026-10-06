@@ -1,91 +1,115 @@
-# Alcance de la pantalla de login
+# Alcance de la pantalla de Login
 
-Analizado el **04/10/2026**, Sprint 1. Explica por qué la pantalla que se
-construyó no es idéntica al diseño de Figma. No es un olvido: se decidió así.
+Fecha de análisis: **04/10/2026** · Sprint 1
 
-## Las tres preguntas
+Este documento explica **por qué la pantalla implementada no es idéntica al
+diseño de Figma**. No es un olvido: es una decisión tomada con criterio.
+
+## El triage de 3 preguntas
 
 Antes de construir cualquier elemento de una pantalla se le hacen tres
 preguntas:
 
-1. ¿Está en algún sprint del roadmap? Se mira en `docs/ISCGB-PROJECT.md`.
-2. ¿Existe el endpoint? Se mira en el controlador real del backend.
-3. ¿Existe la tabla o el campo en la base? Se mira en el script SQL.
+1. ¿Está en algún sprint del roadmap? → `docs/ISCGB-PROJECT.md`
+2. ¿Existe el endpoint? → colección de Postman del QA
+3. ¿Existe la tabla o el campo en la base? → script SQL
 
-Si las tres dan que sí, se construye. Si está en un sprint pero falta el
-backend, se maqueta con datos falsos. Si no está en ningún sprint, se archiva
-en la página "Backlog" de Figma y no se construye. Archivar no es borrar.
+| Resultado | Qué se hace |
+|---|---|
+| Las tres en ✅ | **Construir** |
+| Está en sprint pero falta backend | **Maquetar con datos falsos** |
+| No está en ningún sprint | **Archivar** en Figma, no construir |
 
-## Cómo quedó el login
+> Archivar no es borrar. El diseño se guarda en una página "Backlog" del
+> archivo de Figma para una versión futura.
 
-Se construyó lo que pasa las tres preguntas: el campo DNI, el de contraseña, el
-botón Iniciar Sesión y los mensajes de error. También el panel izquierdo y el
-botón para mostrar u ocultar la contraseña, que son solo frontend.
+## Resultado aplicado al Login
 
-Tres elementos del diseño quedaron distintos.
+| Elemento | Sprint | API | Base | Decisión |
+|---|:---:|:---:|:---:|---|
+| Campo DNI | ✅ | ✅ | ✅ | Construido |
+| Campo Contraseña | ✅ | ✅ | ✅ | Construido |
+| Botón Iniciar Sesión | ✅ | ✅ | ✅ | Construido |
+| Mostrar/ocultar contraseña | ✅ | — | — | Construido (es solo frontend) |
+| Panel izquierdo | ✅ | — | — | Construido |
+| Mensajes de error | ✅ | ✅ | — | Construido |
+| ¿Olvidaste tu contraseña? | Sprint 3 | ❌ | ✅ | **Visible pero deshabilitado** |
+| Selector "Cambiar perfil" | ⚠️ | ❌ | ✅ | **Fuera del v1 — ver abajo** |
+| Solicitar acceso | ❌ | ❌ | ❌ | **Fuera del MVP** |
 
-### Solicitar acceso: fuera del MVP
+## Detalle de lo que quedó afuera
 
-No hay endpoint ni tabla de solicitudes, y no figura en ningún sprint. En el
-MVP los usuarios los da de alta Dirección. El diseño queda archivado en Figma.
+### Solicitar acceso — fuera del MVP
 
-### ¿Olvidaste tu contraseña?: pantalla provisoria
+No hay endpoint, no hay tabla de solicitudes y no figura en ningún sprint.
+En el MVP los usuarios los da de alta Dirección (Sprint 2, "Gestión de
+usuarios y roles"). El diseño queda archivado en Figma.
 
-La base ya tiene `Usuarios.token_recuperacion` y `expiracion_token`, pero falta
-el endpoint, y el cambio de contraseña está en el Sprint 3. El enlace lleva a
-`/recuperar-contrasena`, una pantalla provisoria que no manda ningún correo.
+### ¿Olvidaste tu contraseña? — Sprint 3
 
-### Selector de perfil: pendiente de decisión
+La base ya tiene `Usuarios.token_recuperacion` y `expiracion_token`, pero
+falta el endpoint. En el roadmap, "Cambio de contraseña" está en Sprint 3.
+Se deja el botón visible y `disabled`, para no cambiar la composición visual
+cuando se active.
 
-El diseño tiene un chip de perfil y un enlace "← Cambiar perfil", lo que supone
-una pantalla previa para elegir el rol. Pero `POST /api/Auth/login` solo acepta
-`{ dni, password }`: el rol lo decide el backend.
+### Selector de perfil — pendiente de decisión
 
-El diseño no está mal, va más adelante que la API. La base tiene
-`Usuarios_roles` como relación de muchos a muchos y `Docentes.director_suplente`,
-así que una persona puede tener varios roles, y un selector sería la forma de
-resolverlo.
+El diseño tiene un chip de perfil y un enlace "← Cambiar perfil", lo que
+implica una pantalla previa de selección. Pero `POST /api/Auth/login` solo
+acepta `{ dni, password }`: el rol lo decide el backend.
 
-Se llegó a dibujar y después se quitó, por tres motivos:
+**Esto no es un error del diseño — es más avanzado que la API.** La base de
+datos tiene `Usuarios_roles` como relación muchos-a-muchos y
+`Docentes.director_suplente`, o sea que una persona puede tener varios roles.
+El selector de perfil sería exactamente la forma de resolverlo. Por ahora el
+frontend decide el destino usando la lista de roles que devuelve el login.
 
-1. El chip mentía. Tenía escrito "Director" a mano y se lo decía a cualquiera
-   que entrara, incluido un alumno.
-2. El enlace no llevaba a ningún lado, porque la pantalla de selección no
-   existe. Un botón que no hace nada es peor que no tenerlo: la persona lo
-   aprieta, no pasa nada y concluye que el sistema está roto.
-3. No hace falta elegir un rol para autenticarse. El login devuelve `roles` con
-   los roles de la persona, y la pantalla la manda a su panel según esa lista.
+### Por qué se sacó del v1
 
-En `formulario-login.html` quedó un comentario que dice dónde iba y por qué no
-está.
+Se llegó a dibujar y después se quitó. Dejarlo tenía tres problemas:
 
-Para que vuelva hay que definir dos cosas con el equipo: si hace falta una
-selección explícita cuando alguien tiene varios roles, y si una persona que es
-Docente y Director suplente debería tener un destino preferido. Hoy el destino
-se resuelve con `destinoSegunRoles` y los guards dejan pasar cualquier rol
-asignado.
+1. **El chip mentía.** Estaba escrito a mano con el texto "Director", así que
+   le decía "Director" a cualquiera que entrara, incluido un alumno.
+2. **El enlace no llevaba a ningún lado.** No existe la pantalla de selección
+   de perfil. Un botón que no hace nada es peor que no tener botón: el usuario
+   lo aprieta, no pasa nada, y concluye que el sistema está roto.
+3. **La API no recibe un rol.** `POST /api/Auth/login` solo acepta
+   `{ dni, password }`, pero desde el backend actualizado devuelve `roles`
+   con los roles asignados a la persona. No hace falta seleccionar un rol para
+   autenticar; la pantalla envía a la persona a su panel según esa lista.
 
-## Detalles que salieron del análisis
+En el HTML de `formulario-login.html` quedó un comentario explicando dónde iba
+y por qué no está, para que nadie lo vuelva a agregar sin darse cuenta del
+problema.
 
-El DNI se manda sin puntos. El diseño lo muestra como `12.345.678` y la API
-espera solo dígitos; lo limpia `normalizarDni()`.
+### Qué hace falta para que vuelva
 
-Hay un solo mensaje de error. La API distingue "contraseña incorrecta" de "DNI
-no encontrado", y eso permitiría averiguar qué DNI existen. El frontend no
-reenvía esa distinción.
+Pendiente de definir con el equipo:
 
-La sesión va en `sessionStorage`, que se borra al cerrar la pestaña. En una
-computadora compartida evita que el siguiente entre con la sesión del anterior.
+- ¿Se necesita una selección explícita cuando una persona tiene varios roles?
+- Si alguien es Docente **y** Director suplente, ¿debe existir un destino
+  preferido distinto del panel del primer rol?
 
-## Pendientes del backend
+El backend ya devuelve los roles del usuario. La pantalla de selección queda
+pendiente de una decisión funcional: hoy el destino se resuelve con la tabla
+`destinoSegunRoles` y los guards permiten cualquier rol asignado.
 
-Revisados contra `main` del backend el 06/10/2026.
+## Detalles de implementación que vienen del análisis
 
-1. `POST /api/Auth/crear-usuario-prueba` crea usuarios sin autenticación. No
-   puede llegar a producción.
-2. Los mensajes del 401 siguen siendo tres distintos. Conviene unificarlos en
-   uno genérico.
-3. `dni` es `varchar` y acepta `"Lucas23"`. Ya lo detectó QA.
+| Detalle | Por qué |
+|---|---|
+| El DNI se manda sin puntos | El diseño muestra `43.813.379`; la API espera `43880335`. Lo limpia `normalizarDni()`. |
+| Un solo mensaje de error | La API distingue "contraseña incorrecta" de "DNI no encontrado", lo que permitiría averiguar qué DNIs existen. El frontend no reenvía esa distinción. |
+| La sesión va en `sessionStorage` | Se borra al cerrar la pestaña. En computadoras compartidas evita que el siguiente entre con la sesión del anterior. |
 
-La ruta del login es `POST /api/Auth/login`, y no `POST /api/Auth`: el
-controlador conserva `[HttpPost("login")]`.
+## Pendientes con el equipo de backend
+
+1. **Ruta de login verificada** — el backend actual (commit `c048908`, PR #25)
+   conserva `[HttpPost("login")]` en `AuthController.Login`. El frontend usa
+   `POST /api/Auth/login`; no debe cambiarse a `POST /api/Auth`.
+2. **`POST /api/Auth/crear-usuario-prueba`** — crea usuarios sin
+   autenticación. No puede llegar a producción.
+3. **Mensajes de error 401** — unificar en uno genérico.
+4. **`GET /weatherforecast`** — endpoint de ejemplo de la plantilla de
+   ASP.NET Core, todavía expuesto.
+5. **`dni` es `varchar`** — acepta `"Lucas23"`. Ya detectado por el QA.

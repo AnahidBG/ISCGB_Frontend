@@ -1,23 +1,29 @@
 /*
-  Los dos eslabones del isotipo se separan y vuelven a engancharse.
+  Los dos eslabones del isotipo separándose y volviendo a engancharse.
 
-  `transform-box: fill-box` y `transform-origin: center` hacen que cada
-  eslabón rote sobre su propio centro y no sobre el origen del SVG, que está
-  lejos, arriba a la izquierda. Sin eso salen disparados en un arco.
+  Cómo funciona, y por qué así:
 
-  Los dos usan la misma duración y la misma curva, en direcciones opuestas,
-  así se abren y se cierran a la vez, como una sola pieza.
+  · `transform-box: fill-box` + `transform-origin: center` hacen que cada
+    eslabón rote sobre SU propio centro y no sobre el origen del SVG, que
+    está lejos y arriba a la izquierda. Sin esto, en vez de girar sobre sí
+    mismos salen disparados en un arco.
 
-  El movimiento es chico: 7% de su alto y 3 grados. Si se separan más, dejan
-  de leerse como el logo del instituto y pasan a ser dos figuras sueltas.
+  · Los dos usan la MISMA duración y el mismo `ease`, en direcciones
+    opuestas: así se separan y se juntan a la vez, como una sola pieza que
+    se abre. Si tuvieran tiempos distintos, la vuelta a engancharse se vería
+    desprolija.
 
-  La curva `cubic-bezier(.65,0,.35,1)` es la del sistema (`--loader-ease` del
-  Brochero Design System). Arranca y termina lento, con el recorrido rápido en
-  el medio, y da sensación de peso y no de rebote.
+  · El movimiento es chico (7% de su alto y 3 grados). El isotipo tiene que
+    seguir leyéndose como el logo del instituto: si se separan demasiado
+    dejan de ser una marca y pasan a ser dos figuras sueltas.
 
-  El ciclo hace una pausa en cada extremo (45% a 60%, y 100%) para que se
-  alcance a ver el momento en que están separados, que es lo que la pantalla
-  quiere contar.
+  · La curva `cubic-bezier(.65,0,.35,1)` es la del sistema (`--loader-ease`
+    del Brochero Design System): arranca y termina lento, con el recorrido
+    rápido en el medio. Da la sensación de peso, no de rebote.
+
+  El ciclo tiene una pausa en cada extremo (los tramos 45%-60% y 100%) para
+  que se lea el momento "separado" — que es lo que la pantalla está contando —
+  en vez de ser un vaivén constante que marea.
 */
 
 .eslabones path {
@@ -64,9 +70,10 @@
 }
 
 /*
-  Quien pidió menos movimiento en su sistema operativo no ve la animación,
-  pero sí los eslabones separados. Esa separación es el mensaje de la
-  pantalla: con el logo entero diría lo contrario.
+  A quien pidió menos movimiento en su sistema operativo no le mostramos la
+  animación, pero SÍ los eslabones separados: esa separación es parte del
+  mensaje de la pantalla, no un adorno. Quitarla dejaría el logo entero,
+  que es justo lo contrario de lo que pasó.
 */
 @media (prefers-reduced-motion: reduce) {
   .eslabones__superior,

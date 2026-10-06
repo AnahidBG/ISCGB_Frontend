@@ -29,7 +29,7 @@ const COMISIONES_DE_EJEMPLO: readonly ComisionDisponible[] = [
 ];
 
 /**
- * Imita las dos reglas de `MateriasController` que la pantalla tiene que
+ * Imita las dos reglas de `AsignacionesController` que la pantalla tiene que
  * saber mostrar: nombre de materia repetido y asignación repetida. Todo queda
  * en memoria y se pierde al recargar.
  */

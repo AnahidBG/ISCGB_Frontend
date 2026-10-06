@@ -38,7 +38,7 @@ function sesionQueVenceEn(milisegundos: number): Sesion {
     token: 'token',
     idUsuario: 1,
     nombreCompleto: 'Milena Previgliano',
-    dni: '12345678',
+    dni: '43880335',
     email: 'milena@iscgb.edu.ar',
     roles: ['Docente'],
     venceEl: new Date(Date.now() + milisegundos),

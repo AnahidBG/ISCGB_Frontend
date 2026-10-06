@@ -82,84 +82,65 @@ const PERSONA_REVISADA: UsuarioDetalle = {
   rolesConId: [{ idRol: 3, nombreRol: 'Docente' }],
 };
 
-/** Los argumentos de cada llamada a `LegajoService.auditar`. */
-let auditorias: unknown[][];
+describe('MisDocumentos: "Presentado físicamente" lo marca quien revisa', () => {
+  /** Cuántas veces se llamó a `LegajoService.auditar`. */
+  let auditorias: number;
 
-/**
- * `idUsuarioEnUrl`: con id es `legajo/usuario/:idUsuario` (revisión de
- * Secretaría o Dirección); sin id es `legajo/mis-documentos` (el propio).
- */
-async function montar(
-  sesion: Sesion,
-  idUsuarioEnUrl: number | null,
-  legajo: DocumentoLegajo[] = LEGAJO,
-): Promise<ComponentFixture<MisDocumentos>> {
-  const parametros: Record<string, string> =
-    idUsuarioEnUrl === null ? {} : { idUsuario: String(idUsuarioEnUrl) };
-  auditorias = [];
+  /**
+   * `idUsuarioEnUrl`: con id es `legajo/usuario/:idUsuario` (revisión de
+   * Secretaría o Dirección); sin id es `legajo/mis-documentos` (el propio).
+   */
+  async function montar(
+    sesion: Sesion,
+    idUsuarioEnUrl: number | null,
+  ): Promise<ComponentFixture<MisDocumentos>> {
+    const parametros: Record<string, string> =
+      idUsuarioEnUrl === null ? {} : { idUsuario: String(idUsuarioEnUrl) };
+    auditorias = 0;
 
-  TestBed.configureTestingModule({
-    providers: [
-      provideRouter([]),
-      {
-        provide: ActivatedRoute,
-        useValue: {
-          paramMap: of(convertToParamMap(parametros)),
-          // Lo lee `EstructuraPanel` para el cartel de acceso denegado.
-          queryParamMap: of(convertToParamMap({})),
-        },
-      },
-      { provide: AuthService, useValue: { sesion: signal(sesion), cerrarSesion: () => {} } },
-      {
-        provide: CampanaService,
-        useValue: { total: signal(0), detalle: signal<NotificacionPanel[]>([]), refrescar: () => {} },
-      },
-      {
-        provide: UsuariosService,
-        useValue: { obtener: (): Observable<UsuarioDetalle> => of(PERSONA_REVISADA) },
-      },
-      {
-        provide: LegajoService,
-        useValue: {
-          obtenerLegajoPropio: (): Observable<DocumentoLegajo[]> => of(legajo),
-          obtenerLegajoDeUsuario: (): Observable<DocumentoLegajo[]> => of(legajo),
-          documentosRequeridos: (): Observable<DocumentoRequerido[]> => of(REQUERIDOS),
-          auditar: (...argumentos: unknown[]): Observable<void> => {
-            auditorias.push(argumentos);
-            return of(undefined);
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            paramMap: of(convertToParamMap(parametros)),
+            // Lo lee `EstructuraPanel` para el cartel de acceso denegado.
+            queryParamMap: of(convertToParamMap({})),
           },
         },
-      },
-    ],
-  });
-  const fixture = TestBed.createComponent(MisDocumentos);
-  await fixture.whenStable();
-  return fixture;
-}
+        { provide: AuthService, useValue: { sesion: signal(sesion), cerrarSesion: () => {} } },
+        {
+          provide: CampanaService,
+          useValue: { total: signal(0), detalle: signal<NotificacionPanel[]>([]), refrescar: () => {} },
+        },
+        {
+          provide: UsuariosService,
+          useValue: { obtener: (): Observable<UsuarioDetalle> => of(PERSONA_REVISADA) },
+        },
+        {
+          provide: LegajoService,
+          useValue: {
+            obtenerLegajoPropio: (): Observable<DocumentoLegajo[]> => of(LEGAJO),
+            obtenerLegajoDeUsuario: (): Observable<DocumentoLegajo[]> => of(LEGAJO),
+            documentosRequeridos: (): Observable<DocumentoRequerido[]> => of(REQUERIDOS),
+            auditar: (): Observable<void> => {
+              auditorias += 1;
+              return of(undefined);
+            },
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(MisDocumentos);
+    await fixture.whenStable();
+    return fixture;
+  }
 
-function raiz(fixture: ComponentFixture<MisDocumentos>): HTMLElement {
-  return fixture.nativeElement as HTMLElement;
-}
+  function raiz(fixture: ComponentFixture<MisDocumentos>): HTMLElement {
+    return fixture.nativeElement as HTMLElement;
+  }
 
-describe('MisDocumentos: volver a subir (SCRUM-152)', () => {
-  it('"Resubir" y "Cargar" abren Subir Documento con el tipo de ese documento ya elegido', async () => {
-    const fixture = await montar(DOCENTE, null, [
-      { ...LEGAJO[0], estado: 'Rechazado', comentario: 'Documento incompleto' },
-      LEGAJO[1],
-    ]);
-
-    const destinos = Array.from(raiz(fixture).querySelectorAll<HTMLAnchorElement>('main li a'))
-      .filter((enlace) => enlace.getAttribute('href')?.includes('?tipo='))
-      .map((enlace) => [enlace.textContent?.trim(), enlace.getAttribute('href')]);
-
-    // El DNI está rechazado y el Apto médico nunca se subió.
-    expect(destinos).toContainEqual(['Resubir', '/legajo/subir-documento?tipo=1']);
-    expect(destinos).toContainEqual(['Cargar', '/legajo/subir-documento?tipo=3']);
-    expect(destinos).toHaveLength(2);
-  });
-});
-
-describe('MisDocumentos: "Presentado físicamente" lo marca quien revisa', () => {
   function casilla(fixture: ComponentFixture<MisDocumentos>, idLegajo: number): HTMLInputElement | null {
     return raiz(fixture).querySelector(`#presentado-fisico-${idLegajo}`);
   }
@@ -209,7 +190,7 @@ describe('MisDocumentos: "Presentado físicamente" lo marca quien revisa', () =>
     casilla(fixture, 102)!.click();
     await fixture.whenStable();
 
-    expect(auditorias).toHaveLength(0);
+    expect(auditorias).toBe(0);
   });
 
   it.each([
@@ -220,56 +201,5 @@ describe('MisDocumentos: "Presentado físicamente" lo marca quien revisa', () =>
 
     expect(casillas(fixture)).toHaveLength(0);
     expect(raiz(fixture).textContent).not.toContain('Presentado físicamente');
-  });
-});
-
-describe('MisDocumentos: rechazar con los motivos de la institución', () => {
-  /** La fila (`<li>`) del documento, buscada por su nombre. */
-  function filaDe(fixture: ComponentFixture<MisDocumentos>, documento: string): HTMLElement {
-    return Array.from(raiz(fixture).querySelectorAll('li')).find(
-      (li) => li.querySelector('p')?.textContent?.trim() === documento,
-    )!;
-  }
-
-  async function apretar(contenedor: HTMLElement, etiqueta: string, fixture: ComponentFixture<MisDocumentos>) {
-    Array.from(contenedor.querySelectorAll('button'))
-      .find((b) => b.textContent?.trim() === etiqueta)!
-      .click();
-    await fixture.whenStable();
-  }
-
-  async function marcar(contenedor: HTMLElement, motivo: string, fixture: ComponentFixture<MisDocumentos>) {
-    Array.from(contenedor.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'))
-      .find((c) => c.closest('label')?.textContent?.trim() === motivo)!
-      .click();
-    await fixture.whenStable();
-  }
-
-  it('"Confirmar rechazo" sin ningún motivo marcado no envía nada', async () => {
-    const fixture = await montar(SECRETARIO, ID_REVISADO);
-    await apretar(filaDe(fixture, 'DNI'), 'Rechazar', fixture);
-
-    await apretar(filaDe(fixture, 'DNI'), 'Confirmar rechazo', fixture);
-
-    expect(auditorias).toHaveLength(0);
-    expect(filaDe(fixture, 'DNI').textContent).toContain('Marcá al menos un motivo');
-  });
-
-  it('el comentario del PUT lleva los motivos marcados y la aclaración', async () => {
-    const fixture = await montar(SECRETARIO, ID_REVISADO);
-    await apretar(filaDe(fixture, 'DNI'), 'Rechazar', fixture);
-
-    await marcar(filaDe(fixture, 'DNI'), 'Dato de importancia ilegible', fixture);
-    await marcar(filaDe(fixture, 'DNI'), 'No se encuentra en formato pdf', fixture);
-    const aclaracion = filaDe(fixture, 'DNI').querySelector<HTMLTextAreaElement>('textarea')!;
-    aclaracion.value = 'se escaneó como imagen';
-    aclaracion.dispatchEvent(new Event('input'));
-    await apretar(filaDe(fixture, 'DNI'), 'Confirmar rechazo', fixture);
-
-    const comentario =
-      'Dato de importancia ilegible; No se encuentra en formato pdf. Aclaración: se escaneó como imagen';
-    expect(auditorias).toEqual([[101, 'Rechazado', SECRETARIO.idUsuario, comentario]]);
-    // Lo mismo que va a ver la persona en su legajo.
-    expect(filaDe(fixture, 'DNI').textContent).toContain(`Motivo del rechazo: ${comentario}`);
   });
 });

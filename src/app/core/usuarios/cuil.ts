@@ -1,7 +1,7 @@
 import { normalizarDni } from '../auth/dni';
 
 /**
- * CUIL: "20-12345678-6". Criterio de Sprint 2 "Gestión de usuarios y roles"
+ * CUIL: "20-43880335-7". Criterio de Sprint 2 "Gestión de usuarios y roles"
  * (Datos personales → CUIL) y campo obligatorio de `CargaUsuarioDto`.
  *
  * Igual que con el DNI, la persona lo escribe con guiones y el backend lo
@@ -9,12 +9,12 @@ import { normalizarDni } from '../auth/dni';
  * es para ayudar a no equivocarse, no seguridad.
  */
 
-/** Deja solo los dígitos. "20-12345678-6" → "20123456786" */
+/** Deja solo los dígitos. "20-43880335-7" → "20438803357" */
 export function normalizarCuil(valor: string): string {
   return valor.replace(/\D/g, '');
 }
 
-/** Con guiones, para mostrar. "20123456786" → "20-12345678-6" */
+/** Con guiones, para mostrar. "20438803357" → "20-43880335-7" */
 export function formatearCuil(valor: string): string {
   const digitos = normalizarCuil(valor);
   if (digitos.length !== 11) {

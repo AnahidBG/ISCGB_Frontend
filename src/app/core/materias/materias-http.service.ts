@@ -17,7 +17,7 @@ import {
 } from './modelos/asignacion-materia';
 import { MateriaDisponible } from './modelos/materia-disponible';
 
-/** Los tres GET de `MateriasController` envuelven la lista en `{ data }`. */
+/** Los tres GET de `AsignacionesController` envuelven la lista en `{ data }`. */
 interface ListaApi<T> {
   data?: T[];
 }
@@ -42,7 +42,7 @@ interface RespuestaGuardadoApi {
   message?: string;
 }
 
-/** Cuando el backend todavía no publicó `MateriasController`. */
+/** Cuando el backend todavía no publicó `AsignacionesController`. */
 const MENSAJE_ASIGNACIONES_NO_DISPONIBLE =
   'El servidor todavía no tiene habilitada la gestión de materias.';
 
