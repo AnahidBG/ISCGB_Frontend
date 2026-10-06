@@ -1,101 +1,149 @@
-# Alineación Sprint 2 — frontend ↔ backend ↔ Jira
+# Alineación del Sprint 2: frontend, backend y Jira
 
-**Fecha:** 06/10/2026 · **Sprint:** septiembre (01/09 – 30/09/2026)
-Revisado contra: Jira (proyecto SCRUM) e `ISCGB_Backend` rama `main`
-(`f856989`, PR #29, para notificaciones automáticas).
+Sprint de septiembre, del 01/09 al 30/09/2026. Revisado el **06/10/2026**
+contra Jira (proyecto SCRUM) y la rama `main` de `ISCGB_Backend` (`f856989`,
+PR #29).
 
-El backend no se toca desde el frontend: cuando algo falta del otro lado, la
-pantalla lo dice con todas las letras y queda anotado acá abajo.
+El backend no se toca desde el frontend. Lo que falta del otro lado queda
+anotado acá.
 
----
+## Historias del sprint
 
-## 1. Historias del sprint
+### SCRUM-16: gestión de usuarios y roles
 
-| Historia | Front (subtarea) | Estado en el frontend | Backend que usa |
-|---|---|---|---|
-| **SCRUM-16** Gestión de usuarios y roles (Dirección) | SCRUM-130 | ✅ Alta, modificación, baja y reactivación; cambio de rol; CUIL/género/afiliación/provincia; director suplente; mensaje "El perfil de X ha sido actualizado correctamente"; acceso denegado con cartel; vencimiento del token verificado al navegar | `GET /api/Usuarios`, `GET /api/Usuarios/{id}`, `POST /api/UsuariosAdmin/alta`, `PUT .../modificar/{id}`, `PUT .../baja/{id}`, `PUT .../alta/{id}` |
-| **SCRUM-19** Revisión y cambio de estado del legajo docente (Secretario y Dirección) | SCRUM-161 | ✅ Aprobar / rechazar por documento, motivo obligatorio al rechazar, "Presentado físicamente" visible, faltantes y progreso del revisado, filtro Docentes / Alumnos, conteos sobre la versión vigente | `GET /api/Legajos/resumen-estado`, `GET /api/Legajos/usuario/{id}`, `PUT /api/Legajos/auditar/{id}`, `GET /api/Legajos/requeridos-por-rol/{idRol}` |
-| **SCRUM-7** Notificación de documentación faltante (Sistema) | SCRUM-148 |  Campana con rechazos vigentes, anuales vencidos, obligatorios faltantes y "¡Tu legajo está completo!" (también como cartel).  SCRUM-150 (05/10/2026): tarjeta "Documentación por entregar" arriba de todo en los paneles de Docente y Alumno, con los obligatorios sin cargar y un "Subir" en cada uno. Sale de `obligatoriosSinCargar`, igual que el aviso de la campana. Ese "Subir" y el aviso "Falta entregar X" abren Subir Documento con el tipo ya elegido (`?tipo=`, `core/legajos/tipo-en-url.ts`). Solo se elige si el tipo es de su rol; si no, el formulario abre vacío. ✅ SCRUM-150 (06/10/2026): la tarjeta dice también cuándo está cargando, cuándo falló (con "Reintentar") y cuándo ya no falta nada; antes un error del legajo rompía el panel. ✅ SCRUM-153 (06/10/2026): el cartel de legajo completo es un componente compartido (`aviso-legajo-completo`) y se decide con `legajoEstaCompleto`, que mira la versión vigente; un anual vencido y vuelto a subir ya no lo anuncia mientras espera revisión. ✅ SCRUM-152 (06/10/2026): tarjeta "Documentación rechazada" en los dos paneles, con el motivo de cada rechazo vigente y "Volver a subir"; ese acceso, el aviso de la campana y el "Resubir" de Mis Documentos abren Subir Documento con el tipo ya elegido. ✅ En backend (PR #29): envío automático por email y frecuencia configurable. ✅ SCRUM-151 (06/10/2026): pantalla "Frecuencia de avisos" para Secretaría (`/secretario/frecuencia-avisos`), entero de 1 a 365 días | Los mismos de Legajos, más `GET/PUT /api/Configuracion/frecuencia-notificaciones` |
-| **SCRUM-12** Certificado de alumno regular (Estudiante) | SCRUM-119 | ✅ Con y sin horario, generado por el backend con sello; enlace en el menú | `GET /api/Certificados/alumno-regular`, `.../alumno-regular-horario` |
-| **SCRUM-30** Solicitar reconocimiento de saberes | SCRUM-172 | ✅ Pantalla completa (materia + comentario, 2 PDF, barra de progreso, Adjuntar/Cancelar/Enviar). ⚠️ Sin endpoint | `POST /api/ReconocimientoSaberes` (**propuesto**, ver `contrato-reconocimiento-saberes.md`) |
+Subtarea de frontend SCRUM-130. Hecha: alta, modificación, baja y reactivación;
+uno o más roles por persona; CUIL, género, afiliación y provincia; director
+suplente; el mensaje "El perfil de X ha sido actualizado correctamente"; acceso
+denegado con cartel, y vencimiento del token verificado al navegar.
 
-### Criterios que dependen del backend y NO se pueden cerrar desde el frontend
+Usa `GET /api/Usuarios`, `GET /api/Usuarios/{id}` y, en `UsuariosAdmin`,
+`POST alta`, `PUT modificar/{id}`, `PUT baja/{id}` y `PUT alta/{id}`.
 
-| Criterio | Historia | Qué falta |
-|---|---|---|
-| Rechazar dispara un mail al docente con el motivo (regla de negocio #4) | SCRUM-19 / SCRUM-7 | `IEmailService` existe y envía avisos de faltantes, pero las auditorías de legajo y justificativos no lo invocan para rechazos. La pantalla de revisión avisa que el mail todavía no sale. |
-| Marcar la documentación presentada físicamente al revisar | SCRUM-19 (SCRUM-167/171) | `AuditoriaLegajoDto` solo recibe `estado` y `comentario`. Desde el 04/10/2026 quien sube ya no lo declara (va siempre en `false`), y lo marca quien revisa: la casilla de la revisión se puede tildar pero solo en pantalla, no se guarda hasta que el backend lo acepte. Ver `contrato-api.md`. |
-| Envío automático de avisos por email y frecuencia configurable | SCRUM-7 (SCRUM-149/151/155/156/157) | Hecho de los dos lados (backend PR #29, frontend SCRUM-151). Faltan en el backend: `[Authorize]` en `ConfiguracionController`, un tope máximo en el `PUT`, y que el worker use los obligatorios del rol y no todos los tipos de documento. Detalle en `contrato-api.md`. |
-| Carrera / Especialidad en el perfil | SCRUM-16 | No hay columna ni campo en `CargaUsuarioDto`. |
-| Horarios de cursada reales en el certificado | SCRUM-12 | El backend deja las líneas en blanco para que las complete Preceptoría. |
+Falta la carrera o especialidad en el perfil: no hay columna ni campo en
+`CargaUsuarioDto`.
 
----
+### SCRUM-19: revisión y cambio de estado del legajo
 
-## 2. Errores del frontend corregidos en esta pasada
+Subtarea SCRUM-161. Hecha: aprobar o rechazar cada documento, con motivo
+obligatorio al rechazar; "Presentado físicamente" a la vista; faltantes y
+progreso de la persona revisada; filtro entre docentes y alumnos, y conteos
+sobre la versión vigente.
 
-| Error | Dónde | Arreglo |
-|---|---|---|
-| Alta y edición apuntaban a `POST/PUT /api/Usuarios`, que el backend nunca implementó | `UsuariosHttpService` | Alineado a `UsuariosAdminController` |
-| Con el token vencido se seguía navegando y todo fallaba con "error de conexión" | `authGuard`, nuevo `sesionInterceptor` | Se cierra la sesión y el login avisa "Tu sesión venció" |
-| Acceso denegado mandaba a `/inicio`, sin menú | `roleGuard` | Vuelve al panel propio con cartel |
-| La fecha de nacimiento se precargaba un día antes | Editar Usuario | `desdeFechaSola()` en hora local |
-| El panel del Director mostraba la columna "Legajo" vacía para todos | `PanelDirector` | Se cruza con `resumen-estado`, que ya existía |
-| Los conteos sumaban versiones viejas: un rechazo corregido seguía contando | Control de Legajos, paneles, campana | Solo la versión vigente de cada documento |
-| Revisando un legajo ajeno no se veía qué le faltaba entregar | `MisDocumentos` | Se piden los requeridos del rol de esa persona |
-| El certificado se armaba en el navegador sin sello; la variante con horario era "Próximamente" aunque el backend ya la tenía | `CertificadoRegular` | Se descarga del backend; se quitó `jspdf` |
-| "Entregar programa" le decía "no sos docente" a todo docente | `ProgramasMateriaHttpService` | Distingue "el endpoint no existe" de "no es docente" |
-| El panel del Alumno decía que los justificativos "todavía no están disponibles" | `PanelAlumno` | Texto y accesos actualizados |
-| Campos de solo espacios pasaban la validación del alta | `FormularioPerfilUsuario` | Se validan después del `trim()` |
+Usa `GET /api/Legajos/resumen-estado`, `GET /api/Legajos/usuario/{id}`,
+`PUT /api/Legajos/auditar/{id}` y `GET /api/Legajos/requeridos-por-rol/{idRol}`.
 
----
+Dos criterios no se pueden cerrar desde el frontend. El mail al rechazar no
+sale, porque la auditoría no llama a `IEmailService`. Y la casilla "Presentado
+físicamente" se puede tildar al revisar pero no se guarda: `AuditoriaLegajoDto`
+solo recibe `estado` y `comentario`.
 
-## 3. Pendientes para el equipo de backend
+### SCRUM-7: notificación de documentación faltante
 
-Ordenados por impacto en el Sprint 2.
+Subtarea SCRUM-148. Hecha, con sus cuatro historias de frontend:
 
-1. **Contraseña del alta:** `PasswordHash = "AsignarContraseñaTemporal"` no es
-   un hash BCrypt; el login de esa persona va a dar 500 (`BCrypt.Verify`
-   tira excepción). Generar una contraseña inicial real.
-2. **`[Authorize(Roles = ...)]`**: está comentado en `UsuariosAdminController`
-   y falta en Usuarios, Legajos, Justificativos y ProgramasMateria. Hoy
-   cualquiera con Postman puede crear usuarios o aprobar legajos. (Regla #5.)
-3. **`GET /api/Provincias`** (y datos semilla en `Pais` / `Provincia`):
-   `idProvincia` es obligatorio con clave foránea. El frontend usa una lista
-   provisoria 1..24 en orden alfabético (`core/usuarios/modelos/provincia.ts`).
-4. **Email al rechazar** (`IEmailService`) en `AuditarLegajo` y
-   `AuditarJustificativo`. (Regla #4.)
-5. **`presentadoFisico` en `AuditoriaLegajoDto`** para el check de
-   documentación física (SCRUM-167/171).
-6. **`GET /api/Usuarios/{id}`**: devolver CUIL, género, afiliación y
-   `DirectorSuplente`. Sin el último, editar a un suplente sin volver a
-   tildar la casilla le quita la suplencia.
-7. **`PUT /api/UsuariosAdmin/alta/{id}`** reactiva cuentas dadas de baja.
-   `PUT /api/UsuariosAdmin/modificar/{id}` también actualiza el rol enviado
-   en `IdRol`.
-8. **`POST /api/ReconocimientoSaberes`** — contrato en
-   `contrato-reconocimiento-saberes.md`.
-9. **Validar PDF por contenido** (magic bytes `%PDF-`) en Legajos y
-    Justificativos (hoy solo `ContentType` o nada). (Regla #1.)
-10. **Sello del certificado (verificar):** `GeneradorPDFCertificado` lo busca
-    en `AppContext.BaseDirectory/wwwroot/images/sello.png` — la carpeta
-    `bin/` —, pero el archivo está en `wwwRoot/Images/sello.png` del proyecto
-    y el `.csproj` no lo copia a la salida. Si el certificado responde 500,
-    es esto. Además, en Linux/Docker las mayúsculas (`wwwRoot`, `Images`)
-    no coinciden.
-11. `POST /api/Auth/crear-usuario-prueba` sigue expuesto sin autenticación.
+- **SCRUM-150.** La campana avisa los rechazos vigentes, los anuales vencidos,
+  los obligatorios que faltan y el legajo completo. Los paneles de Docente y
+  Alumno tienen la tarjeta "Documentación por entregar", con un "Subir" por
+  documento que abre el formulario con ese tipo ya elegido. La tarjeta avisa
+  también cuando está cargando, cuando falló y cuando ya no falta nada.
+- **SCRUM-151.** Pantalla "Frecuencia de avisos" para Secretaría, en
+  `/secretario/frecuencia-avisos`: un entero de 1 a 365 días.
+- **SCRUM-152.** Tarjeta "Documentación rechazada" en los dos paneles, con el
+  motivo de cada rechazo y "Volver a subir". Un rechazo ya corregido con una
+  versión nueva no figura.
+- **SCRUM-153.** El aviso de legajo completo aparece en el panel y en la
+  campana solo si cada obligatorio está aprobado en su versión vigente, sin
+  rechazos ni vencidos.
 
----
+Usa los endpoints de Legajos y `GET/PUT /api/Configuracion/frecuencia-notificaciones`.
+El backend manda los avisos por mail desde el PR #29.
 
-## 4. Cómo probarlo
+### SCRUM-12: certificado de alumno regular
+
+Subtarea SCRUM-119. Hecho, con y sin horario. Lo genera el backend con el sello
+(`GET /api/Certificados/alumno-regular` y `.../alumno-regular-horario`) y tiene
+su enlace en el menú.
+
+Los horarios de cursada no son reales: el backend deja las líneas en blanco
+para que las complete Preceptoría.
+
+### SCRUM-30: solicitar reconocimiento de saberes
+
+Subtarea SCRUM-172. Hecha: el alumno elige la materia, escribe un comentario y
+adjunta los dos PDF (`POST /api/ReconocimientoSaberes/solicitar`), y Secretaría
+tiene la bandeja de solicitudes. El contrato está en
+`contrato-reconocimiento-saberes.md`.
+
+## Errores del frontend que se corrigieron
+
+- El alta y la edición apuntaban a `POST` y `PUT /api/Usuarios`, que el backend
+  nunca implementó. Se alinearon a `UsuariosAdminController`.
+- Con el token vencido se seguía navegando y todo fallaba con "error de
+  conexión". Ahora `authGuard` y `sesionInterceptor` cierran la sesión y el
+  login avisa que venció.
+- El acceso denegado mandaba a `/inicio`, sin menú. `roleGuard` vuelve al panel
+  propio con un cartel.
+- La fecha de nacimiento se precargaba un día antes en Editar Usuario. Se
+  arregló con `desdeFechaSola()`, que la lee en hora local.
+- El panel del Director mostraba la columna "Legajo" vacía para todos. Ahora se
+  cruza con `resumen-estado`.
+- Los conteos sumaban versiones viejas y un rechazo ya corregido seguía
+  contando. Ahora se mira solo la versión vigente de cada documento.
+- Al revisar un legajo ajeno no se veía qué le faltaba entregar a esa persona.
+  `MisDocumentos` pide los requeridos de su rol.
+- El certificado se armaba en el navegador, sin sello, y la variante con
+  horario figuraba como "Próximamente". Ahora se descarga del backend y se quitó
+  `jspdf`.
+- "Entregar programa" le decía "no sos docente" a todo docente.
+  `ProgramasMateriaHttpService` distingue "el endpoint no existe" de "no es
+  docente".
+- Los campos con solo espacios pasaban la validación del alta. Se validan
+  después del `trim()`.
+
+## Pendientes para el backend
+
+Por impacto.
+
+1. **`[Authorize(Roles = ...)]`** falta en Usuarios, Legajos, Justificativos,
+   ProgramasMateria y Configuracion. Cualquiera con Postman puede aprobar un
+   legajo o cambiar la frecuencia de los avisos. Es la regla 5.
+2. **`POST /api/UsuariosAdmin/establecer-password`** quedó debajo del
+   `[Authorize]` de la clase, sin `[AllowAnonymous]`. Quien crea su contraseña
+   desde el mail no tiene sesión y recibe 401.
+3. **Mail al rechazar**, en `AuditarLegajo` y `AuditarJustificativo`. Es la
+   regla 4.
+4. **Motivo en el rechazo de un justificativo.** `AuditarJustificativoDto` solo
+   tiene el auditor y el estado.
+5. **`presentadoFisico` en `AuditoriaLegajoDto`**, para guardar la casilla de la
+   revisión (SCRUM-167 y SCRUM-171).
+6. **`GET /api/Usuarios/{id}`** tiene que devolver CUIL, género, afiliación y
+   `DirectorSuplente`. Sin el último, editar a un suplente sin volver a tildar
+   la casilla le quita la suplencia.
+7. **Validar el PDF por contenido** (magic bytes `%PDF-`) en Legajos y
+   Justificativos. Hoy se mira el `ContentType`, o nada. Es la regla 1.
+8. **Avisos automáticos.** El worker compara contra todos los tipos de
+   documento y no contra los obligatorios del rol, y el `PUT` de la frecuencia
+   no tiene tope máximo. Detalle en `contrato-api.md`.
+9. **Sello del certificado, a verificar.** El archivo está en
+   `wwwRoot/Images/sello.png` y el `.csproj` no lo copia a la salida. Si el
+   certificado responde 500, es esto. En Linux y Docker, además, las mayúsculas
+   de `wwwRoot` e `Images` importan.
+10. `POST /api/Auth/crear-usuario-prueba` sigue expuesto sin autenticación.
+
+Ya resueltos: la contraseña inicial del alta, que ahora se crea desde un enlace
+enviado por mail; las provincias, con `GET /api/Ubicaciones/paises`; la
+reactivación de cuentas; los endpoints de reconocimiento de saberes, y el
+`[Authorize]` de `UsuariosAdminController`.
+
+## Cómo probarlo
 
 ```bash
 npm install
-npm test          # 137 tests
+npm test
 npm start         # http://localhost:4200, contra http://localhost:5231
 ```
 
-Con el backend de `main`: login, paneles, Control de Legajos, revisión,
-certificados, notificaciones y gestión de usuarios funcionan de punta a
-punta. Reconocimiento de saberes
-necesita el endpoint nuevo — sin ellos, las pantallas avisan que el
-servidor todavía no lo tiene habilitado.
+Con el backend de `main` funcionan de punta a punta el login, los paneles,
+Control de Legajos, la revisión, los certificados, las notificaciones, la
+gestión de usuarios y el reconocimiento de saberes. El paso a paso está en
+`como-probar.md`.
