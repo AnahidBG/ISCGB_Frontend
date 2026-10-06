@@ -25,6 +25,7 @@ import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { TarjetaMetrica } from '../../../shared/ui/tarjeta-metrica/tarjeta-metrica';
+import { CuadroRechazo } from './partes/cuadro-rechazo/cuadro-rechazo';
 
 /** Las pestañas de arriba de la lista. */
 type Filtro = 'todos' | 'Aprobado' | 'Pendiente' | 'Rechazado' | 'sin-cargar';
@@ -81,7 +82,7 @@ interface FilaDocumento {
  */
 @Component({
   selector: 'app-mis-documentos',
-  imports: [EstructuraPanel, InsigniaEstado, TarjetaMetrica, Icono, DatePipe],
+  imports: [EstructuraPanel, InsigniaEstado, TarjetaMetrica, Icono, DatePipe, CuadroRechazo],
   templateUrl: './mis-documentos.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -468,22 +469,6 @@ export class MisDocumentos {
     modo: 'aprobar' | 'rechazar';
   } | null>(null);
 
-  protected readonly motivoRechazo = signal('');
-
-  /** `true` desde que se intentó confirmar un rechazo sin motivo. */
-  protected readonly intentoConfirmarRechazo = signal(false);
-
-  /**
-   * El motivo es OBLIGATORIO al rechazar: la persona necesita saber qué
-   * corregir, y sin esto el rechazo llegaba mudo (regla de negocio, no algo
-   * que se pueda dejar "por si después escriben algo").
-   */
-  protected readonly errorMotivoRechazo = computed(() =>
-    this.intentoConfirmarRechazo() && this.motivoRechazo().trim().length === 0
-      ? 'Contale a la persona qué tiene que corregir.'
-      : null,
-  );
-
   protected estaGuardando(idLegajo: number | null): boolean {
     return idLegajo !== null && this.guardando().has(idLegajo);
   }
@@ -506,10 +491,14 @@ export class MisDocumentos {
     if (fila.idLegajo === null || this.estaGuardando(fila.idLegajo) || fila.estado === 'Aprobado') {
       return;
     }
-    this.motivoRechazo.set('');
     this.accionEnCurso.set({ idLegajo: fila.idLegajo, modo: 'aprobar' });
   }
 
+  /**
+   * Abre `CuadroRechazo`. Lo que se marca vive en el cuadro: al cancelar o
+   * confirmar el cuadro se destruye, así que cada rechazo arranca sin nada
+   * marcado.
+   */
   protected iniciarRechazo(fila: FilaDocumento): void {
     if (
       fila.idLegajo === null ||
@@ -518,15 +507,11 @@ export class MisDocumentos {
     ) {
       return;
     }
-    this.motivoRechazo.set('');
-    this.intentoConfirmarRechazo.set(false);
     this.accionEnCurso.set({ idLegajo: fila.idLegajo, modo: 'rechazar' });
   }
 
   protected cancelarAccion(): void {
     this.accionEnCurso.set(null);
-    this.motivoRechazo.set('');
-    this.intentoConfirmarRechazo.set(false);
   }
 
   protected confirmarAprobacion(): void {
@@ -538,22 +523,20 @@ export class MisDocumentos {
     this.enviarAuditoria(accion.idLegajo, 'Aprobado', null);
   }
 
-  protected confirmarRechazo(): void {
+  /**
+   * Recibe el `comentario` ya armado por `CuadroRechazo` (motivos de la
+   * institución + aclaración, ver `comentarioDeRechazo`). El motivo es
+   * OBLIGATORIO (regla #4): el cuadro no emite sin uno, y por las dudas acá
+   * tampoco se manda un rechazo mudo.
+   */
+  protected confirmarRechazo(comentario: string): void {
     const accion = this.accionEnCurso();
-    if (accion === null) {
-      return;
-    }
-
-    const texto = this.motivoRechazo().trim();
-    if (texto.length === 0) {
-      this.intentoConfirmarRechazo.set(true);
+    if (accion === null || comentario.trim() === '') {
       return;
     }
 
     this.accionEnCurso.set(null);
-    this.motivoRechazo.set('');
-    this.intentoConfirmarRechazo.set(false);
-    this.enviarAuditoria(accion.idLegajo, 'Rechazado', texto);
+    this.enviarAuditoria(accion.idLegajo, 'Rechazado', comentario);
   }
 
   private enviarAuditoria(

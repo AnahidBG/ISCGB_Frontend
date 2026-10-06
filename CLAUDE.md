@@ -62,7 +62,7 @@ Varias reglas **todavía no están implementadas en el backend**. El estado deta
 1. **Solo PDF.** El front valida el MIME; el back debe validar por magic bytes. *Hoy el back no lo hace en legajos y en justificativos solo mira el ContentType.*
 2. **Renombrado** `ISCGB_NombreyApellido_NombreDocumento.pdf` en el backend. El nombre original nunca se persiste. *Hoy se hace en los controllers y le agrega un timestamp.*
 3. **Tres estados:** Aprobado 🟢 / Pendiente 🟡 / Rechazado 🔴, siempre con el componente `insignia-estado`. `estado` es `varchar NULL`: los valores nulos o desconocidos se muestran con un estado por defecto.
-4. **Rechazo:** el motivo es obligatorio (con las opciones estándar de la institución) y se envía un mail automático vía `IEmailService`. *El mail de rechazo no existe todavía en el back.*
+4. **Rechazo:** el motivo es obligatorio (con las opciones estándar de la institución) y se envía un mail automático vía `IEmailService`. *En legajos, el front ya usa los 7 motivos (`core/legajos/motivos-rechazo.ts`, desde el 05/10/2026). En justificativos no hay dónde mandar el motivo, porque el PUT de auditoría no recibe comentario. El mail de rechazo no existe todavía en el back.* Detalle en `docs/contrato-api.md`.
 5. **RBAC:** cuatro roles; **Preceptor está dentro de Secretario** (no crear ese rol). Hace falta `[Authorize(Roles=...)]` en el back **y** `roleGuard` en el front. *El back hoy no exige `[Authorize]`.* Nadie aprueba sus propios documentos.
 
 Si tu cambio toca un flujo afectado por una regla pendiente, implementala o dejalo explícito en el PR. No la des por cubierta.
