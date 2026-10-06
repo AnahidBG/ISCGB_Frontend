@@ -1,6 +1,12 @@
 import { DocumentoLegajo } from './modelos/documento-legajo';
 import { DocumentoRequerido } from './modelos/documento-requerido';
-import { calcularProgresoLegajo, ultimaVersionPorTipo } from './progreso-legajo';
+import {
+  calcularProgresoLegajo,
+  legajoEstaCompleto,
+  obligatoriosSinCargar,
+  requeridoDelDocumento,
+  ultimaVersionPorTipo,
+} from './progreso-legajo';
 
 function documento(
   nombre: string,
@@ -135,5 +141,147 @@ describe('ultimaVersionPorTipo', () => {
 
     expect(version).toHaveLength(1);
     expect(version[0].estado).toBe('Aprobado');
+  });
+});
+
+describe('obligatoriosSinCargar', () => {
+  it('devuelve los obligatorios del rol que nunca se subieron, en el orden del rol', () => {
+    const faltan = obligatoriosSinCargar(
+      [documento('Título', 'Aprobado')],
+      [requerido('DNI'), requerido('Título'), requerido('CUIL')],
+    );
+
+    expect(faltan.map((r) => r.nombreDocumento)).toEqual(['DNI', 'CUIL']);
+  });
+
+  it('no cuenta los que no son obligatorios', () => {
+    const faltan = obligatoriosSinCargar([], [requerido('DNI'), requerido('Curriculum', false)]);
+
+    expect(faltan.map((r) => r.nombreDocumento)).toEqual(['DNI']);
+  });
+
+  it('un documento subido no falta, esté en el estado que esté', () => {
+    // Rechazado o pendiente ya se ENTREGÓ: lo que corresponde ahí es corregirlo
+    // o esperar la revisión, y eso lo avisan otras novedades.
+    const faltan = obligatoriosSinCargar(
+      [documento('DNI', 'Rechazado'), documento('CUIL', 'Pendiente')],
+      [requerido('DNI'), requerido('CUIL')],
+    );
+
+    expect(faltan).toEqual([]);
+  });
+
+  it('compara el nombre sin mayúsculas ni tildes', () => {
+    const faltan = obligatoriosSinCargar(
+      [documento('titulo ', 'Pendiente')],
+      [requerido('Título')],
+    );
+
+    expect(faltan).toEqual([]);
+  });
+
+  it('sin requeridos no inventa faltantes', () => {
+    // Si no se sabe qué pide el instituto (falló el pedido, rol sin legajo),
+    // no hay lista contra la cual decir que algo falta.
+    expect(obligatoriosSinCargar([documento('DNI', 'Aprobado')], [])).toEqual([]);
+  });
+});
+
+describe('requeridoDelDocumento', () => {
+  it('encuentra el tipo de un documento del legajo por su nombre', () => {
+    const requeridos = [requerido('DNI'), requerido('Apto médico')];
+
+    expect(requeridoDelDocumento(documento('Apto médico', 'Aprobado'), requeridos)).toBe(
+      requeridos[1],
+    );
+  });
+
+  it('compara el nombre sin mayúsculas ni tildes', () => {
+    const requeridos = [requerido('Apto médico')];
+
+    expect(requeridoDelDocumento(documento('APTO MEDICO ', 'Aprobado'), requeridos)).toBe(
+      requeridos[0],
+    );
+  });
+
+  it('si el tipo no está entre los de su rol, no inventa uno', () => {
+    expect(
+      requeridoDelDocumento(documento('Curriculum', 'Aprobado'), [requerido('DNI')]),
+    ).toBeNull();
+  });
+});
+
+describe('legajoEstaCompleto (SCRUM-153)', () => {
+  const AHORA = new Date('2026-10-06').getTime();
+  const REQUERIDOS = [requerido('DNI'), requerido('Apto médico'), requerido('Curriculum', false)];
+
+  function vencido(base: DocumentoLegajo): DocumentoLegajo {
+    return { ...base, fechaVencimiento: new Date('2026-01-01') };
+  }
+
+  it('con cada obligatorio aprobado está completo, aunque falte un opcional', () => {
+    const documentos = [documento('DNI', 'Aprobado'), documento('Apto médico', 'Aprobado')];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(true);
+  });
+
+  it('con un obligatorio todavía en revisión no lo está', () => {
+    const documentos = [documento('DNI', 'Aprobado'), documento('Apto médico', 'Pendiente')];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(false);
+  });
+
+  it('con un obligatorio sin subir no lo está', () => {
+    expect(legajoEstaCompleto([documento('DNI', 'Aprobado')], REQUERIDOS, AHORA)).toBe(false);
+  });
+
+  it('sin saber qué le pide el instituto al rol no se puede afirmar', () => {
+    expect(legajoEstaCompleto([documento('DNI', 'Aprobado')], [], AHORA)).toBe(false);
+  });
+
+  it('con un rechazo vigente no lo está, aunque sea de un documento opcional', () => {
+    const documentos = [
+      documento('DNI', 'Aprobado'),
+      documento('Apto médico', 'Aprobado'),
+      documento('Curriculum', 'Rechazado'),
+    ];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(false);
+  });
+
+  it('un rechazo que ya se corrigió y se aprobó no lo impide', () => {
+    const documentos = [
+      documento('DNI', 'Rechazado', new Date('2026-08-01')),
+      documento('DNI', 'Aprobado', new Date('2026-09-01')),
+      documento('Apto médico', 'Aprobado'),
+    ];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(true);
+  });
+
+  it('con un aprobado ya vencido no lo está', () => {
+    const documentos = [documento('DNI', 'Aprobado'), vencido(documento('Apto médico', 'Aprobado'))];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(false);
+  });
+
+  it('un anual vencido que se volvió a subir y espera revisión NO lo completa', () => {
+    // La versión vieja sigue aprobada en la base, pero la vigente es la nueva.
+    const documentos = [
+      documento('DNI', 'Aprobado'),
+      vencido(documento('Apto médico', 'Aprobado', new Date('2025-03-01'))),
+      documento('Apto médico', 'Pendiente', new Date('2026-10-01')),
+    ];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(false);
+  });
+
+  it('un aprobado con vencimiento a futuro no lo impide', () => {
+    const documentos = [
+      documento('DNI', 'Aprobado'),
+      { ...documento('Apto médico', 'Aprobado'), fechaVencimiento: new Date('2027-03-01') },
+    ];
+
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(true);
   });
 });

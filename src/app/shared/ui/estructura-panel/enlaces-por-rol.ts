@@ -72,12 +72,19 @@ export function enlacesPorSesion(
     });
   }
 
-  // Solo Secretario: el backend no deja a Dirección ver estas solicitudes.
+  // Solo Secretario: el backend no deja a Dirección ver estas solicitudes, y
+  // la frecuencia de los avisos es configuración de Secretaría.
   if (tieneAlgunRol(sesion, [ROLES.secretario])) {
     enlaces.push({
       etiqueta: 'Solicitudes de reconocimiento',
       url: '/secretario/reconocimiento-saberes',
       icono: 'revision',
+    });
+    // Cada cuánto sale el aviso automático de documentación faltante (SCRUM-151).
+    enlaces.push({
+      etiqueta: 'Frecuencia de avisos',
+      url: '/secretario/frecuencia-avisos',
+      icono: 'campana',
     });
   }
 

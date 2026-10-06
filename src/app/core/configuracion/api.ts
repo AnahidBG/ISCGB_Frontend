@@ -8,6 +8,8 @@ export const RUTAS_API = {
    */
   establecerPassword: `${URL_BASE_API}/api/UsuariosAdmin/establecer-password`,
   programasMateria: `${URL_BASE_API}/api/ProgramasMateria`,
+  /** GET/PUT de la frecuencia del envío automático de avisos de faltantes. */
+  frecuenciaNotificaciones: `${URL_BASE_API}/api/Configuracion/frecuencia-notificaciones`,
 
   pdfPrograma: (idPrograma: number) =>
     `${URL_BASE_API}/api/ProgramasMateria/${idPrograma}/pdf`,
@@ -107,8 +109,8 @@ export const RUTAS_API = {
   // Los tres GET envuelven la lista en `{ data }`.
 
   /** Todas las materias del instituto, ordenadas por nombre. */
-  materiasDisponibles: `${URL_BASE_API}/api/Asignaciones/materias-disponibles`,
-  
+  materiasDisponibles: `${URL_BASE_API}/api/Materias/materias-disponibles`,
+
   /** Materias asignadas al alumno autenticado. */
   misMaterias: `${URL_BASE_API}/api/Materias/mis-materias`,
 

@@ -1,17 +1,16 @@
 /*
-  El logo del ISCGB es un trazo continuo cerrado. Eso permite el efecto de
-  "dibujarse solo", que funciona así:
+  El logo del ISCGB es un trazo continuo y cerrado, y por eso se puede hacer
+  que se dibuje solo:
 
-  1. `stroke-dasharray: 537` corta el contorno en un guion de 537 unidades,
-     que es EXACTAMENTE su largo total. Un solo guion, del largo del trazo.
-  2. `stroke-dashoffset` corre ese guion. En 537 queda todo fuera de vista
-     (parece que no hay nada); en 0 queda perfectamente calzado (se ve entero).
-  3. Animar el offset de 537 a 0 da la ilusión de que una mano lo dibuja.
+  1. `stroke-dasharray: 537` corta el contorno en un solo guion de 537
+     unidades, que es su largo total.
+  2. `stroke-dashoffset` corre ese guion. En 537 queda todo fuera de vista y
+     en 0 queda calzado, con el logo entero.
+  3. Animar el offset de 537 a 0 hace que parezca dibujado a mano.
   4. Recién ahí aparece el relleno.
 
-  El 537 salió de medir el path con `getTotalLength()`. Si algún día cambia
-  el logo, hay que volver a medirlo — con otro número el efecto se corta o
-  arranca tarde.
+  El 537 salió de medir el path con `getTotalLength()`. Si cambia el logo hay
+  que volver a medirlo: con otro número el efecto se corta o arranca tarde.
 */
 
 .pantalla-carga {
@@ -21,7 +20,7 @@
   justify-content: center;
   gap: 1.25rem;
 
-  /* Un loader LOCAL se centra en la caja que lo contiene. El overlay global
+  /* Un loader local se centra en la caja que lo contiene. El velo global
      agrega `fixed inset-0` desde el template y esto sigue valiendo. */
   width: 100%;
   height: 100%;
@@ -29,9 +28,9 @@
 }
 
 /*
-  El tamaño vive en una sola variable. Cambiarla mueve el logo y nada más:
-  el texto no depende de ella, así que un `sm` adentro de una fila no
-  descoloca la fila.
+  El tamaño está en una sola variable. Cambiarla mueve el logo y nada más: el
+  texto no depende de ella, así que un `sm` adentro de una fila no la
+  descoloca.
 */
 .pantalla-carga--sm {
   --carga-tamano: 1.5rem; /* 24px */
@@ -55,15 +54,13 @@
 }
 
 /*
-  Los dos tonos que pidió el diseño.
+  Los dos tonos que pidió el diseño. `claro` es el logo verde sobre fondo
+  claro, el caso normal. `verde` es el logo blanco sobre el verde
+  institucional, para la pantalla de arranque, donde todo es la marca.
 
-  `claro`: logo verde sobre fondo claro — el caso normal.
-  `verde`: logo blanco sobre el verde institucional — para el splash de
-  arranque, donde la pantalla entera es la marca.
-
-  Ninguno de los dos toca el SVG: el path usa `currentColor`, así que alcanza
-  con cambiar `color` en el contenedor. Por eso este componente no necesita
-  saber nada de temas — hereda el color de quien lo envuelva.
+  Ninguno toca el SVG. El path usa `currentColor`, así que alcanza con cambiar
+  `color` en el contenedor: el componente no sabe nada de temas y hereda el
+  color de quien lo envuelva.
 */
 .pantalla-carga--claro {
   color: var(--color-principal);
@@ -94,11 +91,10 @@
   stroke-width: 1.5;
   stroke-dasharray: 537;
   /*
-    3.4s y no las 2.6s originales: a Milena le pareció muy rápida, sobre todo
-    en el splash de arranque, donde el logo apenas alcanza a insinuarse antes
-    de desaparecer. Más lenta, el trazo se alcanza a leer como un trazo y no
-    como un parpadeo — sigue siendo la misma animación en todos lados (acá se
-    define una sola vez, ver el comentario de arriba del archivo).
+    Dura 3.4s y no los 2.6s originales, que resultaban muy rápidos: en la
+    pantalla de arranque el logo apenas se insinuaba antes de desaparecer.
+    Más lenta, el trazo se lee como un trazo y no como un parpadeo. Se define
+    acá una sola vez y vale para todos los tamaños.
   */
   animation: dibujar-logo 3.4s ease-in-out infinite;
 }
@@ -132,9 +128,8 @@
 }
 
 /*
-  Hay gente a la que el movimiento en pantalla le produce mareo o migraña, y
-  lo configura en su sistema operativo. Respetarlo no es opcional: es parte
-  de que la interfaz sea usable para todos.
+  A mucha gente el movimiento en pantalla le produce mareo o migraña, y lo
+  configura en su sistema operativo. Hay que respetarlo.
 
   Para esas personas el logo aparece quieto y sólido, con una respiración muy
   suave que alcanza para entender que el sistema está trabajando.

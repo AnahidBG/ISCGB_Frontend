@@ -1,37 +1,36 @@
-# Contrato: gestión de usuarios (alta, modificación y baja)
+# Contrato: gestión de usuarios
 
-> **Sprint 2** — SCRUM-16 "Gestión de usuarios y roles (Dirección)"
-> Subtareas: SCRUM-130 (frontend, Milena) · SCRUM-131 (backend, Angel)
-> **Actualizado:** 04/10/2026 (roles múltiples, PR #24 del backend)
+Alta, modificación y baja. Sprint 2, historia SCRUM-16 "Gestión de usuarios y
+roles (Dirección)": SCRUM-130 en el frontend (Milena) y SCRUM-131 en el backend
+(Angel). Actualizado el **06/10/2026**.
 
-Este documento reemplaza la propuesta anterior (`POST /api/Usuarios`, del
-27/08/2026), que el backend nunca implementó. El backend publicó **otro
-contrato** y el frontend se alineó a ese.
+Reemplaza la propuesta del 27/08/2026 (`POST /api/Usuarios`), que el backend
+nunca implementó. El backend publicó otro contrato y el frontend se alineó a
+ese.
 
 ## Dónde está
 
-`Controllers/CargaUsuarioController.cs` en `ISCGB_Backend`, `main` (último
-cambio: commit `a3902df`, PR #24, 04/10/2026).
+En `Controllers/CargaUsuarioController.cs` de `ISCGB_Backend`, rama `main`. La
+clase se llama `UsuariosAdminController`, así que la ruta es `api/UsuariosAdmin`
+y no `api/CargaUsuario`.
 
-La clase se llama `UsuariosAdminController`, así que la ruta es
-`api/UsuariosAdmin` (no `api/CargaUsuario`).
-
-Contra un backend sin ese controlador, las rutas responden 404 sin cuerpo y la
-pantalla muestra: *"El servidor todavía no tiene habilitada la gestión de
-usuarios…"*.
+Contra un backend sin ese controlador las rutas responden 404 sin cuerpo, y la
+pantalla avisa que la gestión de usuarios todavía no está habilitada.
 
 ## Endpoints que consume el frontend
 
-| Acción | Método y ruta | Cuerpo | Respuesta OK |
-|---|---|---|---|
-| Listado | `GET /api/Usuarios?pagina=1&registrosPorPagina=500` | — | `{ paginacion, datos[] }` (404 = vacío) |
-| Detalle | `GET /api/Usuarios/{id}` | — | `UsuarioDetalle` |
+| Acción | Método y ruta | Cuerpo | Respuesta |
+| --- | --- | --- | --- |
+| Listado | `GET /api/Usuarios?pagina=1&registrosPorPagina=500` | | `{ paginacion, datos[] }`; 404 es lista vacía |
+| Detalle | `GET /api/Usuarios/{id}` | | `UsuarioDetalle` |
 | Alta | `POST /api/UsuariosAdmin/alta` | `CargaUsuarioDto` | `{ mensaje, legajoAutocompletado }` |
 | Modificación | `PUT /api/UsuariosAdmin/modificar/{id}` | `CargaUsuarioDto` | `{ message }` |
-| Baja | `PUT /api/UsuariosAdmin/baja/{id}` | — | `{ message }` |
-| Reactivación | `PUT /api/UsuariosAdmin/alta/{id}` | — | `{ message }` |
+| Baja | `PUT /api/UsuariosAdmin/baja/{id}` | | `{ message }` |
+| Reactivación | `PUT /api/UsuariosAdmin/alta/{id}` | | `{ message }` |
 
-### `CargaUsuarioDto` (lo que manda el frontend)
+### `CargaUsuarioDto`
+
+Lo que manda el frontend:
 
 ```json
 {
@@ -53,65 +52,81 @@ usuarios…"*.
 }
 ```
 
-- `dni` y `cuil` viajan **solo con dígitos**.
-- `idsRoles`: lista con 1 Director, 2 Secretario, 3 Docente, 4 Alumno (lo fija
-  el propio DTO). **Al menos uno**: vacía responde 400. Hasta el PR #24 era
-  `idRol: number` (un solo rol); un `idRol` suelto hoy se ignora y el backend
-  responde 400 "Debe asignar al menos un rol al usuario.".
-- ⚠️ En la **modificación**, el backend **borra todos los roles** que tenía la
-  persona y deja solo los de `idsRoles`. Por eso "Editar Usuario" arranca con
-  TODOS los roles actuales tildados: mandar solo el principal le quitaría los
-  otros.
-- Con el 3 (Docente) crea la fila en `Docentes` si no existe; con el 4
-  (Alumno), la fila en `Alumnos` (legajo = DNI). Sacar un rol no borra esas
-  filas.
-- `esDirectorSuplente` solo viaja en `true` si uno de los roles es Docente. Si
-  se quita el rol Docente, el backend le saca la suplencia.
-- `fechaNac` es `DateOnly`: `"YYYY-MM-DD"` sin hora, o `null`.
-- **Todos los textos son obligatorios.** El proyecto tiene
-  `<Nullable>enable</Nullable>` y en el DTO son `string` (no `string?`), así
-  que ASP.NET responde 400 si llegan vacíos. El formulario los exige.
+`dni` y `cuil` viajan solo con dígitos. `fechaNac` es `DateOnly`: va como
+`"YYYY-MM-DD"`, sin hora, o `null`.
+
+Todos los textos son obligatorios. El proyecto tiene `<Nullable>enable</Nullable>`
+y en el DTO son `string`, no `string?`, así que ASP.NET responde 400 si llegan
+vacíos. El formulario los exige.
+
+`idsRoles` es una lista con 1 Director, 2 Secretario, 3 Docente y 4 Alumno, y
+tiene que traer al menos uno. Hasta el PR #24 era `idRol`, un solo número; hoy
+un `idRol` suelto se ignora y el backend responde 400.
+
+**En la modificación el backend borra todos los roles que tenía la persona y
+deja solo los de `idsRoles`.** Por eso "Editar Usuario" arranca con todos los
+roles actuales tildados: mandar solo el principal le quitaría los otros.
+
+Con el rol Docente el backend crea la fila en `Docentes` si no existe, y con
+Alumno la fila en `Alumnos`, con el DNI como legajo. Sacar un rol no borra esas
+filas.
+
+`esDirectorSuplente` solo viaja en `true` si uno de los roles es Docente. Si se
+le quita ese rol, el backend le saca la suplencia.
 
 ### Errores que la pantalla sabe mostrar
 
-| Situación | Lo que responde el backend | Lo que se ve |
-|---|---|---|
-| Ya hay un director suplente | `400 "Ya existe un director suplente asignado con el nombre: X."` | Ese mismo texto (SCRUM-138) |
-| Sin roles | `400 "Debe asignar al menos un rol al usuario."` | No llega: el formulario exige al menos uno |
-| Rol fuera de 1..4 | `400 "Uno o más roles son inválidos…"` | Ese mismo texto |
-| Falta un campo | `400` `ValidationProblemDetails` | Los mensajes de validación |
-| Usuario inexistente | `404 "Usuario no encontrado."` | Ese mismo texto |
-| Ruta no publicada | `404` sin cuerpo | "La gestión de usuarios todavía no está habilitada" |
+- Ya hay un director suplente: `400 "Ya existe un director suplente asignado con
+  el nombre: X."`. Se muestra ese mismo texto (SCRUM-138).
+- Sin roles: `400 "Debe asignar al menos un rol al usuario."`. No llega, porque
+  el formulario exige al menos uno.
+- Rol fuera de 1 a 4: `400 "Uno o más roles son inválidos…"`. Se muestra tal
+  cual.
+- Falta un campo: `400` con `ValidationProblemDetails`. Se muestran los mensajes
+  de validación.
+- Usuario inexistente: `404 "Usuario no encontrado."`. Se muestra tal cual.
+- Ruta no publicada: `404` sin cuerpo. Se avisa que la gestión de usuarios
+  todavía no está habilitada.
 
-## Criterios de aceptación ↔ implementación
+## Criterios de aceptación
 
-| Criterio (SCRUM-16) | Estado en el frontend |
-|---|---|
-| Asignar roles de los 4 existentes | ✅ Casillas: uno o más roles (el backend acepta una lista desde el PR #24); no existe "Preceptor" |
-| Baja = estado inactivo, sin borrar datos | ✅ Botón "Dar de baja" con confirmación; la fila queda "Dada de baja" |
-| Verificar el acceso con el token al navegar | ✅ `authGuard` revisa el vencimiento; `sesionInterceptor` maneja 401 |
-| Bloquear pantallas ajenas con mensaje | ✅ `roleGuard` → panel propio con cartel "Acceso denegado" |
-| Mensaje "El perfil del usuario ha sido actualizado correctamente" | ✅ Con el nombre de la persona (SCRUM-139) |
-| Docente como director suplente | ✅ Casilla solo para Docentes |
-| Alerta si ya existe un suplente, con el nombre | ✅ Se muestra el mensaje del backend |
-| Datos personales: nombre, CUIL, DNI, correo, género, domicilio, emergencia (nombre, teléfono, afiliación), lugar de nacimiento | ✅ CUIL validado con dígito verificador y contra el DNI |
-| N.° de legajo autocompletado con el DNI | ✅ Se muestra; lo asigna el backend |
-| Carrera / Especialidad | ❌ No hay campo en el DTO ni columna en `Usuarios` |
+Lo que pide SCRUM-16 y cómo está en el frontend:
 
-## Pendientes del backend (no se tocan desde el frontend)
+- Asignar roles de los cuatro existentes: hecho, con casillas para uno o más
+  roles. No existe "Preceptor".
+- Baja como estado inactivo, sin borrar datos: hecho. El botón "Dar de baja"
+  pide confirmación y la fila queda como "Dada de baja".
+- Verificar el acceso con el token al navegar: hecho. `authGuard` revisa el
+  vencimiento y `sesionInterceptor` maneja el 401.
+- Bloquear las pantallas ajenas con un mensaje: hecho. `roleGuard` manda al
+  panel propio con el cartel "Acceso denegado".
+- Mensaje "El perfil del usuario ha sido actualizado correctamente": hecho, con
+  el nombre de la persona (SCRUM-139).
+- Docente como director suplente: hecho, con una casilla solo para Docentes.
+- Alerta si ya existe un suplente, con su nombre: hecho. Se muestra el mensaje
+  del backend.
+- Datos personales (nombre, CUIL, DNI, correo, género, domicilio, contacto de
+  emergencia y lugar de nacimiento): hecho. El CUIL se valida con el dígito
+  verificador y contra el DNI.
+- Número de legajo autocompletado con el DNI: hecho. Lo asigna el backend y se
+  muestra.
+- Carrera o especialidad: **falta**. No hay campo en el DTO ni columna en
+  `Usuarios`.
 
-1. ~~Mergear `CargaDeUsuarios` a `main`.~~ Hecho (PR #18 y siguientes).
-2. ~~Contraseña inicial.~~ Resuelto: el alta deja la contraseña pendiente y
-   manda por correo el enlace a `/crear-password`.
-3. **Seguridad:** `[Authorize(Roles = "Director,Secretario")]` sigue
-   comentado en el controlador; cualquiera con Postman puede crear usuarios.
-4. ~~Provincias.~~ Resuelto: `GET /api/Ubicaciones/paises` y
-   `.../paises/{id}/provincias`, con datos semilla (`DbSeeder`).
-5. **`GET /api/Usuarios/{id}` no devuelve** CUIL, género, afiliación ni
-   `DirectorSuplente`, así que la edición no puede precargarlos. En
-   particular, si se edita a un suplente y no se vuelve a tildar la casilla,
-   el backend le quita la suplencia. (El login sí devuelve esos datos desde
-   el PR #24, pero solo de quien inicia sesión.)
-6. **DNI y correo repetidos:** el alta los valida en el controlador.
-7. **Reactivar una cuenta:** `PUT /api/UsuariosAdmin/alta/{id}`. Si ya está
-   activa responde 400; si no existe responde 404.
+## Pendientes del backend
+
+1. `POST /api/UsuariosAdmin/establecer-password` quedó debajo del
+   `[Authorize(Roles = "Director,Secretario")]` de la clase y no tiene
+   `[AllowAnonymous]`. Quien crea su contraseña desde el enlace del mail no
+   tiene sesión, así que el endpoint le responde 401.
+2. `GET /api/Usuarios/{id}` no devuelve CUIL, género, afiliación ni
+   `DirectorSuplente`, y la edición no puede precargarlos. Si se edita a un
+   suplente y no se vuelve a tildar la casilla, el backend le quita la
+   suplencia. El login sí devuelve esos datos, pero solo de quien inicia sesión.
+3. El DNI y el correo repetidos se validan en el controlador del alta.
+
+Ya resuelto: el controlador exige `[Authorize(Roles = "Director,Secretario")]`,
+el alta deja la contraseña pendiente y manda por correo el enlace a
+`/crear-password`, las provincias salen de `GET /api/Ubicaciones/paises` y
+`.../paises/{id}/provincias`, y una cuenta se reactiva con
+`PUT /api/UsuariosAdmin/alta/{id}` (400 si ya está activa, 404 si no existe).

@@ -10,18 +10,28 @@
   [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
+  <!-- El aviso de legajo completo, a la vista y no solo en la campana (SCRUM-153). -->
   @if (legajoCompleto()) {
-    <p
-      role="status"
-      class="mb-5 flex items-start gap-3 rounded-2xl border border-aprobado/30 bg-aprobado/10 px-5 py-4 text-sm leading-relaxed text-texto sm:mb-6"
-    >
-      <app-icono nombre="aprobado" class="mt-0.5 h-5 w-5 shrink-0 text-aprobado" />
-      <span>
-        <strong class="text-aprobado">¡Tu legajo está completo!</strong>
-        Presentaste y te aprobaron toda la documentación obligatoria. Si algún documento es anual,
-        te vamos a avisar cuando haya que renovarlo.
-      </span>
-    </p>
+    <app-aviso-legajo-completo class="mb-5 block sm:mb-6" />
+  }
+
+  <!--
+    Arriba de todo va lo que pide hacer algo, en orden de urgencia, igual que
+    en la campana: primero lo rechazado (SCRUM-152), después lo que falta
+    entregar (SCRUM-150).
+  -->
+  @if (rechazados().length > 0) {
+    <app-documentos-rechazados class="mb-5 block sm:mb-6" [rechazos]="rechazados()" />
+  }
+
+  @if (mostrarPorEntregar()) {
+    <app-documentacion-por-entregar
+      class="mb-5 block sm:mb-6"
+      [fase]="legajo().fase"
+      [mensajeError]="errorLegajo()"
+      [documentos]="porEntregar()"
+      (reintentar)="recargarLegajo()"
+    />
   }
 
   <!--
@@ -29,14 +39,19 @@
     obligatorios") pero desplegable — toca la tarjeta y ves, documento por
     documento, cuál falta, cuál está en revisión y cuál ya está aprobado. Ver
     `ProgresoTramite`.
+
+    Sale del legajo: mientras carga o si falló no se dibuja, porque "0 de 0"
+    sería una afirmación sin dato. Lo mismo la tabla de más abajo.
   -->
-  <app-progreso-tramite
-    [porcentaje]="progreso().porcentaje"
-    [aprobados]="progreso().aprobados"
-    [total]="progreso().total"
-    [estimado]="progreso().estimado"
-    [pasos]="pasosTramite()"
-  />
+  @if (legajo().fase === 'listo') {
+    <app-progreso-tramite
+      [porcentaje]="progreso().porcentaje"
+      [aprobados]="progreso().aprobados"
+      [total]="progreso().total"
+      [estimado]="progreso().estimado"
+      [pasos]="pasosTramite()"
+    />
+  }
 
   <!--
     "Solicitar certificado": un solo botón que despliega las dos variantes
@@ -99,36 +114,38 @@
     }
   </div>
 
-  <div class="mt-5 overflow-x-auto rounded-2xl border border-borde bg-superficie sm:mt-6">
-    <table class="w-full min-w-[30rem] text-left text-sm">
-      <thead class="border-b border-borde text-texto-suave">
-        <tr>
-          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Documento</th>
-          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Subido el</th>
-          <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Estado</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-borde">
-        @for (documento of documentos(); track documento.id) {
+  @if (legajo().fase === 'listo') {
+    <div class="mt-5 overflow-x-auto rounded-2xl border border-borde bg-superficie sm:mt-6">
+      <table class="w-full min-w-[30rem] text-left text-sm">
+        <thead class="border-b border-borde text-texto-suave">
           <tr>
-            <td class="px-5 py-3 text-texto sm:px-6">{{ documento.nombre }}</td>
-            <td class="whitespace-nowrap px-5 py-3 text-texto-suave sm:px-6">
-              {{ documento.fechaSubida | date: 'dd/MM/yyyy' }}
-            </td>
-            <td class="px-5 py-3 sm:px-6">
-              <app-insignia-estado [estado]="documento.estado" />
-            </td>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Documento</th>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Subido el</th>
+            <th class="whitespace-nowrap px-5 py-3 font-medium sm:px-6">Estado</th>
           </tr>
-        } @empty {
-          <tr>
-            <td class="px-5 py-3 text-sm text-texto-suave sm:px-6" colspan="3">
-              Todavía no cargaste ningún documento.
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
-  </div>
+        </thead>
+        <tbody class="divide-y divide-borde">
+          @for (documento of documentos(); track documento.id) {
+            <tr>
+              <td class="px-5 py-3 text-texto sm:px-6">{{ documento.nombre }}</td>
+              <td class="whitespace-nowrap px-5 py-3 text-texto-suave sm:px-6">
+                {{ documento.fechaSubida | date: 'dd/MM/yyyy' }}
+              </td>
+              <td class="px-5 py-3 sm:px-6">
+                <app-insignia-estado [estado]="documento.estado" />
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td class="px-5 py-3 text-sm text-texto-suave sm:px-6" colspan="3">
+                Todavía no cargaste ningún documento.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 
   <div class="mt-5 grid gap-4 sm:mt-6 sm:grid-cols-2">
     <a

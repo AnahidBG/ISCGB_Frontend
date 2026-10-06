@@ -1,27 +1,13 @@
 # ISCGB — Frontend
 
-Interfaz web del Sistema de Gestión Documental y Autogestión Académica del
-Instituto Superior Cura Gabriel Brochero.
+Interfaz web del sistema de gestión documental y autogestión académica del
+Instituto Superior Cura Gabriel Brochero. Digitaliza los legajos: cada persona
+sube sus documentos en PDF, Secretaría y Dirección los revisan, y el sistema
+avisa qué falta.
 
-- **Contexto funcional completo:** [`docs/ISCGB-PROJECT.md`](docs/ISCGB-PROJECT.md)
-- **Convenciones para agentes de IA:** [`CLAUDE.md`](CLAUDE.md)
-- **Alcance de la pantalla de login:** [`docs/alcance-login.md`](docs/alcance-login.md)
-- **Contrato de la API:** [`docs/contrato-api.md`](docs/contrato-api.md)
-- **Estado del Sprint 2 (Jira ↔ front ↔ back) y pendientes de backend:**
-  [`docs/alineacion-sprint-2.md`](docs/alineacion-sprint-2.md)
-
-## Stack
-
-| Qué | Con qué |
-|---|---|
-| Framework | Angular 21 (standalone, zoneless) |
-| Estilos | Tailwind CSS v4 |
-| Formularios | Reactive Forms |
-| Tests | Vitest |
-| Backend | .NET 10 Web API (repo aparte) |
-
-> Angular 21 es **zoneless por defecto**: `zone.js` ya no es una dependencia
-> y no hace falta llamar a `provideZonelessChangeDetection()`.
+Hecho con Angular 21 (standalone y sin `zone.js`), Tailwind CSS v4, formularios
+reactivos y Vitest. El backend es una Web API en .NET 10 y vive en otro
+repositorio.
 
 ## Arrancar
 
@@ -30,70 +16,80 @@ npm install
 npm start
 ```
 
-La aplicación queda en <http://localhost:4200>.
+Queda en <http://localhost:4200> y necesita el backend corriendo en
+<http://localhost:5231>. Esa dirección está en
+[`src/app/core/configuracion/api.ts`](src/app/core/configuracion/api.ts) y en
+ningún otro lado.
 
-## Comandos
+Los otros dos comandos:
 
 ```bash
-npm start        # servidor de desarrollo
-npm test         # tests
-npm run build    # compilar para producción
+npm test         # tests con Vitest
+npm run build    # compilación de producción
 ```
 
-## Con datos falsos o contra la API real
+## Trabajar sin backend
 
-El login funciona **sin backend**. La fuente de datos se elige en una sola
-línea de [`src/app/app.config.ts`](src/app/app.config.ts):
+Cada servicio de `core/` habla con la API real, y varios tienen además una
+versión con datos inventados. Cuál se usa se decide en
+[`src/app/app.config.ts`](src/app/app.config.ts), cambiando una línea:
 
 ```ts
+{ provide: AuthService, useClass: AuthHttpService }  // API real, así viene
 { provide: AuthService, useClass: AuthMockService }  // datos inventados
-{ provide: AuthService, useClass: AuthHttpService }  // API real
 ```
 
-Usuarios de prueba del modo simulado (todos con la contraseña `Test1234`):
+Con el login simulado se entra con cualquiera de estos DNI y la contraseña
+`Test1234`:
 
-| DNI | Nombre | idRol |
-|---|---|---|
-| `43880335` | Milena Previgliano | `1` |
-| `43120234` | Angel Silva | `2` |
-| `40555111` | Anahid Giaquinta | `3` |
+- `11111111` Docente
+- `22222222` Alumno
+- `33333333` Director
+- `44444444` Secretario
+- `55555555` Director y Docente a la vez
+- `66666666` sin ningún rol
+
+Son inventados a propósito. Nunca cargues un DNI real en el repo.
 
 ## Cómo está organizado
 
-```
+```text
 src/app/
-├── core/          Lo que existe una sola vez en toda la aplicación
-│   ├── auth/          autenticación: contrato, implementaciones, modelos
-│   └── configuracion/ direcciones de la API
-├── shared/        Piezas reutilizables entre pantallas
-│   └── ui/            componentes visuales sin lógica de negocio
-└── features/      Una carpeta por área funcional
-    └── auth/login/    la pantalla de inicio de sesión
+├── core/        servicios por dominio, guards, interceptores y las URLs de la API
+├── shared/ui/   componentes reutilizables: botón, insignia de estado, estructura del panel
+└── features/    las pantallas, agrupadas por rol y por trámite
 ```
 
-Regla: un componente de un `feature` **nunca** se importa desde otro
-`feature`. Si dos lo necesitan, se muda a `shared/`.
+Tres reglas sostienen esa estructura.
 
-### Contenedor y presentacional
+Un componente de un feature no se importa desde otro feature. Si dos lo
+necesitan, se muda a `shared/`.
 
-Cada pantalla se parte en dos tipos de componente:
+Cada pantalla tiene un componente contenedor, que conoce los servicios y maneja
+el estado, y componentes presentacionales en `partes/`, que solo reciben datos
+y emiten eventos. En el login, `Login` es el contenedor y `FormularioLogin` y
+`PanelBienvenida` son presentacionales.
 
-- **Contenedor** — conoce los servicios, tiene el estado, decide. Uno por pantalla.
-- **Presentacional** — recibe datos, emite eventos, no sabe que existe la red.
+Ningún componente escribe un color hexadecimal. Los colores están en el bloque
+`@theme` de [`src/styles.scss`](src/styles.scss) y se usan por su clase:
+`bg-principal`, `text-texto-suave`, `border-borde`.
 
-En el login: `Login` es el contenedor; `PanelBienvenida` y `FormularioLogin`
-son presentacionales.
+Los archivos van en kebab-case y sin el sufijo `.component`: `login.ts`, no
+`login.component.ts`. Es lo que genera el CLI de Angular 21.
 
-### Colores
+## Documentación
 
-Todos los colores viven en el bloque `@theme` de
-[`src/styles.scss`](src/styles.scss). **Ningún componente escribe un
-hexadecimal a mano** — se usan las clases derivadas (`bg-principal`,
-`text-texto-suave`, `border-borde`, …).
-
-## Convención de nombres de archivo
-
-Angular 21 genera los archivos **sin** el sufijo `.component`:
-`login.ts`, no `login.component.ts`. Este repo sigue esa convención por ser
-la del CLI. El resto de las reglas de `CLAUDE.md` (kebab-case en archivos,
-camelCase en TypeScript) se mantienen sin cambios.
+- [`docs/ISCGB-PROJECT.md`](docs/ISCGB-PROJECT.md): alcance, roles y sprints.
+- [`docs/como-probar.md`](docs/como-probar.md): cómo levantar todo y probarlo
+  paso a paso.
+- [`docs/contrato-api.md`](docs/contrato-api.md): los endpoints tal como están
+  hoy.
+- [`docs/alineacion-sprint-2.md`](docs/alineacion-sprint-2.md): qué está hecho
+  y qué le falta al backend.
+- [`docs/patrones-frontend.md`](docs/patrones-frontend.md): los patrones de
+  diseño que el código ya usa.
+- [`docs/design-system.md`](docs/design-system.md): colores, tipografía y
+  componentes.
+- [`docs/guia-pantalla-nueva.md`](docs/guia-pantalla-nueva.md): qué revisar
+  antes de armar una pantalla.
+- [`CLAUDE.md`](CLAUDE.md): convenciones para quien trabaje con un agente de IA.

@@ -1,81 +1,62 @@
 # Cómo probar el sistema, paso a paso
 
-Última actualización: **27/08/2026**
+Actualizado el **06/10/2026**.
 
-Guía para levantar los dos sistemas y verificar que todo lo construido
-funciona. El orden importa: cada paso da por hecho que el anterior salió bien.
+Guía para levantar la base, el backend y el frontend, y comprobar que lo
+construido funciona. El orden importa: cada paso da por hecho que el anterior
+salió bien. Al final está qué mirar si algo falla.
 
-Al final hay una tabla de **"si algo falla"** con los problemas más probables
-y qué mirar en cada caso.
+## 1. La base de datos
 
----
+El backend se conecta a esta base, según `appsettings.json`:
 
-## Parte 1 — La base de datos
-
-### 1.1 Que SQL Server esté corriendo
-
-La cadena de conexión del backend (`appsettings.json`) apunta a:
-
-```
+```text
 Server=localhost\SQLEXPRESS;Database=Autogestion_Docente;Trusted_Connection=True
 ```
 
-Comprobar que el servicio **SQL Server (SQLEXPRESS)** esté iniciado en
-Windows (Servicios → SQL Server) y que exista la base `Autogestion_Docente`.
+El servicio SQL Server (SQLEXPRESS) tiene que estar iniciado en Windows y la
+base `Autogestion_Docente` tiene que existir. Se crea con el script
+`bbdd/BASE_DATOS_DEFINITIVA_.sql`, que está en la carpeta del proyecto y fuera
+de los repos, o con `dotnet ef database update`.
 
-### 1.2 Cargar los datos iniciales
+Al arrancar, el backend carga solo los roles, las provincias y los tipos de
+documento. Lo demás (materias, comisiones y qué documentos se le piden a cada
+rol) está en `bbdd/SQLQueryDatos.sql`.
 
-Abrir `ISCGB_Backend/datos-iniciales.sql` en SQL Server Management Studio o
-Azure Data Studio, conectado a esa base, y **ejecutarlo entero**.
+Dos cosas de ese script: son `INSERT` sueltos, así que **correrlo dos veces
+duplica los datos**, y asigna los roles a los usuarios con id 1 a 4, que tienen
+que existir antes.
 
-Se puede correr varias veces sin duplicar nada.
+### Los usuarios
 
-### 1.3 Verificar que quedó bien
+No hay usuarios cargados de antemano. El primero se crea desde Swagger con
+`POST /api/Auth/crear-usuario-prueba`, que lo deja con el rol Director:
 
-El script termina con dos consultas. Mirá la segunda: lista quién puede
-entrar y con qué rol.
+```json
+{ "dni": "11111111", "password": "Test1234" }
+```
 
-**Lo que tenés que ver:** cinco filas, con Dora Duarte apareciendo dos veces
-(Director y Docente).
+Los demás se dan de alta desde el sistema, con "Nuevo Usuario". Cada persona
+recibe un mail con el enlace para crear su contraseña.
 
-**Lo que NO tiene que pasar:** que alguien salga con `rol` en `NULL`. Si pasa,
-le falta la fila en `Usuarios_roles` y **no va a poder entrar a ningún panel**:
-el login le va a responder 200 pero con `roles: []`.
+Lo que no tiene que pasar es que alguien quede sin fila en `Usuarios_roles`. El
+login le responde 200 con `roles: []` y no puede entrar a ningún panel.
 
----
-
-## Parte 2 — El backend solo
+## 2. El backend solo
 
 Antes de tocar Angular conviene confirmar que la API anda por su cuenta. Si
-algo falla acá, no tiene sentido buscar el problema en el frontend.
-
-### 2.1 Levantarlo
+algo falla acá, no tiene sentido buscarlo en el frontend.
 
 ```bash
 cd ISCGB_Backend
 dotnet run
 ```
 
-Tiene que decir:
+Tiene que decir `Now listening on: http://localhost:5231`. Dejalo corriendo.
 
-```
-Now listening on: http://localhost:5231
-```
-
-**Dejalo corriendo.** Todo lo que sigue lo necesita levantado.
-
-### 2.2 Probar el login
-
-Abrir `http://localhost:5231/swagger` y ejecutar `POST /api/Auth/login` con:
-
-```json
-{ "dni": "30222333", "password": "iscgb2026" }
-```
-
-(También está listo en `ISCGB_Backend/pruebas-api.http`, si usás la extensión
-*REST Client* de VS Code.)
-
-**Lo importante de la respuesta NO es el token: es el campo `roles`.**
+En `http://localhost:5231/swagger`, ejecutá `POST /api/Auth/login` con un DNI y
+una contraseña que existan. De la respuesta, lo que importa no es el token sino
+`roles`:
 
 ```json
 {
@@ -86,168 +67,143 @@ Abrir `http://localhost:5231/swagger` y ejecutar `POST /api/Auth/login` con:
 }
 ```
 
-Si `roles` viene `[]`, volvé a la parte 1.3. El resto no va a andar.
+Si `roles` viene vacío, volvé al punto 1.
 
-### 2.3 Probar los otros tres endpoints
+Con el `idUsuario` y el `idRol` que te devolvió el login, probá también:
 
-| Petición | Qué tiene que devolver |
-|---|---|
-| `GET /api/Usuarios?pagina=1&registrosPorPagina=500` | `{ paginacion, datos: [...] }` con los 4 usuarios |
-| `GET /api/Legajos/usuario/5` | Los 3 documentos de Dolores |
-| `GET /api/Legajos/requeridos-por-rol/3` | Los 6 documentos que se le piden a un Docente |
-| `GET /api/Justificativos/pendientes` | Los 2 justificativos de ejemplo |
+- `GET /api/Usuarios?pagina=1&registrosPorPagina=500`: `{ paginacion, datos }`
+  con las personas cargadas.
+- `GET /api/Legajos/usuario/{idUsuario}`: los documentos de esa persona.
+- `GET /api/Legajos/requeridos-por-rol/{idRol}`: los documentos que se le piden
+  a ese rol.
+- `GET /api/Justificativos/pendientes`: los justificativos sin revisar.
+- `GET /api/Configuracion/frecuencia-notificaciones`: `{ "diasFrecuencia": 7 }`
+  si nunca se configuró.
 
-> Ojo con el `5` y el `3`: son el `idUsuario` y el `idRol` **de tu base**. Los
-> reales te los dijo la respuesta del login del paso anterior. Si tu base ya
-> tenía datos, los números van a ser otros.
+Un 404 en Legajos no es un error: quiere decir que todavía no hay nada, y el
+frontend lo trata así.
 
-Un **404** en Legajos no es un error: significa "no hay nada todavía". El
-frontend ya lo trata así.
+## 3. El frontend
 
----
-
-## Parte 3 — El frontend
-
-### 3.1 Levantarlo
-
-En otra terminal, **sin cerrar la del backend**:
+En otra terminal, sin cerrar la del backend:
 
 ```bash
 cd ISCGB_Frontend
-npm install      # solo la primera vez, o si cambió package.json
-ng serve
+npm install      # la primera vez, o si cambió package.json
+npm start
 ```
 
-Abrir `http://localhost:4200`.
+Abrí `http://localhost:4200` e iniciá sesión. Según el rol tenés que caer en
+`/director/panel`, `/secretario/panel`, `/docente/panel` o `/alumno/panel`.
 
-### 3.2 Iniciar sesión
+Mientras carga se ve el logo animado. Si aparece, la llamada HTTP está saliendo
+de verdad.
 
-| DNI | Contraseña | A dónde tiene que llevarte |
-|---|---|---|
-| 30222333 | iscgb2026 | `/docente/panel` |
-| 30111222 | secretario2026 | `/secretario/panel` |
-| 30333444 | director2026 | `/director/panel` |
-| 30444555 | alumno2026 | `/alumno/panel` |
+Si caés en `/inicio`, la sesión no trae roles.
 
-**Mientras carga tenés que ver el logo animado.** Si aparece, el interceptor
-de carga está enganchado y la llamada HTTP está saliendo de verdad.
+## 4. Qué mirar en cada pantalla
 
-Si caés en `/inicio` en vez del panel, la sesión no trae roles → parte 1.3.
+### Panel del Docente
 
----
+- [ ] El saludo usa el nombre de la persona.
+- [ ] Las cuatro tarjetas (totales, aprobados, pendientes y rechazados) coinciden
+      con el legajo.
+- [ ] Si tiene un documento rechazado, aparece la tarjeta "Documentación
+      rechazada" con el motivo, y "Volver a subir" abre el formulario con ese
+      tipo ya elegido.
+- [ ] "Documentación por entregar" lista los obligatorios que nunca subió.
+- [ ] La campana muestra los mismos avisos. Con todo lo obligatorio aprobado,
+      aparece el cartel de legajo completo.
+- [ ] "Actividad Reciente" lista los documentos del más nuevo al más viejo, cada
+      uno con su insignia de estado.
 
-## Parte 4 — Qué mirar en cada pantalla
+Para ver el estado de error, apagá el backend con el panel abierto y recargá:
+tiene que aparecer el aviso con "Reintentar", no una pantalla rota.
 
-### 4.1 Panel del Docente (`30222333` / `iscgb2026`)
+### El menú de la persona
 
-Es el que sigue la plantilla del dashboard de Figma.
+- [ ] El círculo con las iniciales, arriba a la derecha, abre el panel.
+- [ ] Muestra el nombre completo, el rol y el correo.
+- [ ] "Editar perfil" y "Cambiar foto" están apagados. Es correcto: el backend
+      no tiene endpoint para eso.
+- [ ] Se cierra tocando afuera o con Escape.
+- [ ] "Cerrar sesión" vuelve al login.
 
-- [ ] El saludo dice **"Hola, Dolores"** y abajo la línea gris.
-- [ ] Las cuatro tarjetas muestran: Totales **3**, Aprobados **1**,
-      Pendientes **1**, Rechazados **1**.
-- [ ] **La campana tiene el puntito rojo.** Se enciende porque Dolores tiene
-      un documento rechazado. Si no tuviera ninguno, no aparecería — no es
-      decorativo.
-- [ ] "Actividad Reciente" lista los tres documentos, el más nuevo primero,
-      cada uno con su badge de color.
-- [ ] "Próximos Pasos" muestra la línea de tiempo con los círculos unidos.
-- [ ] El menú lateral tiene los cuatro ítems con íconos y "Dashboard"
-      resaltado en verde.
+### Subir Documento
 
-### 4.2 El menú de la foto
+Se entra por el botón verde "Nuevo Documento" o por el menú lateral.
 
-- [ ] Tocar el círculo con las iniciales (**DD**) arriba a la derecha abre el
-      panelito.
-- [ ] Muestra nombre completo, rol y email.
-- [ ] "Editar perfil" y "Cambiar foto" se ven apagados, con el motivo escrito
-      abajo. Es correcto: el backend no tiene endpoint para eso.
-- [ ] Se cierra tocando en cualquier otro lado, o con la tecla **Escape**.
-- [ ] "Cerrar sesión" te devuelve al login.
+- [ ] El desplegable trae los documentos del rol, con "(opcional)" en los que
+      no son obligatorios.
+- [ ] Si el tipo es anual, aparece el campo de fecha de vencimiento.
+- [ ] Al arrastrar un PDF, el archivo aparece con su nombre y su tamaño.
+- [ ] **Con un archivo que no sea PDF lo rechaza con un mensaje y no sube nada.**
+      Es la regla de negocio 1.
+- [ ] El botón "Subir documento" queda apagado hasta completar todo.
+- [ ] Después de enviar, el documento aparece en el panel como Pendiente.
 
-### 4.3 Subir Documento
+Si la pantalla dice "No pudimos saber qué documentos te corresponden", hay una
+sesión vieja guardada en el navegador. Cerrá sesión y volvé a entrar.
 
-> ⚠️ **Si venías con la sesión abierta de antes de este cambio, cerrá sesión y
-> volvé a entrar.** La sesión ahora guarda el id del rol además del nombre, y
-> una sesión vieja guardada en el navegador no lo tiene: la pantalla te va a
-> decir "No pudimos saber qué documentos te corresponden".
+### Panel del Secretario
 
-Entrar por el botón verde **"Nuevo Documento"** o por el menú lateral.
+- [ ] Lista los justificativos pendientes, con el nombre, el tipo y la fecha.
+- [ ] "Ver el comprobante" abre el PDF cuando el justificativo tiene uno.
+- [ ] "Aprobar" lo saca de la lista y muestra la confirmación.
+- [ ] "Rechazar" avisa además que el correo automático todavía no sale y que hay
+      que avisarle a la persona por otro medio.
+- [ ] Al recargar, la lista sigue igual: el cambio se guardó en la base.
 
-- [ ] El título dice **"Subir Documento"** (acá no saluda, es una pantalla
-      que hace una cosa concreta).
-- [ ] El desplegable "Tipo de Documento" trae los seis documentos del rol
-      Docente, con "(opcional)" en el que no es obligatorio.
-- [ ] Al elegir **Certificado de Salud** aparece el campo de fecha de
-      vencimiento (es anual). Al elegir **Título de Grado** no aparece.
-- [ ] Arrastrar un PDF a la caja: el borde se pone verde y después el archivo
-      aparece con su nombre y tamaño.
-- [ ] **Probar con un archivo que NO sea PDF** (una imagen, un Word): tiene
-      que rechazarlo con un mensaje, sin subir nada. Es la regla de negocio #1.
-- [ ] El botón "Subir documento" está apagado hasta que estén los tres campos.
-- [ ] Al enviar, aparece la pantalla de confirmación.
-- [ ] Volver al panel: **el documento nuevo está en la lista, en Pendiente**,
-      y las tarjetas subieron de número. Eso confirma que se guardó de verdad
-      en la base.
+### Control de Legajos y revisión
 
-### 4.4 Panel del Secretario (`30111222` / `secretario2026`)
+- [ ] "Control de Legajos" lista a las personas con sus conteos por estado.
+- [ ] "Ver legajo" abre el de esa persona, con lo que le falta entregar.
+- [ ] Aprobar pide confirmación. Rechazar exige elegir al menos un motivo.
 
-- [ ] Lista los **dos justificativos** del script, con nombre del docente,
-      tipo y fecha.
-- [ ] "Ver el comprobante" aparece en el primero y no en el segundo (el de
-      "Causas Personales" no lleva archivo adjunto).
-- [ ] **Ese enlace va a dar 404.** Es esperado: falta `app.UseStaticFiles()`
-      en el backend (está en la página de Notion para Angel, punto 1.1).
-- [ ] Tocar **Aprobar** en uno: desaparece de la lista y sale el cartel verde
-      de confirmación.
-- [ ] Tocar **Rechazar** en el otro: además del cartel, **tiene que avisar
-      que el correo automático no está implementado** y que hay que notificar
-      a la persona por otro medio. Ese aviso es a propósito.
-- [ ] Recargar la página (F5): la lista sigue vacía. Confirma que el cambio
-      se guardó en la base y no solo en pantalla.
+### Frecuencia de avisos
 
-### 4.5 Panel del Director (`30333444` / `director2026`)
+Solo para Secretario, en el menú lateral.
 
-- [ ] Lista los cuatro usuarios reales del instituto con sus roles.
-- [ ] Dora aparece con **dos roles**.
-- [ ] **La columna de estado de legajo está vacía en todas las filas.** Es
-      correcto y esperado: `GET /api/Usuarios` no devuelve ese dato todavía
-      (Notion, punto 1.2). Preferimos mostrar el hueco antes que inventar un
-      color.
-- [ ] En el menú lateral aparece **"Entregar programa de materia"**, porque
-      Dora además es Docente. Con un director que no diera clase, no estaría.
+- [ ] Muestra la frecuencia vigente; 7 días si nunca se configuró.
+- [ ] Con 0, con 1,5 o con 400 marca el error y no envía nada.
+- [ ] Con un valor válido confirma el cambio, y al recargar sigue ahí.
+- [ ] Con otro rol, la dirección `/secretario/frecuencia-avisos` no abre.
 
----
+### Panel del Director
+
+- [ ] Lista a las personas del instituto con sus roles y el estado de su legajo.
+- [ ] Quien tiene dos roles aparece con los dos.
+- [ ] Si el Director además es Docente, el menú tiene "Entregar programa de
+      materia".
 
 ## Si algo falla
 
-| Lo que ves | Qué está pasando | Dónde mirar |
-|---|---|---|
-| El login dice "El DNI o la contraseña no son correctos" con datos correctos | El usuario no está en la base, o `estado_usuario` está en 0 | Parte 1.3 |
-| Entrás bien pero caés siempre en `/inicio` | La sesión no trae roles | Parte 1.3 — falta `Usuarios_roles` |
-| "No pudimos conectarnos con el servidor" | El backend no está levantado, o error de CORS | Parte 2.1. En F12 → Network, un error de CORS se ve distinto de uno de conexión |
-| Errores de CORS en la consola | Los puertos no son los exactos | El backend tiene que estar en **5231** y el frontend en **4200**: la política está atada a esos dos |
-| Los paneles cargan pero salen vacíos | Faltan los datos de ejemplo | Parte 1.2 — la sección 7 del script |
-| "No pudimos saber qué documentos te corresponden" | Sesión vieja guardada en el navegador | Cerrar sesión y volver a entrar |
-| El desplegable de tipos sale vacío | Falta `roles_tipos_documentos` para ese rol | Parte 1.2 — la sección 3 del script |
-| "Ver el comprobante" da 404 | Falta `app.UseStaticFiles()` | Es un pendiente conocido del backend, no un error tuyo |
-| `ng serve` no compila | Suele ser un import mal escrito después de mover archivos | El mensaje dice el archivo y la línea |
+Abrí siempre F12, pestaña Network, mientras probás. Ahí se ve cada llamada, su
+código de respuesta y lo que devolvió. La mayoría de los "no anda" se resuelven
+mirando si la llamada salió y qué contestó.
 
-**Un truco general:** abrí siempre **F12 → Network** mientras probás. Ahí se
-ve cada llamada, su código de respuesta y lo que devolvió. La mayoría de los
-"no anda" se resuelven mirando si la llamada salió, y qué contestó.
-
----
+- El login dice que el DNI o la contraseña no son correctos y los datos están
+  bien: la persona no está en la base, o tiene `estado_usuario` en 0.
+- Entrás, pero caés siempre en `/inicio`: falta su fila en `Usuarios_roles`.
+- "No pudimos conectarnos con el servidor": el backend no está levantado, o hay
+  un error de CORS. En Network se ven distintos.
+- Errores de CORS en la consola: el backend tiene que estar en el puerto 5231 y
+  el frontend en el 4200. La política está atada a esos dos.
+- El desplegable de tipos de documento sale vacío: falta cargar
+  `roles_tipos_documentos` para ese rol.
+- El enlace para crear la contraseña responde 401: es un pendiente del backend,
+  el punto 2 de `alineacion-sprint-2.md`.
+- `npm start` no compila: suele ser un import mal escrito después de mover
+  archivos. El mensaje dice el archivo y la línea.
 
 ## Lo que todavía no se puede probar
 
-No está roto: no existe todavía.
+No está roto: no existe.
 
-- **Buscador de la barra superior** — está deshabilitado a propósito. No hay
-  endpoint de búsqueda.
-- **Editar perfil / cambiar foto** — sin endpoint ni columna en la base.
-- **Revisión de legajos de todo el instituto** (Secretario) — el backend solo
-  permite pedir los documentos de una persona por vez.
-- **Recuperar contraseña** — la pantalla existe pero simula el envío; no manda
+- El buscador de la barra superior está deshabilitado.
+- Editar el perfil y cambiar la foto no tienen endpoint ni columna en la base.
+- Recuperar la contraseña: la pantalla existe, pero simula el envío y no manda
   ningún correo.
-- **Notificaciones de verdad** — el puntito rojo se calcula en el frontend a
-  partir de los documentos rechazados.
+- El mail al rechazar un documento o un justificativo.
+- El calendario de exámenes y la configuración de la cuenta, que son del
+  Sprint 3.
