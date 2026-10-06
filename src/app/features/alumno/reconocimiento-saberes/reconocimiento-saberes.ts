@@ -24,7 +24,7 @@ type Adjunto = 'programa' | 'analitico';
  *
  *   · "Materia del ISCGB" con su comentario (el criterio pide poder escribir
  *     un comentario en esa sección). La materia se ELIGE de la lista
- *     (`GET /api/Asignaciones/materias-disponibles`): el backend la guarda
+ *     (`GET /api/Materias/materias-disponibles`): el backend la guarda
  *     por id, así que el texto libre de antes no tenía a dónde ir.
  *   · Dos PDF: el programa de la otra institución y el analítico. Solo PDF,
  *     validado por `ZonaArchivo` (regla de negocio #1).

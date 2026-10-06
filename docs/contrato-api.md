@@ -350,10 +350,8 @@ asignaciones" usa los cuatro primeros.
   Devuelve `{ message, idMateria }`, o 400 si el nombre se repite.
 - `GET /api/Materias/mis-materias`, solo para el rol Alumno.
 - `GET /api/Materias/materias-disponibles`:
-  `{ data: [{ idMateria, nombreMateria }] }`.
-
-**El frontend pide el último en `/api/Asignaciones/materias-disponibles`, que
-ya no existe.** Ver `contrato-reconocimiento-saberes.md`.
+  `{ data: [{ idMateria, nombreMateria }] }`. Lo usa el reconocimiento de
+  saberes.
 
 ## Reconocimiento de saberes
 

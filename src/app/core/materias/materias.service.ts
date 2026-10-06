@@ -17,7 +17,7 @@ export const MENSAJE_ERROR_GUARDAR_MATERIAS =
   'No pudimos guardar los cambios. Intentá de nuevo en un momento.';
 
 /**
- * Materias del instituto (`AsignacionesController`, ruta `api/Asignaciones`):
+ * Materias del instituto (`MateriasController`, ruta `api/Materias`):
  * la lista de materias, el alta de una materia nueva y la asignación
  * docente–materia–comisión.
  *

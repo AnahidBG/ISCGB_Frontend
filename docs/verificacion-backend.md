@@ -42,14 +42,14 @@ manda en cada pedido con `tokenInterceptor`.
 
 ## Lo que no coincide
 
-`RUTAS_API.materiasDisponibles` apunta a `/api/Asignaciones/materias-disponibles`.
-El backend unificó esos endpoints en `MateriasController`, y la ruta real es
-`/api/Materias/materias-disponibles`. Hoy responde 404 y el desplegable de
-materias del reconocimiento de saberes queda vacío. Se corrige en el frontend.
-
-`RUTAS_API` tiene también `/api/Legajos/resumen-usuarios`, que el backend nunca
+`RUTAS_API` tiene `/api/Legajos/resumen-usuarios`, que el backend nunca
 implementó. El frontend no la usa: Control de Legajos pide `resumen-estado` y
 cuenta en el navegador.
+
+El 06/10/2026 se corrigió `RUTAS_API.materiasDisponibles`, que apuntaba a
+`/api/Asignaciones/materias-disponibles`. El backend había unificado esos
+endpoints en `MateriasController` y la ruta respondía 404, así que el
+desplegable de materias del reconocimiento de saberes quedaba vacío.
 
 ## Los datos que tienen que estar cargados
 

@@ -19,10 +19,9 @@ autenticación.
 { "data": [{ "idMateria": 14, "nombreMateria": "Didáctica General" }] }
 ```
 
-**El frontend todavía lo pide en `/api/Asignaciones/materias-disponibles`**
-(`RUTAS_API.materiasDisponibles`). Esa ruta dejó de existir cuando el backend
-unificó todo en `MateriasController`, así que hoy responde 404 y el
-desplegable queda vacío. Hay que corregirla en `core/configuracion/api.ts`.
+Hasta el 06/10/2026 el frontend lo pedía en
+`/api/Asignaciones/materias-disponibles`, una ruta que dejó de existir cuando
+el backend unificó todo en `MateriasController`.
 
 ### `POST /api/ReconocimientoSaberes/solicitar`
 
