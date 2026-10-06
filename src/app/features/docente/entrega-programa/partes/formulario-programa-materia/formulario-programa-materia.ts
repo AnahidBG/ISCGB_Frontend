@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Output, inject, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  EventEmitter,
+  Output,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   FormArray,
   FormBuilder,
@@ -7,6 +16,7 @@ import {
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
+import { distinctUntilChanged, map } from 'rxjs';
 import { Boton } from '../../../../../shared/ui/boton/boton';
 import { CampoFormulario } from '../../../../../shared/ui/campo-formulario/campo-formulario';
 import { ContenidoUnidad } from '../../../../../core/programas-materia/modelos/contenido-unidad';
@@ -14,17 +24,17 @@ import {
   MateriaACargo,
   etiquetaDeMateria,
 } from '../../../../../core/programas-materia/modelos/contexto-docente';
+import { OPCIONES_FORMATO_CURRICULAR } from '../../../../../core/programas-materia/modelos/formato-curricular';
 import { ProgramaMateria } from '../../../../../core/programas-materia/modelos/programa-materia';
 
-/** Los valores de "Condición" que maneja el instituto. */
-const OPCIONES_CONDICION = ['Cuatrimestral', 'Anual'] as const;
-
-/** Los valores de "Formato curricular" que maneja el instituto. */
-const OPCIONES_FORMATO_CURRICULAR = [
-  'Materia teórica',
-  'Materia práctica',
-  'Materia teórico-práctica',
-] as const;
+/**
+ * Los valores de "Condición" del encabezado del programa.
+ *
+ * Antes decía "Cuatrimestral / Anual", que es el régimen de cursado, no la
+ * condición. Secretaría lo corrigió sobre el PDF de prueba: va "Regular /
+ * Promoción".
+ */
+const OPCIONES_CONDICION = ['Regular', 'Promoción'] as const;
 
 type GrupoUnidad = FormGroup<{
   tituloUnidad: FormControl<string>;
@@ -57,6 +67,13 @@ type GrupoUnidad = FormGroup<{
  * que los resuelve desde la sesión: el `idDocente` llega ya resuelto por
  * `input` y la materia se elige por nombre de una lista. Ver
  * `ContextoDocente`.
+ *
+ * ── Autocompletado desde la materia ───────────────────────────────────────
+ * Al elegir la materia, el encabezado del programa se arma solo: carrera,
+ * curso y docente se muestran en una ficha de solo lectura, y formato y
+ * horas se completan y se bloquean si la materia los trae del plan de
+ * estudios. Si no los trae (hoy el backend no los manda), quedan para
+ * cargar a mano como antes.
  */
 @Component({
   selector: 'app-formulario-programa-materia',
@@ -82,11 +99,23 @@ export class FormularioProgramaMateria {
   /** Las materias que puede elegir. El contenedor garantiza que no viene vacía. */
   readonly materias = input.required<MateriaACargo[]>();
 
+  /** Nombre y apellido de quien firma, para la ficha. Sale de la sesión. */
+  readonly nombreDocente = input<string>('');
+
   @Output() readonly enviarPrograma = new EventEmitter<ProgramaMateria>();
+
+  /**
+   * `true` en cuanto la persona carga algo. El contenedor lo usa para
+   * preguntar antes de dejarla salir sin enviar.
+   */
+  @Output() readonly cambiosSinEnviar = new EventEmitter<boolean>();
 
   protected readonly opcionesCondicion = OPCIONES_CONDICION;
   protected readonly opcionesFormatoCurricular = OPCIONES_FORMATO_CURRICULAR;
   protected readonly etiquetaDeMateria = etiquetaDeMateria;
+
+  /** La materia elegida en el selector, o `null` si todavía no eligió. */
+  protected readonly materiaElegida = signal<MateriaACargo | null>(null);
 
   protected readonly formulario = this.fb.nonNullable.group({
     // ── Identificación ──────────────────────────────────────────────────
@@ -94,8 +123,10 @@ export class FormularioProgramaMateria {
     // único que se elige es la materia, y por nombre.
     idMateria: [0, [Validators.required, Validators.min(1)]],
     cicloLectivo: [String(new Date().getFullYear()), [Validators.required]],
-    condicion: [OPCIONES_CONDICION[0] as string, [Validators.required]],
-    formatoCurricular: [OPCIONES_FORMATO_CURRICULAR[2] as string, [Validators.required]],
+    // Condición y formato arrancan vacíos, igual que la materia: con una
+    // opción ya elegida, se mandaba sin que nadie la hubiera mirado.
+    condicion: ['', [Validators.required]],
+    formatoCurricular: ['', [Validators.required]],
 
     // ── Carga horaria ────────────────────────────────────────────────────
     horasSemanales: ['', [Validators.required]],
@@ -126,8 +157,52 @@ export class FormularioProgramaMateria {
     examenesVirtuales: [''],
   });
 
+  constructor() {
+    this.formulario.controls.idMateria.valueChanges
+      .pipe(takeUntilDestroyed())
+      // El `<select>` devuelve el id como texto: "7", no 7.
+      .subscribe((idMateria) => this.aplicarDatosDeMateria(Number(idMateria)));
+
+    this.formulario.valueChanges
+      .pipe(
+        map(() => this.formulario.dirty),
+        distinctUntilChanged(),
+        takeUntilDestroyed(),
+      )
+      .subscribe((hayCambios) => this.cambiosSinEnviar.emit(hayCambios));
+  }
+
   protected get contenidos(): FormArray<GrupoUnidad> {
     return this.formulario.controls.contenidos;
+  }
+
+  private aplicarDatosDeMateria(idMateria: number): void {
+    const materia = this.materias().find((m) => m.idMateria === idMateria) ?? null;
+    this.materiaElegida.set(materia);
+
+    const { formatoCurricular, horasSemanales, horasCuatrimestrales } = this.formulario.controls;
+    this.autocompletar(formatoCurricular, materia?.formato ?? null);
+    this.autocompletar(horasSemanales, aTexto(materia?.horasCatedra));
+    this.autocompletar(horasCuatrimestrales, aTexto(materia?.horasTotales));
+  }
+
+  /**
+   * Con dato del plan: lo pone y bloquea el campo, para que el programa diga
+   * lo mismo que la resolución. Sin dato: el campo queda para cargar a mano.
+   */
+  private autocompletar(control: FormControl<string>, valor: string | null): void {
+    if (valor !== null) {
+      control.setValue(valor);
+      control.disable();
+      return;
+    }
+
+    // Si estaba bloqueado, lo que tiene es de la materia elegida antes: se
+    // borra. Si ya estaba a mano, se respeta lo que la persona escribió.
+    if (control.disabled) {
+      control.setValue('');
+      control.enable();
+    }
   }
 
   protected agregarUnidad(): void {
@@ -192,4 +267,9 @@ export class FormularioProgramaMateria {
 
     this.enviarPrograma.emit(programa);
   }
+}
+
+/** Las horas llegan como número; el programa las guarda como texto. */
+function aTexto(horas: number | null | undefined): string | null {
+  return horas === null || horas === undefined ? null : String(horas);
 }

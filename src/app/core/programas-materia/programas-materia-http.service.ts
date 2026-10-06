@@ -3,7 +3,8 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { esEndpointInexistente } from '../comun/error-api';
 import { RUTAS_API } from '../configuracion/api';
-import { ContextoDocente } from './modelos/contexto-docente';
+import { ContextoDocente, MateriaACargo } from './modelos/contexto-docente';
+import { formatoCurricularDesde } from './modelos/formato-curricular';
 import { ProgramaMateria } from './modelos/programa-materia';
 import {
   MENSAJE_CONTEXTO_NO_DISPONIBLE,
@@ -25,6 +26,22 @@ interface RespuestaCrearPrograma {
 }
 
 /**
+ * Una materia tal como llega en `GET contexto-docente`. El formato viene como
+ * texto libre de la base y los datos del plan pueden no venir: hoy el
+ * `MateriaDocenteDto` del backend no los incluye.
+ */
+interface MateriaACargoApi extends Omit<MateriaACargo, 'formato' | 'horasCatedra' | 'horasTotales'> {
+  formato?: string | null;
+  horasCatedra?: number | null;
+  horasTotales?: number | null;
+}
+
+interface RespuestaContextoDocente {
+  idDocente: number;
+  materias?: MateriaACargoApi[];
+}
+
+/**
  * Envío real del programa de materia contra la API de ISCGB.
  *
  * Cubre los dos endpoints del backend:
@@ -40,7 +57,7 @@ export class ProgramasMateriaHttpService extends ProgramasMateriaService {
   private readonly http = inject(HttpClient);
 
   obtenerContextoDocente(idUsuario: number): Observable<ContextoDocente | null> {
-    return this.http.get<ContextoDocente>(RUTAS_API.contextoDocente(idUsuario)).pipe(
+    return this.http.get<RespuestaContextoDocente>(RUTAS_API.contextoDocente(idUsuario)).pipe(
       map((contexto) => ({
         idDocente: contexto.idDocente,
         // `materias` puede no venir si el backend serializa una lista vacía
@@ -52,6 +69,9 @@ export class ProgramasMateriaHttpService extends ProgramasMateriaService {
           curso: materia.curso ?? null,
           idComision: materia.idComision,
           nombreComision: materia.nombreComision?.trim() || `Comisión ${materia.idComision}`,
+          formato: formatoCurricularDesde(materia.formato),
+          horasCatedra: materia.horasCatedra ?? null,
+          horasTotales: materia.horasTotales ?? null,
         })),
       })),
       catchError((error: HttpErrorResponse) => {

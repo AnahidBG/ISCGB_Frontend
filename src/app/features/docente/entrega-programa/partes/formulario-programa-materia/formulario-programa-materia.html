@@ -56,12 +56,22 @@
         />
       </app-campo-formulario>
 
-      <app-campo-formulario etiqueta="Condición" idCampo="condicion" [requerido]="true">
+      <app-campo-formulario
+        etiqueta="Condición"
+        idCampo="condicion"
+        [requerido]="true"
+        [error]="
+          formulario.controls.condicion.touched && formulario.controls.condicion.invalid
+            ? 'Elegí la condición de la materia.'
+            : null
+        "
+      >
         <select
           id="condicion"
           formControlName="condicion"
           class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
         >
+          <option value="" disabled>Elegí la condición…</option>
           @for (opcion of opcionesCondicion; track opcion) {
             <option [value]="opcion">{{ opcion }}</option>
           }
@@ -72,18 +82,56 @@
         etiqueta="Formato curricular"
         idCampo="formatoCurricular"
         [requerido]="true"
+        [error]="
+          formulario.controls.formatoCurricular.touched &&
+          formulario.controls.formatoCurricular.invalid
+            ? 'Elegí el formato curricular.'
+            : null
+        "
       >
         <select
           id="formatoCurricular"
           formControlName="formatoCurricular"
-          class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+          class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal disabled:cursor-not-allowed disabled:opacity-70"
         >
+          <option value="" disabled>Elegí el formato…</option>
           @for (opcion of opcionesFormatoCurricular; track opcion) {
             <option [value]="opcion">{{ opcion }}</option>
           }
         </select>
+        @if (formulario.controls.formatoCurricular.disabled) {
+          <span class="text-xs text-texto-suave">Sale del plan de estudios de la materia.</span>
+        }
       </app-campo-formulario>
     </div>
+
+    <!--
+      Ficha de solo lectura: lo que el encabezado del programa toma de la
+      materia y de la sesión. No se edita acá porque no es del docente
+      decidirlo — si está mal, se corrige en la carga de la materia.
+    -->
+    @if (materiaElegida(); as materia) {
+      <div
+        role="group"
+        aria-label="Datos de la materia"
+        class="rounded-xl border border-borde bg-superficie p-5"
+      >
+        <dl class="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
+          <div>
+            <dt class="text-texto-suave">Carrera</dt>
+            <dd class="font-semibold text-texto">{{ materia.carrera ?? 'Sin cargar' }}</dd>
+          </div>
+          <div>
+            <dt class="text-texto-suave">Curso</dt>
+            <dd class="font-semibold text-texto">{{ materia.curso ?? 'Sin cargar' }}</dd>
+          </div>
+          <div>
+            <dt class="text-texto-suave">Docente</dt>
+            <dd class="font-semibold text-texto">{{ nombreDocente() || 'Sin cargar' }}</dd>
+          </div>
+        </dl>
+      </div>
+    }
   </section>
 
   <!-- ── Carga horaria ──────────────────────────────────────────────────── -->
@@ -98,8 +146,11 @@
         type="text"
         placeholder="Ej: 4 horas"
         formControlName="horasSemanales"
-        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal disabled:cursor-not-allowed disabled:opacity-70"
       />
+      @if (formulario.controls.horasSemanales.disabled) {
+        <span class="text-xs text-texto-suave">Sale del plan de estudios de la materia.</span>
+      }
     </app-campo-formulario>
 
     <app-campo-formulario
@@ -112,8 +163,11 @@
         type="text"
         placeholder="Ej: 64 horas"
         formControlName="horasCuatrimestrales"
-        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal"
+        class="w-full rounded-lg border border-borde bg-humo px-4 py-2.5 text-texto focus:border-transparent focus:outline-none focus:ring-2 focus:ring-principal disabled:cursor-not-allowed disabled:opacity-70"
       />
+      @if (formulario.controls.horasCuatrimestrales.disabled) {
+        <span class="text-xs text-texto-suave">Sale del plan de estudios de la materia.</span>
+      }
     </app-campo-formulario>
   </section>
 

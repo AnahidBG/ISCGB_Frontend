@@ -84,11 +84,25 @@
         <app-formulario-programa-materia
           [idDocente]="contexto()!.idDocente"
           [materias]="contexto()!.materias"
+          [nombreDocente]="sesion()?.nombreCompleto ?? ''"
           [enviando]="enviando()"
           [error]="error()"
           (enviarPrograma)="manejarEnvio($event)"
+          (cambiosSinEnviar)="cambiosSinEnviar.set($event)"
         />
       </div>
     }
   </div>
+
+  @if (preguntandoSalida()) {
+    <app-dialogo-confirmacion
+      titulo="Olvidaste enviarlo, ¿seguro querés salir?"
+      textoConfirmar="Salir sin enviar"
+      textoCancelar="Seguir completando"
+      (confirmar)="responderSalida(true)"
+      (cancelar)="responderSalida(false)"
+    >
+      El programa todavía no se envió. Si salís ahora, se pierde todo lo que cargaste.
+    </app-dialogo-confirmacion>
+  }
 </app-estructura-panel>
