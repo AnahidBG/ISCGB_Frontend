@@ -38,7 +38,7 @@ function sesionCon(roles: string[]): Sesion {
     token: 'token',
     idUsuario: 7,
     nombreCompleto: 'Persona de Prueba',
-    dni: '40555111',
+    dni: '11111111',
     email: 'prueba@iscgb.edu.ar',
     roles,
     venceEl: new Date(Date.now() + 60_000),

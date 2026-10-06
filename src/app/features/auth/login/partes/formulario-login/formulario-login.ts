@@ -65,7 +65,7 @@ export class FormularioLogin {
 
     const { dni, password } = this.formulario.getRawValue();
 
-    // El usuario escribe "43.880.335"; el backend espera "43880335".
+    // El usuario escribe "12.345.678"; el backend espera "12345678".
     this.enviar.emit({ dni: normalizarDni(dni), password });
   }
 

@@ -67,8 +67,8 @@ asignado.
 
 ## Detalles que salieron del análisis
 
-El DNI se manda sin puntos. El diseño muestra `43.813.379` y la API espera solo
-dígitos; lo limpia `normalizarDni()`.
+El DNI se manda sin puntos. El diseño lo muestra como `12.345.678` y la API
+espera solo dígitos; lo limpia `normalizarDni()`.
 
 Hay un solo mensaje de error. La API distingue "contraseña incorrecta" de "DNI
 no encontrado", y eso permitiría averiguar qué DNI existen. El frontend no
