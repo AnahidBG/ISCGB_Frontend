@@ -1,54 +1,53 @@
-# Sistema de diseño ISCGB — del Figma al código
+# Sistema de diseño: del Figma al código
 
-Origen: Manual de Identidad ICGB y Design System (Figma).
-Implementado en `src/styles.scss` y `src/app/shared/ui/`.
-Actualizado: **27/08/2026** — ver "Brochero Design System" al final.
+Sale del Manual de Identidad ICGB y del Design System de Figma. Está
+implementado en `src/styles.scss` y en `src/app/shared/ui/`.
 
-**Muestrario en vivo:** `/sistema-diseno` — dibuja los componentes reales con
-los tokens reales. Si cambia un color en `styles.scss`, esa página cambia sola.
-
----
+El muestrario en vivo está en `/sistema-diseno`: dibuja los componentes reales
+con los tokens reales. Si cambia un color en `styles.scss`, esa página cambia
+sola.
 
 ## Colores
 
-### Oficiales del manual
+### Los del manual
 
 | Nombre | Hex | Token |
-|---|---|---|
-| Color principal — verde grisáceo oscuro | `#46695F` | `principal` |
+| --- | --- | --- |
+| Verde grisáceo oscuro, el color principal | `#46695F` | `principal` |
 | Verde claro | `#90C997` | `acento-verde` |
 | Amarillo verdoso suave | `#CFD18D` | `acento-lima` |
 | Verde menta | `#CBFFD1` | `menta` |
 | Blanco humo | `#F5F5F5` | `humo` |
 | Gris verdoso suave | `#919D99` | `gris-marca` |
 
-### Contraste medido (WCAG 2.1)
+### Contraste medido
 
-| Combinación | Ratio | Resultado |
-|---|---|---|
-| Verde principal + texto blanco | 6.09:1 | ✅ AA |
-| Verde claro + texto oscuro | 7.21:1 | ✅ AAA |
-| Amarillo verdoso + texto oscuro | 8.63:1 | ✅ AAA |
-| Verde menta + texto oscuro | 12.31:1 | ✅ AAA |
-| **Verde claro + texto blanco** | 1.91:1 | ❌ **nunca usar** |
-| **Gris verdoso + blanco** | 2.80:1 | ❌ **no sirve para texto** |
-| Amarillo verdoso + verde principal | 3.82:1 | ⚠️ solo títulos grandes |
+WCAG 2.1 pide 4,5:1 para texto normal.
 
-> 🚨 **El gris verdoso `#919D99` no alcanza para texto.** El mínimo de WCAG AA
-> es 4.5:1 y da 2.80:1. Queda reservado para trazos decorativos y bordes.
-> Para texto secundario y placeholders se usa `#666E6B`, que mantiene el
-> mismo matiz y da 4.81:1.
->
-> Esto conviene corregirlo también en el manual de identidad, no solo en el
-> código: si otra persona del equipo toma el gris del manual para un texto,
-> el problema vuelve.
+| Combinación | Relación | Resultado |
+| --- | --- | --- |
+| Verde principal con texto blanco | 6,09:1 | Cumple AA |
+| Verde claro con texto oscuro | 7,21:1 | Cumple AAA |
+| Amarillo verdoso con texto oscuro | 8,63:1 | Cumple AAA |
+| Verde menta con texto oscuro | 12,31:1 | Cumple AAA |
+| Amarillo verdoso con verde principal | 3,82:1 | Solo títulos grandes |
+| Verde claro con texto blanco | 1,91:1 | No usar nunca |
+| Gris verdoso sobre blanco | 2,80:1 | No sirve para texto |
 
-### Derivados (no están en el manual)
+**El gris verdoso `#919D99` no alcanza para texto.** Queda para trazos
+decorativos y bordes. Para texto secundario y placeholders se usa `#666E6B`,
+que mantiene el matiz y da 4,81:1.
 
-Hicieron falta porque el manual define colores, pero no estados.
+Conviene corregirlo también en el manual de identidad. Si alguien del equipo
+toma el gris del manual para un texto, el problema vuelve.
 
-| Nombre | Hex | Para qué |
-|---|---|---|
+### Derivados
+
+No están en el manual. Hicieron falta porque el manual define colores, pero no
+estados.
+
+| Token | Hex | Para qué |
+| --- | --- | --- |
 | `principal-oscuro` | `#35504A` | Hover y press del botón secundario |
 | `acento-verde-claro` | `#B8DDB4` | Botón primario en reposo |
 | `acento-verde-press` | `#7AAB80` | Botón primario presionado |
@@ -56,99 +55,87 @@ Hicieron falta porque el manual define colores, pero no estados.
 | `texto` | `#2D2D2D` | Texto principal |
 | `borde` | `#E2E8E4` | Bordes de campos y divisores |
 
-Pendiente: validar estos valores contra el Figma del Design System, que tiene
-los estados dibujados.
+### Colores de estado
 
----
+Son los del semáforo de documentos: `aprobado` (`#2F8F5B`), `pendiente`
+(`#B07D0A`) y `rechazado` (`#C0392B`).
+
+Medidos el 06/10/2026, **`aprobado` y `pendiente` no llegan a AA como texto**:
+dan 4,04:1 y 3,63:1 sobre blanco, y menos sobre su propio fondo al 10 %
+(3,59:1 y 3,25:1). `rechazado` sí llega, con 5,44:1.
+
+En los componentes nuevos el color de estado va en el ícono y el borde, donde
+alcanza con 3:1, y el texto va en `texto`. `insignia-estado` todavía usa el
+color como texto.
 
 ## Tipografía
 
-| Fuente | Uso | Token |
-|---|---|---|
-| **Gasoek One** | Títulos | `font-titulo` |
-| **Geist** | Contenido | `font-cuerpo` |
-| **Geist Mono** | Piezas digitales | `font-mono` |
+- **Gasoek One**, para títulos: `font-titulo`.
+- **Geist**, para contenido: `font-cuerpo`.
+- **Geist Mono**, para piezas digitales: `font-mono`.
 
 Se cargan desde Google Fonts en `index.html` con `display=swap`, para que el
-texto se lea con la fuente de respaldo mientras la definitiva descarga en vez
-de quedar invisible.
+texto se lea con la fuente de respaldo mientras baja la definitiva, en vez de
+quedar invisible.
 
-> Gasoek One tiene **un solo peso**. Pedirle negrita hace que el navegador la
-> falsifique estirando los trazos, y queda sucia. Por eso `.font-titulo` fija
-> `font-weight: 400`.
+Gasoek One tiene un solo peso. Pedirle negrita hace que el navegador la
+falsifique estirando los trazos, y queda sucia. Por eso `.font-titulo` fija
+`font-weight: 400`.
 
-### ⚠️ El manual y el diseño del login no coinciden
+### El manual y el diseño del login no coinciden
 
-El manual dice "Gasoek One para títulos". Pero en el diseño del login, tanto
-el título grande como "Bienvenido" están dibujados con la tipografía de
-contenido en negrita, **no** con Gasoek One.
+El manual dice "Gasoek One para títulos". Pero en el diseño del login, el
+título grande y "Bienvenido" están dibujados con la tipografía de contenido en
+negrita.
 
-No es un error. Gasoek One es una display muy pesada, pensada para piezas de
-comunicación. En una pantalla de sistema, donde alguien viene a hacer un
-trámite, resulta ruidosa.
+No es un error. Gasoek One es una tipografía muy pesada, pensada para piezas de
+comunicación. En una pantalla donde alguien viene a hacer un trámite resulta
+ruidosa.
 
-Por eso el código **no fuerza** `font-titulo` en todos los `h1/h2/h3`. Cada
-pantalla elige y queda explícito en su HTML:
+Por eso el código no fuerza `font-titulo` en todos los `h1`, `h2` y `h3`. Las
+piezas de marca usan `class="font-titulo"` y las pantallas del sistema quedan,
+por defecto, en Geist en negrita.
 
-| Contexto | Tipografía |
-|---|---|
-| Piezas de marca y comunicación | `class="font-titulo"` → Gasoek One |
-| Pantallas del sistema | por defecto → Geist en negrita |
-
-**Pendiente:** confirmarlo con diseño y dejarlo escrito en el manual, para que
-no se resuelva distinto en cada pantalla.
-
----
+Falta confirmarlo con diseño y dejarlo escrito en el manual, para que no se
+resuelva distinto en cada pantalla.
 
 ## Grilla
 
 | | Escritorio | Celular |
-|---|---|---|
+| --- | --- | --- |
 | Columnas | 12 | 4 |
 | Ancho de columna | 70 px | 78 px |
 | Separación | 32 px | 16 px |
 | Margen | 120 px | 16 px |
-| **Lienzo** | **1440 px** | **392 px** |
+| Lienzo | 1440 px | 392 px |
 
 ### El lienzo de Figma no es el ancho de la pantalla
 
-Este es el punto donde el diseño y el código dejan de ser lo mismo.
+Acá el diseño y el código dejan de ser lo mismo. Una MacBook de 16" tiene
+1728 px de ancho real y el lienzo de Figma es de 1440; un iPhone 16 Pro Max
+tiene 440 y el lienzo es de 392. Ninguno coincide, y entre esos extremos hay
+cientos de anchos posibles. Figma es una foto a un ancho; el código tiene que
+verse bien en todos.
 
-| Dispositivo | Ancho real (CSS) | Lienzo de Figma |
-|---|---|---|
-| MacBook 16" | 1728 px | 1440 px |
-| iPhone 16 Pro Max | 440 px | 392 px |
+Por eso `.contenedor` limita el contenido a 1440 px y lo centra. En una MacBook
+sobra aire a los costados, que es lo correcto: si el texto se estirara a
+1728 px, las líneas quedarían tan largas que el ojo se pierde al volver al
+renglón siguiente. En celular el contenido se estira hasta donde dé, con 16 px
+de margen.
 
-Ninguno de los dos coincide con el lienzo. Y entre esos dos extremos hay
-cientos de anchos posibles.
-
-Por eso `.contenedor` **limita el contenido a 1440 px y lo centra**. En una
-MacBook sobra aire a los costados, que es lo correcto: si el texto se
-estirara a 1728 px, las líneas quedarían tan largas que el ojo se pierde al
-volver al renglón siguiente. En celular el contenido estira hasta donde dé,
-con 16 px de margen.
-
-```
-Figma:  UNA foto, a UN ancho.
-Código: tiene que verse bien en TODOS los anchos.
-```
-
-Los quiebres se manejan con `lg:` (a partir de 1024 px), no con dos diseños
+Los quiebres se manejan con `lg:`, a partir de 1024 px, y no con dos diseños
 separados.
-
----
 
 ## Componentes
 
 ### `<app-boton>`
 
-Tres niveles del Design System:
+Tiene los tres niveles del Design System:
 
-| Nivel | Aspecto | Cuándo |
-|---|---|---|
-| `primario` | Verde claro, texto oscuro, pastilla | Acción principal |
-| `secundario` | Verde institucional, texto blanco | Acción de apoyo |
-| `terciario` | Solo texto | Navegación, acciones menores |
+- `primario`: verde claro con texto oscuro, en forma de pastilla. Es la acción
+  principal.
+- `secundario`: verde institucional con texto blanco. Acción de apoyo.
+- `terciario`: solo texto. Navegación y acciones menores.
 
 ```html
 <app-boton nivel="primario">Iniciá tu camino</app-boton>
@@ -156,106 +143,80 @@ Tres niveles del Design System:
 <app-boton nivel="terciario" [conFlecha]="false">Inicio</app-boton>
 ```
 
-Si recibe `href` se dibuja como `<a>`; si no, como `<button>`. **No es un
-detalle:** un enlace lleva a otro lado y se puede abrir en pestaña nueva; un
-botón ejecuta algo acá. Confundirlos rompe la navegación por teclado.
+Si recibe `href` se dibuja como `<a>`; si no, como `<button>`. Un enlace lleva
+a otro lado y se puede abrir en una pestaña nueva; un botón ejecuta algo acá.
+Confundirlos rompe la navegación por teclado.
 
-Los estados (hover, press, focus, disabled) se resuelven con variantes de CSS,
-no con JavaScript. El navegador ya sabe cuándo el mouse está encima.
+Los estados (hover, press, focus y disabled) se resuelven con variantes de CSS
+y no con JavaScript.
 
-> ⚠️ **Gotcha de Angular:** `<ng-content />` proyecta el contenido **una sola
-> vez**, aunque se escriba en las dos ramas de un `@if`. La segunda queda
-> vacía. La solución es declararlo una vez en un `<ng-template>` y usarlo con
-> `ngTemplateOutlet` en ambas ramas. Está resuelto así en `boton.html`.
+Un detalle de Angular: `<ng-content />` proyecta el contenido una sola vez,
+aunque se escriba en las dos ramas de un `@if`. La segunda queda vacía. Se
+declara una vez en un `<ng-template>` y se usa con `ngTemplateOutlet` en las
+dos. Así está resuelto en `boton.html`.
 
 ### `<app-encabezado>`
 
-Navegación institucional. En escritorio los enlaces van en fila; en celular se
-guardan detrás del botón de menú.
+Es la navegación institucional. En escritorio los enlaces van en fila y en
+celular se guardan detrás del botón de menú.
 
 ```html
 <app-encabezado urlAutogestion="/login" />
 ```
 
-El acceso al Portal de Autogestión va **después de Contacto**, dibujado como
-botón y no como enlace de texto: los otros cuatro llevan a secciones del mismo
-sitio, este lleva a entrar a un sistema.
+El acceso al Portal de Autogestión va después de Contacto y dibujado como
+botón, no como enlace de texto: los otros cuatro llevan a secciones del mismo
+sitio y este lleva a entrar a un sistema.
 
-### `<app-campo-formulario>` · `<app-pantalla-carga>`
+### Los demás
 
-Ver el muestrario en `/sistema-diseno`.
+`<app-campo-formulario>`, `<app-pantalla-carga>` y el resto de `shared/ui/` se
+ven en el muestrario, en `/sistema-diseno`.
 
----
+## Brochero Design System
 
-## Brochero Design System (27/08/2026)
+El 27/08/2026 se incorporó a `styles.scss` un segundo sistema de diseño de la
+marca, armado aparte a partir de cuatro imágenes: el logo en sus tres colores y
+el isotipo. Se tomó lo que aportaba de nuevo, sin pisar nada confirmado.
 
-Milena compartió un design system generado en otra sesión de Claude
-("Brochero Design System.zip" + un link a un Design Canvas), a partir de
-cuatro imágenes de marca (la lockup en sus tres colores y el isotipo). Se
-incorporó a `styles.scss` lo que aporta de nuevo sin pisar nada confirmado.
+Sus tres colores de marca son exactamente los oficiales de acá: `#46695F`,
+`#CFD18D` y `#919D99`. Que dos sistemas armados con fuentes distintas lleguen
+al mismo número es una buena señal.
 
-### Lo que confirmó
+Lo que se sumó:
 
-Sus tres colores de marca son **exactamente** los tres colores oficiales de
-acá arriba — mismo hex: `#46695F` (principal), `#CFD18D` (acento-lima),
-`#919D99` (gris-marca). Dos sistemas de diseño hechos en sesiones distintas,
-a partir de fuentes distintas, llegaron al mismo número. Eso es una buena
-señal de que esos tres colores están bien.
+- La escala completa de esos tres colores, de `principal-50` a `principal-900`
+  y lo mismo para `acento-lima` y `gris-marca`. Son tokens nuevos, que no
+  reemplazan a los que ya existían.
+- `radius-tarjeta`, de 20 px, y `radius-control`, la pastilla. Tienen nombre
+  propio y no pisan la escala de Tailwind.
+- `shadow-marca-sm`, `md` y `lg`: sombras con tinte verde en vez de negro.
 
-### Lo que se sumó a `styles.scss`
+Lo que no se tocó:
 
-- **Escala completa de los tres colores compartidos** (`principal-50` a
-  `principal-900`, y lo mismo para `acento-lima` y `gris-marca`) — 9 tonos
-  por color en vez de uno solo más un par de derivados sueltos
-  (`principal-oscuro`, `acento-verde-claro`...). Son tokens nuevos y
-  aditivos: no reemplazan ni tocan los que ya existían.
-- **`radius-tarjeta`** (20px) y **`radius-control`** (pastilla) — con nombre
-  propio, no pisan la escala de Tailwind (`rounded-lg`, etc.).
-- **`shadow-marca-sm/md/lg`** — sombras con tinte verde en vez de negro
-  neutro, que es como las dibuja el Brochero Design System.
-
-### Lo que NO se tocó, y por qué
-
-- **Tipografía.** El Brochero Design System recomienda Barlow / Barlow Semi
-  Condensed / Barlow Condensed — pero lo dice como sustitución a falta de
-  dato: a esa sesión solo le llegaron 4 imágenes, sin archivos de fuente
-  ("no font binaries were provided"). Acá arriba, en cambio, Gasoek One y
-  Geist están confirmados desde el Figma real. Adoptar Barlow habría sido
-  cambiar un dato confirmado por una adivinanza de otra sesión que tenía
-  menos información. Queda comentado en `styles.scss` como una línea para
-  el día que se decida lo contrario.
-- **`acento-verde` (#90C997) y `menta` (#CBFFD1).** El Brochero Design
-  System no los tiene — su fuente (4 imágenes de marca) no incluía la
-  diapositiva del manual que sí tenía estos dos colores. No se sacaron de
-  `styles.scss`: son oficiales acá y no hay motivo para dudar de ellos por
-  la ausencia en un sistema con menos información de partida.
-- **`SiteHeader`, `SiteFooter`, `LogoLoader` y `ui_kits/sitio/`.** El
-  `readme.md` del Brochero Design System dice explícitamente que se generó
-  para *"una animación de carga del logo para mi página web"* — el sitio
-  público institucional, no el sistema de gestión académica que es este
-  repositorio. Son proyectos distintos con la misma marca. No se importó
-  nada de esos componentes acá.
-
-### Pendiente
-
-1. Si el instituto confirma la tipografía real de la lockup (o si Milena
-   decide que Barlow está bien igual), es un cambio de una línea en
-   `--font-titulo` / `--font-cuerpo`.
-2. Auditar `boton.ts` y el resto de `shared/ui/` para decidir si conviene
-   migrar los derivados ad-hoc (`principal-oscuro`, `acento-verde-claro`...)
-   a la escala nueva (`principal-600`, etc.) — no se hizo automáticamente
-   para no tocar visualmente nada que ya esté funcionando sin pedirlo.
-
----
+- La tipografía. Ese sistema recomienda Barlow, pero como sustitución a falta
+  de dato: se armó sin los archivos de fuente. Gasoek One y Geist, en cambio,
+  están confirmadas desde el Figma real.
+- `acento-verde` y `menta`. Ese sistema no los tiene, porque su fuente no
+  incluía la diapositiva del manual que los define. Acá son oficiales.
+- Sus componentes de encabezado, pie y loader. Se hicieron para el sitio
+  público del instituto, que es otro proyecto con la misma marca.
 
 ## Pendientes
 
-1. **El Figma no tiene variables.** Los colores están escritos en una
-   diapositiva del manual, no aplicados como variables de Figma. Mientras siga
-   así, nadie puede reutilizarlos desde Figma y cada capa se pinta a mano.
-   Conviene crearlas: es media hora y ordena todo.
-2. **Validar los derivados** contra el Figma del Design System.
-3. **Corregir el gris `#919D99`** en el manual, o aclarar ahí mismo que es
+1. El Figma no tiene variables. Los colores están escritos en una diapositiva
+   del manual y cada capa se pinta a mano. Crearlas lleva media hora y ordena
+   todo.
+2. Validar los derivados contra el Figma del Design System, que tiene los
+   estados dibujados.
+3. Corregir el gris `#919D99` en el manual, o aclarar ahí mismo que es
    decorativo.
-4. **Iconografía**: el Design System define íconos para dropdowns, cards,
-   requisitos y roles. Todavía no están en código.
+4. Oscurecer `aprobado` y `pendiente` para que lleguen a AA como texto, o
+   definir que solo se usan en íconos y bordes. Cambia todas las pantallas, así
+   que es una decisión de diseño.
+5. La iconografía. El Design System define íconos para dropdowns, cards,
+   requisitos y roles que todavía no están en código.
+6. Si el instituto confirma la tipografía real del logo, es un cambio de una
+   línea en `--font-titulo` y `--font-cuerpo`.
+7. Decidir si los derivados sueltos (`principal-oscuro`, `acento-verde-claro`)
+   se migran a la escala nueva (`principal-600` y demás).
