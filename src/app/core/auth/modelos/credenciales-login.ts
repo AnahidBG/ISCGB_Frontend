@@ -4,7 +4,7 @@
  * Coincide exactamente con el body que espera POST /api/Auth/login.
  * El backend autentica por DNI, NO por email.
  *
- * El `dni` viaja SIN puntos ("43880335", no "43.880.335").
+ * El `dni` viaja SIN puntos ("12345678", no "12.345.678").
  * De limpiarlo se encarga `normalizarDni()` en `../dni.ts`.
  */
 export interface CredencialesLogin {

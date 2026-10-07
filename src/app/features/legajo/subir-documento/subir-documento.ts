@@ -1,5 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  linkedSignal,
+  signal,
+} from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
@@ -7,6 +15,7 @@ import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
+import { tipoPedidoEn } from '../../../core/legajos/tipo-en-url';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Icono } from '../../../shared/ui/icono/icono';
@@ -68,6 +77,7 @@ export class SubirDocumento {
   private readonly campana = inject(CampanaService);
   private readonly legajos = inject(LegajoService);
   private readonly router = inject(Router);
+  private readonly ruta = inject(ActivatedRoute);
 
   protected readonly sesion = this.auth.sesion;
 
@@ -92,7 +102,25 @@ export class SubirDocumento {
   protected readonly tiposDisponibles = signal<DocumentoRequerido[]>([]);
   protected readonly cargandoTipos = signal(true);
 
-  protected readonly idTipoElegido = signal<number | null>(null);
+  /**
+   * La consulta de la URL como signal. Es la del observable y no la del
+   * `snapshot` porque la campana también está en esta pantalla: tocar otro
+   * "Falta entregar" cambia el `?tipo=` sin crear el componente de nuevo.
+   */
+  private readonly consulta = toSignal(this.ruta.queryParamMap, { requireSync: true });
+
+  /**
+   * El tipo elegido. Arranca con el que pide el enlace (`?tipo=`, lo arman la
+   * tarjeta "Documentación por entregar" y la campana) cuando es uno de los
+   * de su rol (`tipoPedidoEn`), y la persona lo puede cambiar en el select.
+   *
+   * `linkedSignal` y no `signal` + `effect`: se vuelve a calcular solo cuando
+   * cambian la URL o la lista de tipos, que llega después. En el medio
+   * conserva lo que eligió la persona.
+   */
+  protected readonly idTipoElegido = linkedSignal<number | null>(() =>
+    tipoPedidoEn(this.consulta(), this.tiposDisponibles()),
+  );
   protected readonly archivo = signal<File | null>(null);
   protected readonly fechaVencimiento = signal('');
 

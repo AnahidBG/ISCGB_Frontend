@@ -1,0 +1,53 @@
+<section
+  aria-labelledby="titulo-rechazados"
+  class="rounded-2xl border border-rechazado/30 bg-superficie"
+>
+  <header class="flex items-center justify-between gap-3 border-b border-borde px-5 py-4 sm:px-6">
+    <div class="flex min-w-0 items-center gap-3">
+      <app-icono nombre="rechazado" class="h-5 w-5 shrink-0 text-rechazado" />
+      <h2 id="titulo-rechazados" class="text-lg font-bold text-principal">
+        Documentación rechazada
+      </h2>
+    </div>
+    <span
+      class="shrink-0 rounded-full bg-rechazado/10 px-2.5 py-0.5 text-xs font-semibold text-rechazado"
+    >
+      {{ rechazos().length }}
+    </span>
+  </header>
+
+  <ul class="divide-y divide-borde">
+    @for (fila of filas(); track fila.documento.id) {
+      <li
+        class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6"
+      >
+        <div class="min-w-0">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-sm font-semibold text-texto">{{ fila.documento.nombre }}</span>
+            <app-insignia-estado [estado]="fila.documento.estado" />
+          </div>
+          <!-- El motivo es lo único que dice qué hay que corregir. -->
+          <p class="mt-1.5 text-sm leading-relaxed text-texto">
+            <span class="font-semibold">Motivo:</span>
+            {{ fila.motivo }}
+          </p>
+        </div>
+
+        <a
+          routerLink="/legajo/subir-documento"
+          [queryParams]="fila.consulta"
+          [attr.aria-label]="'Volver a subir ' + fila.documento.nombre"
+          class="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border border-principal/30 px-3 py-1 text-xs font-semibold text-principal transition-colors hover:bg-principal/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+        >
+          <app-icono nombre="subir" class="h-3.5 w-3.5" />
+          Volver a subir
+        </a>
+      </li>
+    }
+  </ul>
+
+  <p class="border-t border-borde px-5 py-3 text-xs leading-relaxed text-texto-suave sm:px-6">
+    Corregí lo que indica el motivo y volvé a subir el documento: cuando lo hagas, deja de
+    figurar acá y vuelve a revisión.
+  </p>
+</section>

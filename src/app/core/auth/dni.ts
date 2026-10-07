@@ -1,16 +1,16 @@
 /**
- * La gente escribe el DNI como se lo enseñaron: "43.880.335".
- * El backend lo espera limpio: "43880335".
+ * La gente escribe el DNI como se lo enseñaron: "12.345.678".
+ * El backend lo espera limpio: "12345678".
  *
  * Traducir entre las dos formas es responsabilidad del frontend.
  */
 
-/** Deja solo los dígitos. "43.880.335" → "43880335" */
+/** Deja solo los dígitos. "12.345.678" → "12345678" */
 export function normalizarDni(valor: string): string {
   return valor.replace(/\D/g, '');
 }
 
-/** Agrega los puntos para mostrar. "43880335" → "43.880.335" */
+/** Agrega los puntos para mostrar. "12345678" → "12.345.678" */
 export function formatearDni(valor: string): string {
   return normalizarDni(valor).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }

@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import { ActivatedRoute, ParamMap, convertToParamMap, provideRouter } from '@angular/router';
+import { BehaviorSubject, Observable, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { RolApi } from '../../../core/auth/modelos/rol';
 import { Sesion } from '../../../core/auth/modelos/sesion';
@@ -9,6 +9,7 @@ import { DocumentoRequerido, NuevoDocumentoLegajo } from '../../../core/legajos/
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { NotificacionPanel } from '../../../core/notificaciones/modelos/notificacion-panel';
+import { consultaConTipo } from '../../../core/legajos/tipo-en-url';
 import { SubirDocumento } from './subir-documento';
 
 const TIPOS: DocumentoRequerido[] = [
@@ -119,5 +120,87 @@ describe('SubirDocumento: quien sube no declara la entrega en papel', () => {
     expect(texto(fixture)).toContain('Documento enviado');
     expect(texto(fixture)).toContain(RECORDATORIO);
     expect(texto(fixture)).not.toContain('Quedó registrado que también lo entregaste');
+  });
+});
+
+describe('SubirDocumento: abre con el tipo que pide el enlace (?tipo=)', () => {
+  const TIPOS_DOCENTE: DocumentoRequerido[] = [
+    { idTipoDoc: 7, nombreDocumento: 'DNI', obligatorio: true, anual: false },
+    { idTipoDoc: 12, nombreDocumento: 'Apto médico', obligatorio: true, anual: true },
+  ];
+
+  /** La URL de la pantalla. Se puede cambiar estando adentro, como hace la campana. */
+  let consulta: BehaviorSubject<ParamMap>;
+
+  async function montar(parametros: Record<string, string>) {
+    consulta = new BehaviorSubject(convertToParamMap(parametros));
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        { provide: ActivatedRoute, useValue: { queryParamMap: consulta } },
+        {
+          provide: AuthService,
+          useValue: {
+            sesion: signal(sesionCon([{ idRol: 3, nombreRol: 'Docente' }])),
+            cerrarSesion: () => {},
+          },
+        },
+        {
+          provide: CampanaService,
+          useValue: {
+            total: signal(0),
+            detalle: signal<NotificacionPanel[]>([]),
+            refrescar: () => {},
+          },
+        },
+        {
+          provide: LegajoService,
+          useValue: {
+            documentosRequeridos: (): Observable<DocumentoRequerido[]> => of(TIPOS_DOCENTE),
+          },
+        },
+      ],
+    });
+    const fixture = TestBed.createComponent(SubirDocumento);
+    await fixture.whenStable();
+    return fixture;
+  }
+
+  function selector(fixture: ComponentFixture<SubirDocumento>): HTMLSelectElement {
+    return (fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>('#tipo')!;
+  }
+
+  it('con un tipo de su rol, el formulario abre con ese tipo elegido', async () => {
+    const fixture = await montar(consultaConTipo(12));
+
+    expect(selector(fixture).value).toBe('12');
+    // Es anual: ya pide el vencimiento, igual que si lo hubiera elegido a mano.
+    expect(fixture.nativeElement.textContent).toContain('vencimiento');
+  });
+
+  it('con un tipo que no es de su rol, abre sin tipo elegido', async () => {
+    const fixture = await montar({ tipo: '99' });
+
+    expect(selector(fixture).value).toBe('');
+  });
+
+  it('si el enlace cambia estando en la pantalla, cambia el tipo elegido', async () => {
+    const fixture = await montar(consultaConTipo(12));
+
+    consulta.next(convertToParamMap(consultaConTipo(7)));
+    await fixture.whenStable();
+
+    expect(selector(fixture).value).toBe('7');
+  });
+
+  it('el tipo elegido de antemano se puede cambiar a mano', async () => {
+    const fixture = await montar(consultaConTipo(12));
+
+    selector(fixture).value = '7';
+    selector(fixture).dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+
+    expect(selector(fixture).value).toBe('7');
+    expect(fixture.nativeElement.textContent).not.toContain('vencimiento');
   });
 });

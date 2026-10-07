@@ -18,6 +18,8 @@ import { LegajoService } from './core/legajos/legajo.service';
 import { LegajoHttpService } from './core/legajos/legajo-http.service';
 import { MateriasService } from './core/materias/materias.service';
 import { MateriasHttpService } from './core/materias/materias-http.service';
+import { FrecuenciaAvisosService } from './core/notificaciones/frecuencia-avisos.service';
+import { FrecuenciaAvisosHttpService } from './core/notificaciones/frecuencia-avisos-http.service';
 import { ProgramasMateriaService } from './core/programas-materia/programas-materia.service';
 import { ReconocimientoSaberesService } from './core/reconocimiento-saberes/reconocimiento-saberes.service';
 import { ReconocimientoSaberesHttpService } from './core/reconocimiento-saberes/reconocimiento-saberes-http.service';
@@ -54,6 +56,7 @@ export const appConfig: ApplicationConfig = {
     { provide: ReconocimientoSaberesService, useClass: ReconocimientoSaberesHttpService },
     { provide: MateriasService, useClass: MateriasHttpService },
     { provide: BusquedaService, useClass: BusquedaHttpService },
+    { provide: FrecuenciaAvisosService, useClass: FrecuenciaAvisosHttpService },
 
     // UsuariosHttpService: GET /api/Usuarios (real) y gestión de usuarios
     // contra /api/UsuariosAdmin. Ver docs/contrato-api.md y

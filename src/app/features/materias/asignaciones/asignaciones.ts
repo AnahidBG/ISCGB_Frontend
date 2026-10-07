@@ -19,14 +19,14 @@ import { FormularioAsignacion } from './partes/formulario-asignacion/formulario-
 import { FormularioNuevaMateria } from './partes/formulario-nueva-materia/formulario-nueva-materia';
 
 /**
- * Materias y asignaciones — Dirección y Secretaría (`AsignacionesController`).
+ * Materias y asignaciones — Dirección y Secretaría (`MateriasController`).
  *
  * CONTENEDOR: trae materias, docentes y comisiones, y habla con
  * `MateriasService`. Los dos formularios viven en `partes/`.
  *
- *   · Nueva materia: `POST /api/Asignaciones/cargar-materia`. Al crearla se
+ *   · Nueva materia: `POST /api/Materias/cargar-materia`. Al crearla se
  *     vuelve a pedir la lista, así ya se puede asignar.
- *   · Asignar: `POST /api/Asignaciones/asignar`. Es lo que después ve el
+ *   · Asignar: `POST /api/Materias/asignar`. Es lo que después ve el
  *     docente en "Entregar programa de materia".
  *
  * ⚠️ El backend no tiene endpoint para LISTAR las asignaciones hechas ni para

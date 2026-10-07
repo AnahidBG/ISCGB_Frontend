@@ -1,0 +1,77 @@
+<section
+  aria-labelledby="titulo-por-entregar"
+  class="rounded-2xl border bg-superficie"
+  [class]="apariencia().borde"
+>
+  <header class="flex items-center justify-between gap-3 border-b border-borde px-5 py-4 sm:px-6">
+    <div class="flex min-w-0 items-center gap-3">
+      <app-icono
+        [nombre]="apariencia().icono"
+        class="h-5 w-5 shrink-0"
+        [class]="apariencia().colorIcono"
+      />
+      <h2 id="titulo-por-entregar" class="text-lg font-bold text-principal">
+        Documentación por entregar
+      </h2>
+    </div>
+    @if (situacion() === 'por-entregar') {
+      <span
+        class="shrink-0 rounded-full bg-pendiente/10 px-2.5 py-0.5 text-xs font-semibold text-texto"
+      >
+        {{ documentos().length }}
+      </span>
+    }
+  </header>
+
+  @switch (situacion()) {
+    @case ('cargando') {
+      <p role="status" class="px-5 py-4 text-sm text-texto-suave sm:px-6">
+        Cargando tu documentación…
+      </p>
+    }
+    @case ('error') {
+      <div
+        role="alert"
+        class="flex flex-wrap items-center justify-between gap-3 px-5 py-4 sm:px-6"
+      >
+        <p class="min-w-0 text-sm text-texto">{{ textoError() }}</p>
+        <button
+          type="button"
+          class="shrink-0 rounded-full border border-principal/30 px-3 py-1 text-xs font-semibold text-principal transition-colors hover:bg-principal/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+          (click)="reintentar.emit()"
+        >
+          Reintentar
+        </button>
+      </div>
+    }
+    @case ('al-dia') {
+      <p class="px-5 py-4 text-sm text-texto sm:px-6">
+        Ya cargaste toda la documentación obligatoria.
+      </p>
+    }
+    @default {
+      <ul class="divide-y divide-borde">
+        @for (fila of filas(); track fila.documento.idTipoDoc) {
+          <li class="flex items-center justify-between gap-3 px-5 py-3 sm:px-6">
+            <span class="min-w-0 truncate text-sm font-medium text-texto">
+              {{ fila.documento.nombreDocumento }}
+            </span>
+            <a
+              routerLink="/legajo/subir-documento"
+              [queryParams]="fila.consulta"
+              [attr.aria-label]="'Subir ' + fila.documento.nombreDocumento"
+              class="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-principal/30 px-3 py-1 text-xs font-semibold text-principal transition-colors hover:bg-principal/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+            >
+              <app-icono nombre="subir" class="h-3.5 w-3.5" />
+              Subir
+            </a>
+          </li>
+        }
+      </ul>
+
+      <p class="border-t border-borde px-5 py-3 text-xs leading-relaxed text-texto-suave sm:px-6">
+        {{ indicacion() }}
+      </p>
+    }
+  }
+</section>
