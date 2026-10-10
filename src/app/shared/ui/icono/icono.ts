@@ -22,6 +22,11 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
  * hacia ABAJO (distinto de `colapsar`, que apunta a los costados y está
  * pensado para la barra lateral), pensado para un acordeón que se abre
  * hacia abajo y rota 180° al desplegarse.
+ *
+ * `anterior` y `siguiente` se agregaron el 10/10/2026 para pasar de mes en el
+ * calendario de exámenes. Son chevrons como `colapsar`, pero con nombre propio:
+ * aquel es del menú lateral y está pensado para rotarse. `candado` marca un
+ * día completo y `informacion` acompaña una nota explicativa.
  */
 export type NombreIcono =
   | 'panel'
@@ -49,7 +54,12 @@ export type NombreIcono =
   // Agregados el 02/09/2026: la X que cierra el menú de celular y el signo
   // de exclamación del recordatorio de entrega en Secretaría.
   | 'cerrar'
-  | 'alerta';
+  | 'alerta'
+  // Agregados el 10/10/2026 para el calendario de exámenes.
+  | 'anterior'
+  | 'siguiente'
+  | 'candado'
+  | 'informacion';
 
 /**
  * Un ícono del sistema, dibujado en SVG inline.

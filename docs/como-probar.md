@@ -1,6 +1,6 @@
 # Cómo probar el sistema, paso a paso
 
-Actualizado el **06/10/2026**.
+Actualizado el **10/10/2026**.
 
 Guía para levantar la base, el backend y el frontend, y comprobar que lo
 construido funciona. El orden importa: cada paso da por hecho que el anterior
@@ -79,6 +79,9 @@ Con el `idUsuario` y el `idRol` que te devolvió el login, probá también:
 - `GET /api/Justificativos/pendientes`: los justificativos sin revisar.
 - `GET /api/Configuracion/frecuencia-notificaciones`: `{ "diasFrecuencia": 7 }`
   si nunca se configuró.
+- `GET /api/ConfiguracionCalendario/estado-mes?anio=2026&mes=10`:
+  `{ "limiteDiario": 2, "diasOcupados": [...] }`, con solo los días que tienen
+  exámenes. Un mes inválido, como `mes=13`, responde 500.
 
 Un 404 en Legajos no es un error: quiere decir que todavía no hay nada, y el
 frontend lo trata así.
@@ -169,6 +172,34 @@ Solo para Secretario, en el menú lateral.
 - [ ] Con un valor válido confirma el cambio, y al recargar sigue ahí.
 - [ ] Con otro rol, la dirección `/secretario/frecuencia-avisos` no abre.
 
+### Calendario de exámenes
+
+Lo ven los cuatro roles, en "Calendario de Exámenes" del menú lateral. Es de
+consulta: registrar, mover o borrar exámenes no está en la pantalla.
+
+Para tener algo que ver, registrá exámenes desde Swagger con
+`POST /api/ConfiguracionCalendario/registrar`:
+`{ "fecha": "2026-10-13T09:00:00", "idComision": 1, "idMateria": 1, "idTipoExamen": 1 }`.
+Los ids tienen que existir en la base.
+
+- [ ] Abre en el mes actual, con el título del mes y el año, la leyenda y la grilla
+      de lunes a domingo.
+- [ ] El día de hoy tiene el número en negrita y verde.
+- [ ] Un día sin exámenes dice "Libre", con la barrita verde.
+- [ ] Un día con un examen dice "1 examen" y tiene fondo ámbar.
+- [ ] Un día con el límite alcanzado dice "Completo", con fondo rojo suave y el
+      candado. Con el límite en 2 son dos exámenes el mismo día.
+- [ ] Las flechas pasan al mes anterior y al siguiente, también de diciembre a
+      enero. "Hoy" vuelve al mes actual.
+- [ ] Los días de relleno, de los meses vecinos, se ven en gris con el nombre del
+      mes y sin estado.
+- [ ] La nota de abajo nombra el límite que devuelve el backend. Si lo cambiás con
+      `PUT /api/ConfiguracionCalendario/limite-parciales`, cambia al recargar.
+- [ ] Con el backend apagado muestra el aviso con "Reintentar", y las flechas
+      siguen funcionando.
+- [ ] A 375 px de ancho no hay scroll horizontal: las celdas muestran la barrita,
+      la cantidad en número y el candado, sin la etiqueta.
+
 ### Panel del Director
 
 - [ ] Lista a las personas del instituto con sus roles y el estado de su legajo.
@@ -205,5 +236,7 @@ No está roto: no existe.
 - Recuperar la contraseña: la pantalla existe, pero simula el envío y no manda
   ningún correo.
 - El mail al rechazar un documento o un justificativo.
-- El calendario de exámenes y la configuración de la cuenta, que son del
-  Sprint 3.
+- Del calendario de exámenes solo se puede consultar: registrar, modificar y
+  eliminar exámenes, la agenda del mes y la materia de cada examen no están en la
+  pantalla. El backend tampoco tiene un listado de exámenes.
+- La configuración de la cuenta, que es del Sprint 3.

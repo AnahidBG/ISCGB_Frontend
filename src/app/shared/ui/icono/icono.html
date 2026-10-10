@@ -156,6 +156,25 @@
       <path d="M12 10v4" />
       <path d="M12 16.8h.01" />
     }
+    @case ('anterior') {
+      <!-- Chevron hacia la izquierda: ir a lo anterior (el mes anterior). -->
+      <path d="m15 6-6 6 6 6" />
+    }
+    @case ('siguiente') {
+      <!-- Chevron hacia la derecha: ir a lo siguiente (el mes siguiente). -->
+      <path d="m9 6 6 6-6 6" />
+    }
+    @case ('candado') {
+      <!-- Candado cerrado: algo completo, que ya no admite más. -->
+      <rect x="5" y="11" width="14" height="9.5" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    }
+    @case ('informacion') {
+      <!-- La "i" en un círculo: una nota que explica, no una advertencia. -->
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 11.2v5" />
+      <path d="M12 7.9h.01" />
+    }
     @case ('compacto') {
       <!--
         Lista densa: un punto + una línea de texto por fila (distinto del

@@ -154,6 +154,18 @@ export const RUTAS_API = {
   /** Los justificativos de una persona, del más nuevo al más viejo. 404 = la persona no existe. */
   justificativosDeUsuario: (idUsuario: number) =>
     `${URL_BASE_API}/api/Justificativos/${idUsuario}/justificativos`,
+
+  // --- Calendario de exámenes (ISCGB_Backend/Controllers/CalendarioExamenesController.cs) ---
+  // La clase se llama `ConfiguracionCalendarioController`, así que la ruta es
+  // `api/ConfiguracionCalendario` aunque el archivo se llame distinto.
+
+  /**
+   * Qué días de un mes tienen exámenes y cuántos, más el límite diario. Mes de
+   * 1 a 12. Solo trae los días con al menos un examen: el resto son libres. Un
+   * mes inválido responde 500.
+   */
+  estadoMesCalendario: (anio: number, mes: number) =>
+    `${URL_BASE_API}/api/ConfiguracionCalendario/estado-mes?anio=${anio}&mes=${mes}`,
 } as const;
 
 /**

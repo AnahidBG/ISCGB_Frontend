@@ -1,0 +1,50 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Calendario de exámenes parciales y finales"
+  subtitulo="Consultá la disponibilidad de fechas de examen."
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <section class="rounded-tarjeta border border-borde bg-fondo-panel p-4 sm:p-6">
+    <!--
+      El encabezado se dibuja siempre, también mientras carga o si falla: así se
+      puede pasar de mes aunque el anterior no haya llegado.
+    -->
+    <app-cabecera-mes
+      [titulo]="titulo()"
+      (anterior)="irAlMesAnterior()"
+      (hoy)="irAHoy()"
+      (siguiente)="irAlMesSiguiente()"
+    />
+
+    @if (carga().fase === 'cargando') {
+      <!-- `--carga-fondo` deja el loader del color de la tarjeta, no del fondo de la página. -->
+      <div
+        class="mt-4 flex min-h-96 items-center justify-center [--carga-fondo:var(--color-fondo-panel)]"
+      >
+        <app-pantalla-carga tamano="md" mensaje="Cargando el calendario…" />
+      </div>
+    } @else if (errorCarga(); as mensaje) {
+      <div
+        role="alert"
+        class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rechazado/30 bg-superficie px-5 py-4"
+      >
+        <p class="min-w-0 text-sm text-texto">{{ mensaje }}</p>
+        <app-boton nivel="secundario" [conFlecha]="false" (click)="recargar()">
+          Reintentar
+        </app-boton>
+      </div>
+    } @else if (calendario(); as datos) {
+      <app-calendario-mes
+        [semanas]="datos.semanas"
+        [titulo]="datos.titulo"
+        [limiteDiario]="datos.limiteDiario"
+      />
+    }
+  </section>
+</app-estructura-panel>

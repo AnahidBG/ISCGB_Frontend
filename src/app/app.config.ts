@@ -12,6 +12,8 @@ import { BusquedaHttpService } from './core/busqueda/busqueda-http.service';
 import { cargaInterceptor } from './core/carga/carga.interceptor';
 import { CertificadosService } from './core/certificados/certificados.service';
 import { CertificadosHttpService } from './core/certificados/certificados-http.service';
+import { ExamenesService } from './core/examenes/examenes.service';
+import { ExamenesHttpService } from './core/examenes/examenes-http.service';
 import { JustificativosService } from './core/justificativos/justificativos.service';
 import { JustificativosHttpService } from './core/justificativos/justificativos-http.service';
 import { LegajoService } from './core/legajos/legajo.service';
@@ -57,6 +59,7 @@ export const appConfig: ApplicationConfig = {
     { provide: MateriasService, useClass: MateriasHttpService },
     { provide: BusquedaService, useClass: BusquedaHttpService },
     { provide: FrecuenciaAvisosService, useClass: FrecuenciaAvisosHttpService },
+    { provide: ExamenesService, useClass: ExamenesHttpService },
 
     // UsuariosHttpService: GET /api/Usuarios (real) y gestión de usuarios
     // contra /api/UsuariosAdmin. Ver docs/contrato-api.md y
