@@ -2,7 +2,10 @@ import { Observable } from 'rxjs';
 import { OpcionesPedido } from '../comun/opciones-pedido';
 import { CalendarioDelMes } from './modelos/calendario-del-mes';
 import { ExamenCalendario } from './modelos/examen-calendario';
+import { MateriaDelDocente } from './modelos/materia-del-docente';
 import { MesaAsignada } from './modelos/mesa-asignada';
+import { NuevoExamen } from './modelos/nuevo-examen';
+import { TipoExamen } from './modelos/tipo-examen';
 import { PERIODO_DEL_LIMITE } from './periodo-limite';
 
 export const MENSAJE_ERROR_CALENDARIO =
@@ -16,10 +19,19 @@ export const MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO =
 export const MENSAJE_ERROR_MESAS_ASIGNADAS =
   'No pudimos traer tus mesas de examen. Intentá de nuevo en un momento.';
 
+export const MENSAJE_ERROR_MATERIAS_DEL_DOCENTE =
+  'No pudimos traer tus materias. Intentá de nuevo en un momento.';
+
+export const MENSAJE_ERROR_TIPOS_DE_EXAMEN =
+  'No pudimos traer los tipos de examen. Intentá de nuevo en un momento.';
+
+export const MENSAJE_ERROR_REGISTRAR_EXAMEN =
+  'No pudimos registrar el parcial. Intentá de nuevo en un momento.';
+
 /**
  * El calendario de parciales (SCRUM-183, consulta del estado de cada día), el
- * límite de parciales, que fija Secretaría, y las mesas de examen que le
- * asignaron al docente.
+ * registro de un parcial por parte del docente, el límite de parciales, que fija
+ * Secretaría, y las mesas de examen que le asignaron al docente.
  *
  * Mismo patrón que el resto de `core/`: una clase abstracta con una
  * implementación HTTP y una simulada, intercambiables desde `app.config.ts`.
@@ -28,10 +40,13 @@ export const MENSAJE_ERROR_MESAS_ASIGNADAS =
  *
  *   · `GET /api/ConfiguracionCalendario/estado-mes?anio=&mes=` → `calendarioDelMes` y `limiteDiario`
  *   · `PUT /api/ConfiguracionCalendario/limite-parciales` → `guardarLimiteDiario`
+ *   · `GET /api/ConfiguracionCalendario/mis-materias-docente` → `materiasDelDocente`
+ *   · `GET /api/ConfiguracionCalendario/tipos-examen` → `tiposDeExamen`
+ *   · `POST /api/ConfiguracionCalendario/registrar` → `registrarExamen`
  *   · `GET /api/Configuracion/mis-notificaciones` → `mesasAsignadas`
  *
- * Registrar, modificar y eliminar parciales existen en el backend y todavía no
- * se consumen. Tampoco hay un endpoint que liste los parciales: por eso
+ * Modificar y eliminar parciales existen en el backend y todavía no se
+ * consumen. Tampoco hay un endpoint que liste los parciales: por eso
  * `examenesDelMes` devuelve una lista vacía contra la API real. Y no hay forma
  * de aceptar ni rechazar una mesa ni de darla de alta.
  */
@@ -83,6 +98,38 @@ export abstract class CalendarioExamenesService {
    * `MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO`.
    */
   abstract guardarLimiteDiario(limite: number): Observable<void>;
+
+  /**
+   * Las materias que dicta el docente de la sesión, cada una con su comisión: lo
+   * que elige al registrar un parcial. Solo sirve con el rol Docente.
+   *
+   * Un docente sin materias asignadas, o sin perfil de docente, recibe una lista
+   * vacía: no es un error.
+   *
+   * `opciones.enSegundoPlano`: el formulario ya muestra su propia espera.
+   *
+   * Falla con `MENSAJE_ERROR_MATERIAS_DEL_DOCENTE`.
+   */
+  abstract materiasDelDocente(opciones?: OpcionesPedido): Observable<MateriaDelDocente[]>;
+
+  /**
+   * Los tipos de examen que se pueden registrar ("Parcial", "Coloquio"...), con el
+   * nombre que trae el backend.
+   *
+   * Falla con `MENSAJE_ERROR_TIPOS_DE_EXAMEN`.
+   */
+  abstract tiposDeExamen(opciones?: OpcionesPedido): Observable<TipoExamen[]>;
+
+  /**
+   * Registra un examen en el calendario.
+   *
+   * El backend rechaza el día que ya alcanzó el límite, y no valida que la fecha
+   * no sea pasada ni que los ids existan: eso lo cuida quien llama.
+   *
+   * Falla con el mensaje del backend cuando rechaza el pedido (el límite
+   * alcanzado, por ejemplo), o con `MENSAJE_ERROR_REGISTRAR_EXAMEN`.
+   */
+  abstract registrarExamen(examen: NuevoExamen, opciones?: OpcionesPedido): Observable<void>;
 
   /**
    * Las mesas de examen a las que asignaron al docente de la sesión y que

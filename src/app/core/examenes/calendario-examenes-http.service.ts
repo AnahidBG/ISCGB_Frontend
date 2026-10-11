@@ -12,15 +12,46 @@ import {
   MENSAJE_ERROR_CALENDARIO,
   MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO,
   MENSAJE_ERROR_LIMITE_DIARIO,
+  MENSAJE_ERROR_MATERIAS_DEL_DOCENTE,
   MENSAJE_ERROR_MESAS_ASIGNADAS,
+  MENSAJE_ERROR_REGISTRAR_EXAMEN,
+  MENSAJE_ERROR_TIPOS_DE_EXAMEN,
 } from './calendario-examenes.service';
 import { CalendarioDelMes } from './modelos/calendario-del-mes';
 import { ExamenCalendario } from './modelos/examen-calendario';
+import { MateriaDelDocente } from './modelos/materia-del-docente';
 import { MesaAsignada } from './modelos/mesa-asignada';
+import { NuevoExamen } from './modelos/nuevo-examen';
+import { TipoExamen } from './modelos/tipo-examen';
+import { textoFechaYHora } from './registro-examen';
 
 /** El cuerpo del `PUT .../limite-parciales` (`ActualizarLimiteParcialesDto`). */
 interface LimiteApi {
   nuevoLimite: number;
+}
+
+/** El cuerpo del `POST .../registrar` (`CargaExamenDto`). */
+interface CargaExamenApi {
+  /** Un `DateTime` de .NET, con hora y sin zona: "2026-10-13T09:00:00". */
+  fecha: string;
+  idComision: number;
+  idMateria: number;
+  idTipoExamen: number;
+}
+
+/** Un elemento del `GET .../mis-materias-docente`. */
+interface MateriaDelDocenteApi {
+  idMateria: number;
+  nombreMateria: string;
+  carrera: string | null;
+  idComision: number;
+  nombreComision: string;
+}
+
+/** Un elemento del `GET .../tipos-examen`. */
+interface TipoExamenApi {
+  idTipoExamen: number;
+  nombre: string;
 }
 
 /** Un elemento del `GET .../mis-notificaciones`. */
@@ -101,8 +132,82 @@ export class CalendarioExamenesHttpService extends CalendarioExamenesService {
 
     return this.http.put(RUTAS_API.limiteParcialesCalendario, cuerpo).pipe(
       map(() => undefined),
-      catchError((error: HttpErrorResponse) => throwError(() => new Error(traducirError(error)))),
+      catchError((error: HttpErrorResponse) =>
+        throwError(
+          () =>
+            new Error(
+              traducirRechazo(
+                error,
+                MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO,
+                'Error al guardar el límite de exámenes por día:',
+              ),
+            ),
+        ),
+      ),
     );
+  }
+
+  materiasDelDocente(opciones?: OpcionesPedido): Observable<MateriaDelDocente[]> {
+    return this.http
+      .get<unknown>(RUTAS_API.misMateriasDocente, { context: contextoDePedido(opciones) })
+      .pipe(
+        map(aMateriasDelDocente),
+        catchError((error: unknown) => {
+          // Un 404 con texto es "este usuario no tiene perfil de docente": no tiene
+          // materias, que no es lo mismo que un fallo. Sin cuerpo es una ruta que no
+          // existe, y eso sí es un fallo.
+          if (
+            error instanceof HttpErrorResponse &&
+            error.status === 404 &&
+            !esEndpointInexistente(error)
+          ) {
+            return of<MateriaDelDocente[]>([]);
+          }
+          console.error('Error al traer las materias del docente:', error);
+          return throwError(() => new Error(MENSAJE_ERROR_MATERIAS_DEL_DOCENTE));
+        }),
+      );
+  }
+
+  tiposDeExamen(opciones?: OpcionesPedido): Observable<TipoExamen[]> {
+    return this.http
+      .get<unknown>(RUTAS_API.tiposDeExamen, { context: contextoDePedido(opciones) })
+      .pipe(
+        map(aTiposDeExamen),
+        catchError((error: unknown) => {
+          console.error('Error al traer los tipos de examen:', error);
+          return throwError(() => new Error(MENSAJE_ERROR_TIPOS_DE_EXAMEN));
+        }),
+      );
+  }
+
+  registrarExamen(examen: NuevoExamen, opciones?: OpcionesPedido): Observable<void> {
+    // Adapter de salida: el día y el horario se arman en un texto sin zona. Nunca
+    // con `toISOString()`, que lo pasaría a UTC y correría el examen tres horas.
+    const cuerpo: CargaExamenApi = {
+      fecha: textoFechaYHora(examen.dia, examen.horario),
+      idComision: examen.idComision,
+      idMateria: examen.idMateria,
+      idTipoExamen: examen.idTipoExamen,
+    };
+
+    return this.http
+      .post(RUTAS_API.registrarExamen, cuerpo, { context: contextoDePedido(opciones) })
+      .pipe(
+        map(() => undefined),
+        catchError((error: HttpErrorResponse) =>
+          throwError(
+            () =>
+              new Error(
+                traducirRechazo(
+                  error,
+                  MENSAJE_ERROR_REGISTRAR_EXAMEN,
+                  'Error al registrar el parcial:',
+                ),
+              ),
+          ),
+        ),
+      );
   }
 
   mesasAsignadas(opciones?: OpcionesPedido): Observable<MesaAsignada[]> {
@@ -126,23 +231,71 @@ export class CalendarioExamenesHttpService extends CalendarioExamenesService {
 }
 
 /**
- * El mensaje que ve la persona si el guardado del límite falla.
+ * El mensaje que ve la persona si un guardado (el límite, un parcial) falla.
  *
- * El del backend primero, pero solo si es un rechazo del valor (4xx): ahí
- * explica qué corregir ("El límite de parciales Diarios debe ser mayor a
- * cero."). Un 5xx o una ruta que no existe no le dicen nada útil a quien está
- * en la pantalla.
+ * El del backend primero, pero solo si es un rechazo del pedido (4xx): ahí
+ * explica qué corregir ("El límite de parciales Diarios debe ser mayor a cero.",
+ * "No se puede registrar. Se ha superado el límite de parciales para ese día.").
+ * Un 5xx o una ruta que no existe no le dicen nada útil a quien está en la
+ * pantalla: ahí va el mensaje genérico, y el detalle a la consola.
  */
-function traducirError(error: HttpErrorResponse): string {
+function traducirRechazo(error: HttpErrorResponse, generico: string, registro: string): string {
   const delServidor = mensajeDelServidor(error);
-  const esRechazoDelValor =
+  const esRechazoDelPedido =
     error.status >= 400 && error.status < 500 && !esEndpointInexistente(error);
 
-  if (delServidor !== null && esRechazoDelValor) {
+  if (delServidor !== null && esRechazoDelPedido) {
     return delServidor;
   }
-  console.error('Error al guardar el límite de exámenes por día:', error);
-  return MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO;
+  console.error(registro, error);
+  return generico;
+}
+
+/** Un id legible: un entero positivo. */
+function esId(valor: unknown): valor is number {
+  return typeof valor === 'number' && Number.isInteger(valor) && valor > 0;
+}
+
+/** Un texto, sin espacios sobrantes. Lo que no es texto queda vacío. */
+function textoLimpio(valor: unknown): string {
+  return typeof valor === 'string' ? valor.trim() : '';
+}
+
+function aMateriasDelDocente(respuesta: unknown): MateriaDelDocente[] {
+  if (!Array.isArray(respuesta)) {
+    throw new Error('La respuesta no es una lista de materias.');
+  }
+  return respuesta.map(aMateriaDelDocente);
+}
+
+function aMateriaDelDocente(entrada: unknown): MateriaDelDocente {
+  const materia = (entrada ?? {}) as Partial<Record<keyof MateriaDelDocenteApi, unknown>>;
+  if (!esId(materia.idMateria) || !esId(materia.idComision)) {
+    throw new Error('Una materia de la respuesta no trae su id o el de su comisión.');
+  }
+
+  return {
+    idMateria: materia.idMateria,
+    materia: textoLimpio(materia.nombreMateria) || 'Materia sin nombre',
+    // Anulable en la base: un texto vacío o de espacios es "no cargada".
+    carrera: textoLimpio(materia.carrera) || null,
+    idComision: materia.idComision,
+    comision: textoLimpio(materia.nombreComision) || 'Comisión sin nombre',
+  };
+}
+
+function aTiposDeExamen(respuesta: unknown): TipoExamen[] {
+  if (!Array.isArray(respuesta)) {
+    throw new Error('La respuesta no es una lista de tipos de examen.');
+  }
+  return respuesta.map((entrada: unknown): TipoExamen => {
+    const tipo = (entrada ?? {}) as Partial<Record<keyof TipoExamenApi, unknown>>;
+    const nombre = textoLimpio(tipo.nombre);
+    if (!esId(tipo.idTipoExamen) || nombre === '') {
+      throw new Error('Un tipo de examen de la respuesta no se puede leer.');
+    }
+    return { idTipoExamen: tipo.idTipoExamen, nombre };
+  });
 }
 
 function aMesasAsignadas(respuesta: MesaAsignadaApi[]): MesaAsignada[] {

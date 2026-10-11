@@ -183,11 +183,12 @@ Solo para Secretario, en el menú lateral.
 
 Lo ven el Docente, el Secretario y el Director. El Docente lo tiene en "Calendario
 de parciales" del menú lateral; Secretaría y Dirección llegan desde "Límite de
-parciales", con el enlace "Ver el calendario de parciales". Es de consulta:
-registrar, mover o borrar parciales no está en la pantalla.
+parciales", con el enlace "Ver el calendario de parciales". Solo el Docente puede
+registrar parciales (ver "Registrar un parcial", más abajo). Mover o borrar un
+parcial no está en la pantalla.
 
-Para tener algo que ver, registrá parciales desde Swagger con
-`POST /api/ConfiguracionCalendario/registrar`:
+Para tener algo que ver con un Secretario o un Director, registrá parciales con el
+Docente o desde Swagger con `POST /api/ConfiguracionCalendario/registrar`:
 `{ "fecha": "2026-10-13T09:00:00", "idComision": 1, "idMateria": 1, "idTipoExamen": 1 }`.
 Los ids tienen que existir en la base. El backend todavía no lista los exámenes: la
 pantalla cuenta cuántos hay cada día, pero no dice de qué materia son.
@@ -221,9 +222,60 @@ pantalla cuenta cuántos hay cada día, pero no dice de qué materia son.
       semana) y el día enfocado tiene contorno. Tab saca del calendario.
 - [ ] Un lector de pantalla dice cada día como "13 de octubre, 1 de 2 parciales", y
       agrega "completo" en los que alcanzaron el límite.
-- [ ] Tocar un día no hace nada: por ahora los días no se pueden elegir.
+- [ ] Con Secretario o Director, tocar un día no hace nada: solo el Docente puede
+      elegirlos.
 - [ ] Un Alumno no tiene el enlace en el menú, y la dirección `/calendario` lo manda
       a su panel con el aviso de acceso denegado.
+
+### Registrar un parcial
+
+Solo para el Docente, desde "Calendario de parciales". Hace falta un Docente con
+materias asignadas: filas en `docente_materia` con su materia y su comisión. Para
+probar el rechazo por límite, un día con el límite alcanzado (con el límite en 2,
+dos parciales el mismo día).
+
+- [ ] Debajo de la grilla dice "Elegí un día disponible para registrar un parcial. Los
+      días completos y las fechas pasadas no admiten registros." Con Secretario o
+      Director no está.
+- [ ] Los días pasados y los completos no se pueden elegir (con clic ni con Enter o
+      Espacio) y un lector de pantalla los anuncia como no disponibles. Hoy sí.
+- [ ] Al elegir un día se abre "Registrar parcial", con el día debajo del título
+      ("Martes 13 de octubre de 2026"). Mientras trae las materias y los tipos
+      muestra la espera dentro del modal.
+- [ ] "Materia y comisión" es un solo desplegable: cada opción dice la materia y la
+      comisión, con la carrera entre paréntesis. Una materia en dos comisiones son
+      dos opciones.
+- [ ] "Tipo de examen" lista los tipos que devuelve el backend, con sus nombres tal
+      cual ("Recupetario" incluido).
+- [ ] "Fecha" viene con el día elegido, se puede cambiar y no deja ir antes de hoy.
+      "Horario" dice "Horario en formato 24 h.".
+- [ ] Guardar con algún campo vacío marca los que faltan y no manda nada (mirá
+      Network). Con una fecha anterior a hoy escrita a mano, dice que no se puede
+      registrar en una fecha pasada.
+- [ ] Con todo completo, "Guardar" pasa a "Guardando…" y no se puede apretar dos
+      veces. En Network, el `POST` a `registrar` sale sin el velo de carga y el cuerpo
+      es `{ fecha, idComision, idMateria, idTipoExamen }`, con la fecha como
+      `2026-10-13T09:00:00`: la hora que escribiste, sin correrse.
+- [ ] Un parcial a las 23:30 queda ese mismo día en la base. Si queda al día
+      siguiente, algo está pasando la hora por UTC.
+- [ ] Si sale bien, el modal se cierra, aparece "Parcial registrado para el martes 13
+      de octubre a las 09:00." y el día cambia de color sin que la grilla desaparezca.
+      El foco queda en ese día.
+- [ ] Registrar en un día que ya alcanzó el límite (cambiando la fecha en el modal)
+      muestra, dentro del formulario, "No se puede registrar. Se ha superado el
+      límite de parciales para ese día." El modal sigue abierto, con lo que
+      completaste, y se puede probar con otra fecha.
+- [ ] Un Docente sin materias asignadas ve "Todavía no tenés materias asignadas.
+      Consultá en Secretaría." y no hay formulario.
+- [ ] Con el backend apagado el modal muestra el aviso con "Reintentar". Si se apaga
+      con el formulario ya abierto, "Guardar" muestra un mensaje genérico dentro del
+      formulario y el modal sigue abierto.
+- [ ] Accesibilidad del modal: el foco entra al abrirse; Tab y Shift+Tab dan vueltas
+      sin salir del modal; Escape y la X lo cierran y el foco vuelve al día elegido;
+      mientras está abierto no se puede usar el resto de la página. Mientras guarda no
+      se cierra.
+- [ ] A 375 px de ancho el modal entra sin scroll horizontal, con "Fecha" y "Horario"
+      uno debajo del otro.
 
 ### Límite de parciales
 
@@ -314,10 +366,10 @@ No está roto: no existe.
 - Recuperar la contraseña: la pantalla existe, pero simula el envío y no manda
   ningún correo.
 - El mail al rechazar un documento o un justificativo.
-- Del calendario de parciales solo se puede consultar: registrar, modificar y
-  eliminar parciales, elegir un día y abrir un parcial no están en la pantalla. El
-  backend tampoco tiene un listado de exámenes, así que la grilla no muestra la
-  materia de cada parcial.
+- Del calendario de parciales, el Docente puede registrar uno. Modificar y eliminar
+  parciales, y abrir uno ya cargado, no están en la pantalla. El backend tampoco
+  tiene un listado de exámenes, así que la grilla no muestra la materia de cada
+  parcial.
 - Aceptar o rechazar una mesa de examen, y darla de alta. La campana del Docente
   avisa las mesas asignadas, pero el backend no tiene endpoints para responderlas.
 - La configuración de la cuenta, que es del Sprint 3.

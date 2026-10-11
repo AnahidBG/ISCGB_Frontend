@@ -22,6 +22,16 @@
       (siguiente)="irAlMesSiguiente()"
     />
 
+    <!-- `status` y no `alert`: confirma algo que la persona acaba de hacer, no la interrumpe. -->
+    @if (aviso(); as mensaje) {
+      <p
+        role="status"
+        class="mt-4 rounded-lg border border-aprobado/30 bg-aprobado/10 px-4 py-3 text-sm text-texto"
+      >
+        {{ mensaje }}
+      </p>
+    }
+
     @if (carga().fase === 'cargando') {
       <!-- `--carga-fondo` deja el loader del color de la tarjeta, no del fondo de la página. -->
       <div
@@ -48,10 +58,9 @@
         El aspecto de cada celda es el del Figma: lo dibuja `app-resumen-dia`
         adentro de la celda que arma la grilla.
 
-        Todavía no hay nada que hacer con un día elegido, así que la selección
-        queda deshabilitada (`seleccionable` es falso por defecto) y no se
-        escucha `diaSeleccionado`. Lo mismo con `examenSeleccionado`: con la API
-        real la lista de parciales viene vacía.
+        Elegir un día solo sirve para registrar un parcial, que es cosa del
+        Docente: para los demás la selección queda deshabilitada. No se escucha
+        `examenSeleccionado`: con la API real la lista de parciales viene vacía.
       -->
       <div class="mt-4">
         <ng-template #plantillaDia let-celda>
@@ -63,8 +72,15 @@
           [examenes]="datos.examenes"
           [hoy]="hoy"
           [plantillaCelda]="plantillaDia"
+          [seleccionable]="puedeRegistrar()"
+          (diaSeleccionado)="abrirRegistro($event)"
         />
       </div>
+
+      <p *siRol="rolesQueRegistran" class="mt-4 text-sm text-texto-suave">
+        Elegí un día disponible para registrar un parcial. Los días completos y las fechas pasadas
+        no admiten registros.
+      </p>
 
       <p class="mt-4 flex flex-wrap items-start gap-x-2 gap-y-1 text-sm text-texto-suave">
         <app-icono nombre="informacion" class="mt-0.5 h-4 w-4 shrink-0" />
@@ -79,4 +95,17 @@
       </p>
     }
   </section>
+
+  @if (diaARegistrar(); as dia) {
+    <app-registro-parcial
+      [dia]="dia"
+      [hoy]="hoy"
+      [carga]="opciones()"
+      [guardando]="registrando()"
+      [errorServidor]="errorRegistro()"
+      (guardar)="registrar($event)"
+      (cerrar)="cerrarRegistro()"
+      (reintentar)="cargarOpciones()"
+    />
+  }
 </app-estructura-panel>

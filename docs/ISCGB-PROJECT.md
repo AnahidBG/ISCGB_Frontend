@@ -84,7 +84,7 @@ El detalle de las columnas está en `CLAUDE_GUIDE_ISCGB-v2.md` §3 y en el scrip
 
 **Secretario**, que incluye al Preceptor. Revisa legajos y justificativos, carga los suyos, sube contratos firmados a los perfiles de los alumnos, carga mesas de examen, gestiona usuarios y ve las listas de alumnos y docentes. Fija el límite de parciales del calendario y lo consulta.
 
-**Docente.** Carga y consulta su legajo y ve su progreso. Presenta justificativos y licencias, entrega el programa de materia y usa el calendario de exámenes. Tiene además enlaces (ARCA, BDO/Encode, certificado de servicios), plantillas IRAM/ISO, tutoriales y el libro de temas.
+**Docente.** Carga y consulta su legajo y ve su progreso. Presenta justificativos y licencias, entrega el programa de materia y usa el calendario de exámenes, donde registra sus parciales. Tiene además enlaces (ARCA, BDO/Encode, certificado de servicios), plantillas IRAM/ISO, tutoriales y el libro de temas.
 
 **Alumno.** Carga y consulta su legajo y su progreso, presenta justificativos, pide el certificado de alumno regular y el reconocimiento de saberes, y tiene el enlace al SIAADE y los formatos institucionales para descargar.
 
@@ -93,7 +93,7 @@ Con varios roles se entra al panel de mayor alcance, en el orden Director, Secre
 ## Alcance funcional del MVP
 
 - Alumno: login, certificados de inasistencia y notas aclaratorias, enlace al SIAADE, carga de la documentación del legajo, solicitud de reconocimiento de saberes, barra de progreso y descarga de formatos (Convenio Beca Fundación Encode, Autorización de uso de Imagen y Voz, Apto médico y Apto psicológico).
-- Docente: login, carga y actualización del legajo, justificativos, programa de materia en PDF, calendario de exámenes parciales con un máximo de parciales por día, igual para todo el instituto y definido por Secretaría Académica (hoy 2), enlaces externos, plantillas IRAM/ISO, tutoriales, libro de temas y barra de progreso.
+- Docente: login, carga y actualización del legajo, justificativos, programa de materia en PDF, calendario de exámenes parciales, donde registra los suyos, con un máximo de parciales por día, igual para todo el instituto y definido por Secretaría Académica (hoy 2), enlaces externos, plantillas IRAM/ISO, tutoriales, libro de temas y barra de progreso.
 - Secretario: login, revisión de legajos y justificativos (aprobar, o rechazar con motivo), justificativos propios, contratos firmados, mesas de examen y gestión de usuarios.
 - Director: login, listas por rol, gestión de usuarios y roles, revisión de legajos y justificativos propios.
 

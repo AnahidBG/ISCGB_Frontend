@@ -10,9 +10,13 @@ import { aCalendarioDelMes } from '../../../core/examenes/adaptador-estado-mes';
 import {
   CalendarioExamenesService,
   MENSAJE_ERROR_CALENDARIO,
+  MENSAJE_ERROR_MATERIAS_DEL_DOCENTE,
 } from '../../../core/examenes/calendario-examenes.service';
 import { CalendarioDelMes } from '../../../core/examenes/modelos/calendario-del-mes';
 import { ExamenCalendario } from '../../../core/examenes/modelos/examen-calendario';
+import { MateriaDelDocente } from '../../../core/examenes/modelos/materia-del-docente';
+import { NuevoExamen } from '../../../core/examenes/modelos/nuevo-examen';
+import { TipoExamen } from '../../../core/examenes/modelos/tipo-examen';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { NotificacionPanel } from '../../../core/notificaciones/modelos/notificacion-panel';
 import { CalendarioExamenes } from './calendario-examenes';
@@ -45,8 +49,41 @@ const OCTUBRE = mes(2026, 10, [
 /** Noviembre de 2026: sin parciales. */
 const NOVIEMBRE = mes(2026, 11, []);
 
+/** Las materias del docente: una de ellas en dos comisiones. */
+const MATERIAS: MateriaDelDocente[] = [
+  {
+    idMateria: 4,
+    materia: 'Programación II',
+    carrera: 'Tecnicatura en Desarrollo de Software',
+    idComision: 1,
+    comision: 'Comisión A',
+  },
+  {
+    idMateria: 4,
+    materia: 'Programación II',
+    carrera: 'Tecnicatura en Desarrollo de Software',
+    idComision: 2,
+    comision: 'Comisión B',
+  },
+];
+
+const TIPOS: TipoExamen[] = [
+  { idTipoExamen: 1, nombre: 'Parcial' },
+  { idTipoExamen: 4, nombre: 'Coloquio' },
+];
+
+/** Cómo responde el servicio al registro de un parcial. Lo que no se pasa, anda bien. */
+interface ServicioDeRegistro {
+  materiasDelDocente?: () => Observable<MateriaDelDocente[]>;
+  tiposDeExamen?: () => Observable<TipoExamen[]>;
+  registrarExamen?: (examen: NuevoExamen) => Observable<void>;
+}
+
 /** Los meses que pidió la pantalla, en orden: `[anio, mes]`. */
 let pedidos: [number, number][];
+
+/** Los parciales que se mandaron a registrar, en orden. */
+let registrados: NuevoExamen[];
 
 /** La sesión de la prueba: se cambia para ver qué ve cada rol. */
 let sesion: ReturnType<typeof signal<Sesion>>;
@@ -54,8 +91,10 @@ let sesion: ReturnType<typeof signal<Sesion>>;
 async function montar(
   calendarioDelMes: (anio: number, mes: number) => Observable<CalendarioDelMes>,
   examenesDelMes: () => Observable<ExamenCalendario[]> = () => of([]),
+  registro: ServicioDeRegistro = {},
 ): Promise<ComponentFixture<CalendarioExamenes>> {
   pedidos = [];
+  registrados = [];
   sesion = signal(sesionDe('Docente'));
 
   TestBed.configureTestingModule({
@@ -79,6 +118,12 @@ async function montar(
             return calendarioDelMes(anio, mesDelAnio);
           },
           examenesDelMes,
+          materiasDelDocente: registro.materiasDelDocente ?? (() => of(MATERIAS)),
+          tiposDeExamen: registro.tiposDeExamen ?? (() => of(TIPOS)),
+          registrarExamen: (examen: NuevoExamen) => {
+            registrados.push(examen);
+            return (registro.registrarExamen ?? (() => of(undefined)))(examen);
+          },
         },
       },
     ],
@@ -103,6 +148,42 @@ function celda(fixture: ComponentFixture<CalendarioExamenes>, fecha: string): HT
 
 async function tocar(fixture: ComponentFixture<CalendarioExamenes>, selector: string) {
   raiz(fixture).querySelector<HTMLButtonElement>(selector)!.click();
+  await fixture.whenStable();
+}
+
+/** El modal de registro, o `null` si está cerrado. */
+function dialogo(fixture: ComponentFixture<CalendarioExamenes>): HTMLElement | null {
+  return raiz(fixture).querySelector<HTMLElement>('[role="dialog"]');
+}
+
+/** Elige un día como lo haría una persona: el foco queda en su celda y se la toca. */
+async function elegirDia(fixture: ComponentFixture<CalendarioExamenes>, fecha: string) {
+  celda(fixture, fecha).focus();
+  celda(fixture, fecha).click();
+  await fixture.whenStable();
+}
+
+/** Escribe en un campo del formulario del modal, con el evento que escucha Angular. */
+function escribir(
+  fixture: ComponentFixture<CalendarioExamenes>,
+  selector: string,
+  valor: string,
+): void {
+  const campo = raiz(fixture).querySelector<HTMLInputElement | HTMLSelectElement>(selector)!;
+  campo.value = valor;
+  campo.dispatchEvent(new Event(campo instanceof HTMLSelectElement ? 'change' : 'input'));
+}
+
+/** Completa lo que el modal no trae resuelto: la materia con su comisión, el tipo y el horario. */
+async function completarRegistro(fixture: ComponentFixture<CalendarioExamenes>) {
+  escribir(fixture, '#registro-materia', '4-1');
+  escribir(fixture, '#registro-tipo', '1');
+  escribir(fixture, '#registro-horario', '09:00');
+  await fixture.whenStable();
+}
+
+async function guardarRegistro(fixture: ComponentFixture<CalendarioExamenes>) {
+  dialogo(fixture)!.querySelector('form')!.dispatchEvent(new Event('submit'));
   await fixture.whenStable();
 }
 
@@ -169,11 +250,27 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
     );
   });
 
-  it('por ahora no se puede elegir un día: la selección está deshabilitada', async () => {
+  it('el Docente puede elegir un día y lo orienta un texto; Secretaría y Dirección solo miran', async () => {
     const fixture = await montar(() => of(OCTUBRE));
+    const ayuda =
+      'Elegí un día disponible para registrar un parcial. Los días completos y las fechas pasadas no admiten registros.';
+
+    expect(raiz(fixture).querySelector('table')?.getAttribute('aria-readonly')).toBeNull();
+    // El día completo y el pasado no se pueden elegir.
+    expect(celda(fixture, '2026-10-20').getAttribute('aria-disabled')).toBe('true');
+    expect(celda(fixture, '2026-10-05').getAttribute('aria-disabled')).toBe('true');
+    expect(raiz(fixture).textContent).toContain(ayuda);
+
+    sesion.set(sesionDe('Secretario'));
+    await fixture.whenStable();
 
     expect(raiz(fixture).querySelector('table')?.getAttribute('aria-readonly')).toBe('true');
     expect(raiz(fixture).querySelector('[aria-disabled]')).toBeNull();
+    expect(raiz(fixture).textContent).not.toContain(ayuda);
+
+    celda(fixture, '2026-10-13').click();
+    await fixture.whenStable();
+    expect(dialogo(fixture)).toBeNull();
   });
 
   it('lista en su día los parciales que trae el servicio', async () => {
@@ -281,5 +378,162 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
     await fixture.whenStable();
 
     expect(enlace()?.getAttribute('href')).toBe('/secretario/limite-parciales');
+  });
+
+  describe('registrar un parcial (Docente)', () => {
+    it('al elegir un día abre "Registrar parcial" con ese día y las opciones del docente', async () => {
+      const fixture = await montar(() => of(OCTUBRE));
+
+      await elegirDia(fixture, '2026-10-13');
+
+      const modal = dialogo(fixture)!;
+      expect(modal.querySelector('h2')?.textContent).toContain('Registrar parcial');
+      expect(modal.textContent).toContain('Martes 13 de octubre de 2026');
+      // El foco entró al modal.
+      expect(modal.contains(document.activeElement)).toBe(true);
+
+      // La fecha viene precargada con el día elegido, y no deja ir hacia atrás de hoy.
+      const fecha = modal.querySelector<HTMLInputElement>('#registro-fecha')!;
+      expect(fecha.type).toBe('date');
+      expect(fecha.value).toBe('2026-10-13');
+      expect(fecha.getAttribute('min')).toBe('2026-10-10');
+      expect(modal.querySelector<HTMLInputElement>('#registro-horario')?.type).toBe('time');
+      expect(modal.textContent).toContain('Horario en formato 24 h.');
+
+      // Un solo desplegable elige la materia y la comisión a la vez.
+      const opciones = (selector: string) =>
+        Array.from(modal.querySelectorAll(`${selector} option`)).map((o) => o.textContent?.trim());
+      expect(opciones('#registro-materia')).toEqual([
+        'Elegí una materia y comisión',
+        'Programación II · Comisión A (Tecnicatura en Desarrollo de Software)',
+        'Programación II · Comisión B (Tecnicatura en Desarrollo de Software)',
+      ]);
+      expect(opciones('#registro-tipo')).toEqual([
+        'Elegí un tipo de examen',
+        'Parcial',
+        'Coloquio',
+      ]);
+    });
+
+    it('no guarda con campos sin completar o con una fecha pasada, y marca lo que falta', async () => {
+      const fixture = await montar(() => of(OCTUBRE));
+      await elegirDia(fixture, '2026-10-13');
+
+      escribir(fixture, '#registro-fecha', '2026-10-09');
+      await guardarRegistro(fixture);
+
+      const errores = Array.from(dialogo(fixture)!.querySelectorAll('[role="alert"]')).map((e) =>
+        e.textContent?.trim(),
+      );
+      expect(errores).toEqual([
+        'Elegí la materia y la comisión.',
+        'Elegí el tipo de examen.',
+        'No se puede registrar un parcial en una fecha pasada.',
+        'Ingresá el horario del parcial.',
+      ]);
+      expect(registrados).toEqual([]);
+      expect(dialogo(fixture)).not.toBeNull();
+    });
+
+    it('si el backend lo rechaza (400), muestra su mensaje en el formulario y el modal sigue abierto', async () => {
+      const rechazo = 'No se puede registrar. Se ha superado el límite de parciales para ese día.';
+      const fixture = await montar(
+        () => of(OCTUBRE),
+        () => of([]),
+        { registrarExamen: () => throwError(() => new Error(rechazo)) },
+      );
+      await elegirDia(fixture, '2026-10-13');
+      await completarRegistro(fixture);
+
+      await guardarRegistro(fixture);
+
+      const modal = dialogo(fixture)!;
+      expect(modal.querySelector('form [role="alert"]')?.textContent).toContain(rechazo);
+      // Sigue abierto, con lo que se había completado, para elegir otra fecha.
+      expect(modal.querySelector<HTMLInputElement>('#registro-fecha')?.value).toBe('2026-10-13');
+      expect(modal.querySelector<HTMLInputElement>('#registro-horario')?.value).toBe('09:00');
+      expect(raiz(fixture).querySelector('p[role="status"]')).toBeNull();
+
+      // Con otra fecha se puede volver a intentar.
+      escribir(fixture, '#registro-fecha', '2026-10-14');
+      await guardarRegistro(fixture);
+      expect(registrados.map((examen) => examen.dia)).toEqual(['2026-10-13', '2026-10-14']);
+    });
+
+    it('si sale bien, cierra el modal, avisa, devuelve el foco al día y vuelve a pedir el mes', async () => {
+      const OCTUBRE_CON_EL_14 = mes(2026, 10, [
+        { fecha: '2026-10-13T00:00:00', cantidadExamenes: 1, limiteAlcanzado: false },
+        { fecha: '2026-10-14T00:00:00', cantidadExamenes: 1, limiteAlcanzado: false },
+      ]);
+      const fixture = await montar(() => of(pedidos.length === 1 ? OCTUBRE : OCTUBRE_CON_EL_14));
+      const diaElegido = celda(fixture, '2026-10-14');
+      expect(diaElegido.textContent).toContain('Libre');
+
+      await elegirDia(fixture, '2026-10-14');
+      await completarRegistro(fixture);
+      await guardarRegistro(fixture);
+
+      expect(registrados).toEqual([
+        { dia: '2026-10-14', horario: '09:00', idMateria: 4, idComision: 1, idTipoExamen: 1 },
+      ]);
+      expect(dialogo(fixture)).toBeNull();
+      expect(raiz(fixture).querySelector('p[role="status"]')?.textContent).toContain(
+        'Parcial registrado para el miércoles 14 de octubre a las 09:00.',
+      );
+
+      // Se pidió otra vez el mes, y el día cambió de color sin tapar la grilla con la espera.
+      expect(pedidos).toEqual([
+        [2026, 10],
+        [2026, 10],
+      ]);
+      expect(celda(fixture, '2026-10-14')).toBe(diaElegido);
+      expect(diaElegido.textContent).toContain('1 parcial');
+      expect(document.activeElement).toBe(diaElegido);
+    });
+
+    it('sin materias asignadas lo avisa y no deja guardar', async () => {
+      const fixture = await montar(
+        () => of(OCTUBRE),
+        () => of([]),
+        { materiasDelDocente: () => of([]) },
+      );
+
+      await elegirDia(fixture, '2026-10-13');
+
+      const modal = dialogo(fixture)!;
+      expect(modal.textContent).toContain(
+        'Todavía no tenés materias asignadas. Consultá en Secretaría.',
+      );
+      expect(modal.querySelector('form')).toBeNull();
+    });
+
+    it('si no se pueden traer las materias lo avisa y "Reintentar" las vuelve a pedir', async () => {
+      let llamadas = 0;
+      const fixture = await montar(
+        () => of(OCTUBRE),
+        () => of([]),
+        {
+          materiasDelDocente: () =>
+            ++llamadas === 1
+              ? throwError(() => new Error(MENSAJE_ERROR_MATERIAS_DEL_DOCENTE))
+              : of(MATERIAS),
+        },
+      );
+
+      await elegirDia(fixture, '2026-10-13');
+
+      expect(dialogo(fixture)!.querySelector('[role="alert"]')?.textContent).toContain(
+        MENSAJE_ERROR_MATERIAS_DEL_DOCENTE,
+      );
+      expect(dialogo(fixture)!.querySelector('form')).toBeNull();
+
+      const reintentar = Array.from(dialogo(fixture)!.querySelectorAll('button')).find(
+        (boton) => boton.textContent?.trim() === 'Reintentar',
+      )!;
+      reintentar.click();
+      await fixture.whenStable();
+
+      expect(dialogo(fixture)!.querySelector('#registro-materia')).not.toBeNull();
+    });
   });
 });

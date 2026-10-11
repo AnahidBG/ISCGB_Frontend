@@ -1,0 +1,41 @@
+<app-dialogo-modal
+  titulo="Registrar parcial"
+  [subtitulo]="diaEnTexto()"
+  [bloqueado]="guardando()"
+  (cerrar)="cerrar.emit()"
+>
+  @let estado = carga();
+
+  @if (estado.fase === 'cargando') {
+    <!-- `--carga-fondo` deja el loader del color del modal, no del fondo de la página. -->
+    <div class="flex min-h-48 items-center justify-center [--carga-fondo:var(--color-superficie)]">
+      <app-pantalla-carga tamano="sm" mensaje="Cargando tus materias…" />
+    </div>
+  } @else if (estado.fase === 'error') {
+    <div role="alert" class="flex flex-col items-start gap-3">
+      <p class="text-sm text-texto">{{ estado.mensaje }}</p>
+      <app-boton nivel="secundario" [conFlecha]="false" (click)="reintentar.emit()">
+        Reintentar
+      </app-boton>
+    </div>
+  } @else if (estado.materias.length === 0) {
+    <p role="status" class="text-sm text-texto">
+      Todavía no tenés materias asignadas. Consultá en Secretaría.
+    </p>
+  } @else if (estado.tipos.length === 0) {
+    <p role="status" class="text-sm text-texto">
+      Todavía no hay tipos de examen cargados. Consultá en Secretaría.
+    </p>
+  } @else {
+    <app-formulario-parcial
+      [dia]="dia()"
+      [hoy]="hoy()"
+      [materias]="estado.materias"
+      [tipos]="estado.tipos"
+      [guardando]="guardando()"
+      [errorServidor]="errorServidor()"
+      (guardar)="guardar.emit($event)"
+      (cancelar)="cerrar.emit()"
+    />
+  }
+</app-dialogo-modal>

@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { Observable } from 'rxjs';
 import { SIN_CARGA_GLOBAL } from '../carga/carga.interceptor';
 import { RUTAS_API } from '../configuracion/api';
 import { CalendarioExamenesHttpService } from './calendario-examenes-http.service';
@@ -8,11 +9,17 @@ import {
   MENSAJE_ERROR_CALENDARIO,
   MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO,
   MENSAJE_ERROR_LIMITE_DIARIO,
+  MENSAJE_ERROR_MATERIAS_DEL_DOCENTE,
   MENSAJE_ERROR_MESAS_ASIGNADAS,
+  MENSAJE_ERROR_REGISTRAR_EXAMEN,
+  MENSAJE_ERROR_TIPOS_DE_EXAMEN,
 } from './calendario-examenes.service';
 import { CalendarioDelMes } from './modelos/calendario-del-mes';
 import { ExamenCalendario } from './modelos/examen-calendario';
+import { MateriaDelDocente } from './modelos/materia-del-docente';
 import { MesaAsignada } from './modelos/mesa-asignada';
+import { NuevoExamen } from './modelos/nuevo-examen';
+import { TipoExamen } from './modelos/tipo-examen';
 
 describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
   let servicio: CalendarioExamenesHttpService;
@@ -266,6 +273,169 @@ describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
       backend.expectOne(RUTAS_API.misMesasAsignadas).flush(cuerpo, opciones);
 
       expect(mensaje).toBe(MENSAJE_ERROR_MESAS_ASIGNADAS);
+    });
+  });
+
+  describe('registro de un parcial', () => {
+    const PARCIAL: NuevoExamen = {
+      dia: '2026-10-13',
+      horario: '23:30',
+      idMateria: 4,
+      idComision: 1,
+      idTipoExamen: 2,
+    };
+
+    it('las materias del docente traen la materia con su comisión, en segundo plano', () => {
+      let materias: MateriaDelDocente[] | undefined;
+      servicio
+        .materiasDelDocente({ enSegundoPlano: true })
+        .subscribe((valor) => (materias = valor));
+
+      const pedido = backend.expectOne(RUTAS_API.misMateriasDocente);
+      expect(pedido.request.method).toBe('GET');
+      expect(pedido.request.url).toContain('/api/ConfiguracionCalendario/mis-materias-docente');
+      expect(pedido.request.context.get(SIN_CARGA_GLOBAL)).toBe(true);
+      pedido.flush([
+        {
+          idMateria: 4,
+          nombreMateria: 'Programacion II',
+          carrera: 'Tecnicatura en Desarrollo de Software',
+          idComision: 1,
+          nombreComision: 'Comisión A',
+        },
+        {
+          idMateria: 7,
+          nombreMateria: 'Redes',
+          carrera: '  ',
+          idComision: 2,
+          nombreComision: 'Comisión B',
+        },
+      ]);
+
+      expect(materias).toEqual([
+        {
+          idMateria: 4,
+          materia: 'Programacion II',
+          carrera: 'Tecnicatura en Desarrollo de Software',
+          idComision: 1,
+          comision: 'Comisión A',
+        },
+        { idMateria: 7, materia: 'Redes', carrera: null, idComision: 2, comision: 'Comisión B' },
+      ]);
+    });
+
+    it('un docente sin perfil (404 con mensaje) no tiene materias: no es un error', () => {
+      let materias: MateriaDelDocente[] | undefined;
+      servicio.materiasDelDocente().subscribe((valor) => (materias = valor));
+
+      backend
+        .expectOne(RUTAS_API.misMateriasDocente)
+        .flush(
+          { message: 'El usuario no tiene un perfil de docente.' },
+          { status: 404, statusText: 'Not Found' },
+        );
+
+      expect(materias).toEqual([]);
+    });
+
+    it('los tipos de examen se muestran como vienen', () => {
+      let tipos: TipoExamen[] | undefined;
+      servicio.tiposDeExamen({ enSegundoPlano: true }).subscribe((valor) => (tipos = valor));
+
+      const pedido = backend.expectOne(RUTAS_API.tiposDeExamen);
+      expect(pedido.request.method).toBe('GET');
+      expect(pedido.request.context.get(SIN_CARGA_GLOBAL)).toBe(true);
+      pedido.flush([
+        { idTipoExamen: 1, nombre: 'Parcial' },
+        { idTipoExamen: 2, nombre: 'Recupetario' },
+      ]);
+
+      expect(tipos).toEqual([
+        { idTipoExamen: 1, nombre: 'Parcial' },
+        { idTipoExamen: 2, nombre: 'Recupetario' },
+      ]);
+    });
+
+    it.each<[string, () => Observable<unknown>, string, string]>([
+      [
+        'las materias',
+        () => servicio.materiasDelDocente(),
+        RUTAS_API.misMateriasDocente,
+        MENSAJE_ERROR_MATERIAS_DEL_DOCENTE,
+      ],
+      [
+        'los tipos de examen',
+        () => servicio.tiposDeExamen(),
+        RUTAS_API.tiposDeExamen,
+        MENSAJE_ERROR_TIPOS_DE_EXAMEN,
+      ],
+    ])(
+      'si fallan %s, o la respuesta no se puede leer, falla con su mensaje',
+      (_caso, pedir, ruta, esperado) => {
+        const mensajes: string[] = [];
+        const alFallar = { error: (fallo: Error) => mensajes.push(fallo.message) };
+
+        pedir().subscribe(alFallar);
+        backend.expectOne(ruta).flush(null, { status: 500, statusText: 'Error' });
+
+        pedir().subscribe(alFallar);
+        backend.expectOne(ruta).flush([{ nombre: 'sin ids' }]);
+
+        expect(mensajes).toEqual([esperado, esperado]);
+      },
+    );
+
+    it('registrar manda { fecha, idComision, idMateria, idTipoExamen } con la fecha en texto local', () => {
+      let registrado = false;
+      servicio
+        .registrarExamen(PARCIAL, { enSegundoPlano: true })
+        .subscribe(() => (registrado = true));
+
+      const pedido = backend.expectOne(RUTAS_API.registrarExamen);
+      expect(pedido.request.method).toBe('POST');
+      expect(pedido.request.url).toContain('/api/ConfiguracionCalendario/registrar');
+      expect(pedido.request.context.get(SIN_CARGA_GLOBAL)).toBe(true);
+      // A las 23:30 una conversión por UTC lo pasaría al día siguiente.
+      expect(pedido.request.body).toEqual({
+        fecha: '2026-10-13T23:30:00',
+        idComision: 1,
+        idMateria: 4,
+        idTipoExamen: 2,
+      });
+      pedido.flush({ message: 'Examen registrado correctamente.' });
+
+      expect(registrado).toBe(true);
+    });
+
+    it('si el día alcanzó el límite (400), registrar falla con el texto del backend', () => {
+      let mensaje: string | undefined;
+      servicio
+        .registrarExamen(PARCIAL)
+        .subscribe({ error: (fallo: Error) => (mensaje = fallo.message) });
+
+      backend
+        .expectOne(RUTAS_API.registrarExamen)
+        .flush(
+          { message: 'No se puede registrar. Se ha superado el límite de parciales para ese día.' },
+          { status: 400, statusText: 'Bad Request' },
+        );
+
+      expect(mensaje).toBe(
+        'No se puede registrar. Se ha superado el límite de parciales para ese día.',
+      );
+    });
+
+    it('ante un error del servidor (500), registrar falla con el mensaje genérico', () => {
+      let mensaje: string | undefined;
+      servicio
+        .registrarExamen(PARCIAL)
+        .subscribe({ error: (fallo: Error) => (mensaje = fallo.message) });
+
+      backend
+        .expectOne(RUTAS_API.registrarExamen)
+        .flush({ message: 'Violación de clave foránea' }, { status: 500, statusText: 'Error' });
+
+      expect(mensaje).toBe(MENSAJE_ERROR_REGISTRAR_EXAMEN);
     });
   });
 });

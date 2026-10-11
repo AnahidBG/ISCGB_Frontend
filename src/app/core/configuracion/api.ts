@@ -178,6 +178,25 @@ export const RUTAS_API = {
   limiteParcialesCalendario: `${URL_BASE_API}/api/ConfiguracionCalendario/limite-parciales`,
 
   /**
+   * Registra un examen. Body: `{ fecha, idComision, idMateria, idTipoExamen }`, con
+   * `fecha` como `DateTime` sin zona y con hora ("2026-10-13T09:00:00"). Responde
+   * `200 { message }` (no devuelve el id del examen) y `400 { message }` si el día
+   * ya alcanzó el límite. No valida que la materia, la comisión ni el tipo existan
+   * (con ids inválidos responde 500) ni que la fecha no sea pasada.
+   */
+  registrarExamen: `${URL_BASE_API}/api/ConfiguracionCalendario/registrar`,
+
+  /** Los tipos de examen: `[{ idTipoExamen, nombre }]`. Sin rol. */
+  tiposDeExamen: `${URL_BASE_API}/api/ConfiguracionCalendario/tipos-examen`,
+
+  /**
+   * Las materias que dicta el docente de la sesión, cada una con su comisión. Solo
+   * `Docente`: el docente sale del token. Un 404 con texto = el usuario no tiene
+   * perfil de docente. Puede responder `[]`.
+   */
+  misMateriasDocente: `${URL_BASE_API}/api/ConfiguracionCalendario/mis-materias-docente`,
+
+  /**
    * Las mesas de examen a las que asignaron al docente de la sesión y que siguen
    * en "Pendiente". Ojo con el nombre: el controlador es `Configuracion` (no
    * `ConfiguracionCalendario`) y la ruta dice "notificaciones", aunque el dato

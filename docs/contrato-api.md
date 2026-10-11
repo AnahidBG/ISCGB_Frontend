@@ -377,8 +377,10 @@ hay límite por comisión.
 Esta sección se relevó el 10/10/2026 contra el código del backend. El frontend
 consume `estado-mes` en `/calendario`, para Docente, Secretario y Director, y
 `limite-parciales` en `/secretario/limite-parciales`, para Secretario y Director.
-El backend no exige rol en ninguno de los dos: lo único que deja afuera al Alumno
-es el `roleGuard` del frontend.
+El Docente además registra parciales desde `/calendario` con `registrar`,
+`tipos-examen` y `mis-materias-docente`. De todos ellos, el backend exige rol solo
+en `mis-materias-docente`: lo único que deja afuera al Alumno en el resto es el
+`roleGuard` del frontend.
 
 ### `GET /api/ConfiguracionCalendario/estado-mes?anio=2026&mes=10`
 
@@ -446,19 +448,80 @@ Con `nuevoLimite` en cero o negativo responde `400` con
 - El frontend siempre manda un entero: con `nuevoLimite` ausente el backend lo da
   por válido (ver los pendientes).
 
+### `POST /api/ConfiguracionCalendario/registrar`
+
+Registra un examen. Recibe `CargaExamenDto`:
+
+```json
+{ "fecha": "2026-10-13T09:00:00", "idComision": 1, "idMateria": 4, "idTipoExamen": 1 }
+```
+
+Responde `200` con `{ "message": "Examen registrado correctamente." }`. **No
+devuelve el id del examen**, así que el frontend no puede abrirlo ni listarlo después.
+Si el día ya alcanzó el límite responde `400` con
+`{ "message": "No se puede registrar. Se ha superado el límite de parciales para ese día." }`.
+
+- `fecha` es un `DateTime` de .NET **sin zona y con hora**. El frontend manda la hora
+  local tal cual, como texto: `textoFechaYHora(dia, horario)`, en
+  `core/examenes/registro-examen.ts`. Nunca `toISOString()`: lo pasa a UTC y corre el
+  examen tres horas (un parcial a las 23:30 caería al día siguiente).
+- El límite cuenta los exámenes de la misma fecha sin mirar la hora, de cualquier
+  materia, comisión o tipo.
+- No valida que la materia, la comisión ni el tipo existan: con ids inválidos
+  responde `500`. Tampoco que la fecha no sea pasada, ni que el docente dicte esa
+  materia en esa comisión, ni que quien llama sea Docente: no tiene `[Authorize]`.
+  El frontend cuida la fecha (`errorDeDia`: no deja registrar en un día anterior a
+  hoy) y ofrece solo las materias del docente de la sesión; cualquier otro cliente
+  se las puede saltear.
+- Cómo lo usa el frontend: `CalendarioExamenesService.registrarExamen(...)`.
+  `CalendarioExamenesHttpService` arma el cuerpo desde `NuevoExamen` (día, horario y
+  los tres ids). Un `4xx` con texto se muestra tal cual (el del límite, por
+  ejemplo); un `5xx` o la falta de red, con el mensaje genérico. Va en segundo
+  plano, sin el velo global: el botón del modal ya muestra "Guardando…".
+
+### `GET /api/ConfiguracionCalendario/tipos-examen`
+
+Devuelve `200` con `[{ "idTipoExamen": 1, "nombre": "Parcial" }]`. No exige rol y no
+recibe parámetros. Hoy la base tiene cuatro: "Parcial", "Recupetario" (así, con el
+error de tipeo), "Parcial Integrador Final" y "Coloquio". El frontend los muestra
+tal cual vienen. Si la respuesta no se puede leer (no es una lista, o un tipo
+no trae id o nombre) es un error.
+
+### `GET /api/ConfiguracionCalendario/mis-materias-docente`
+
+Con `[Authorize(Roles = "Docente")]`. El docente sale del token (claim
+`NameIdentifier`). Devuelve `200` con cada materia en cada comisión que dicta:
+
+```json
+[
+  {
+    "idMateria": 4,
+    "nombreMateria": "Programacion II",
+    "carrera": "Tecnicatura en Desarrollo de Software",
+    "idComision": 1,
+    "nombreComision": "Comisión A"
+  }
+]
+```
+
+- Puede ser `[]`: un docente sin materias asignadas.
+- Responde `404` con `{ "message": "El usuario no tiene un perfil de docente." }` si el
+  usuario no tiene fila en `Docentes`, y `401` con `{ "message": "Token inválido." }` si
+  el token no trae el id. Con otro rol responde `403`.
+- Una misma materia en dos comisiones son dos elementos. `carrera` puede venir nula.
+- El frontend lo traduce a `MateriaDelDocente` (`materia`, `comision`, `carrera`). Un
+  `404` con texto se trata como "no tiene materias" y devuelve una lista vacía, igual
+  que las mesas asignadas: el modal dice "Todavía no tenés materias asignadas.
+  Consultá en Secretaría." Un `404` sin cuerpo (la ruta no existe), un `5xx` o una
+  respuesta que no se puede leer son un error, con "Reintentar".
+
 ### Lo que existe y el frontend todavía no consume
 
-- `POST /api/ConfiguracionCalendario/registrar` recibe
-  `{ fecha, idComision, idMateria, idTipoExamen }`. Responde `400` con
-  `{ message }` si el día ya alcanzó el límite.
 - `PUT /api/ConfiguracionCalendario/modificar/{idExamen}` recibe
   `{ nuevaFecha }`. Responde `404` si el examen no existe y `400` si el día nuevo
   ya está completo.
 - `DELETE /api/ConfiguracionCalendario/eliminar/{idExamen}`. Responde `404` si el
   examen no existe.
-- `GET /api/ConfiguracionCalendario/tipos-examen`: `[{ idTipoExamen, nombre }]`.
-- `GET /api/ConfiguracionCalendario/mis-materias-docente`: las materias y
-  comisiones del docente de la sesión, con `[Authorize(Roles = "Docente")]`.
 
 ### Pendientes del backend
 
@@ -472,6 +535,12 @@ Con `nuevoLimite` en cero o negativo responde `400` con
   (`limite_parciales_diario`) y en Jira figura "por semana". Si cambia, el frontend
   toca `PERIODO_DEL_LIMITE`, que solo cambia la redacción, y tendría que revisar
   también qué significa "completo" en cada celda.
+- `registrar` devuelve solo un mensaje, sin el id del examen creado. Sin el id el
+  frontend no puede, por ejemplo, ofrecer "Deshacer" ni abrir el parcial recién
+  cargado.
+- `registrar` no valida que los ids existan (responde `500`), ni que la fecha sea
+  futura, ni que el docente dicte esa materia en esa comisión. Debería responder
+  `400` con un mensaje en cada caso.
 - Solo `mis-materias-docente` exige rol. El resto no tiene `[Authorize]`: quien
   tenga la dirección puede registrar, mover o borrar exámenes y cambiar el límite
   sin iniciar sesión. En `limite-parciales` la línea está comentada en el código,
