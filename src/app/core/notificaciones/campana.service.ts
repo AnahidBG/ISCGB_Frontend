@@ -5,12 +5,15 @@ import { ROLES } from '../auth/modelos/rol';
 import { OpcionesPedido } from '../comun/opciones-pedido';
 import { rolPrincipalDe } from '../auth/rol-principal';
 import { Sesion } from '../auth/modelos/sesion';
+import { ExamenesService } from '../examenes/examenes.service';
+import { MesaAsignada } from '../examenes/modelos/mesa-asignada';
 import { JustificativosService } from '../justificativos/justificativos.service';
 import { LegajoService } from '../legajos/legajo.service';
 import { DocumentoRequerido } from '../legajos/modelos/documento-requerido';
 import { idRolDocumental } from '../legajos/rol-documental';
 import { NotificacionPanel } from './modelos/notificacion-panel';
 import { NovedadesLegajo, novedadesDelLegajo } from './notificaciones-legajo';
+import { notificacionesPorMesas } from './notificaciones-mesas';
 import { novedadesPendientesDelInstituto } from './pendientes-instituto';
 
 /**
@@ -27,6 +30,8 @@ const URL_LEGAJO_PROPIO = '/legajo/mis-documentos';
 interface Dependencias {
   legajos: LegajoService;
   justificativos: JustificativosService;
+  /** Solo lo usa el Docente, y es opcional: sin él ve únicamente su legajo. */
+  examenes: ExamenesService | null;
 }
 
 function pesoNotificacion(notificacion: NotificacionPanel): number {
@@ -62,6 +67,36 @@ const fuenteLegajoPropio: FuenteDeCampana = ({ legajos }, sesion) => {
   );
 };
 
+/**
+ * Docente: las novedades de SU legajo más las mesas de examen que le asignaron.
+ *
+ * Las mesas son un agregado: si ese pedido falla (el usuario no tiene perfil de
+ * docente, no hay red…) la campana muestra igual el legajo, como si no hubiera
+ * mesas. Si falla el legajo vale la regla de siempre (`null`/error: se queda lo
+ * que había), aunque las mesas hayan llegado.
+ */
+const fuenteDocente: FuenteDeCampana = (deps, sesion) => {
+  const legajo$ = fuenteLegajoPropio(deps, sesion);
+  if (deps.examenes === null) {
+    return legajo$;
+  }
+
+  const mesas$ = deps.examenes
+    .mesasAsignadas(EN_SEGUNDO_PLANO)
+    .pipe(catchError(() => of<MesaAsignada[]>([])));
+
+  return forkJoin({ legajo: legajo$, mesas: mesas$ }).pipe(
+    map(({ legajo, mesas }) => {
+      if (legajo === null) {
+        return null;
+      }
+
+      const avisos = notificacionesPorMesas(mesas, new Date());
+      return { total: legajo.total + avisos.length, detalle: [...legajo.detalle, ...avisos] };
+    }),
+  );
+};
+
 /** Secretario y Director: lo que espera revisión en todo el instituto. */
 const fuentePendientesDelInstituto: FuenteDeCampana = ({ legajos, justificativos }) =>
   forkJoin({
@@ -89,7 +124,7 @@ const fuentePendientesDelInstituto: FuenteDeCampana = ({ legajos, justificativos
  * `toString` no encuentre una propiedad heredada de `Object`.
  */
 const FUENTE_POR_ROL: ReadonlyMap<string, FuenteDeCampana> = new Map([
-  [ROLES.docente, fuenteLegajoPropio],
+  [ROLES.docente, fuenteDocente],
   [ROLES.alumno, fuenteLegajoPropio],
   [ROLES.secretario, fuentePendientesDelInstituto],
   [ROLES.director, fuentePendientesDelInstituto],
@@ -154,10 +189,10 @@ function guardarLeidas(idUsuario: number, leidas: Set<string>): void {
  * ── Patrones ──────────────────────────────────────────────────────────────
  *   · Singleton (`providedIn: 'root'`): el estado vive acá y no se pierde al
  *     navegar, por eso la campana no parpadea a vacío entre pantallas.
- *   · Facade: compone `LegajoService` y `JustificativosService` (las clases
- *     ABSTRACTAS), así funciona igual con la implementación HTTP y con el
- *     mock. No es un dominio HTTP nuevo: no llama a ningún endpoint propio, y
- *     por eso no tiene par `*-http` / `*-mock`.
+ *   · Facade: compone `LegajoService`, `JustificativosService` y, para el
+ *     Docente, `ExamenesService` (las clases ABSTRACTAS), así funciona igual
+ *     con la implementación HTTP y con el mock. No es un dominio HTTP nuevo: no
+ *     llama a ningún endpoint propio, y por eso no tiene par `*-http` / `*-mock`.
  *   · Tabla por clave: `FUENTE_POR_ROL`, con caso por defecto = campana vacía.
  *   · Observer: `total` y `detalle` son signals de solo lectura.
  *
@@ -170,19 +205,22 @@ function guardarLeidas(idUsuario: number, leidas: Set<string>): void {
  *     a ningún refresco. Nunca se ven avisos de la sesión anterior.
  *   · Si la carga falla no se muestra ningún error: la campana es un elemento
  *     secundario y no debe romper la pantalla. Queda con lo que tenía.
+ *   · El Docente ve además las mesas de examen que le asignaron. Es un
+ *     agregado: si ese pedido falla, la campana muestra igual su legajo.
  *
  * Con más de un rol manda el rol principal (Director > Secretario > Docente >
  * Alumno): un Director que además es Docente ve los pendientes del instituto,
- * no su propio legajo.
+ * no su propio legajo ni sus mesas.
  */
 @Injectable({ providedIn: 'root' })
 export class CampanaService {
   private readonly auth = inject(AuthService, { optional: true });
   private readonly legajos = inject(LegajoService, { optional: true });
   private readonly justificativos = inject(JustificativosService, { optional: true });
+  private readonly examenes = inject(ExamenesService, { optional: true });
   private readonly dependencias: Dependencias | null =
     this.legajos !== null && this.justificativos !== null
-      ? { legajos: this.legajos, justificativos: this.justificativos }
+      ? { legajos: this.legajos, justificativos: this.justificativos, examenes: this.examenes }
       : null;
 
   private readonly contenido = signal<Contenido>(SIN_CONTENIDO);

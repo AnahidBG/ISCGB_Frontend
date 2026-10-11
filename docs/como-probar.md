@@ -82,6 +82,9 @@ Con el `idUsuario` y el `idRol` que te devolvió el login, probá también:
 - `GET /api/ConfiguracionCalendario/estado-mes?anio=2026&mes=10`:
   `{ "limiteDiario": 2, "diasOcupados": [...] }`, con solo los días que tienen
   exámenes. Un mes inválido, como `mes=13`, responde 500.
+- `GET /api/Configuracion/mis-notificaciones`, con el token de un Docente: las
+  mesas de examen que le asignaron y siguen pendientes, `[]` si no tiene ninguna.
+  Con otro rol responde 403, y con un usuario sin fila en `Docentes`, 404.
 
 Un 404 en Legajos no es un error: quiere decir que todavía no hay nada, y el
 frontend lo trata así.
@@ -219,6 +222,36 @@ usa el calendario para marcar un día como "Completo".
 - [ ] Con el backend apagado muestra el aviso con "Reintentar".
 - [ ] Con otro rol, la dirección `/secretario/limite-examenes` no abre.
 
+### Mesas de examen en la campana del Docente
+
+Las mesas todavía no se pueden dar de alta desde el sistema ni desde la API: hoy
+se cargan en la base. Hace falta un examen con fecha futura (el del calendario, por
+ejemplo) y la fila del docente en `Docentes`:
+
+```sql
+SELECT id_docente FROM Docentes WHERE id_usuario = 5;  -- el idUsuario del login
+
+INSERT INTO mesa_examen (id_examen, id_docente, estado_confirmacion)
+VALUES (1, 1, 'Pendiente');
+```
+
+La columna `estado_confirmacion` la crea la migración `SincronizacionManual`
+(`dotnet ef database update`). El script `BASE_DATOS_DEFINITIVA_.sql` no la tiene.
+
+- [ ] Con ese Docente, la campana suma el aviso "Te asignaron a la mesa de" con el
+      nombre de la materia y el detalle "Viernes 20/11/2026, 09:00 h" (día de la
+      semana, fecha y hora de 24 h).
+- [ ] El número de la campana cuenta ese aviso además de los del legajo, y el aviso
+      va después de ellos.
+- [ ] Al tocarlo abre "Calendario de Exámenes".
+- [ ] Una mesa de un examen de una fecha anterior a hoy no aparece. La de hoy sí,
+      aunque la hora ya haya pasado.
+- [ ] Con varias mesas, la más próxima está primero.
+- [ ] Marcarlo como leído lo saca de la campana hasta que se cierra la pestaña.
+- [ ] En Network, el pedido a `mis-notificaciones` sale sin el velo de carga.
+- [ ] Un Alumno, un Secretario o un Director no ven este aviso. Tampoco un Director
+      que además es Docente: sigue viendo los pendientes del instituto.
+
 ### Panel del Director
 
 - [ ] Lista a las personas del instituto con sus roles y el estado de su legajo.
@@ -265,4 +298,6 @@ No está roto: no existe.
 - Del calendario de exámenes solo se puede consultar: registrar, modificar y
   eliminar exámenes, la agenda del mes y la materia de cada examen no están en la
   pantalla. El backend tampoco tiene un listado de exámenes.
+- Aceptar o rechazar una mesa de examen, y darla de alta. La campana del Docente
+  avisa las mesas asignadas, pero el backend no tiene endpoints para responderlas.
 - La configuración de la cuenta, que es del Sprint 3.

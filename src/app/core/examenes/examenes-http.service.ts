@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, map, throwError } from 'rxjs';
+import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { contextoDePedido } from '../carga/contexto-pedido';
 import { esEndpointInexistente, mensajeDelServidor } from '../comun/error-api';
 import { OpcionesPedido } from '../comun/opciones-pedido';
@@ -12,8 +12,10 @@ import {
   MENSAJE_ERROR_CALENDARIO,
   MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO,
   MENSAJE_ERROR_LIMITE_DIARIO,
+  MENSAJE_ERROR_MESAS_ASIGNADAS,
 } from './examenes.service';
 import { DiaOcupado, EstadoMes } from './modelos/estado-mes';
+import { MesaAsignada } from './modelos/mesa-asignada';
 
 /** Un elemento de `diasOcupados`. La fecha es un `DateTime` de .NET: "2026-10-13T00:00:00". */
 interface DiaOcupadoApi {
@@ -32,6 +34,19 @@ interface EstadoMesApi {
 interface LimiteApi {
   nuevoLimite: number;
 }
+
+/** Un elemento del `GET .../mis-notificaciones`. */
+interface MesaAsignadaApi {
+  idExamen: number;
+  materia: string;
+  /** Un `DateTime` de .NET, con hora y sin zona: "2026-11-20T09:00:00". */
+  fecha: string;
+  /** "Ha sido asignado a la mesa de…": no se usa, el texto lo redacta el front. */
+  mensaje: string;
+}
+
+/** Una fecha CON hora: "2026-11-20T09:00:00". */
+const TEXTO_FECHA_Y_HORA = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 /** El calendario de exámenes contra la API real. */
 @Injectable()
@@ -77,6 +92,25 @@ export class ExamenesHttpService extends ExamenesService {
       catchError((error: HttpErrorResponse) => throwError(() => new Error(traducirError(error)))),
     );
   }
+
+  mesasAsignadas(opciones?: OpcionesPedido): Observable<MesaAsignada[]> {
+    return this.http
+      .get<MesaAsignadaApi[]>(RUTAS_API.misMesasAsignadas, {
+        context: contextoDePedido(opciones),
+      })
+      .pipe(
+        map(aMesasAsignadas),
+        catchError((error: unknown) => {
+          // Un 404 es "este usuario no tiene perfil de docente": no tiene mesas,
+          // que no es lo mismo que un fallo (mismo criterio que los legajos).
+          if (error instanceof HttpErrorResponse && error.status === 404) {
+            return of<MesaAsignada[]>([]);
+          }
+          console.error('Error al traer las mesas asignadas:', error);
+          return throwError(() => new Error(MENSAJE_ERROR_MESAS_ASIGNADAS));
+        }),
+      );
+  }
 }
 
 /**
@@ -114,6 +148,25 @@ function aEstadoMes(respuesta: EstadoMesApi): EstadoMes {
   }
 
   return { limiteDiario, diasOcupados: respuesta.diasOcupados.map(aDiaOcupado) };
+}
+
+function aMesasAsignadas(respuesta: MesaAsignadaApi[]): MesaAsignada[] {
+  if (!Array.isArray(respuesta)) {
+    throw new Error('La respuesta no es una lista de mesas.');
+  }
+  return respuesta.map(aMesaAsignada);
+}
+
+function aMesaAsignada(mesa: MesaAsignadaApi): MesaAsignada {
+  // Sin zona y con hora, `new Date` la lee en hora local: la del instituto. Se
+  // exige la hora porque un texto de fecha sola se leería en UTC y, en
+  // Argentina, caería el día anterior.
+  const fecha = TEXTO_FECHA_Y_HORA.test(mesa.fecha) ? new Date(mesa.fecha) : null;
+  if (fecha === null || Number.isNaN(fecha.getTime())) {
+    throw new Error(`La fecha "${mesa.fecha}" no es válida.`);
+  }
+
+  return { idExamen: mesa.idExamen, materia: mesa.materia, fecha };
 }
 
 function aDiaOcupado(dia: DiaOcupadoApi): DiaOcupado {

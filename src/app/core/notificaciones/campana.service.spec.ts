@@ -4,6 +4,8 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { ID_ROL, ROLES } from '../auth/modelos/rol';
 import { Sesion } from '../auth/modelos/sesion';
+import { ExamenesService } from '../examenes/examenes.service';
+import { MesaAsignada } from '../examenes/modelos/mesa-asignada';
 import { JustificativoPendiente } from '../justificativos/modelos/justificativo-pendiente';
 import { JustificativosService } from '../justificativos/justificativos.service';
 import { LegajoService } from '../legajos/legajo.service';
@@ -57,6 +59,8 @@ const PERSONA: ResumenUsuarioLegajo = {
   total: 2,
 };
 
+const MESA: MesaAsignada = { idExamen: 1, materia: 'Redes', fecha: new Date(2026, 10, 20, 9, 0) };
+
 /** La campana es accesoria: nunca debe tapar la pantalla con el velo "Cargando…". */
 const EN_SEGUNDO_PLANO = { enSegundoPlano: true };
 
@@ -67,12 +71,14 @@ describe('CampanaService', () => {
   let requeridos: (idRol: number) => Observable<DocumentoRequerido[]>;
   let resumenUsuarios: () => Observable<ResumenUsuarioLegajo[]>;
   let pendientesJustificativos: () => Observable<JustificativoPendiente[]>;
+  let mesasAsignadas: () => Observable<MesaAsignada[]>;
 
   const llamadas = {
     legajoPropio: vi.fn(),
     requeridos: vi.fn(),
     resumenUsuarios: vi.fn(),
     justificativos: vi.fn(),
+    mesas: vi.fn(),
   };
 
   function servicio(): CampanaService {
@@ -83,7 +89,8 @@ describe('CampanaService', () => {
     llamadas.legajoPropio.mock.calls.length +
     llamadas.requeridos.mock.calls.length +
     llamadas.resumenUsuarios.mock.calls.length +
-    llamadas.justificativos.mock.calls.length;
+    llamadas.justificativos.mock.calls.length +
+    llamadas.mesas.mock.calls.length;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
@@ -96,6 +103,7 @@ describe('CampanaService', () => {
     requeridos = () => of([]);
     resumenUsuarios = () => of([]);
     pendientesJustificativos = () => of([]);
+    mesasAsignadas = () => of([]);
 
     TestBed.configureTestingModule({
       providers: [
@@ -123,6 +131,15 @@ describe('CampanaService', () => {
             listarPendientes: (opciones?: unknown) => {
               llamadas.justificativos(opciones);
               return pendientesJustificativos();
+            },
+          },
+        },
+        {
+          provide: ExamenesService,
+          useValue: {
+            mesasAsignadas: (opciones?: unknown) => {
+              llamadas.mesas(opciones);
+              return mesasAsignadas();
             },
           },
         },
@@ -210,6 +227,44 @@ describe('CampanaService', () => {
       expect(servicio().total()).toBe(1);
       // Sin saber el tipo no puede abrir el formulario armado: lleva a donde se ve el rechazo.
       expect(servicio().detalle()[0].url).toBe('/legajo/mis-documentos');
+    });
+  });
+
+  describe('sesión de Docente: además, las mesas de examen que le asignaron', () => {
+    beforeEach(() => {
+      // Un "hoy" fijo: las mesas de días que ya pasaron no se avisan.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 9, 10, 15, 30));
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('suma la mesa a las novedades de su legajo, y la pide en segundo plano', () => {
+      sesion.set(sesionDe(1, [ROLES.docente]));
+      legajoPropio = () => of([DOCUMENTO_RECHAZADO]);
+      mesasAsignadas = () => of([MESA]);
+
+      servicio().refrescar();
+
+      expect(llamadas.mesas).toHaveBeenCalledWith(EN_SEGUNDO_PLANO);
+      expect(servicio().total()).toBe(2);
+      expect(servicio().detalle().map((n) => n.titulo)).toEqual([
+        'Rechazaron DNI',
+        'Te asignaron a la mesa de Redes',
+      ]);
+    });
+
+    it('si falla el pedido de las mesas, igual muestra las novedades de su legajo', () => {
+      sesion.set(sesionDe(1, [ROLES.docente]));
+      legajoPropio = () => of([DOCUMENTO_RECHAZADO]);
+      mesasAsignadas = () => throwError(() => new Error('404'));
+
+      servicio().refrescar();
+
+      expect(servicio().total()).toBe(1);
+      expect(servicio().detalle().map((n) => n.titulo)).toEqual(['Rechazaron DNI']);
     });
   });
 

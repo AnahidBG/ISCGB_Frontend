@@ -176,6 +176,16 @@ export const RUTAS_API = {
    * puede escribir: el valor vigente se lee de `limiteDiario` en `estado-mes`.
    */
   limiteParcialesCalendario: `${URL_BASE_API}/api/ConfiguracionCalendario/limite-parciales`,
+
+  /**
+   * Las mesas de examen a las que asignaron al docente de la sesión y que siguen
+   * en "Pendiente". Ojo con el nombre: el controlador es `Configuracion` (no
+   * `ConfiguracionCalendario`) y la ruta dice "notificaciones", aunque el dato
+   * sean mesas de examen. Solo `Docente`: el docente sale del token. Trae
+   * también las de exámenes que ya pasaron. Un 404 = el usuario no tiene perfil
+   * de docente.
+   */
+  misMesasAsignadas: `${URL_BASE_API}/api/Configuracion/mis-notificaciones`,
 } as const;
 
 /**

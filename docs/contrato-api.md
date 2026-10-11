@@ -356,8 +356,9 @@ próxima pasada.
 
 Pendientes del backend:
 
-- `ConfiguracionController` no tiene `[Authorize]`: los dos endpoints responden
-  sin autenticación.
+- Los dos endpoints de frecuencia no tienen `[Authorize]`: responden sin
+  autenticación. En el mismo controlador, `mis-notificaciones` sí exige el rol
+  Docente (ver "Mesas de examen asignadas al docente").
 - El `PUT` no tiene tope máximo. Con un valor muy grande el worker falla al
   calcular la fecha límite y no envía ningún aviso. El tope de 365 días es solo
   del frontend.
@@ -461,6 +462,68 @@ Con `nuevoLimite` en cero o negativo responde `400` con
   cualquier otro cliente puede dejar el límite sin valor.
 - `limite-parciales` no tiene máximo. Un valor enorme deja el límite sin efecto.
 - Un mes inválido en `estado-mes` debería responder `400` con un mensaje.
+
+## Mesas de examen asignadas al docente
+
+Está en `ConfiguracionController`, en `api/Configuracion`, junto a la frecuencia
+de avisos. No es del calendario ni de `ConfiguracionCalendario`: el dato son
+mesas de examen, pero la ruta dice "notificaciones" y vive en ese controlador.
+Se relevó el 10/10/2026 contra el código del backend.
+
+### `GET /api/Configuracion/mis-notificaciones`
+
+Con `[Authorize(Roles = "Docente")]`. No lleva parámetros: el docente sale del
+token (claim `NameIdentifier`). Devuelve `200` con las mesas a las que lo
+asignaron y cuya confirmación (`mesa_examen.estado_confirmacion`) sigue en
+`Pendiente`:
+
+```json
+[
+  {
+    "idExamen": 1,
+    "materia": "Redes",
+    "fecha": "2026-11-20T09:00:00",
+    "mensaje": "Ha sido asignado a la mesa de Redes el día 20/11/2026 09:00"
+  }
+]
+```
+
+- `fecha` es un `DateTime` de .NET serializado sin zona, **con hora**. El frontend
+  la lee en hora local.
+- `mensaje` lo arma el backend. El frontend no lo usa: redacta su propio texto,
+  con el mismo trato que el resto de la campana.
+- Sin mesas pendientes responde `200` con `[]`.
+- Responde `404` con `{ "message": "Docente no encontrado." }` si el usuario no
+  tiene fila en `Docentes`, y `401` sin cuerpo si el token no trae el id. Con
+  otro rol responde `403`.
+- **No filtra por fecha.** Devuelve todas las pendientes, también las de
+  exámenes que ya pasaron.
+
+Qué hace el frontend con eso:
+
+- `ExamenesService.mesasAsignadas()` lo pide en segundo plano, sin el velo global.
+  `ExamenesHttpService` lo traduce a `MesaAsignada`. Un `404` es una lista vacía
+  (no tiene perfil de docente, así que no tiene mesas); cualquier otro fallo, o
+  una respuesta que no se puede leer, es un error.
+- Lo consume solo la campana (`CampanaService`) y solo cuando el rol principal de
+  la sesión es Docente. Un Director o un Secretario que además es Docente sigue
+  viendo los pendientes del instituto.
+- `notificacionesPorMesas(...)`, en `core/notificaciones/notificaciones-mesas.ts`,
+  arma los avisos. Descarta las mesas de días anteriores a hoy: es una decisión
+  del frontend, porque el backend las devuelve todas. Las ordena por fecha, la más
+  próxima primero, y escribe "Te asignaron a la mesa de Redes" con el detalle
+  "Viernes 20/11/2026, 09:00 h". Cada aviso lleva a `/calendario`.
+- Los avisos se suman a las novedades del legajo del docente y al número de la
+  campana. Si el pedido de las mesas falla, la campana muestra igual el legajo.
+
+Pendientes del backend:
+
+- No hay forma de aceptar ni de rechazar una mesa: la confirmación queda siempre
+  en `Pendiente`. Por eso el aviso no se va solo: el frontend lo muestra hasta
+  que pasa el día del examen, y como la campana recuerda las leídas solo mientras
+  la pestaña sigue abierta (`sessionStorage`), reaparece al abrir otra.
+- Tampoco hay un endpoint para dar de alta una mesa, es decir, para asignar un
+  docente a un examen. Hoy las mesas se cargan a mano en la base.
 
 ## Materias y asignaciones
 

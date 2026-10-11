@@ -8,8 +8,10 @@ import {
   MENSAJE_ERROR_CALENDARIO,
   MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO,
   MENSAJE_ERROR_LIMITE_DIARIO,
+  MENSAJE_ERROR_MESAS_ASIGNADAS,
 } from './examenes.service';
 import { EstadoMes } from './modelos/estado-mes';
+import { MesaAsignada } from './modelos/mesa-asignada';
 
 describe('ExamenesHttpService (SCRUM-183)', () => {
   let servicio: ExamenesHttpService;
@@ -171,5 +173,64 @@ describe('ExamenesHttpService (SCRUM-183)', () => {
       .flush({ message: 'NullReferenceException' }, { status: 500, statusText: 'Error' });
 
     expect(mensaje).toBe(MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO);
+  });
+
+  describe('mesas asignadas al docente', () => {
+    it('pide mis-notificaciones y traduce la fecha con hora a hora local, sin usar el mensaje', () => {
+      let mesas: MesaAsignada[] | undefined;
+      servicio.mesasAsignadas({ enSegundoPlano: true }).subscribe((valor) => (mesas = valor));
+
+      const pedido = backend.expectOne(RUTAS_API.misMesasAsignadas);
+      expect(pedido.request.method).toBe('GET');
+      expect(pedido.request.url).toContain('/api/Configuracion/mis-notificaciones');
+      expect(pedido.request.context.get(SIN_CARGA_GLOBAL)).toBe(true);
+      pedido.flush([
+        {
+          idExamen: 1,
+          materia: 'Redes',
+          // Un `DateTime` de .NET serializado: sin zona, CON hora.
+          fecha: '2026-11-20T09:00:00',
+          mensaje: 'Ha sido asignado a la mesa de Redes el día 20/11/2026 09:00',
+        },
+      ]);
+
+      expect(mesas).toEqual([
+        { idExamen: 1, materia: 'Redes', fecha: new Date(2026, 10, 20, 9, 0) },
+      ]);
+    });
+
+    it('un usuario sin perfil de docente (404) no tiene mesas: no es un error', () => {
+      let mesas: MesaAsignada[] | undefined;
+      servicio.mesasAsignadas().subscribe((valor) => (mesas = valor));
+
+      backend
+        .expectOne(RUTAS_API.misMesasAsignadas)
+        .flush({ message: 'Docente no encontrado.' }, { status: 404, statusText: 'Not Found' });
+
+      expect(mesas).toEqual([]);
+    });
+
+    it.each([
+      [
+        'el servidor falla',
+        () => ({ cuerpo: null, opciones: { status: 500, statusText: 'Error' } }),
+      ],
+      ['la respuesta no es una lista', () => ({ cuerpo: { mesas: [] }, opciones: {} })],
+      [
+        'una mesa trae una fecha que no es una fecha',
+        () => ({
+          cuerpo: [{ idExamen: 1, materia: 'Redes', fecha: 'pronto', mensaje: '' }],
+          opciones: {},
+        }),
+      ],
+    ])('falla con el mensaje de siempre cuando %s', (_caso, respuesta) => {
+      let mensaje: string | undefined;
+      servicio.mesasAsignadas().subscribe({ error: (fallo: Error) => (mensaje = fallo.message) });
+
+      const { cuerpo, opciones } = respuesta();
+      backend.expectOne(RUTAS_API.misMesasAsignadas).flush(cuerpo, opciones);
+
+      expect(mensaje).toBe(MENSAJE_ERROR_MESAS_ASIGNADAS);
+    });
   });
 });

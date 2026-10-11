@@ -40,7 +40,7 @@ Hay que respetarlos.
 
 ### 2.1 Strategy + inversión de dependencias: servicios abstractos con implementación HTTP y mock
 
-Cada dominio tiene `core/<dominio>/<dominio>.service.ts`, que es la clase abstracta, un `*-http.service.ts` y un `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes, Materias, FrecuenciaAvisos (`core/notificaciones/`) y Examenes (`core/examenes/`, el calendario y su límite por día).
+Cada dominio tiene `core/<dominio>/<dominio>.service.ts`, que es la clase abstracta, un `*-http.service.ts` y un `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes, Materias, FrecuenciaAvisos (`core/notificaciones/`) y Examenes (`core/examenes/`, el calendario, su límite por día y las mesas asignadas al docente).
 
 Todo dominio nuevo sigue el mismo trío. Si el endpoint todavía no existe, se arranca con el mock.
 
@@ -110,7 +110,7 @@ Son siempre reactivos y tipados, con los validadores declarados en la construcci
 
 ### 2.11 Fábricas simples: funciones puras que construyen objetos
 
-Son `enlacesPorSesion(...)`, `novedadesDelLegajo(...)`, `notificacionesPorRechazos(...)`, `contarPorEstado(...)`, `ultimasVersionesPorTipo(...)`, `validarArchivoPdf(...)`, `comentarioDeRechazo(...)` y, para el calendario, `estadoDelDia(...)` y `semanasDelMes(...)`, entre otras.
+Son `enlacesPorSesion(...)`, `novedadesDelLegajo(...)`, `notificacionesPorRechazos(...)`, `notificacionesPorMesas(...)`, `contarPorEstado(...)`, `ultimasVersionesPorTipo(...)`, `validarArchivoPdf(...)`, `comentarioDeRechazo(...)` y, para el calendario, `estadoDelDia(...)` y `semanasDelMes(...)`, entre otras.
 
 La lógica de negocio del front, como conteos, progreso, validaciones y armado de menús, va en funciones puras en `core/`, con su `*.spec.ts`, y no adentro del componente. Así se prueban sin `TestBed`.
 
@@ -121,6 +121,8 @@ Tres de ellas son la única definición de algo, para que la campana y los panel
 - `legajoEstaCompleto(...)` define cuándo el legajo está completo: progreso real, cada obligatorio aprobado en su versión vigente, sin rechazos y sin vencidos. La usan la campana y el cartel `shared/ui/aviso-legajo-completo`.
 
 `requeridoDelDocumento(...)` encuentra el tipo de un documento del legajo por su nombre. `consultaConTipo(...)` y `tipoPedidoEn(...)`, en `core/legajos/tipo-en-url.ts`, arman y validan el `?tipo=` de "Subir Documento", con el nombre del parámetro escrito en un solo lugar.
+
+**De dónde sale la campana.** `CampanaService` elige su fuente por el rol principal de la sesión, con la tabla `FUENTE_POR_ROL`: el Alumno ve las novedades de su legajo, el Docente ve las de su legajo más las mesas de examen que le asignaron, y el Secretario y el Director ven lo que espera revisión en el instituto. Las mesas salen de `ExamenesService.mesasAsignadas()` y las convierte `notificacionesPorMesas(...)`, en `core/notificaciones/notificaciones-mesas.ts`. Recibe "hoy" por parámetro para seguir siendo pura y deja afuera las mesas de días pasados, porque el backend las devuelve todas. Es un agregado: si ese pedido falla, la campana del Docente muestra igual su legajo.
 
 ## 3. Patrones para lo que viene
 
