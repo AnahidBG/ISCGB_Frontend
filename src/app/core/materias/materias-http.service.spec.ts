@@ -96,24 +96,37 @@ describe('MateriasHttpService: mis materias', () => {
     servicio.listarMisMaterias().subscribe((m) => (materias = m));
 
     backend.expectOne(RUTAS_API.misMaterias).flush([
+      { idMateria: 9, nombre: 'Pedagogía', carrera: null, curso: '  ' },
       {
         idMateria: 3,
         nombre: ' Programación I ',
         carrera: ' Tecnicatura en Desarrollo de Software ',
         curso: 'Primer Año',
       },
-      { idMateria: 9, nombre: 'Pedagogía', carrera: null, curso: '  ' },
     ]);
 
     expect(materias).toEqual([
+      { idMateria: 9, nombre: 'Pedagogía', carrera: null, curso: null },
       {
         idMateria: 3,
         nombre: 'Programación I',
         carrera: 'Tecnicatura en Desarrollo de Software',
         curso: 'Primer Año',
       },
-      { idMateria: 9, nombre: 'Pedagogía', carrera: null, curso: null },
     ]);
+  });
+
+  it('las ordena por nombre: el backend las manda en el orden de la base', () => {
+    let nombres: string[] = [];
+    servicio.listarMisMaterias().subscribe((m) => (nombres = m.map((materia) => materia.nombre)));
+
+    backend.expectOne(RUTAS_API.misMaterias).flush([
+      { idMateria: 3, nombre: 'Redes', carrera: null, curso: null },
+      { idMateria: 6, nombre: 'Álgebra', carrera: null, curso: null },
+      { idMateria: 2, nombre: 'Base de Datos', carrera: null, curso: null },
+    ]);
+
+    expect(nombres).toEqual(['Álgebra', 'Base de Datos', 'Redes']);
   });
 
   it('un 404 con texto del servidor muestra ese texto', () => {

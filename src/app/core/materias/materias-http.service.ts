@@ -81,7 +81,13 @@ export class MateriasHttpService extends MateriasService {
 
   listarMisMaterias(): Observable<MateriaDelAlumno[]> {
     return this.http.get<MateriaDelAlumnoApi[]>(RUTAS_API.misMaterias).pipe(
-      map((materias) => (materias ?? []).map(aMateriaDelAlumno)),
+      // `mis-materias` no ordena (a diferencia de `materias-disponibles`): sin
+      // esto el desplegable sale en el orden en que estén las filas en la base.
+      map((materias) =>
+        (materias ?? [])
+          .map(aMateriaDelAlumno)
+          .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+      ),
       catchError((error: HttpErrorResponse) => {
         console.error('Error al traer las materias del alumno:', error);
         return throwError(() => new Error(traducirErrorMisMaterias(error)));
