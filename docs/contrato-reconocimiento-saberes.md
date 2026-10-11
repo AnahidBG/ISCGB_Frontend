@@ -10,18 +10,41 @@ otro y el frontend se alineó a ese.
 
 ## Lo que usa el alumno
 
-### `GET /api/Materias/materias-disponibles`
+### `GET /api/Materias/mis-materias`
 
-Llena el desplegable "¿Qué materia querés que te reconozcan?". No pide
-autenticación.
+Llena el desplegable "¿Qué materia querés que te reconozcan?". Solo para el rol
+Alumno: el alumno sale del token y la lista trae únicamente las materias en las
+que está inscripto (tabla `alumno_materia`).
+
+La respuesta es un arreglo plano, sin el `{ data }` con el que los otros GET de
+`MateriasController` envuelven la lista:
 
 ```json
-{ "data": [{ "idMateria": 14, "nombreMateria": "Didáctica General" }] }
+[{
+  "idMateria": 3,
+  "nombre": "Programacion I",
+  "carrera": "Tecnicatura en Desarrollo de Software",
+  "curso": "Primer Año"
+}]
 ```
 
-Hasta el 06/10/2026 el frontend lo pedía en
-`/api/Asignaciones/materias-disponibles`, una ruta que dejó de existir cuando
-el backend unificó todo en `MateriasController`.
+`carrera` y `curso` son columnas de `materias` y pueden venir nulas o vacías. El
+desplegable muestra "Nombre (Carrera · Curso)" y omite el dato que falte.
+
+Respuestas:
+
+- `200` con `[]` si el alumno no está inscripto en ninguna materia. La pantalla
+  dice que todavía no tiene materias asignadas y que consulte en Secretaría.
+- `404 "El usuario no tiene un perfil de alumno."`, como texto suelto. El front
+  lo muestra tal cual, igual que cualquier otro 4xx con texto.
+- `401 "Token inválido."` si no se pudo identificar al usuario. Lo resuelve el
+  interceptor de sesión.
+- Un 5xx, la falta de red o una ruta que no existe (404 o 405 sin cuerpo)
+  muestran un mensaje genérico.
+
+Hasta el 05/10/2026 el desplegable traía todas las materias del instituto con
+`GET /api/Materias/materias-disponibles`, así que el alumno podía pedir el
+reconocimiento de una materia que no cursa.
 
 ### `POST /api/ReconocimientoSaberes/solicitar`
 

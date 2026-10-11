@@ -3,7 +3,10 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { MateriasService } from '../../../core/materias/materias.service';
-import { MateriaDisponible } from '../../../core/materias/modelos/materia-disponible';
+import {
+  MateriaDelAlumno,
+  etiquetaDeMateriaDelAlumno,
+} from '../../../core/materias/modelos/materia-del-alumno';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { ReconocimientoSaberesService } from '../../../core/reconocimiento-saberes/reconocimiento-saberes.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
@@ -23,8 +26,8 @@ type Adjunto = 'programa' | 'analitico';
  * otra institución:
  *
  *   · "Materia del ISCGB" con su comentario (el criterio pide poder escribir
- *     un comentario en esa sección). La materia se ELIGE de la lista
- *     (`GET /api/Materias/materias-disponibles`): el backend la guarda
+ *     un comentario en esa sección). La materia se ELIGE de las que el
+ *     alumno cursa (`GET /api/Materias/mis-materias`): el backend la guarda
  *     por id, así que el texto libre de antes no tenía a dónde ir.
  *   · Dos PDF: el programa de la otra institución y el analítico. Solo PDF,
  *     validado por `ZonaArchivo` (regla de negocio #1).
@@ -56,8 +59,9 @@ export class ReconocimientoSaberes {
   protected readonly notificacionesDetalle = this.campana.detalle;
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
-  /** Las materias del ISCGB para el desplegable. */
-  protected readonly materias = signal<readonly MateriaDisponible[]>([]);
+  /** Las materias del alumno para el desplegable. */
+  protected readonly materias = signal<readonly MateriaDelAlumno[]>([]);
+  protected readonly etiquetaDeMateria = etiquetaDeMateriaDelAlumno;
   protected readonly cargandoMaterias = signal(true);
   protected readonly errorMaterias = signal<string | null>(null);
 

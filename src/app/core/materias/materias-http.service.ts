@@ -7,6 +7,7 @@ import {
   MENSAJE_ERROR_DATOS_ASIGNACION,
   MENSAJE_ERROR_GUARDAR_MATERIAS,
   MENSAJE_ERROR_MATERIAS,
+  MENSAJE_ERROR_MIS_MATERIAS,
   MateriasService,
 } from './materias.service';
 import {
@@ -15,9 +16,14 @@ import {
   DocenteDisponible,
   NuevaMateria,
 } from './modelos/asignacion-materia';
+import { MateriaDelAlumno } from './modelos/materia-del-alumno';
 import { MateriaDisponible } from './modelos/materia-disponible';
 
-/** Los tres GET de `MateriasController` envuelven la lista en `{ data }`. */
+/**
+ * Los GET `materias-disponibles`, `docentes-disponibles` y
+ * `comisiones-disponibles` envuelven la lista en `{ data }`. `mis-materias` no:
+ * devuelve el arreglo plano.
+ */
 interface ListaApi<T> {
   data?: T[];
 }
@@ -25,6 +31,14 @@ interface ListaApi<T> {
 interface MateriaApi {
   idMateria: number;
   nombreMateria: string | null;
+}
+
+/** Cada fila de `mis-materias`. Acá el nombre llega como `nombre`, no `nombreMateria`. */
+interface MateriaDelAlumnoApi {
+  idMateria: number;
+  nombre: string | null;
+  carrera: string | null;
+  curso: string | null;
 }
 
 interface DocenteApi {
@@ -65,12 +79,12 @@ export class MateriasHttpService extends MateriasService {
     );
   }
 
-  listarMisMaterias(): Observable<MateriaDisponible[]> {
-    return this.http.get<MateriaDisponible[]>(RUTAS_API.misMaterias).pipe(
-      map((materias) => materias ?? []),
+  listarMisMaterias(): Observable<MateriaDelAlumno[]> {
+    return this.http.get<MateriaDelAlumnoApi[]>(RUTAS_API.misMaterias).pipe(
+      map((materias) => (materias ?? []).map(aMateriaDelAlumno)),
       catchError((error: HttpErrorResponse) => {
         console.error('Error al traer las materias del alumno:', error);
-        return throwError(() => new Error(MENSAJE_ERROR_MATERIAS));
+        return throwError(() => new Error(traducirErrorMisMaterias(error)));
       }),
     );
   }
@@ -138,4 +152,28 @@ function traducirError(error: HttpErrorResponse): string {
   }
   console.error('Error al guardar en materias:', error);
   return MENSAJE_ERROR_GUARDAR_MATERIAS;
+}
+
+/**
+ * El 404 "El usuario no tiene un perfil de alumno." es justo lo que la persona
+ * necesita leer, así que los 4xx con texto se muestran tal cual. Un 5xx, la
+ * falta de red o una ruta que no existe (404/405 sin cuerpo) no dicen nada
+ * útil: van con el mensaje genérico.
+ */
+function traducirErrorMisMaterias(error: HttpErrorResponse): string {
+  if (esEndpointInexistente(error)) {
+    return MENSAJE_ERROR_MIS_MATERIAS;
+  }
+  const esErrorDelCliente = error.status >= 400 && error.status < 500;
+  return (esErrorDelCliente ? mensajeDelServidor(error) : null) ?? MENSAJE_ERROR_MIS_MATERIAS;
+}
+
+function aMateriaDelAlumno(materia: MateriaDelAlumnoApi): MateriaDelAlumno {
+  return {
+    idMateria: materia.idMateria,
+    nombre: materia.nombre?.trim() || 'Materia sin nombre',
+    // Anulables en la base: un texto vacío o de espacios es "no cargado".
+    carrera: materia.carrera?.trim() || null,
+    curso: materia.curso?.trim() || null,
+  };
 }

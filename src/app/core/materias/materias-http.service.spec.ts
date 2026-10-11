@@ -3,7 +3,11 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { RUTAS_API } from '../configuracion/api';
 import { MateriasHttpService } from './materias-http.service';
-import { MENSAJE_ERROR_GUARDAR_MATERIAS, MENSAJE_ERROR_MATERIAS } from './materias.service';
+import {
+  MENSAJE_ERROR_GUARDAR_MATERIAS,
+  MENSAJE_ERROR_MATERIAS,
+  MENSAJE_ERROR_MIS_MATERIAS,
+} from './materias.service';
 
 describe('MateriasHttpService', () => {
   let servicio: MateriasHttpService;
@@ -64,6 +68,83 @@ describe('MateriasHttpService', () => {
       .flush(null, { status: 500, statusText: 'Server Error' });
 
     expect(mensaje).toBe(MENSAJE_ERROR_MATERIAS);
+  });
+});
+
+describe('MateriasHttpService: mis materias', () => {
+  let servicio: MateriasHttpService;
+  let backend: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [MateriasHttpService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    servicio = TestBed.inject(MateriasHttpService);
+    backend = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => backend.verify());
+
+  function pedirMisMaterias(): () => string {
+    let mensaje = '';
+    servicio.listarMisMaterias().subscribe({ error: (e: Error) => (mensaje = e.message) });
+    return () => mensaje;
+  }
+
+  it('toma el arreglo plano con carrera y curso, y deja en null los vacíos', () => {
+    let materias: unknown = null;
+    servicio.listarMisMaterias().subscribe((m) => (materias = m));
+
+    backend.expectOne(RUTAS_API.misMaterias).flush([
+      {
+        idMateria: 3,
+        nombre: ' Programación I ',
+        carrera: ' Tecnicatura en Desarrollo de Software ',
+        curso: 'Primer Año',
+      },
+      { idMateria: 9, nombre: 'Pedagogía', carrera: null, curso: '  ' },
+    ]);
+
+    expect(materias).toEqual([
+      {
+        idMateria: 3,
+        nombre: 'Programación I',
+        carrera: 'Tecnicatura en Desarrollo de Software',
+        curso: 'Primer Año',
+      },
+      { idMateria: 9, nombre: 'Pedagogía', carrera: null, curso: null },
+    ]);
+  });
+
+  it('un 404 con texto del servidor muestra ese texto', () => {
+    const mensaje = pedirMisMaterias();
+
+    backend
+      .expectOne(RUTAS_API.misMaterias)
+      .flush('El usuario no tiene un perfil de alumno.', { status: 404, statusText: 'Not Found' });
+
+    expect(mensaje()).toBe('El usuario no tiene un perfil de alumno.');
+  });
+
+  it('un 404 sin cuerpo es una ruta inexistente: da el mensaje genérico', () => {
+    const mensaje = pedirMisMaterias();
+
+    backend.expectOne(RUTAS_API.misMaterias).flush(null, { status: 404, statusText: 'Not Found' });
+
+    expect(mensaje()).toBe(MENSAJE_ERROR_MIS_MATERIAS);
+  });
+
+  it('un 500 da el mensaje genérico aunque traiga texto', () => {
+    const mensaje = pedirMisMaterias();
+
+    backend
+      .expectOne(RUTAS_API.misMaterias)
+      .flush('Object reference not set to an instance of an object.', {
+        status: 500,
+        statusText: 'Server Error',
+      });
+
+    expect(mensaje()).toBe(MENSAJE_ERROR_MIS_MATERIAS);
   });
 });
 

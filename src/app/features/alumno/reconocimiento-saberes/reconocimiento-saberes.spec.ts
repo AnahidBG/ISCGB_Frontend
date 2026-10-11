@@ -4,7 +4,7 @@ import { provideRouter } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { MateriasService } from '../../../core/materias/materias.service';
-import { MateriaDisponible } from '../../../core/materias/modelos/materia-disponible';
+import { MateriaDelAlumno } from '../../../core/materias/modelos/materia-del-alumno';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { NotificacionPanel } from '../../../core/notificaciones/modelos/notificacion-panel';
 import {
@@ -13,9 +13,14 @@ import {
 } from '../../../core/reconocimiento-saberes/reconocimiento-saberes.service';
 import { ReconocimientoSaberes } from './reconocimiento-saberes';
 
-const MATERIAS: MateriaDisponible[] = [
-  { idMateria: 14, nombre: 'Didáctica General' },
-  { idMateria: 3, nombre: 'Programación I' },
+const MATERIAS: MateriaDelAlumno[] = [
+  {
+    idMateria: 14,
+    nombre: 'Didáctica General',
+    carrera: 'Profesorado de Inglés',
+    curso: 'Primer Año',
+  },
+  { idMateria: 3, nombre: 'Programación I', carrera: null, curso: null },
 ];
 
 const pdf = (nombre: string) => new File(['%PDF-1.7'], nombre, { type: 'application/pdf' });
@@ -24,7 +29,7 @@ describe('ReconocimientoSaberes', () => {
   let enviadas: SolicitudReconocimiento[];
 
   async function montar(
-    materias: () => Observable<MateriaDisponible[]> = () => of(MATERIAS),
+    materias: () => Observable<MateriaDelAlumno[]> = () => of(MATERIAS),
   ): Promise<ComponentFixture<ReconocimientoSaberes>> {
     enviadas = [];
     TestBed.configureTestingModule({
@@ -68,13 +73,13 @@ describe('ReconocimientoSaberes', () => {
     (fixture.componentInstance as unknown as { enviar(): void }).enviar();
   }
 
-  it('la materia se elige de la lista del backend, con su id como value', async () => {
+  it('la materia se elige de la lista del backend, con su id como value y su carrera y curso', async () => {
     const fixture = await montar();
 
     const opciones = Array.from(select(fixture).options).map((o) => [o.value, o.text.trim()]);
     expect(opciones).toEqual([
       ['', 'Elegí una materia'],
-      ['14', 'Didáctica General'],
+      ['14', 'Didáctica General (Profesorado de Inglés · Primer Año)'],
       ['3', 'Programación I'],
     ]);
   });

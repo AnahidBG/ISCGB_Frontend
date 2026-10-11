@@ -95,7 +95,7 @@
                 }
                 @for (materia of materias(); track materia.idMateria) {
                   <option [value]="materia.idMateria" [selected]="materia.idMateria === idMateria()">
-                    {{ materia.nombre }}
+                    {{ etiquetaDeMateria(materia) }}
                   </option>
                 }
               </select>
@@ -103,7 +103,7 @@
                 <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
               } @else if (!cargandoMaterias() && materias().length === 0) {
                 <span role="alert" class="text-sm text-rechazado">
-                  Todavía no hay materias cargadas en el sistema. Consultá en Secretaría.
+                  Todavía no tenés materias asignadas. Consultá en Secretaría.
                 </span>
               }
               @if (errorMateria(); as mensaje) {

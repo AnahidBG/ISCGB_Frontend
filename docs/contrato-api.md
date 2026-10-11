@@ -408,7 +408,7 @@ El frontend los traduce a tres estados: `Libre` (el día no viene en la lista),
 ## Materias y asignaciones
 
 Todo está en `MateriasController`, en `api/Materias`. La pantalla "Materias y
-asignaciones" usa los cuatro primeros.
+asignaciones" usa todos menos `mis-materias`.
 
 - `GET /api/Materias/docentes-disponibles`:
   `{ data: [{ idDocente, nombreCompleto }] }`.
@@ -418,10 +418,13 @@ asignaciones" usa los cuatro primeros.
   Responde 400 si ya está asignada en esa comisión.
 - `POST /api/Materias/cargar-materia`, con `{ nombreMateria, carrera, curso }`.
   Devuelve `{ message, idMateria }`, o 400 si el nombre se repite.
-- `GET /api/Materias/mis-materias`, solo para el rol Alumno.
+- `GET /api/Materias/mis-materias`, solo para el rol Alumno. Devuelve un
+  arreglo plano, sin `{ data }`: `[{ idMateria, nombre, carrera, curso }]`, con
+  las materias en las que el alumno está inscripto. Puede venir vacío, y con
+  `404` y un texto suelto si el usuario no tiene perfil de alumno. Lo usa el
+  reconocimiento de saberes.
 - `GET /api/Materias/materias-disponibles`:
-  `{ data: [{ idMateria, nombreMateria }] }`. Lo usa el reconocimiento de
-  saberes.
+  `{ data: [{ idMateria, nombreMateria }] }`, todas las materias del instituto.
 
 ## Reconocimiento de saberes
 

@@ -106,12 +106,16 @@ export const RUTAS_API = {
 
   // --- Materias (ISCGB_Backend/Controllers/MateriasController.cs) ---
   // Las rutas de materias viven bajo `api/Materias`.
-  // Los tres GET envuelven la lista en `{ data }`.
+  // `materias-disponibles`, `docentes-disponibles` y `comisiones-disponibles`
+  // envuelven la lista en `{ data }`; `mis-materias` devuelve el arreglo plano.
 
   /** Todas las materias del instituto, ordenadas por nombre. */
   materiasDisponibles: `${URL_BASE_API}/api/Materias/materias-disponibles`,
 
-  /** Materias asignadas al alumno autenticado. */
+  /**
+   * Materias en las que el alumno autenticado está inscripto, con su carrera y
+   * curso. Solo `Alumno`. Un 404 con texto = el usuario no tiene perfil de alumno.
+   */
   misMaterias: `${URL_BASE_API}/api/Materias/mis-materias`,
 
   /** Todos los docentes (fila en `Docentes`), ordenados por nombre. */

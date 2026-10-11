@@ -261,9 +261,9 @@ export const routes: Routes = [
       ),
   },
   {
-    // Solicitud de reconocimiento de saberes — Sprint 2 (SCRUM-30). El
-    // endpoint todavía no existe en el backend: la pantalla lo avisa. Ver
-    // docs/contrato-reconocimiento-saberes.md.
+    // Solicitud de reconocimiento de saberes — Sprint 2 (SCRUM-30). Envía a
+    // `POST /api/ReconocimientoSaberes/solicitar` y arma el desplegable con
+    // `GET /api/Materias/mis-materias`. Ver docs/contrato-reconocimiento-saberes.md.
     path: 'alumno/reconocimiento-saberes',
     title: 'Reconocimiento de saberes · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.alumno)],
