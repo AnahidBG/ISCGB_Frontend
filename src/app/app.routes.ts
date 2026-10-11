@@ -147,6 +147,16 @@ export const routes: Routes = [
       ),
   },
   {
+    // Cuántos exámenes admite el calendario en un mismo día. Solo Secretario:
+    // es quien lo define. `PUT /api/ConfiguracionCalendario/limite-parciales`;
+    // el valor vigente se lee de `limiteDiario` en `estado-mes`.
+    path: 'secretario/limite-examenes',
+    title: 'Límite de exámenes · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.secretario)],
+    loadComponent: () =>
+      import('./features/secretario/limite-examenes/limite-examenes').then((m) => m.LimiteExamenes),
+  },
+  {
     // Alta de materias y asignación docente–materia–comisión
     // (`MateriasController`). Dirección y Secretaría.
     path: 'materias/asignaciones',

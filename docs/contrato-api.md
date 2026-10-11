@@ -374,7 +374,8 @@ instituto, que define Secretaría Académica. Hoy vale 2 si nunca se configuró.
 hay límite por comisión.
 
 Esta sección se relevó el 10/10/2026 contra el código del backend. El frontend
-consume solo `estado-mes`, en `/calendario`, para los cuatro roles.
+consume `estado-mes` en `/calendario`, para los cuatro roles, y `limite-parciales`
+en `/secretario/limite-examenes`, solo para Secretario.
 
 ### `GET /api/ConfiguracionCalendario/estado-mes?anio=2026&mes=10`
 
@@ -405,6 +406,31 @@ El frontend los traduce a tres estados: `Libre` (el día no viene en la lista),
 `ConExamenes` y `Completo`. La respuesta pasa a `EstadoMes` en
 `ExamenesHttpService`.
 
+### `PUT /api/ConfiguracionCalendario/limite-parciales`
+
+Recibe `{ "nuevoLimite": 3 }` y cambia el límite de exámenes por día. Responde
+`200`:
+
+```json
+{ "message": "El límite de parciales por día se ha actualizado con éxito.", "nuevoLimite": 3 }
+```
+
+Con `nuevoLimite` en cero o negativo responde `400` con
+`{ "message": "El límite de parciales Diarios debe ser mayor a cero." }`.
+
+- El límite es por día y único para todo el instituto. Cuenta todos los tipos de
+  examen, no solo los parciales, aunque el endpoint se llame así.
+- No hay un GET propio. El valor vigente se lee de `limiteDiario` en
+  `estado-mes`, que es el mismo en cualquier mes: `ExamenesHttpService.limiteDiario()`
+  pide el mes actual y se queda con ese campo.
+- El frontend lo usa en la pantalla "Límite de exámenes por día"
+  (`/secretario/limite-examenes`), solo para Secretario. Valida un entero entre 1 y
+  99 antes de enviar y, si el backend rechaza el valor, muestra su mensaje. El
+  máximo de 99 es solo del frontend, para atajar un error de tipeo: el backend no
+  pone ninguno.
+- El frontend siempre manda un entero: con `nuevoLimite` ausente el backend lo da
+  por válido (ver los pendientes).
+
 ### Lo que existe y el frontend todavía no consume
 
 - `POST /api/ConfiguracionCalendario/registrar` recibe
@@ -418,8 +444,6 @@ El frontend los traduce a tres estados: `Libre` (el día no viene en la lista),
 - `GET /api/ConfiguracionCalendario/tipos-examen`: `[{ idTipoExamen, nombre }]`.
 - `GET /api/ConfiguracionCalendario/mis-materias-docente`: las materias y
   comisiones del docente de la sesión, con `[Authorize(Roles = "Docente")]`.
-- `PUT /api/ConfiguracionCalendario/limite-parciales` recibe `{ nuevoLimite }` y
-  cambia el límite diario.
 
 ### Pendientes del backend
 
@@ -429,10 +453,13 @@ El frontend los traduce a tres estados: `Libre` (el día no viene en la lista),
   front, cuáles son "los tuyos".
 - Solo `mis-materias-docente` exige rol. El resto no tiene `[Authorize]`: quien
   tenga la dirección puede registrar, mover o borrar exámenes y cambiar el límite
-  sin iniciar sesión. En `limite-parciales` la línea está comentada en el código.
+  sin iniciar sesión. En `limite-parciales` la línea está comentada en el código,
+  así que hoy solo el `roleGuard` del frontend limita quién cambia el límite.
 - `PUT limite-parciales` valida `nuevoLimite <= 0`, pero `nuevoLimite` es `int?`:
   un cuerpo sin ese campo pasa la validación y deja el límite en `null`, que el
-  resto del controller lee como 2.
+  resto del controller lee como 2. El frontend siempre manda un entero, pero
+  cualquier otro cliente puede dejar el límite sin valor.
+- `limite-parciales` no tiene máximo. Un valor enorme deja el límite sin efecto.
 - Un mes inválido en `estado-mes` debería responder `400` con un mensaje.
 
 ## Materias y asignaciones

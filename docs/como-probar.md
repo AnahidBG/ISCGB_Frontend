@@ -197,12 +197,27 @@ Los ids tienen que existir en la base.
       enero. "Hoy" vuelve al mes actual.
 - [ ] Los días de relleno, de los meses vecinos, se ven en gris con el nombre del
       mes y sin estado.
-- [ ] La nota de abajo nombra el límite que devuelve el backend. Si lo cambiás con
-      `PUT /api/ConfiguracionCalendario/limite-parciales`, cambia al recargar.
+- [ ] La nota de abajo nombra el límite que devuelve el backend. Si lo cambiás desde
+      "Límite de exámenes por día" (Secretario), cambia al recargar.
 - [ ] Con el backend apagado muestra el aviso con "Reintentar", y las flechas
       siguen funcionando.
 - [ ] A 375 px de ancho no hay scroll horizontal: las celdas muestran la barrita,
       la cantidad en número y el candado, sin la etiqueta.
+
+### Límite de exámenes por día
+
+Solo para Secretario, en "Límite de exámenes" del menú lateral. Es el número que
+usa el calendario para marcar un día como "Completo".
+
+- [ ] Muestra el límite vigente; 2 si nunca se configuró.
+- [ ] El botón "Guardar" queda apagado mientras el valor no cambie.
+- [ ] Con el campo vacío, con 0, con 1,5 o con 100 marca el error y no envía nada.
+- [ ] Con un valor válido confirma "Límite actualizado: 3 exámenes por día.", con
+      "1 examen" en singular, y al recargar sigue ahí.
+- [ ] En "Calendario de Exámenes", la nota de abajo y la leyenda nombran el límite
+      nuevo, y los días que lo alcanzan dicen "Completo".
+- [ ] Con el backend apagado muestra el aviso con "Reintentar".
+- [ ] Con otro rol, la dirección `/secretario/limite-examenes` no abre.
 
 ### Panel del Director
 

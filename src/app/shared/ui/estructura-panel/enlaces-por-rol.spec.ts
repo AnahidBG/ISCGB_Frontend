@@ -15,12 +15,24 @@ function sesionDe(...roles: Rol[]): Sesion {
 }
 
 describe('enlacesPorSesion', () => {
-  it('"Frecuencia de avisos" es solo de Secretaría (SCRUM-151)', () => {
-    const urlsDe = (...roles: Rol[]) => enlacesPorSesion(sesionDe(...roles)).map((e) => e.url);
+  const urlsDe = (...roles: Rol[]) => enlacesPorSesion(sesionDe(...roles)).map((e) => e.url);
 
+  it('"Frecuencia de avisos" es solo de Secretaría (SCRUM-151)', () => {
     expect(urlsDe('Secretario')).toContain('/secretario/frecuencia-avisos');
     for (const rol of ['Director', 'Docente', 'Alumno'] as const) {
       expect(urlsDe(rol)).not.toContain('/secretario/frecuencia-avisos');
+    }
+  });
+
+  it('"Límite de exámenes" es solo de Secretaría y va después de "Frecuencia de avisos"', () => {
+    const delSecretario = urlsDe('Secretario');
+
+    expect(delSecretario).toContain('/secretario/limite-examenes');
+    expect(delSecretario.indexOf('/secretario/limite-examenes')).toBe(
+      delSecretario.indexOf('/secretario/frecuencia-avisos') + 1,
+    );
+    for (const rol of ['Director', 'Docente', 'Alumno'] as const) {
+      expect(urlsDe(rol)).not.toContain('/secretario/limite-examenes');
     }
   });
 });

@@ -5,15 +5,23 @@ import { EstadoMes } from './modelos/estado-mes';
 export const MENSAJE_ERROR_CALENDARIO =
   'No pudimos traer el calendario de exámenes. Intentá de nuevo en un momento.';
 
+export const MENSAJE_ERROR_LIMITE_DIARIO =
+  'No pudimos traer el límite de exámenes por día. Intentá de nuevo en un momento.';
+
+export const MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO =
+  'No pudimos guardar el límite. Intentá de nuevo en un momento.';
+
 /**
- * El calendario de exámenes (SCRUM-183, consulta del estado de cada día).
+ * El calendario de exámenes (SCRUM-183, consulta del estado de cada día) y el
+ * límite de exámenes por día, que fija Secretaría.
  *
  * Mismo patrón que el resto de `core/`: una clase abstracta con una
  * implementación HTTP y una simulada, intercambiables desde `app.config.ts`.
  *
- * Endpoint del backend (`ConfiguracionCalendarioController`):
+ * Endpoints del backend (`ConfiguracionCalendarioController`):
  *
- *   · `GET /api/ConfiguracionCalendario/estado-mes?anio=&mes=` → `estadoDelMes`
+ *   · `GET /api/ConfiguracionCalendario/estado-mes?anio=&mes=` → `estadoDelMes` y `limiteDiario`
+ *   · `PUT /api/ConfiguracionCalendario/limite-parciales` → `guardarLimiteDiario`
  *
  * Registrar, modificar y eliminar exámenes existen en el backend y todavía no
  * se consumen. Tampoco hay un endpoint que liste los exámenes: por eso el
@@ -34,4 +42,21 @@ export abstract class ExamenesService {
     mes: number,
     opciones?: OpcionesPedido,
   ): Observable<EstadoMes>;
+
+  /**
+   * Cuántos exámenes admite un día. Es uno solo, para todo el instituto y para
+   * todos los tipos de examen. Si nunca se configuró, el backend devuelve su
+   * valor por defecto (2).
+   *
+   * Falla con `MENSAJE_ERROR_LIMITE_DIARIO`.
+   */
+  abstract limiteDiario(): Observable<number>;
+
+  /**
+   * Fija el límite de exámenes por día. Tiene que ser un entero mayor a 0.
+   *
+   * Falla con el mensaje del backend cuando rechaza el valor, o con
+   * `MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO`.
+   */
+  abstract guardarLimiteDiario(limite: number): Observable<void>;
 }

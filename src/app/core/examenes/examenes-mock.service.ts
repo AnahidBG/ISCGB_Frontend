@@ -7,7 +7,7 @@ import { EstadoMes } from './modelos/estado-mes';
 const DEMORA_SIMULADA_MS = 400;
 
 /** El valor por defecto del backend cuando nunca se configuró. */
-const LIMITE_DIARIO = 2;
+const LIMITE_POR_DEFECTO = 2;
 
 /** Cuántos exámenes tiene cada día del mes (el resto está libre). Igual en todos los meses. */
 const EXAMENES_POR_DIA: Readonly<Record<number, number>> = { 5: 1, 12: 2, 21: 1 };
@@ -20,23 +20,38 @@ const EXAMENES_POR_DIA: Readonly<Record<number, number>> = { 5: 1, 12: 2, 21: 1 
  *
  * Respeta el contrato del backend: devuelve solo los días con exámenes, a
  * medianoche, y marca el límite alcanzado como lo hace él. Un mes fuera de 1 a
- * 12 falla, como el 500 del backend.
+ * 12 falla, como el 500 del backend. El límite arranca en 2 y rechaza 0 o menos
+ * con el mismo mensaje; el que se guarda también rige para el calendario.
  */
 @Injectable()
 export class ExamenesMockService extends ExamenesService {
+  private limite = LIMITE_POR_DEFECTO;
+
   estadoDelMes(anio: number, mes: number): Observable<EstadoMes> {
     if (!Number.isInteger(mes) || mes < 1 || mes > 12) {
       return throwError(() => new Error(MENSAJE_ERROR_CALENDARIO));
     }
 
     const estado: EstadoMes = {
-      limiteDiario: LIMITE_DIARIO,
+      limiteDiario: this.limite,
       diasOcupados: Object.entries(EXAMENES_POR_DIA).map(([dia, cantidadExamenes]) => ({
         fecha: new Date(anio, mes - 1, Number(dia)),
         cantidadExamenes,
-        limiteAlcanzado: cantidadExamenes >= LIMITE_DIARIO,
+        limiteAlcanzado: cantidadExamenes >= this.limite,
       })),
     };
     return of(estado).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  limiteDiario(): Observable<number> {
+    return of(this.limite).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  guardarLimiteDiario(limite: number): Observable<void> {
+    if (limite <= 0) {
+      return throwError(() => new Error('El límite de parciales Diarios debe ser mayor a cero.'));
+    }
+    this.limite = limite;
+    return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
   }
 }

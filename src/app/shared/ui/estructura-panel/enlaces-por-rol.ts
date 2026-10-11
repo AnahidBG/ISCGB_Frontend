@@ -73,7 +73,8 @@ export function enlacesPorSesion(
   }
 
   // Solo Secretario: el backend no deja a Dirección ver estas solicitudes, y
-  // la frecuencia de los avisos es configuración de Secretaría.
+  // la frecuencia de los avisos y el límite de exámenes son configuración de
+  // Secretaría.
   if (tieneAlgunRol(sesion, [ROLES.secretario])) {
     enlaces.push({
       etiqueta: 'Solicitudes de reconocimiento',
@@ -85,6 +86,12 @@ export function enlacesPorSesion(
       etiqueta: 'Frecuencia de avisos',
       url: '/secretario/frecuencia-avisos',
       icono: 'campana',
+    });
+    // Cuántos exámenes admite el calendario en un mismo día.
+    enlaces.push({
+      etiqueta: 'Límite de exámenes',
+      url: '/secretario/limite-examenes',
+      icono: 'calendario',
     });
   }
 

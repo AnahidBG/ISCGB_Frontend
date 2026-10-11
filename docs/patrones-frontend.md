@@ -40,7 +40,7 @@ Hay que respetarlos.
 
 ### 2.1 Strategy + inversión de dependencias: servicios abstractos con implementación HTTP y mock
 
-Cada dominio tiene `core/<dominio>/<dominio>.service.ts`, que es la clase abstracta, un `*-http.service.ts` y un `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes, Materias, FrecuenciaAvisos (`core/notificaciones/`) y Examenes (`core/examenes/`, el calendario).
+Cada dominio tiene `core/<dominio>/<dominio>.service.ts`, que es la clase abstracta, un `*-http.service.ts` y un `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes, Materias, FrecuenciaAvisos (`core/notificaciones/`) y Examenes (`core/examenes/`, el calendario y su límite por día).
 
 Todo dominio nuevo sigue el mismo trío. Si el endpoint todavía no existe, se arranca con el mock.
 
@@ -133,6 +133,7 @@ Cómo está armado:
 - `core/examenes/` tiene el trío de siempre: `ExamenesService` (abstracto), `ExamenesHttpService`, que traduce `estado-mes` al modelo `EstadoMes` sin correr la fecha un día (`desdeFechaSola`), y `ExamenesMockService`, que no se registra.
 - `core/examenes/calendario-mes.ts` reúne las funciones puras, con su spec. `estadoDelDia(...)` devuelve el estado de un día. `semanasDelMes(...)` arma la grilla de lunes a domingo, con días de relleno de los meses vecinos (que no tienen estado) y recibiendo "hoy" por parámetro. También están el cambio de mes con salto de año, el título y la leyenda según el límite.
 - `features/calendario/calendario-examenes/` es el contenedor, el único que conoce el servicio. Sus presentacionales están en `partes/`: `cabecera-mes`, `calendario-mes` (leyenda, tabla y nota del límite) y `celda-dia`, que es un `td` y no un elemento propio para no romper la tabla. La tabla por clave `APARIENCIA_POR_DIA` vive en `celda-dia.ts`.
+- `features/secretario/limite-examenes/` es la pantalla donde Secretaría fija el límite por día, gemela de "Frecuencia de avisos": mismo contenedor con fases (`CargaLimite`) y un formulario en `partes/formulario-limite`. Lee el límite con `ExamenesService.limiteDiario()` y lo guarda con `guardarLimiteDiario(...)`; la validación (entero de 1 a 99) es una función pura en `core/examenes/limite-diario.ts`.
 
 El color no es lo único que distingue un estado: la celda lleva además una etiqueta, y en pantallas chicas la cantidad en número o el candado. El texto va en `text-texto` y el color en la barrita, el fondo y el candado, porque `aprobado` y `pendiente` como texto no llegan a contraste AA.
 

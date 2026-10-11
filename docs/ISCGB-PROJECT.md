@@ -47,7 +47,7 @@ src/app/
 Las rutas, por rol:
 
 - Director: `/director/panel`, `/director/usuarios/nuevo` y `/director/usuarios/:idUsuario/editar`.
-- Secretario: `/secretario/panel`, `/secretario/listados`, `/secretario/control-legajos`, `/secretario/reconocimiento-saberes` y `/secretario/frecuencia-avisos`.
+- Secretario: `/secretario/panel`, `/secretario/listados`, `/secretario/control-legajos`, `/secretario/reconocimiento-saberes`, `/secretario/frecuencia-avisos` y `/secretario/limite-examenes`.
 - Docente: `/docente/panel` y `/docente/entrega-programa`.
 - Alumno: `/alumno/panel`, `/alumno/certificado/regular`, `/alumno/certificado/regular-con-horario` y `/alumno/reconocimiento-saberes`.
 - Compartidas: `/legajo/subir-documento`, `/legajo/mis-documentos`, `/legajo/usuario/:idUsuario`, `/materias/asignaciones`, `/justificativos/cargar`, `/calendario`, `/configuracion` e `/inicio`.

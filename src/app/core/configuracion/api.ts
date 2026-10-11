@@ -170,6 +170,12 @@ export const RUTAS_API = {
    */
   estadoMesCalendario: (anio: number, mes: number) =>
     `${URL_BASE_API}/api/ConfiguracionCalendario/estado-mes?anio=${anio}&mes=${mes}`,
+
+  /**
+   * Cambia el límite de exámenes por día. Body: `{ nuevoLimite }`. Solo se
+   * puede escribir: el valor vigente se lee de `limiteDiario` en `estado-mes`.
+   */
+  limiteParcialesCalendario: `${URL_BASE_API}/api/ConfiguracionCalendario/limite-parciales`,
 } as const;
 
 /**

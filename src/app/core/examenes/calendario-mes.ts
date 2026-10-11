@@ -151,7 +151,7 @@ export function tituloDelMes({ anio, mes }: MesCalendario): string {
 }
 
 /** "1 examen", "2 exámenes". */
-function textoDeExamenes(cantidad: number): string {
+export function textoDeExamenes(cantidad: number): string {
   return `${cantidad} ${cantidad === 1 ? 'examen' : 'exámenes'}`;
 }
 

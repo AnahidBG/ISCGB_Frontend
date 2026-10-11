@@ -4,7 +4,11 @@ import { TestBed } from '@angular/core/testing';
 import { SIN_CARGA_GLOBAL } from '../carga/carga.interceptor';
 import { RUTAS_API } from '../configuracion/api';
 import { ExamenesHttpService } from './examenes-http.service';
-import { MENSAJE_ERROR_CALENDARIO } from './examenes.service';
+import {
+  MENSAJE_ERROR_CALENDARIO,
+  MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO,
+  MENSAJE_ERROR_LIMITE_DIARIO,
+} from './examenes.service';
 import { EstadoMes } from './modelos/estado-mes';
 
 describe('ExamenesHttpService (SCRUM-183)', () => {
@@ -23,6 +27,7 @@ describe('ExamenesHttpService (SCRUM-183)', () => {
   afterEach(() => {
     backend.verify();
     vi.restoreAllMocks();
+    vi.useRealTimers();
   });
 
   it('pide estado-mes con el año y el mes por query', () => {
@@ -93,5 +98,78 @@ describe('ExamenesHttpService (SCRUM-183)', () => {
     backend.expectOne(RUTAS_API.estadoMesCalendario(2026, 13)).flush(cuerpo, opciones);
 
     expect(mensaje).toBe(MENSAJE_ERROR_CALENDARIO);
+  });
+
+  it('el límite vigente sale del `estado-mes` del mes actual', () => {
+    // Solo el reloj: los timers de verdad tienen que seguir andando.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 10));
+
+    let limite: number | undefined;
+    servicio.limiteDiario().subscribe((valor) => (limite = valor));
+
+    const pedido = backend.expectOne(RUTAS_API.estadoMesCalendario(2026, 10));
+    expect(pedido.request.method).toBe('GET');
+    pedido.flush({
+      limiteDiario: 3,
+      diasOcupados: [{ fecha: '2026-10-13T00:00:00', cantidadExamenes: 1, limiteAlcanzado: false }],
+    });
+
+    expect(limite).toBe(3);
+  });
+
+  it('si no se puede leer el límite falla con su propio mensaje y no con el del calendario', () => {
+    let mensaje: string | undefined;
+    servicio.limiteDiario().subscribe({ error: (fallo: Error) => (mensaje = fallo.message) });
+
+    backend
+      .expectOne((pedido) => pedido.url.includes('/estado-mes'))
+      .flush(null, { status: 500, statusText: 'Error' });
+
+    expect(mensaje).toBe(MENSAJE_ERROR_LIMITE_DIARIO);
+  });
+
+  it('guardar el límite manda `{ nuevoLimite }` por PUT', () => {
+    let guardado = false;
+    servicio.guardarLimiteDiario(3).subscribe(() => (guardado = true));
+
+    const pedido = backend.expectOne(RUTAS_API.limiteParcialesCalendario);
+    expect(pedido.request.method).toBe('PUT');
+    expect(pedido.request.body).toEqual({ nuevoLimite: 3 });
+    pedido.flush({
+      message: 'El límite de parciales por día se ha actualizado con éxito.',
+      nuevoLimite: 3,
+    });
+
+    expect(guardado).toBe(true);
+  });
+
+  it('si el backend rechaza el límite (400), guardar falla con SU mensaje', () => {
+    let mensaje: string | undefined;
+    servicio
+      .guardarLimiteDiario(0)
+      .subscribe({ error: (fallo: Error) => (mensaje = fallo.message) });
+
+    backend
+      .expectOne(RUTAS_API.limiteParcialesCalendario)
+      .flush(
+        { message: 'El límite de parciales Diarios debe ser mayor a cero.' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    expect(mensaje).toBe('El límite de parciales Diarios debe ser mayor a cero.');
+  });
+
+  it('ante un error del servidor (500), guardar el límite falla con el mensaje genérico', () => {
+    let mensaje: string | undefined;
+    servicio
+      .guardarLimiteDiario(3)
+      .subscribe({ error: (fallo: Error) => (mensaje = fallo.message) });
+
+    backend
+      .expectOne(RUTAS_API.limiteParcialesCalendario)
+      .flush({ message: 'NullReferenceException' }, { status: 500, statusText: 'Error' });
+
+    expect(mensaje).toBe(MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO);
   });
 });
