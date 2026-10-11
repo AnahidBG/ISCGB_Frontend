@@ -1,4 +1,5 @@
-import { textoDeExamenes } from './calendario-mes';
+import { textoDeParciales } from './calendario-mes';
+import { PERIODO_DEL_LIMITE } from './periodo-limite';
 
 /** El mínimo que acepta el backend: con 0 o menos el `PUT` responde 400. */
 export const LIMITE_DIARIO_MINIMO = 1;
@@ -11,31 +12,36 @@ export const LIMITE_DIARIO_MINIMO = 1;
  */
 export const LIMITE_DIARIO_MAXIMO = 99;
 
+/** "1 parcial por día", "3 parciales por día": el período sale de `PERIODO_DEL_LIMITE`. */
+function porPeriodo(cantidad: number): string {
+  return `${textoDeParciales(cantidad)} por ${PERIODO_DEL_LIMITE}`;
+}
+
 /**
  * Por qué no se puede guardar ese límite, o `null` si está bien.
  *
- * Tiene que ser un número ENTERO de exámenes entre el mínimo y el máximo.
+ * Tiene que ser un número ENTERO de parciales entre el mínimo y el máximo.
  * Recibe `null` cuando el campo está vacío (o tiene algo que no es un número).
  * Importa que nunca llegue vacío al `PUT`: el backend lo daría por válido y
  * dejaría el límite sin valor.
  */
 export function errorDeLimiteDiario(limite: number | null): string | null {
   if (limite === null || Number.isNaN(limite)) {
-    return 'Ingresá cuántos exámenes se pueden registrar por día.';
+    return `Ingresá cuántos parciales se pueden registrar por ${PERIODO_DEL_LIMITE}.`;
   }
   if (!Number.isInteger(limite)) {
-    return 'Tiene que ser un número entero de exámenes, sin decimales.';
+    return 'Tiene que ser un número entero de parciales, sin decimales.';
   }
   if (limite < LIMITE_DIARIO_MINIMO) {
-    return `El límite tiene que ser de al menos ${textoDeExamenes(LIMITE_DIARIO_MINIMO)} por día.`;
+    return `El límite tiene que ser de al menos ${porPeriodo(LIMITE_DIARIO_MINIMO)}.`;
   }
   if (limite > LIMITE_DIARIO_MAXIMO) {
-    return `El límite no puede superar los ${textoDeExamenes(LIMITE_DIARIO_MAXIMO)} por día.`;
+    return `El límite no puede superar los ${porPeriodo(LIMITE_DIARIO_MAXIMO)}.`;
   }
   return null;
 }
 
-/** El límite en palabras: "1 examen por día", "3 exámenes por día". */
+/** El límite en palabras: "1 parcial por día", "3 parciales por día". */
 export function textoLimiteDiario(limite: number): string {
-  return `${textoDeExamenes(limite)} por día`;
+  return porPeriodo(limite);
 }

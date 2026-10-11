@@ -1,8 +1,8 @@
 <app-estructura-panel
   [enlaces]="enlaces()"
   encabezado="titulo"
-  tituloPagina="Calendario de exámenes parciales y finales"
-  subtitulo="Consultá la disponibilidad de fechas de examen."
+  tituloPagina="Calendario de exámenes parciales"
+  subtitulo="Consultá la disponibilidad de fechas de parciales."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
@@ -40,11 +40,43 @@
         </app-boton>
       </div>
     } @else if (calendario(); as datos) {
-      <app-calendario-mes
-        [semanas]="datos.semanas"
-        [titulo]="datos.titulo"
-        [limiteDiario]="datos.limiteDiario"
-      />
+      <div class="mt-4">
+        <app-leyenda-calendario [limite]="datos.limite" />
+      </div>
+
+      <!--
+        El aspecto de cada celda es el del Figma: lo dibuja `app-resumen-dia`
+        adentro de la celda que arma la grilla.
+
+        Todavía no hay nada que hacer con un día elegido, así que la selección
+        queda deshabilitada (`seleccionable` es falso por defecto) y no se
+        escucha `diaSeleccionado`. Lo mismo con `examenSeleccionado`: con la API
+        real la lista de parciales viene vacía.
+      -->
+      <div class="mt-4">
+        <ng-template #plantillaDia let-celda>
+          <app-resumen-dia [celda]="celda" />
+        </ng-template>
+        <app-grilla-calendario
+          [mes]="datos.mes"
+          [dias]="datos.dias"
+          [examenes]="datos.examenes"
+          [hoy]="hoy"
+          [plantillaCelda]="plantillaDia"
+        />
+      </div>
+
+      <p class="mt-4 flex flex-wrap items-start gap-x-2 gap-y-1 text-sm text-texto-suave">
+        <app-icono nombre="informacion" class="mt-0.5 h-4 w-4 shrink-0" />
+        <span>{{ datos.textoLimite }}</span>
+        <a
+          *siRol="rolesDelLimite"
+          routerLink="/secretario/limite-parciales"
+          class="rounded font-semibold text-principal underline underline-offset-2 transition-colors hover:text-principal-oscuro focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+        >
+          Cambiar el límite
+        </a>
+      </p>
     }
   </section>
 </app-estructura-panel>

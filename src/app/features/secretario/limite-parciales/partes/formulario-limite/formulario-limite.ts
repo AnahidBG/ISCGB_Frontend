@@ -13,6 +13,7 @@ import {
   LIMITE_DIARIO_MINIMO,
   errorDeLimiteDiario,
 } from '../../../../../core/examenes/limite-diario';
+import { PERIODO_DEL_LIMITE } from '../../../../../core/examenes/periodo-limite';
 import { Boton } from '../../../../../shared/ui/boton/boton';
 import { CampoFormulario } from '../../../../../shared/ui/campo-formulario/campo-formulario';
 
@@ -21,11 +22,11 @@ const limiteValido: ValidatorFn = (control) =>
   errorDeLimiteDiario(control.value as number | null) === null ? null : { limite: true };
 
 /**
- * El formulario del límite de exámenes por día.
+ * El formulario del límite de parciales.
  *
  * Presentacional (Mediator, `docs/patrones-frontend.md` §2.5): no conoce el
  * servicio ni la API. Recibe el límite vigente y cómo mostrarse, y avisa por
- * `guardar` con el número ya validado. Quien guarda es `LimiteExamenes`.
+ * `guardar` con el número ya validado. Quien guarda es `LimiteParciales`.
  */
 @Component({
   selector: 'app-formulario-limite',
@@ -36,7 +37,7 @@ const limiteValido: ValidatorFn = (control) =>
 export class FormularioLimite {
   private readonly fb = inject(FormBuilder);
 
-  /** El límite vigente, en exámenes por día. */
+  /** El límite vigente, en parciales por período (hoy, por día). */
   readonly limiteActual = input.required<number>();
 
   /** `true` mientras se está guardando. */
@@ -50,6 +51,9 @@ export class FormularioLimite {
 
   /** Se emite con el límite, ya validado. */
   readonly guardar = output<number>();
+
+  /** El período sale de una sola constante, la misma de todos los textos del límite. */
+  protected readonly periodo = PERIODO_DEL_LIMITE;
 
   protected readonly minimo = LIMITE_DIARIO_MINIMO;
   protected readonly maximo = LIMITE_DIARIO_MAXIMO;

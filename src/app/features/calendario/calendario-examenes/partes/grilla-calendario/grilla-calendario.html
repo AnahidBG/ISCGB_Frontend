@@ -1,0 +1,79 @@
+<table
+  role="grid"
+  class="w-full table-fixed border-collapse"
+  [attr.aria-readonly]="seleccionable() ? null : 'true'"
+>
+  <!-- prettier-ignore -->
+  <caption class="sr-only">Parciales de {{ titulo() }}</caption>
+  <thead>
+    <tr>
+      @for (dia of encabezados; track $index) {
+        <!-- El nombre completo va en `aria-label`: a la vista alcanza con la sigla. -->
+        <th
+          scope="col"
+          class="pb-2 text-xs font-medium capitalize text-texto-suave sm:text-sm"
+          [attr.aria-label]="dia | date: 'EEEE'"
+        >
+          {{ dia | date: 'EEE' }}
+        </th>
+      }
+    </tr>
+  </thead>
+  <tbody>
+    @for (semana of semanas(); track semana[0].fecha) {
+      <tr>
+        @for (celda of semana; track celda.fecha) {
+          <!--
+            Solo los días del mes se pueden enfocar y se anuncian: los de relleno
+            son de otro mes y quedan fuera del recorrido y del lector de pantalla.
+          -->
+          <td
+            [class]="clasesDe(celda)"
+            [attr.data-fecha]="celda.fecha"
+            [attr.tabindex]="celda.delMes ? (celda.fecha === fechaActiva() ? 0 : -1) : null"
+            [attr.aria-label]="celda.delMes ? celda.descripcion : null"
+            [attr.aria-current]="celda.esHoy ? 'date' : null"
+            [attr.aria-disabled]="
+              celda.delMes && seleccionable() && !celda.puedeElegirse ? 'true' : null
+            "
+            [attr.aria-hidden]="celda.delMes ? null : 'true'"
+            (click)="elegirDia(celda)"
+            (keydown)="alTeclear($event, celda)"
+            (focus)="alEnfocar(celda)"
+          >
+            @if (plantillaCelda(); as plantilla) {
+              <ng-container
+                [ngTemplateOutlet]="plantilla"
+                [ngTemplateOutletContext]="{ $implicit: celda }"
+              />
+            } @else {
+              <span class="block text-sm leading-5 sm:text-base" [class]="numeroDe(celda)">
+                {{ celda.numero }}
+              </span>
+              @if (celda.dia; as dia) {
+                <span class="mt-1 block text-xs text-texto">
+                  {{ dia.cantidad }}/{{ dia.limite }}
+                </span>
+              }
+            }
+
+            <!--
+              Los botones de los parciales solo se pueden tabular desde la celda que
+              tiene el foco: así toda la grilla sigue siendo una sola parada.
+            -->
+            @for (examen of celda.examenes; track examen.idExamen) {
+              <button
+                type="button"
+                class="mt-1 block w-full truncate rounded-md bg-superficie px-1.5 py-0.5 text-left text-xs text-texto ring-1 ring-borde transition-colors hover:bg-principal-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+                [attr.tabindex]="celda.fecha === fechaActiva() ? 0 : -1"
+                (click)="elegirExamen($event, examen)"
+              >
+                {{ examen.materia }}
+              </button>
+            }
+          </td>
+        }
+      </tr>
+    }
+  </tbody>
+</table>

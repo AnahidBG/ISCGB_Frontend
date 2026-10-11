@@ -1,8 +1,8 @@
 <app-estructura-panel
   [enlaces]="enlaces()"
   encabezado="titulo"
-  tituloPagina="Límite de exámenes por día"
-  subtitulo="Definí cuántos exámenes se pueden registrar en un mismo día."
+  tituloPagina="Límite de parciales"
+  [subtitulo]="subtitulo"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
@@ -37,4 +37,13 @@
       (guardar)="guardar($event)"
     />
   }
+
+  <p class="mt-5">
+    <a
+      routerLink="/calendario"
+      class="rounded text-sm font-semibold text-principal underline underline-offset-2 transition-colors hover:text-principal-oscuro focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+    >
+      Ver el calendario de parciales
+    </a>
+  </p>
 </app-estructura-panel>

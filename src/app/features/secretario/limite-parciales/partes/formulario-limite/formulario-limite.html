@@ -1,7 +1,7 @@
 <form
   [formGroup]="formulario"
   (ngSubmit)="alGuardar()"
-  aria-label="Límite de exámenes por día"
+  [attr.aria-label]="'Límite de parciales por ' + periodo"
   class="flex max-w-2xl flex-col gap-5 rounded-2xl border border-borde bg-superficie px-5 py-5 sm:px-6 sm:py-6"
   novalidate
 >
@@ -25,7 +25,7 @@
   }
 
   <app-campo-formulario
-    etiqueta="Exámenes por día"
+    [etiqueta]="'Parciales por ' + periodo"
     idCampo="limite-diario"
     [requerido]="true"
     [error]="errorLimite"
@@ -52,8 +52,8 @@
   </app-campo-formulario>
 
   <p id="ayuda-limite" class="text-xs leading-relaxed text-texto-suave">
-    Vale para todo el instituto y para todos los tipos de examen. Cuando un día llega al límite, el
-    calendario lo muestra como Completo y no admite más fechas.
+    Vale para todo el instituto y para todos los tipos de examen. Al alcanzar el límite por
+    {{ periodo }}, el calendario muestra el día como Completo y no admite más fechas.
   </p>
 
   <div>

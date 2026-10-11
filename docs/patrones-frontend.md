@@ -40,7 +40,7 @@ Hay que respetarlos.
 
 ### 2.1 Strategy + inversión de dependencias: servicios abstractos con implementación HTTP y mock
 
-Cada dominio tiene `core/<dominio>/<dominio>.service.ts`, que es la clase abstracta, un `*-http.service.ts` y un `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes, Materias, FrecuenciaAvisos (`core/notificaciones/`) y Examenes (`core/examenes/`, el calendario, su límite por día y las mesas asignadas al docente).
+Cada dominio tiene `core/<dominio>/<dominio>.service.ts`, que es la clase abstracta, un `*-http.service.ts` y un `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes, Materias, FrecuenciaAvisos (`core/notificaciones/`) y CalendarioExamenes (`core/examenes/`, el calendario de parciales, su límite y las mesas asignadas al docente).
 
 Todo dominio nuevo sigue el mismo trío. Si el endpoint todavía no existe, se arranca con el mock.
 
@@ -49,6 +49,8 @@ Todo dominio nuevo sigue el mismo trío. Si el endpoint todavía no existe, se a
 `RespuestaLogin` se convierte en `Sesion` en `auth-http.service.ts` (método `aSesion`). Los tipos `*Api` de `legajo-http.service.ts` se mapean a los modelos de `core/legajos/modelos/`. Los errores pasan por `core/comun/error-api.ts` (`mensajeDelServidor`, `esEndpointInexistente`).
 
 Los tipos crudos de la API, con sus nombres mezclados como `estado_usuario` o `lugar_Nacimiento`, **no salen de `*-http.service.ts`**. Un componente nunca ve un `*Api` ni un `HttpErrorResponse`: ve modelos limpios y mensajes en español.
+
+El calendario tiene su adaptador en un archivo propio, `core/examenes/adaptador-estado-mes.ts`, para probarlo sin `HttpClient`: `aCalendarioDelMes(...)` traduce `estado-mes` al modelo `CalendarioDelMes`. Los tipos crudos de `estado-mes` viven en ese archivo y solo los importan el servicio HTTP y el mock.
 
 ### 2.3 Facade: el servicio de dominio esconde HTTP, mapeo y errores
 
@@ -110,7 +112,7 @@ Son siempre reactivos y tipados, con los validadores declarados en la construcci
 
 ### 2.11 Fábricas simples: funciones puras que construyen objetos
 
-Son `enlacesPorSesion(...)`, `novedadesDelLegajo(...)`, `notificacionesPorRechazos(...)`, `notificacionesPorMesas(...)`, `contarPorEstado(...)`, `ultimasVersionesPorTipo(...)`, `validarArchivoPdf(...)`, `comentarioDeRechazo(...)` y, para el calendario, `estadoDelDia(...)` y `semanasDelMes(...)`, entre otras.
+Son `enlacesPorSesion(...)`, `novedadesDelLegajo(...)`, `notificacionesPorRechazos(...)`, `notificacionesPorMesas(...)`, `contarPorEstado(...)`, `ultimasVersionesPorTipo(...)`, `validarArchivoPdf(...)`, `comentarioDeRechazo(...)` y, para el calendario, `estadoDelDia(...)`, `aCalendarioDelMes(...)` y `semanasDelMes(...)`, entre otras.
 
 La lógica de negocio del front, como conteos, progreso, validaciones y armado de menús, va en funciones puras en `core/`, con su `*.spec.ts`, y no adentro del componente. Así se prueban sin `TestBed`.
 
@@ -122,24 +124,40 @@ Tres de ellas son la única definición de algo, para que la campana y los panel
 
 `requeridoDelDocumento(...)` encuentra el tipo de un documento del legajo por su nombre. `consultaConTipo(...)` y `tipoPedidoEn(...)`, en `core/legajos/tipo-en-url.ts`, arman y validan el `?tipo=` de "Subir Documento", con el nombre del parámetro escrito en un solo lugar.
 
-**De dónde sale la campana.** `CampanaService` elige su fuente por el rol principal de la sesión, con la tabla `FUENTE_POR_ROL`: el Alumno ve las novedades de su legajo, el Docente ve las de su legajo más las mesas de examen que le asignaron, y el Secretario y el Director ven lo que espera revisión en el instituto. Las mesas salen de `ExamenesService.mesasAsignadas()` y las convierte `notificacionesPorMesas(...)`, en `core/notificaciones/notificaciones-mesas.ts`. Recibe "hoy" por parámetro para seguir siendo pura y deja afuera las mesas de días pasados, porque el backend las devuelve todas. Es un agregado: si ese pedido falla, la campana del Docente muestra igual su legajo.
+**De dónde sale la campana.** `CampanaService` elige su fuente por el rol principal de la sesión, con la tabla `FUENTE_POR_ROL`: el Alumno ve las novedades de su legajo, el Docente ve las de su legajo más las mesas de examen que le asignaron, y el Secretario y el Director ven lo que espera revisión en el instituto. Las mesas salen de `CalendarioExamenesService.mesasAsignadas()` y las convierte `notificacionesPorMesas(...)`, en `core/notificaciones/notificaciones-mesas.ts`. Recibe "hoy" por parámetro para seguir siendo pura y deja afuera las mesas de días pasados, porque el backend las devuelve todas. Es un agregado: si ese pedido falla, la campana del Docente muestra igual su legajo.
+
+### 2.12 Directiva estructural: qué se muestra según el rol
+
+`*siRol`, en `shared/directivas/si-rol/`, muestra u oculta un bloque según el rol de la sesión actual (`AuthService.sesion`). Acepta un rol o varios, `*siRol="'Docente'"` o `*siRol="rolesDelLimite"` con una lista, y alcanza con tener uno. Reusa `tieneAlgunRol(...)`, la misma regla que `roleGuard`, y reacciona si cambia la sesión. Los nombres de rol salen de `ROLES`, nunca escritos en el template.
+
+Es para un enlace o un bloque dentro de una pantalla que ya pasó por `roleGuard`. No es seguridad: la protección va en el backend. El calendario la usa para "Cambiar el límite", que solo ven Secretaría y Dirección.
 
 ## 3. Patrones para lo que viene
 
-**Calendario de exámenes.** Hecho el 10/10/2026 (SCRUM-183), solo la consulta: la pantalla muestra un mes con el estado de cada día y deja pasar de mes. Registrar, modificar y eliminar exámenes no está.
+**Calendario de exámenes parciales.** Hecho el 10/10/2026 (SCRUM-183), solo la consulta: la pantalla muestra un mes con el estado de cada día y deja pasar de mes. Lo ven el Docente, el Secretario y el Director; el Alumno no. Registrar, modificar y eliminar parciales no está.
 
-La regla es la del backend: hay un límite de exámenes por día, único para todo el instituto, que define Secretaría Académica y hoy vale 2. No hay límite por comisión. Cada día está en uno de tres estados, `Libre`, `ConExamenes` o `Completo`. Quien decide si un día está completo es el backend (`limiteAlcanzado`); el front no vuelve a compararlo con la cantidad.
+La regla es la del backend: hay un límite de parciales por día, único para todo el instituto, que define Secretaría Académica y hoy vale 2. No hay límite por comisión. En Jira el límite figura "por semana" y todavía no está definido, así que el período vive en una sola constante, `PERIODO_DEL_LIMITE` (`core/examenes/periodo-limite.ts`, hoy "día"), que usan todos los textos que lo nombran. Cambiarla solo cambia la redacción: quien aplica la regla es el backend.
+
+Cada día está en uno de tres estados: `disponible` (verde, sin parciales), `ocupado` (amarillo, tiene alguno y admite más) y `completo` (rojo, alcanzó el límite). El estado lo calcula el front con la función pura `estadoDelDia(cantidad, limite)`. Si la cantidad o el límite no son números válidos (nulos, negativos, con decimales), el día se muestra `disponible`.
 
 Cómo está armado:
 
-- `core/examenes/` tiene el trío de siempre: `ExamenesService` (abstracto), `ExamenesHttpService`, que traduce `estado-mes` al modelo `EstadoMes` sin correr la fecha un día (`desdeFechaSola`), y `ExamenesMockService`, que no se registra.
-- `core/examenes/calendario-mes.ts` reúne las funciones puras, con su spec. `estadoDelDia(...)` devuelve el estado de un día. `semanasDelMes(...)` arma la grilla de lunes a domingo, con días de relleno de los meses vecinos (que no tienen estado) y recibiendo "hoy" por parámetro. También están el cambio de mes con salto de año, el título y la leyenda según el límite.
-- `features/calendario/calendario-examenes/` es el contenedor, el único que conoce el servicio. Sus presentacionales están en `partes/`: `cabecera-mes`, `calendario-mes` (leyenda, tabla y nota del límite) y `celda-dia`, que es un `td` y no un elemento propio para no romper la tabla. La tabla por clave `APARIENCIA_POR_DIA` vive en `celda-dia.ts`.
-- `features/secretario/limite-examenes/` es la pantalla donde Secretaría fija el límite por día, gemela de "Frecuencia de avisos": mismo contenedor con fases (`CargaLimite`) y un formulario en `partes/formulario-limite`. Lee el límite con `ExamenesService.limiteDiario()` y lo guarda con `guardarLimiteDiario(...)`; la validación (entero de 1 a 99) es una función pura en `core/examenes/limite-diario.ts`.
+- `core/examenes/` tiene el trío de siempre: `CalendarioExamenesService` (abstracto), `CalendarioExamenesHttpService` y `CalendarioExamenesMockService`, que no se registra. El servicio devuelve los días de un mes con `calendarioDelMes(...)` y los parciales con `examenesDelMes(...)`.
+- El modelo de dominio es propio y no copia la respuesta del backend: `DiaCalendario` (`fecha` como "yyyy-MM-dd", `cantidad`, `limite` y `estado`), `ExamenCalendario` y `CalendarioDelMes`, en `core/examenes/modelos/`. `aCalendarioDelMes(...)` (Adapter) devuelve todos los días del mes, con cantidad 0 en los que el backend no lista. Es tolerante con cada día y estricto con el conjunto: una entrada que no se puede leer se descarta y ese día queda disponible, pero si la respuesta entera no se puede leer, falla.
+- El backend no tiene un endpoint que liste los parciales. `examenesDelMes(...)` devuelve una lista vacía contra la API real (`TODO(SCRUM-182)`) y solo el mock trae ejemplos, así la grilla ya sabe dibujarlos.
+- `core/examenes/calendario-mes.ts` reúne el resto de las funciones puras, con su spec. `semanasDelMes(...)` arma la grilla de lunes a domingo, con días de relleno de los meses vecinos (que no tienen datos), y marca hoy, los días pasados y los que se pueden elegir; recibe "hoy" por parámetro. También están el cambio de mes con salto de año, el título, el texto que lee un lector de pantalla en cada día, la leyenda y la nota del límite.
+- `features/calendario/calendario-examenes/` es el contenedor, el único que conoce el servicio. Carga un mes por vez, con las fases de `CargaMes`. Sus presentacionales están en `partes/`: `cabecera-mes`, `leyenda-calendario`, `grilla-calendario` y `resumen-dia`. La tabla por clave `APARIENCIA_POR_DIA` está en `partes/apariencia-por-dia.ts`.
+- `grilla-calendario` es una grilla propia, sin librería de calendario. Recibe el mes y sus días y avisa con `diaSeleccionado` y `examenSeleccionado`. Para cambiar lo de adentro de cada celda recibe un `TemplateRef` en `plantillaCelda`: la grilla pone la celda (el fondo, el foco, el teclado y los atributos de accesibilidad) y la plantilla dibuja el contenido. Sin plantilla muestra el número del día y "cantidad/límite"; la pantalla le pasa `resumen-dia`, que reproduce el aspecto del Figma. Los parciales que reciba los lista en su día, cada uno como botón.
+- Elegir un día se habilita con la entrada `seleccionable`, apagada por defecto. La pantalla la deja apagada porque todavía no hay nada que hacer con el día elegido. Con la selección habilitada, los días pasados y los completos no se pueden elegir.
+- `features/secretario/limite-parciales/` es la pantalla donde Secretaría y Dirección fijan el límite, gemela de "Frecuencia de avisos": mismo contenedor con fases (`CargaLimite`) y un formulario en `partes/formulario-limite`. Lee el límite con `CalendarioExamenesService.limiteDiario()` y lo guarda con `guardarLimiteDiario(...)`; la validación (entero de 1 a 99) es una función pura en `core/examenes/limite-diario.ts`. Del calendario se llega con el enlace "Cambiar el límite", que `*siRol` muestra solo a Secretaría y Dirección, y se vuelve con "Ver el calendario de parciales".
 
-El color no es lo único que distingue un estado: la celda lleva además una etiqueta, y en pantallas chicas la cantidad en número o el candado. El texto va en `text-texto` y el color en la barrita, el fondo y el candado, porque `aprobado` y `pendiente` como texto no llegan a contraste AA.
+El color no es lo único que distingue un estado: la celda lleva además una etiqueta y, en pantallas chicas, la cantidad en número o el candado. El texto va en `text-texto` y el color en la barrita, el fondo y el candado, porque `aprobado` y `pendiente` como texto no llegan a contraste AA.
 
-Lo que necesita que el backend liste los exámenes (la agenda del mes y la materia en cada celda) quedó fuera. Los pendientes están en `docs/contrato-api.md`.
+La grilla es un `role="grid"` con una sola parada de tabulación (tabindex itinerante). Con las flechas se pasa de un día a otro (izquierda y derecha, un día; arriba y abajo, una semana) y con Enter o Espacio se elige. Cada día lleva un `aria-label` como "15 de octubre, 1 de 2 parciales", con "completo" o "fecha pasada" cuando corresponde, `aria-current="date"` en hoy y, con la selección habilitada, `aria-disabled` en los que no se pueden elegir.
+
+Los nombres de días y meses salen del locale `es-AR`, registrado en `app.config.ts` (`registerLocaleData` y `LOCALE_ID`), con `DatePipe` y `formatDate`: no hay listas de nombres escritas a mano en la grilla. Las funciones puras que formatean reciben el `locale` por parámetro y sus specs registran el locale. La campana sigue armando el día de la semana con `DIAS_DE_LA_SEMANA`, para que ese texto no dependa de lo que esté registrado.
+
+La grilla ya sabe listar parciales en su día, pero contra la API real no hay ninguno que listar hasta que el backend tenga el endpoint. Los pendientes están en `docs/contrato-api.md`.
 
 **Rechazo con motivo obligatorio.** Hecho en legajos el 05/10/2026: el catálogo único `MOTIVOS_RECHAZO`, en `core/legajos/motivos-rechazo.ts`, tiene los 7 motivos de la institución, con una aclaración opcional en lugar de "Otro". `comentarioDeRechazo(motivos, aclaracion)` arma el texto y el presentacional `mis-documentos/partes/cuadro-rechazo` no confirma sin al menos un motivo (CP23). **Falta en justificativos:** el catálogo es el mismo, pero el PUT no recibe comentario.
 
@@ -168,6 +186,7 @@ No se refactoriza de paso: cada punto va en su propio commit `refactor:`, con su
 - [ ] Los tipos crudos de la API no salen de `*-http.service.ts`.
 - [ ] Las URLs están solo en `api.ts`, los roles solo en `rol.ts` y la apariencia por estado solo en `insignia-estado`.
 - [ ] Lo que varía por estado, rol o tipo está en una tabla con caso por defecto, sin `if` repetidos.
+- [ ] Lo que se muestra según el rol usa `*siRol` o `enlacesPorSesion`, sin comparar nombres de rol en el template.
 - [ ] Contenedor y presentacional separados, con `input()` y `output()`.
 - [ ] Estado con signals, sin suscripciones que queden vivas.
 - [ ] La lógica de negocio está en funciones puras en `core/`, con su spec.

@@ -179,48 +179,67 @@ Solo para Secretario, en el menú lateral.
 - [ ] Con un valor válido confirma el cambio, y al recargar sigue ahí.
 - [ ] Con otro rol, la dirección `/secretario/frecuencia-avisos` no abre.
 
-### Calendario de exámenes
+### Calendario de parciales
 
-Lo ven los cuatro roles, en "Calendario de Exámenes" del menú lateral. Es de
-consulta: registrar, mover o borrar exámenes no está en la pantalla.
+Lo ven el Docente, el Secretario y el Director. El Docente lo tiene en "Calendario
+de parciales" del menú lateral; Secretaría y Dirección llegan desde "Límite de
+parciales", con el enlace "Ver el calendario de parciales". Es de consulta:
+registrar, mover o borrar parciales no está en la pantalla.
 
-Para tener algo que ver, registrá exámenes desde Swagger con
+Para tener algo que ver, registrá parciales desde Swagger con
 `POST /api/ConfiguracionCalendario/registrar`:
 `{ "fecha": "2026-10-13T09:00:00", "idComision": 1, "idMateria": 1, "idTipoExamen": 1 }`.
-Los ids tienen que existir en la base.
+Los ids tienen que existir en la base. El backend todavía no lista los exámenes: la
+pantalla cuenta cuántos hay cada día, pero no dice de qué materia son.
 
-- [ ] Abre en el mes actual, con el título del mes y el año, la leyenda y la grilla
-      de lunes a domingo.
+- [ ] El título de la página es "Calendario de exámenes parciales". Abre en el mes
+      actual, con el título del mes y el año ("Octubre 2026"), la leyenda y la grilla
+      con los días "Lun Mar Mié Jue Vie Sáb Dom".
 - [ ] El día de hoy tiene el número en negrita y verde.
-- [ ] Un día sin exámenes dice "Libre", con la barrita verde.
-- [ ] Un día con un examen dice "1 examen" y tiene fondo ámbar.
+- [ ] Un día sin parciales dice "Libre", con la barrita verde.
+- [ ] Un día con un parcial dice "1 parcial" y tiene fondo ámbar. Con el límite
+      en 3 o más, un día con dos dice "2 parciales".
 - [ ] Un día con el límite alcanzado dice "Completo", con fondo rojo suave y el
-      candado. Con el límite en 2 son dos exámenes el mismo día.
+      candado. Con el límite en 2 son dos parciales el mismo día.
+- [ ] La leyenda tiene tres chips: "Libre", "1 parcial" y "Completo". Con un límite
+      mayor a 2 el del medio dice "Con parciales", y con un límite de 1 no hay chip
+      del medio.
 - [ ] Las flechas pasan al mes anterior y al siguiente, también de diciembre a
       enero. "Hoy" vuelve al mes actual.
 - [ ] Los días de relleno, de los meses vecinos, se ven en gris con el nombre del
       mes y sin estado.
-- [ ] La nota de abajo nombra el límite que devuelve el backend. Si lo cambiás desde
-      "Límite de exámenes por día" (Secretario), cambia al recargar.
+- [ ] La nota de abajo nombra el límite que devuelve el backend ("2 parciales por
+      día"). Si lo cambiás desde "Límite de parciales", cambia al recargar.
+- [ ] Con Secretario o Director, junto a la nota hay un enlace "Cambiar el límite"
+      que abre "Límite de parciales". Con el Docente no está.
 - [ ] Con el backend apagado muestra el aviso con "Reintentar", y las flechas
       siguen funcionando.
 - [ ] A 375 px de ancho no hay scroll horizontal: las celdas muestran la barrita,
       la cantidad en número y el candado, sin la etiqueta.
+- [ ] Con Tab se entra a la grilla una sola vez, en el día de hoy. Con las flechas
+      se pasa de un día a otro (izquierda y derecha, un día; arriba y abajo, una
+      semana) y el día enfocado tiene contorno. Tab saca del calendario.
+- [ ] Un lector de pantalla dice cada día como "13 de octubre, 1 de 2 parciales", y
+      agrega "completo" en los que alcanzaron el límite.
+- [ ] Tocar un día no hace nada: por ahora los días no se pueden elegir.
+- [ ] Un Alumno no tiene el enlace en el menú, y la dirección `/calendario` lo manda
+      a su panel con el aviso de acceso denegado.
 
-### Límite de exámenes por día
+### Límite de parciales
 
-Solo para Secretario, en "Límite de exámenes" del menú lateral. Es el número que
-usa el calendario para marcar un día como "Completo".
+Para Secretario y Director, en "Límite de parciales" del menú lateral. Es el número
+que usa el calendario para marcar un día como "Completo". Debajo del formulario hay
+un enlace "Ver el calendario de parciales".
 
 - [ ] Muestra el límite vigente; 2 si nunca se configuró.
 - [ ] El botón "Guardar" queda apagado mientras el valor no cambie.
 - [ ] Con el campo vacío, con 0, con 1,5 o con 100 marca el error y no envía nada.
-- [ ] Con un valor válido confirma "Límite actualizado: 3 exámenes por día.", con
-      "1 examen" en singular, y al recargar sigue ahí.
-- [ ] En "Calendario de Exámenes", la nota de abajo y la leyenda nombran el límite
+- [ ] Con un valor válido confirma "Límite actualizado: 3 parciales por día.", con
+      "1 parcial" en singular, y al recargar sigue ahí.
+- [ ] En "Calendario de parciales", la nota de abajo y la leyenda nombran el límite
       nuevo, y los días que lo alcanzan dicen "Completo".
 - [ ] Con el backend apagado muestra el aviso con "Reintentar".
-- [ ] Con otro rol, la dirección `/secretario/limite-examenes` no abre.
+- [ ] Con el Docente o el Alumno, la dirección `/secretario/limite-parciales` no abre.
 
 ### Mesas de examen en la campana del Docente
 
@@ -243,7 +262,7 @@ La columna `estado_confirmacion` la crea la migración `SincronizacionManual`
       semana, fecha y hora de 24 h).
 - [ ] El número de la campana cuenta ese aviso además de los del legajo, y el aviso
       va después de ellos.
-- [ ] Al tocarlo abre "Calendario de Exámenes".
+- [ ] Al tocarlo abre "Calendario de parciales".
 - [ ] Una mesa de un examen de una fecha anterior a hoy no aparece. La de hoy sí,
       aunque la hora ya haya pasado.
 - [ ] Con varias mesas, la más próxima está primero.
@@ -295,9 +314,10 @@ No está roto: no existe.
 - Recuperar la contraseña: la pantalla existe, pero simula el envío y no manda
   ningún correo.
 - El mail al rechazar un documento o un justificativo.
-- Del calendario de exámenes solo se puede consultar: registrar, modificar y
-  eliminar exámenes, la agenda del mes y la materia de cada examen no están en la
-  pantalla. El backend tampoco tiene un listado de exámenes.
+- Del calendario de parciales solo se puede consultar: registrar, modificar y
+  eliminar parciales, elegir un día y abrir un parcial no están en la pantalla. El
+  backend tampoco tiene un listado de exámenes, así que la grilla no muestra la
+  materia de cada parcial.
 - Aceptar o rechazar una mesa de examen, y darla de alta. La campana del Docente
   avisa las mesas asignadas, pero el backend no tiene endpoints para responderlas.
 - La configuración de la cuenta, que es del Sprint 3.

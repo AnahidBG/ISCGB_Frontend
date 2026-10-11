@@ -1,50 +1,68 @@
-import { signal } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
+import localeEsAr from '@angular/common/locales/es-AR';
+import { LOCALE_ID, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Observable, Subject, of, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Sesion } from '../../../core/auth/modelos/sesion';
-import { ExamenesService, MENSAJE_ERROR_CALENDARIO } from '../../../core/examenes/examenes.service';
-import { EstadoMes } from '../../../core/examenes/modelos/estado-mes';
+import { aCalendarioDelMes } from '../../../core/examenes/adaptador-estado-mes';
+import {
+  CalendarioExamenesService,
+  MENSAJE_ERROR_CALENDARIO,
+} from '../../../core/examenes/calendario-examenes.service';
+import { CalendarioDelMes } from '../../../core/examenes/modelos/calendario-del-mes';
+import { ExamenCalendario } from '../../../core/examenes/modelos/examen-calendario';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { NotificacionPanel } from '../../../core/notificaciones/modelos/notificacion-panel';
 import { CalendarioExamenes } from './calendario-examenes';
 
-const DOCENTE: Sesion = {
-  token: 't',
-  idUsuario: 3,
-  nombreCompleto: 'Dolores Díaz',
-  dni: '12345678',
-  email: 'dolores@ejemplo.com',
-  roles: ['Docente'],
-  rolesConId: [{ idRol: 3, nombreRol: 'Docente' }],
-  venceEl: new Date(Date.now() + 60_000),
-};
+registerLocaleData(localeEsAr);
 
-/** Octubre de 2026: un examen el 13 y el límite alcanzado el 20. */
-const OCTUBRE: EstadoMes = {
-  limiteDiario: 2,
-  diasOcupados: [
-    { fecha: new Date(2026, 9, 13), cantidadExamenes: 1, limiteAlcanzado: false },
-    { fecha: new Date(2026, 9, 20), cantidadExamenes: 2, limiteAlcanzado: true },
-  ],
-};
+function sesionDe(rol: 'Docente' | 'Secretario'): Sesion {
+  return {
+    token: 't',
+    idUsuario: 3,
+    nombreCompleto: 'Dolores Díaz',
+    dni: '12345678',
+    email: 'dolores@ejemplo.com',
+    roles: [rol],
+    venceEl: new Date(Date.now() + 60_000),
+  };
+}
 
-/** Noviembre de 2026: sin exámenes. */
-const NOVIEMBRE: EstadoMes = { limiteDiario: 2, diasOcupados: [] };
+/** Un mes con la respuesta del backend adaptada, igual que la devuelve el servicio real. */
+function mes(anio: number, mesDelAnio: number, diasOcupados: unknown[]): CalendarioDelMes {
+  return aCalendarioDelMes({ limiteDiario: 2, diasOcupados }, { anio, mes: mesDelAnio });
+}
+
+/** Octubre de 2026: un parcial el 13 y el límite alcanzado el 20. */
+const OCTUBRE = mes(2026, 10, [
+  { fecha: '2026-10-13T00:00:00', cantidadExamenes: 1, limiteAlcanzado: false },
+  { fecha: '2026-10-20T00:00:00', cantidadExamenes: 2, limiteAlcanzado: true },
+]);
+
+/** Noviembre de 2026: sin parciales. */
+const NOVIEMBRE = mes(2026, 11, []);
 
 /** Los meses que pidió la pantalla, en orden: `[anio, mes]`. */
 let pedidos: [number, number][];
 
+/** La sesión de la prueba: se cambia para ver qué ve cada rol. */
+let sesion: ReturnType<typeof signal<Sesion>>;
+
 async function montar(
-  estadoDelMes: (anio: number, mes: number) => Observable<EstadoMes>,
+  calendarioDelMes: (anio: number, mes: number) => Observable<CalendarioDelMes>,
+  examenesDelMes: () => Observable<ExamenCalendario[]> = () => of([]),
 ): Promise<ComponentFixture<CalendarioExamenes>> {
   pedidos = [];
+  sesion = signal(sesionDe('Docente'));
 
   TestBed.configureTestingModule({
     providers: [
       provideRouter([]),
-      { provide: AuthService, useValue: { sesion: signal(DOCENTE), cerrarSesion: () => {} } },
+      { provide: LOCALE_ID, useValue: 'es-AR' },
+      { provide: AuthService, useValue: { sesion, cerrarSesion: () => {} } },
       {
         provide: CampanaService,
         useValue: {
@@ -54,12 +72,13 @@ async function montar(
         },
       },
       {
-        provide: ExamenesService,
+        provide: CalendarioExamenesService,
         useValue: {
-          estadoDelMes: (anio: number, mes: number) => {
-            pedidos.push([anio, mes]);
-            return estadoDelMes(anio, mes);
+          calendarioDelMes: (anio: number, mesDelAnio: number) => {
+            pedidos.push([anio, mesDelAnio]);
+            return calendarioDelMes(anio, mesDelAnio);
           },
+          examenesDelMes,
         },
       },
     ],
@@ -77,14 +96,9 @@ function titulo(fixture: ComponentFixture<CalendarioExamenes>): string {
   return raiz(fixture).querySelector('h2')?.textContent?.trim() ?? '';
 }
 
-/** La celda de un día del mes: la primera cuyo número es ese (los de relleno repiten números). */
-function celda(
-  fixture: ComponentFixture<CalendarioExamenes>,
-  numero: number,
-): HTMLTableCellElement | undefined {
-  return Array.from(raiz(fixture).querySelectorAll<HTMLTableCellElement>('tbody td')).find(
-    (td) => td.querySelector('span')?.textContent?.trim() === String(numero),
-  );
+/** La celda de un día del mes, por su fecha: "2026-10-13". */
+function celda(fixture: ComponentFixture<CalendarioExamenes>, fecha: string): HTMLElement {
+  return raiz(fixture).querySelector<HTMLElement>(`td[data-fecha="${fecha}"]`)!;
 }
 
 async function tocar(fixture: ComponentFixture<CalendarioExamenes>, selector: string) {
@@ -108,38 +122,86 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
 
     expect(pedidos).toEqual([[2026, 10]]);
     expect(titulo(fixture)).toBe('Octubre 2026');
+    expect(raiz(fixture).querySelector('h1')?.textContent).toContain(
+      'Calendario de exámenes parciales',
+    );
 
-    // Tabla real: un encabezado por día de la semana y una celda por día (5 semanas).
-    const columnas = raiz(fixture).querySelectorAll('thead th[scope="col"]');
+    // Una grilla real: un encabezado por día de la semana, de lunes a domingo, y una celda por día.
+    const columnas = raiz(fixture).querySelectorAll('table[role="grid"] thead th[scope="col"]');
     expect(Array.from(columnas).map((th) => th.getAttribute('aria-label'))).toEqual([
-      'Lunes',
-      'Martes',
-      'Miércoles',
-      'Jueves',
-      'Viernes',
-      'Sábado',
-      'Domingo',
+      'lunes',
+      'martes',
+      'miércoles',
+      'jueves',
+      'viernes',
+      'sábado',
+      'domingo',
     ]);
     expect(raiz(fixture).querySelectorAll('tbody td')).toHaveLength(35);
+    // Con la API real el listado de parciales viene vacío: no se dibuja ninguno.
+    expect(raiz(fixture).querySelectorAll('tbody td button')).toHaveLength(0);
 
-    expect(celda(fixture, 13)?.textContent).toContain('1 examen');
-    expect(celda(fixture, 20)?.textContent).toContain('Completo');
-    expect(celda(fixture, 14)?.textContent).toContain('Libre');
-    // El límite sale de la respuesta, no de un número escrito en la pantalla.
-    expect(raiz(fixture).textContent).toContain('el límite de 2 exámenes por día');
+    expect(celda(fixture, '2026-10-13').textContent).toContain('1 parcial');
+    expect(celda(fixture, '2026-10-20').textContent).toContain('Completo');
+    expect(celda(fixture, '2026-10-14').textContent).toContain('Libre');
+    // El día completo lleva el candado, además del color.
+    expect(celda(fixture, '2026-10-20').querySelector('app-icono')).not.toBeNull();
+    expect(celda(fixture, '2026-10-14').querySelector('app-icono')).toBeNull();
+
+    // La leyenda y la nota salen del límite de la respuesta, no de un número escrito en la pantalla.
+    expect(raiz(fixture).querySelector('ul[aria-label]')?.textContent).toContain('1 parcial');
+    expect(raiz(fixture).textContent).toContain('el límite de 2 parciales por día');
 
     // Hoy: una sola celda, marcada para los lectores de pantalla.
     const hoy = raiz(fixture).querySelectorAll('td[aria-current="date"]');
     expect(hoy).toHaveLength(1);
-    expect(hoy[0].querySelector('span')?.textContent?.trim()).toBe('10');
+    expect(hoy[0].getAttribute('data-fecha')).toBe('2026-10-10');
+  });
+
+  it('cada día se anuncia con su fecha y cuántos parciales tiene', async () => {
+    const fixture = await montar(() => of(OCTUBRE));
+
+    expect(celda(fixture, '2026-10-13').getAttribute('aria-label')).toBe(
+      '13 de octubre, 1 de 2 parciales',
+    );
+    expect(celda(fixture, '2026-10-20').getAttribute('aria-label')).toBe(
+      '20 de octubre, 2 de 2 parciales, completo',
+    );
+  });
+
+  it('por ahora no se puede elegir un día: la selección está deshabilitada', async () => {
+    const fixture = await montar(() => of(OCTUBRE));
+
+    expect(raiz(fixture).querySelector('table')?.getAttribute('aria-readonly')).toBe('true');
+    expect(raiz(fixture).querySelector('[aria-disabled]')).toBeNull();
+  });
+
+  it('lista en su día los parciales que trae el servicio', async () => {
+    const parcial: ExamenCalendario = {
+      idExamen: 1,
+      fecha: '2026-10-13',
+      materia: 'Matemática',
+      comision: 'Comisión 1° A',
+      tipo: 'Parcial',
+    };
+
+    const fixture = await montar(
+      () => of(OCTUBRE),
+      () => of([parcial]),
+    );
+
+    expect(celda(fixture, '2026-10-13').querySelector('button')?.textContent?.trim()).toBe(
+      'Matemática',
+    );
+    expect(raiz(fixture).querySelectorAll('tbody td button')).toHaveLength(1);
   });
 
   it('al pasar de mes pide el nuevo y descarta la respuesta de un mes que ya no se mira', async () => {
-    const respuestas: Record<number, Subject<EstadoMes>> = {
-      10: new Subject<EstadoMes>(),
-      11: new Subject<EstadoMes>(),
+    const respuestas: Record<number, Subject<CalendarioDelMes>> = {
+      10: new Subject<CalendarioDelMes>(),
+      11: new Subject<CalendarioDelMes>(),
     };
-    const fixture = await montar((_anio, mes) => respuestas[mes]);
+    const fixture = await montar((_anio, mesDelAnio) => respuestas[mesDelAnio]);
 
     // Se pasa a noviembre sin que haya llegado octubre.
     await tocar(fixture, 'button[aria-label="Mes siguiente"]');
@@ -155,14 +217,16 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
 
     // Gana noviembre: octubre llegó tarde y no pisa la grilla.
     expect(raiz(fixture).querySelector('caption')?.textContent).toContain('Noviembre 2026');
-    expect(celda(fixture, 13)?.textContent).toContain('Libre');
+    expect(celda(fixture, '2026-11-13').textContent).toContain('Libre');
 
     await tocar(fixture, 'button[aria-label="Mes anterior"]');
     expect(titulo(fixture)).toBe('Octubre 2026');
   });
 
   it('"Hoy" vuelve al mes actual, y estando en él no vuelve a pedirlo', async () => {
-    const fixture = await montar((_anio, mes) => of(mes === 10 ? OCTUBRE : NOVIEMBRE));
+    const fixture = await montar((_anio, mesDelAnio) =>
+      of(mesDelAnio === 10 ? OCTUBRE : NOVIEMBRE),
+    );
 
     const botonHoy = () =>
       Array.from(raiz(fixture).querySelectorAll<HTMLButtonElement>('button')).find(
@@ -201,6 +265,21 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
     await tocar(fixture, '[role="alert"] button');
 
     expect(raiz(fixture).querySelector('[role="alert"]')).toBeNull();
-    expect(celda(fixture, 20)?.textContent).toContain('Completo');
+    expect(celda(fixture, '2026-10-20').textContent).toContain('Completo');
+  });
+
+  it('"Cambiar el límite" lo ven Secretaría y Dirección, y el Docente no', async () => {
+    const fixture = await montar(() => of(OCTUBRE));
+    const enlace = () =>
+      Array.from(raiz(fixture).querySelectorAll('a')).find(
+        (a) => a.textContent?.trim() === 'Cambiar el límite',
+      );
+
+    expect(enlace()).toBeUndefined();
+
+    sesion.set(sesionDe('Secretario'));
+    await fixture.whenStable();
+
+    expect(enlace()?.getAttribute('href')).toBe('/secretario/limite-parciales');
   });
 });

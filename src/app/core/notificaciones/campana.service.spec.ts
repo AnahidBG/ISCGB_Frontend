@@ -4,7 +4,7 @@ import { Observable, Subject, of, throwError } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { ID_ROL, ROLES } from '../auth/modelos/rol';
 import { Sesion } from '../auth/modelos/sesion';
-import { ExamenesService } from '../examenes/examenes.service';
+import { CalendarioExamenesService } from '../examenes/calendario-examenes.service';
 import { MesaAsignada } from '../examenes/modelos/mesa-asignada';
 import { JustificativoPendiente } from '../justificativos/modelos/justificativo-pendiente';
 import { JustificativosService } from '../justificativos/justificativos.service';
@@ -135,7 +135,7 @@ describe('CampanaService', () => {
           },
         },
         {
-          provide: ExamenesService,
+          provide: CalendarioExamenesService,
           useValue: {
             mesasAsignadas: (opciones?: unknown) => {
               llamadas.mesas(opciones);

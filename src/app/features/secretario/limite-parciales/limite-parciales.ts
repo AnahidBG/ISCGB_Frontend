@@ -8,15 +8,16 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import {
-  ExamenesService,
+  CalendarioExamenesService,
   MENSAJE_ERROR_LIMITE_DIARIO,
-} from '../../../core/examenes/examenes.service';
+} from '../../../core/examenes/calendario-examenes.service';
 import { textoLimiteDiario } from '../../../core/examenes/limite-diario';
+import { PERIODO_DEL_LIMITE } from '../../../core/examenes/periodo-limite';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
@@ -30,30 +31,34 @@ type CargaLimite =
 const CARGANDO: CargaLimite = { fase: 'cargando' };
 
 /**
- * Límite de exámenes por día (calendario de exámenes, Sprint 3).
+ * Límite de parciales (calendario de exámenes, Sprint 3).
  *
- * Secretaría fija cuántos exámenes admite un mismo día. Es un solo número para
- * todo el instituto y para todos los tipos de examen: cuando un día lo alcanza,
- * el calendario lo muestra como Completo y el backend no deja registrar más. Esta
- * pantalla lee y guarda ese número (`estado-mes` / `PUT limite-parciales`).
+ * Secretaría fija cuántos parciales admite el período (hoy, un día). Es un solo
+ * número para todo el instituto y para todos los tipos de examen: cuando un día
+ * lo alcanza, el calendario lo muestra como Completo y el backend no deja
+ * registrar más. Esta pantalla lee y guarda ese número (`estado-mes` / `PUT
+ * limite-parciales`). La ven Secretario y Director, y lleva al calendario.
  *
- * Contenedor: es el único que conoce `ExamenesService`. El formulario vive en
- * `partes/formulario-limite`.
+ * Contenedor: es el único que conoce `CalendarioExamenesService`. El formulario
+ * vive en `partes/formulario-limite`.
  */
 @Component({
-  selector: 'app-limite-examenes',
-  imports: [EstructuraPanel, PantallaCarga, FormularioLimite],
-  templateUrl: './limite-examenes.html',
+  selector: 'app-limite-parciales',
+  imports: [EstructuraPanel, PantallaCarga, FormularioLimite, RouterLink],
+  templateUrl: './limite-parciales.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class LimiteExamenes {
+export class LimiteParciales {
   private readonly auth = inject(AuthService);
-  private readonly examenes = inject(ExamenesService);
+  private readonly examenes = inject(CalendarioExamenesService);
   private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
   private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
+
+  /** Lo que dice debajo del título: el período sale de `PERIODO_DEL_LIMITE`. */
+  protected readonly subtitulo = `Definí cuántos parciales se pueden registrar por ${PERIODO_DEL_LIMITE}.`;
 
   /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));

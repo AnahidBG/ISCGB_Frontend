@@ -73,8 +73,7 @@ export function enlacesPorSesion(
   }
 
   // Solo Secretario: el backend no deja a Dirección ver estas solicitudes, y
-  // la frecuencia de los avisos y el límite de exámenes son configuración de
-  // Secretaría.
+  // la frecuencia de los avisos es configuración de Secretaría.
   if (tieneAlgunRol(sesion, [ROLES.secretario])) {
     enlaces.push({
       etiqueta: 'Solicitudes de reconocimiento',
@@ -87,10 +86,15 @@ export function enlacesPorSesion(
       url: '/secretario/frecuencia-avisos',
       icono: 'campana',
     });
-    // Cuántos exámenes admite el calendario en un mismo día.
+  }
+
+  // Cuántos parciales admite el calendario en el período (hoy, un día): lo fijan
+  // Secretaría y Dirección. Para el Secretario va después de la frecuencia de
+  // avisos, con el resto de su configuración.
+  if (tieneAlgunRol(sesion, [ROLES.director, ROLES.secretario])) {
     enlaces.push({
-      etiqueta: 'Límite de exámenes',
-      url: '/secretario/limite-examenes',
+      etiqueta: 'Límite de parciales',
+      url: '/secretario/limite-parciales',
       icono: 'calendario',
     });
   }
@@ -125,6 +129,13 @@ export function enlacesPorSesion(
       etiqueta: 'Entregar programa de materia',
       url: '/docente/entrega-programa',
       icono: 'legajo',
+    });
+    // El Alumno no ve el calendario, y Secretaría y Dirección llegan a él desde
+    // "Límite de parciales".
+    enlaces.push({
+      etiqueta: 'Calendario de parciales',
+      url: '/calendario',
+      icono: 'calendario',
     });
   }
 

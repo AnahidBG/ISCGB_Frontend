@@ -3,25 +3,26 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { SIN_CARGA_GLOBAL } from '../carga/carga.interceptor';
 import { RUTAS_API } from '../configuracion/api';
-import { ExamenesHttpService } from './examenes-http.service';
+import { CalendarioExamenesHttpService } from './calendario-examenes-http.service';
 import {
   MENSAJE_ERROR_CALENDARIO,
   MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO,
   MENSAJE_ERROR_LIMITE_DIARIO,
   MENSAJE_ERROR_MESAS_ASIGNADAS,
-} from './examenes.service';
-import { EstadoMes } from './modelos/estado-mes';
+} from './calendario-examenes.service';
+import { CalendarioDelMes } from './modelos/calendario-del-mes';
+import { ExamenCalendario } from './modelos/examen-calendario';
 import { MesaAsignada } from './modelos/mesa-asignada';
 
-describe('ExamenesHttpService (SCRUM-183)', () => {
-  let servicio: ExamenesHttpService;
+describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
+  let servicio: CalendarioExamenesHttpService;
   let backend: HttpTestingController;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [ExamenesHttpService, provideHttpClient(), provideHttpClientTesting()],
+      providers: [CalendarioExamenesHttpService, provideHttpClient(), provideHttpClientTesting()],
     });
-    servicio = TestBed.inject(ExamenesHttpService);
+    servicio = TestBed.inject(CalendarioExamenesHttpService);
     backend = TestBed.inject(HttpTestingController);
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -33,7 +34,7 @@ describe('ExamenesHttpService (SCRUM-183)', () => {
   });
 
   it('pide estado-mes con el año y el mes por query', () => {
-    servicio.estadoDelMes(2026, 10).subscribe();
+    servicio.calendarioDelMes(2026, 10).subscribe();
 
     const pedido = backend.expectOne(RUTAS_API.estadoMesCalendario(2026, 10));
     expect(pedido.request.method).toBe('GET');
@@ -43,32 +44,64 @@ describe('ExamenesHttpService (SCRUM-183)', () => {
     pedido.flush({ limiteDiario: 2, diasOcupados: [] });
   });
 
-  it('traduce la respuesta al modelo sin correr la fecha un día', () => {
-    let estado: EstadoMes | undefined;
-    servicio.estadoDelMes(2026, 10).subscribe((valor) => (estado = valor));
+  it('adapta la respuesta: todos los días del mes, con su estado, sin correr la fecha un día', () => {
+    let calendario: CalendarioDelMes | undefined;
+    servicio.calendarioDelMes(2026, 10).subscribe((valor) => (calendario = valor));
 
     backend.expectOne(RUTAS_API.estadoMesCalendario(2026, 10)).flush({
       limiteDiario: 2,
       // Un `DateTime` de .NET serializado: sin zona, a medianoche.
-      diasOcupados: [{ fecha: '2026-10-13T00:00:00', cantidadExamenes: 1, limiteAlcanzado: false }],
+      diasOcupados: [
+        { fecha: '2026-10-13T00:00:00', cantidadExamenes: 1, limiteAlcanzado: false },
+        { fecha: '2026-10-20T00:00:00', cantidadExamenes: 2, limiteAlcanzado: true },
+      ],
     });
 
-    expect(estado).toEqual({
-      limiteDiario: 2,
-      diasOcupados: [{ fecha: new Date(2026, 9, 13), cantidadExamenes: 1, limiteAlcanzado: false }],
+    expect(calendario?.limite).toBe(2);
+    expect(calendario?.dias).toHaveLength(31);
+    expect(calendario?.dias[0]).toEqual({
+      fecha: '2026-10-01',
+      cantidad: 0,
+      limite: 2,
+      estado: 'disponible',
     });
+    expect(calendario?.dias[12]).toEqual({
+      fecha: '2026-10-13',
+      cantidad: 1,
+      limite: 2,
+      estado: 'ocupado',
+    });
+    expect(calendario?.dias[19]).toMatchObject({ fecha: '2026-10-20', estado: 'completo' });
   });
 
   it('en segundo plano el pedido lleva SIN_CARGA_GLOBAL, y sin la opción no', () => {
-    servicio.estadoDelMes(2026, 10, { enSegundoPlano: true }).subscribe();
+    servicio.calendarioDelMes(2026, 10, { enSegundoPlano: true }).subscribe();
     const enSegundoPlano = backend.expectOne(RUTAS_API.estadoMesCalendario(2026, 10));
     expect(enSegundoPlano.request.context.get(SIN_CARGA_GLOBAL)).toBe(true);
     enSegundoPlano.flush({ limiteDiario: 2, diasOcupados: [] });
 
-    servicio.estadoDelMes(2026, 11).subscribe();
+    servicio.calendarioDelMes(2026, 11).subscribe();
     const conVelo = backend.expectOne(RUTAS_API.estadoMesCalendario(2026, 11));
     expect(conVelo.request.context.get(SIN_CARGA_GLOBAL)).toBe(false);
     conVelo.flush({ limiteDiario: 2, diasOcupados: [] });
+  });
+
+  it('un día que no se puede leer no tira abajo el mes: queda disponible', () => {
+    let calendario: CalendarioDelMes | undefined;
+    servicio.calendarioDelMes(2026, 10).subscribe((valor) => (calendario = valor));
+
+    backend.expectOne(RUTAS_API.estadoMesCalendario(2026, 10)).flush({
+      limiteDiario: 2,
+      diasOcupados: [
+        { fecha: 'ayer', cantidadExamenes: 1, limiteAlcanzado: false },
+        { fecha: '2026-10-13T00:00:00', cantidadExamenes: 1, limiteAlcanzado: false },
+      ],
+    });
+
+    expect(calendario?.dias).toHaveLength(31);
+    expect(calendario?.dias.filter((dia) => dia.cantidad > 0).map((dia) => dia.fecha)).toEqual([
+      '2026-10-13',
+    ]);
   });
 
   it.each([
@@ -81,25 +114,27 @@ describe('ExamenesHttpService (SCRUM-183)', () => {
       () => ({ cuerpo: { diasOcupados: [] }, opciones: {} }),
     ],
     [
-      'un día trae una fecha que no es una fecha',
-      () => ({
-        cuerpo: {
-          limiteDiario: 2,
-          diasOcupados: [{ fecha: 'ayer', cantidadExamenes: 1, limiteAlcanzado: false }],
-        },
-        opciones: {},
-      }),
+      'la respuesta no trae la lista de días',
+      () => ({ cuerpo: { limiteDiario: 2, diasOcupados: 'nada' }, opciones: {} }),
     ],
   ])('falla con el mensaje de siempre cuando %s', (_caso, respuesta) => {
     let mensaje: string | undefined;
     servicio
-      .estadoDelMes(2026, 13)
+      .calendarioDelMes(2026, 13)
       .subscribe({ error: (fallo: Error) => (mensaje = fallo.message) });
 
     const { cuerpo, opciones } = respuesta();
     backend.expectOne(RUTAS_API.estadoMesCalendario(2026, 13)).flush(cuerpo, opciones);
 
     expect(mensaje).toBe(MENSAJE_ERROR_CALENDARIO);
+  });
+
+  it('el listado de exámenes del mes viene vacío y no pega contra el backend', () => {
+    let examenes: ExamenCalendario[] | undefined;
+    servicio.examenesDelMes(2026, 10).subscribe((valor) => (examenes = valor));
+
+    // `backend.verify()`, en el afterEach, falla si salió algún pedido.
+    expect(examenes).toEqual([]);
   });
 
   it('el límite vigente sale del `estado-mes` del mes actual', () => {

@@ -1,5 +1,7 @@
-import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { ApplicationConfig, LOCALE_ID, provideBrowserGlobalErrorListeners } from '@angular/core';
+import { registerLocaleData } from '@angular/common';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import localeEsAr from '@angular/common/locales/es-AR';
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
@@ -12,8 +14,8 @@ import { BusquedaHttpService } from './core/busqueda/busqueda-http.service';
 import { cargaInterceptor } from './core/carga/carga.interceptor';
 import { CertificadosService } from './core/certificados/certificados.service';
 import { CertificadosHttpService } from './core/certificados/certificados-http.service';
-import { ExamenesService } from './core/examenes/examenes.service';
-import { ExamenesHttpService } from './core/examenes/examenes-http.service';
+import { CalendarioExamenesService } from './core/examenes/calendario-examenes.service';
+import { CalendarioExamenesHttpService } from './core/examenes/calendario-examenes-http.service';
 import { JustificativosService } from './core/justificativos/justificativos.service';
 import { JustificativosHttpService } from './core/justificativos/justificativos-http.service';
 import { LegajoService } from './core/legajos/legajo.service';
@@ -29,10 +31,16 @@ import { ProgramasMateriaHttpService } from './core/programas-materia/programas-
 import { UsuariosService } from './core/usuarios/usuarios.service';
 import { UsuariosHttpService } from './core/usuarios/usuarios-http.service';
 
+// Los datos del español de Argentina para `DatePipe` y `formatDate`: nombres de
+// días y meses, formatos y primer día de la semana. Sin esto, Angular formatea
+// en inglés. Se registra una vez, antes de arrancar.
+registerLocaleData(localeEsAr);
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
+    { provide: LOCALE_ID, useValue: 'es-AR' },
 
     // El ORDEN de los interceptores importa: se ejecutan en el orden de este
     // arreglo. `tokenInterceptor` va primero para que el pedido ya salga con
@@ -59,7 +67,7 @@ export const appConfig: ApplicationConfig = {
     { provide: MateriasService, useClass: MateriasHttpService },
     { provide: BusquedaService, useClass: BusquedaHttpService },
     { provide: FrecuenciaAvisosService, useClass: FrecuenciaAvisosHttpService },
-    { provide: ExamenesService, useClass: ExamenesHttpService },
+    { provide: CalendarioExamenesService, useClass: CalendarioExamenesHttpService },
 
     // UsuariosHttpService: GET /api/Usuarios (real) y gestión de usuarios
     // contra /api/UsuariosAdmin. Ver docs/contrato-api.md y

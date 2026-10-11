@@ -375,8 +375,10 @@ instituto, que define Secretaría Académica. Hoy vale 2 si nunca se configuró.
 hay límite por comisión.
 
 Esta sección se relevó el 10/10/2026 contra el código del backend. El frontend
-consume `estado-mes` en `/calendario`, para los cuatro roles, y `limite-parciales`
-en `/secretario/limite-examenes`, solo para Secretario.
+consume `estado-mes` en `/calendario`, para Docente, Secretario y Director, y
+`limite-parciales` en `/secretario/limite-parciales`, para Secretario y Director.
+El backend no exige rol en ninguno de los dos: lo único que deja afuera al Alumno
+es el `roleGuard` del frontend.
 
 ### `GET /api/ConfiguracionCalendario/estado-mes?anio=2026&mes=10`
 
@@ -396,16 +398,25 @@ en `/secretario/limite-examenes`, solo para Secretario.
 - `fecha` es un `DateTime` de .NET serializado sin zona, a medianoche. El frontend
   lo convierte con `desdeFechaSola` para que no se corra un día por la zona
   horaria.
-- `limiteAlcanzado` lo calcula el backend (`cantidadExamenes >= limiteDiario`) y el
-  frontend se fía de él: un día es `Completo` cuando viene en `true`, sin
-  recalcularlo con la cantidad.
+- `limiteAlcanzado` lo calcula el backend (`cantidadExamenes >= limiteDiario`). El
+  frontend no lo usa: calcula el estado de cada día él mismo con la cantidad y el
+  límite (`estadoDelDia`), que es la misma cuenta.
 - No hay más campos. No trae qué exámenes son, de qué materia ni a qué hora.
 - Un mes inválido (0 o 13, por ejemplo) responde `500`: el controller arma un
   `DateTime` con el valor sin validarlo.
 
-El frontend los traduce a tres estados: `Libre` (el día no viene en la lista),
-`ConExamenes` y `Completo`. La respuesta pasa a `EstadoMes` en
-`ExamenesHttpService`.
+El frontend arma con eso el modelo `CalendarioDelMes` (`aCalendarioDelMes`, en
+`core/examenes/adaptador-estado-mes.ts`): todos los días del mes, en orden, con
+`fecha` como `yyyy-MM-dd`, `cantidad` (0 en los que el backend no lista), `limite` y
+`estado`. El estado sale de `estadoDelDia(cantidad, limite)`: `disponible` sin
+parciales, `ocupado` si tiene alguno y falta para el límite, y `completo` si lo
+alcanzó. Si la cantidad o el límite no son números válidos, el día queda
+`disponible`.
+
+Una entrada de `diasOcupados` que no se puede leer (una fecha inválida, o una
+cantidad que no es un entero de 0 para arriba) se descarta y ese día queda
+disponible. Si la respuesta entera no se puede leer (`limiteDiario` no es un número
+o `diasOcupados` no es una lista) es un error.
 
 ### `PUT /api/ConfiguracionCalendario/limite-parciales`
 
@@ -422,13 +433,16 @@ Con `nuevoLimite` en cero o negativo responde `400` con
 - El límite es por día y único para todo el instituto. Cuenta todos los tipos de
   examen, no solo los parciales, aunque el endpoint se llame así.
 - No hay un GET propio. El valor vigente se lee de `limiteDiario` en
-  `estado-mes`, que es el mismo en cualquier mes: `ExamenesHttpService.limiteDiario()`
-  pide el mes actual y se queda con ese campo.
-- El frontend lo usa en la pantalla "Límite de exámenes por día"
-  (`/secretario/limite-examenes`), solo para Secretario. Valida un entero entre 1 y
-  99 antes de enviar y, si el backend rechaza el valor, muestra su mensaje. El
-  máximo de 99 es solo del frontend, para atajar un error de tipeo: el backend no
-  pone ninguno.
+  `estado-mes`, que es el mismo en cualquier mes:
+  `CalendarioExamenesHttpService.limiteDiario()` pide el mes actual y se queda con
+  ese campo.
+- El frontend lo usa en la pantalla "Límite de parciales"
+  (`/secretario/limite-parciales`), para Secretario y Director. Valida un entero
+  entre 1 y 99 antes de enviar y, si el backend rechaza el valor, muestra su
+  mensaje. El máximo de 99 es solo del frontend, para atajar un error de tipeo: el
+  backend no pone ninguno. El período que nombran los textos ("por día") sale de
+  una sola constante, `PERIODO_DEL_LIMITE`: en Jira el límite figura "por semana",
+  pero el backend cuenta por día.
 - El frontend siempre manda un entero: con `nuevoLimite` ausente el backend lo da
   por válido (ver los pendientes).
 
@@ -448,10 +462,16 @@ Con `nuevoLimite` en cero o negativo responde `400` con
 
 ### Pendientes del backend
 
-- No hay un endpoint que liste los exámenes. Por eso el calendario dice cuántos
-  hay cada día y no cuáles: no se puede armar la agenda del mes ni mostrar la
-  materia, la hora o quién registró cada examen. Tampoco se puede saber, en el
-  front, cuáles son "los tuyos".
+- No hay un endpoint que liste los exámenes (`idExamen`, materia, comisión y tipo).
+  Por eso el calendario dice cuántos hay cada día y no cuáles: no se puede armar
+  la agenda del mes ni mostrar la materia, la hora o quién registró cada examen.
+  Tampoco se puede saber, en el front, cuáles son "los tuyos". La grilla ya tiene
+  dónde dibujarlos: `CalendarioExamenesService.examenesDelMes(...)` devuelve una
+  lista vacía contra la API real (`TODO(SCRUM-182)`) y solo el mock trae ejemplos.
+- El período del límite no está definido. El backend cuenta por día
+  (`limite_parciales_diario`) y en Jira figura "por semana". Si cambia, el frontend
+  toca `PERIODO_DEL_LIMITE`, que solo cambia la redacción, y tendría que revisar
+  también qué significa "completo" en cada celda.
 - Solo `mis-materias-docente` exige rol. El resto no tiene `[Authorize]`: quien
   tenga la dirección puede registrar, mover o borrar exámenes y cambiar el límite
   sin iniciar sesión. En `limite-parciales` la línea está comentada en el código,
@@ -501,8 +521,8 @@ asignaron y cuya confirmación (`mesa_examen.estado_confirmacion`) sigue en
 
 Qué hace el frontend con eso:
 
-- `ExamenesService.mesasAsignadas()` lo pide en segundo plano, sin el velo global.
-  `ExamenesHttpService` lo traduce a `MesaAsignada`. Un `404` es una lista vacía
+- `CalendarioExamenesService.mesasAsignadas()` lo pide en segundo plano, sin el velo global.
+  `CalendarioExamenesHttpService` lo traduce a `MesaAsignada`. Un `404` es una lista vacía
   (no tiene perfil de docente, así que no tiene mesas); cualquier otro fallo, o
   una respuesta que no se puede leer, es un error.
 - Lo consume solo la campana (`CampanaService`) y solo cuando el rol principal de

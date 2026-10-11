@@ -4,31 +4,19 @@ import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { contextoDePedido } from '../carga/contexto-pedido';
 import { esEndpointInexistente, mensajeDelServidor } from '../comun/error-api';
 import { OpcionesPedido } from '../comun/opciones-pedido';
-import { desdeFechaSola } from '../comun/fechas';
 import { RUTAS_API } from '../configuracion/api';
+import { aCalendarioDelMes } from './adaptador-estado-mes';
 import { mesDe } from './calendario-mes';
 import {
-  ExamenesService,
+  CalendarioExamenesService,
   MENSAJE_ERROR_CALENDARIO,
   MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO,
   MENSAJE_ERROR_LIMITE_DIARIO,
   MENSAJE_ERROR_MESAS_ASIGNADAS,
-} from './examenes.service';
-import { DiaOcupado, EstadoMes } from './modelos/estado-mes';
+} from './calendario-examenes.service';
+import { CalendarioDelMes } from './modelos/calendario-del-mes';
+import { ExamenCalendario } from './modelos/examen-calendario';
 import { MesaAsignada } from './modelos/mesa-asignada';
-
-/** Un elemento de `diasOcupados`. La fecha es un `DateTime` de .NET: "2026-10-13T00:00:00". */
-interface DiaOcupadoApi {
-  fecha: string;
-  cantidadExamenes: number;
-  limiteAlcanzado: boolean;
-}
-
-/** El cuerpo del `GET .../estado-mes`. */
-interface EstadoMesApi {
-  limiteDiario: number;
-  diasOcupados: DiaOcupadoApi[];
-}
 
 /** El cuerpo del `PUT .../limite-parciales` (`ActualizarLimiteParcialesDto`). */
 interface LimiteApi {
@@ -48,23 +36,47 @@ interface MesaAsignadaApi {
 /** Una fecha CON hora: "2026-11-20T09:00:00". */
 const TEXTO_FECHA_Y_HORA = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
-/** El calendario de exámenes contra la API real. */
+/** El calendario de parciales contra la API real. */
 @Injectable()
-export class ExamenesHttpService extends ExamenesService {
+export class CalendarioExamenesHttpService extends CalendarioExamenesService {
   private readonly http = inject(HttpClient);
 
-  estadoDelMes(anio: number, mes: number, opciones?: OpcionesPedido): Observable<EstadoMes> {
+  calendarioDelMes(
+    anio: number,
+    mes: number,
+    opciones?: OpcionesPedido,
+  ): Observable<CalendarioDelMes> {
     return this.http
-      .get<EstadoMesApi>(RUTAS_API.estadoMesCalendario(anio, mes), {
+      .get<unknown>(RUTAS_API.estadoMesCalendario(anio, mes), {
         context: contextoDePedido(opciones),
       })
       .pipe(
-        map(aEstadoMes),
+        // Adapter: la respuesta cruda → el modelo del calendario. Una respuesta
+        // que no se puede leer entera es un error.
+        map((respuesta) => aCalendarioDelMes(respuesta, { anio, mes })),
         catchError((error: unknown) => {
           console.error('Error al traer el estado del mes del calendario:', error);
           return throwError(() => new Error(MENSAJE_ERROR_CALENDARIO));
         }),
       );
+  }
+
+  /**
+   * El backend todavía no tiene un endpoint que liste los exámenes (con su
+   * materia, comisión y tipo): `estado-mes` solo cuenta cuántos hay por día.
+   * Hasta entonces el calendario no lista ninguno y esto devuelve una lista
+   * vacía, sin pegarle al backend. Solo el mock trae ejemplos.
+   */
+  examenesDelMes(
+    _anio: number,
+    _mes: number,
+    _opciones?: OpcionesPedido,
+  ): Observable<ExamenCalendario[]> {
+    // TODO(SCRUM-182): consumir el listado de exámenes del mes cuando el backend
+    // lo tenga (hoy no hay ningún endpoint que devuelva idExamen, materia,
+    // comisión y tipo). Hay que adaptar su respuesta a `ExamenCalendario`, con
+    // la fecha como "yyyy-MM-dd" (`desdeFechaSola` + `aFechaSola`).
+    return of<ExamenCalendario[]>([]);
   }
 
   /**
@@ -74,9 +86,9 @@ export class ExamenesHttpService extends ExamenesService {
   limiteDiario(): Observable<number> {
     const { anio, mes } = mesDe(new Date());
 
-    return this.estadoDelMes(anio, mes).pipe(
-      map((estado) => estado.limiteDiario),
-      // `estadoDelMes` ya dejó el detalle en la consola; acá solo se cambia el
+    return this.calendarioDelMes(anio, mes).pipe(
+      map((calendario) => calendario.limite),
+      // `calendarioDelMes` ya dejó el detalle en la consola; acá solo se cambia el
       // texto, que habla del calendario y no del límite.
       catchError(() => throwError(() => new Error(MENSAJE_ERROR_LIMITE_DIARIO))),
     );
@@ -133,23 +145,6 @@ function traducirError(error: HttpErrorResponse): string {
   return MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO;
 }
 
-/**
- * Adapter: la respuesta cruda → el modelo limpio. Una respuesta que no se
- * puede leer es un error: un calendario con días inventados es peor que
- * ninguno.
- */
-function aEstadoMes(respuesta: EstadoMesApi): EstadoMes {
-  const limiteDiario: unknown = respuesta?.limiteDiario;
-  if (typeof limiteDiario !== 'number' || !Number.isFinite(limiteDiario)) {
-    throw new Error('La respuesta no trae `limiteDiario`.');
-  }
-  if (!Array.isArray(respuesta.diasOcupados)) {
-    throw new Error('La respuesta no trae `diasOcupados`.');
-  }
-
-  return { limiteDiario, diasOcupados: respuesta.diasOcupados.map(aDiaOcupado) };
-}
-
 function aMesasAsignadas(respuesta: MesaAsignadaApi[]): MesaAsignada[] {
   if (!Array.isArray(respuesta)) {
     throw new Error('La respuesta no es una lista de mesas.');
@@ -167,19 +162,4 @@ function aMesaAsignada(mesa: MesaAsignadaApi): MesaAsignada {
   }
 
   return { idExamen: mesa.idExamen, materia: mesa.materia, fecha };
-}
-
-function aDiaOcupado(dia: DiaOcupadoApi): DiaOcupado {
-  // `desdeFechaSola` y no `new Date(texto)`: una fecha sin zona se leería en
-  // UTC y en Argentina caería el día anterior.
-  const fecha = desdeFechaSola(dia.fecha);
-  if (fecha === null) {
-    throw new Error(`La fecha "${dia.fecha}" no es válida.`);
-  }
-
-  return {
-    fecha,
-    cantidadExamenes: dia.cantidadExamenes,
-    limiteAlcanzado: dia.limiteAlcanzado,
-  };
 }

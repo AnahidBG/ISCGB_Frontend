@@ -5,7 +5,7 @@ import { ROLES } from '../auth/modelos/rol';
 import { OpcionesPedido } from '../comun/opciones-pedido';
 import { rolPrincipalDe } from '../auth/rol-principal';
 import { Sesion } from '../auth/modelos/sesion';
-import { ExamenesService } from '../examenes/examenes.service';
+import { CalendarioExamenesService } from '../examenes/calendario-examenes.service';
 import { MesaAsignada } from '../examenes/modelos/mesa-asignada';
 import { JustificativosService } from '../justificativos/justificativos.service';
 import { LegajoService } from '../legajos/legajo.service';
@@ -31,7 +31,7 @@ interface Dependencias {
   legajos: LegajoService;
   justificativos: JustificativosService;
   /** Solo lo usa el Docente, y es opcional: sin él ve únicamente su legajo. */
-  examenes: ExamenesService | null;
+  examenes: CalendarioExamenesService | null;
 }
 
 function pesoNotificacion(notificacion: NotificacionPanel): number {
@@ -190,7 +190,7 @@ function guardarLeidas(idUsuario: number, leidas: Set<string>): void {
  *   · Singleton (`providedIn: 'root'`): el estado vive acá y no se pierde al
  *     navegar, por eso la campana no parpadea a vacío entre pantallas.
  *   · Facade: compone `LegajoService`, `JustificativosService` y, para el
- *     Docente, `ExamenesService` (las clases ABSTRACTAS), así funciona igual
+ *     Docente, `CalendarioExamenesService` (las clases ABSTRACTAS), así funciona igual
  *     con la implementación HTTP y con el mock. No es un dominio HTTP nuevo: no
  *     llama a ningún endpoint propio, y por eso no tiene par `*-http` / `*-mock`.
  *   · Tabla por clave: `FUENTE_POR_ROL`, con caso por defecto = campana vacía.
@@ -217,7 +217,7 @@ export class CampanaService {
   private readonly auth = inject(AuthService, { optional: true });
   private readonly legajos = inject(LegajoService, { optional: true });
   private readonly justificativos = inject(JustificativosService, { optional: true });
-  private readonly examenes = inject(ExamenesService, { optional: true });
+  private readonly examenes = inject(CalendarioExamenesService, { optional: true });
   private readonly dependencias: Dependencias | null =
     this.legajos !== null && this.justificativos !== null
       ? { legajos: this.legajos, justificativos: this.justificativos, examenes: this.examenes }
