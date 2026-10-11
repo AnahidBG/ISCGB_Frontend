@@ -21,10 +21,12 @@ export interface DatosProximamente {
  * Pantalla genérica para lo que todavía no existe.
  *
  * Milena pidió sumar al menú opciones previstas por el proyecto y el Figma
- * —Calendario, Configuración, lo que vaya saliendo— aunque el backend no
- * las sostenga todavía: "es más para que se vea", vamos a completarlas de a
- * poco. En vez de un enlace deshabilitado (que no se puede tocar ni
- * explorar) o, peor, uno que no lleva a ningún lado, cada una de esas
+ * —Configuración, lo que vaya saliendo— aunque el backend no las sostenga
+ * todavía: "es más para que se vea", vamos a completarlas de a poco. El
+ * calendario de exámenes empezó acá y pasó a tener pantalla propia el
+ * 10/10/2026 (SCRUM-183).
+ *
+ * En vez de un enlace deshabilitado (que no se puede tocar ni explorar) o, peor, uno que no lleva a ningún lado, cada una de esas
  * opciones apunta a ESTA pantalla con su propio texto — así la persona
  * entra, entiende qué va a haber ahí y por qué no está todavía, y tiene
  * cómo volver.
@@ -49,8 +51,8 @@ export class Proximamente {
   protected readonly sesion = this.auth.sesion;
 
   /**
-   * `snapshot` y no el `data` observable: cada ruta (`/calendario`,
-   * `/configuracion`, la que se agregue después) es una entrada DISTINTA en
+   * `snapshot` y no el `data` observable: cada ruta (`/configuracion`, la
+   * que se agregue después) es una entrada DISTINTA en
    * `app.routes.ts`, así que Angular crea una instancia nueva de este
    * componente al navegar de una a otra — no hace falta reaccionar a
    * cambios, el snapshot del momento en que se construyó ya es el correcto.

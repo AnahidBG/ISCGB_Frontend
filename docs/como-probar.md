@@ -222,8 +222,13 @@ mirando si la llamada salió y qué contestó.
   el frontend en el 4200. La política está atada a esos dos.
 - El desplegable de tipos de documento sale vacío: falta cargar
   `roles_tipos_documentos` para ese rol.
-- El enlace para crear la contraseña responde 401: es un pendiente del backend,
-  el punto 2 de `alineacion-sprint-2.md`.
+- El enlace para crear la contraseña responde 401: el backend que corre es
+  anterior al 10/10/2026. Desde ese día `establecer-password` no pide sesión.
+- El desplegable de materias de Reconocimiento de saberes sale vacío: ese alumno
+  no tiene filas en `alumno_materia`. Hoy se cargan a mano en la base; ni el alta
+  de usuarios ni "Materias y asignaciones" las crean.
+- La bandeja de Secretaría no muestra una solicitud de reconocimiento que está en
+  la base: solo lista las que no tienen docente asignado (`id_docente` en NULL).
 - `npm start` no compila: suele ser un import mal escrito después de mover
   archivos. El mensaje dice el archivo y la línea.
 
@@ -232,7 +237,9 @@ mirando si la llamada salió y qué contestó.
 No está roto: no existe.
 
 - El buscador de la barra superior está deshabilitado.
-- Editar el perfil y cambiar la foto no tienen endpoint ni columna en la base.
+- Editar el perfil y cambiar la foto: el backend ya tiene
+  `PUT /api/Usuarios/mi-perfil` y `POST /api/Usuarios/foto-perfil` desde el
+  10/10/2026, pero el frontend todavía no tiene la pantalla.
 - Recuperar la contraseña: la pantalla existe, pero simula el envío y no manda
   ningún correo.
 - El mail al rechazar un documento o un justificativo.
