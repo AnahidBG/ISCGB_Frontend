@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import { Observable, Subject, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { RolApi } from '../../../core/auth/modelos/rol';
 import { Sesion } from '../../../core/auth/modelos/sesion';
@@ -88,11 +88,13 @@ let auditorias: unknown[][];
 /**
  * `idUsuarioEnUrl`: con id es `legajo/usuario/:idUsuario` (revisión de
  * Secretaría o Dirección); sin id es `legajo/mis-documentos` (el propio).
+ * `respuestaAuditoria`: qué contesta el backend a cada `auditar`.
  */
 async function montar(
   sesion: Sesion,
   idUsuarioEnUrl: number | null,
   legajo: DocumentoLegajo[] = LEGAJO,
+  respuestaAuditoria: () => Observable<void> = () => of(undefined),
 ): Promise<ComponentFixture<MisDocumentos>> {
   const parametros: Record<string, string> =
     idUsuarioEnUrl === null ? {} : { idUsuario: String(idUsuarioEnUrl) };
@@ -126,7 +128,7 @@ async function montar(
           documentosRequeridos: (): Observable<DocumentoRequerido[]> => of(REQUERIDOS),
           auditar: (...argumentos: unknown[]): Observable<void> => {
             auditorias.push(argumentos);
-            return of(undefined);
+            return respuestaAuditoria();
           },
         },
       },
@@ -139,6 +141,20 @@ async function montar(
 
 function raiz(fixture: ComponentFixture<MisDocumentos>): HTMLElement {
   return fixture.nativeElement as HTMLElement;
+}
+
+/** La fila (`<li>`) del documento, buscada por su nombre. */
+function filaDe(fixture: ComponentFixture<MisDocumentos>, documento: string): HTMLElement {
+  return Array.from(raiz(fixture).querySelectorAll('li')).find(
+    (li) => li.querySelector('p')?.textContent?.trim() === documento,
+  )!;
+}
+
+async function apretar(contenedor: HTMLElement, etiqueta: string, fixture: ComponentFixture<MisDocumentos>) {
+  Array.from(contenedor.querySelectorAll('button'))
+    .find((b) => b.textContent?.trim() === etiqueta)!
+    .click();
+  await fixture.whenStable();
 }
 
 describe('MisDocumentos: volver a subir (SCRUM-152)', () => {
@@ -203,13 +219,62 @@ describe('MisDocumentos: "Presentado físicamente" lo marca quien revisa', () =>
     expect(casilla(fixture, 102)!.checked).toBe(true);
   });
 
-  it('tildarla no manda nada al backend: por ahora vive solo en la pantalla', async () => {
+  it('en un documento pendiente no se guarda sola: viaja con el veredicto', async () => {
     const fixture = await montar(SECRETARIO, ID_REVISADO);
 
     casilla(fixture, 102)!.click();
     await fixture.whenStable();
-
     expect(auditorias).toHaveLength(0);
+
+    await apretar(filaDe(fixture, 'Título'), 'Aprobar', fixture);
+    await apretar(filaDe(fixture, 'Título'), 'Sí, aprobar', fixture);
+
+    expect(auditorias).toEqual([[102, 'Aprobado', SECRETARIO.idUsuario, null, true]]);
+  });
+
+  describe('en un documento que ya tiene veredicto se guarda al tildarla', () => {
+    const APROBADO: DocumentoLegajo[] = [
+      { ...LEGAJO[0], estado: 'Aprobado', comentario: 'Cotejado con el original', presentadoFisico: false },
+      LEGAJO[1],
+    ];
+
+    it('reenvía el mismo estado y comentario, y mientras guarda la casilla queda deshabilitada', async () => {
+      const respuesta = new Subject<void>();
+      const fixture = await montar(SECRETARIO, ID_REVISADO, APROBADO, () => respuesta);
+
+      casilla(fixture, 101)!.click();
+      await fixture.whenStable();
+
+      expect(auditorias).toEqual([
+        [101, 'Aprobado', SECRETARIO.idUsuario, 'Cotejado con el original', true],
+      ]);
+      expect(casilla(fixture, 101)!.disabled).toBe(true);
+
+      respuesta.next();
+      respuesta.complete();
+      await fixture.whenStable();
+
+      expect(casilla(fixture, 101)!.disabled).toBe(false);
+      expect(casilla(fixture, 101)!.checked).toBe(true);
+    });
+
+    it('si falla, la casilla vuelve a su valor anterior y se muestra el error', async () => {
+      const respuesta = new Subject<void>();
+      const fixture = await montar(SECRETARIO, ID_REVISADO, APROBADO, () => respuesta);
+
+      casilla(fixture, 101)!.click();
+      await fixture.whenStable();
+      expect(casilla(fixture, 101)!.checked).toBe(true);
+
+      respuesta.error(new Error('No pudimos guardar la revisión.'));
+      await fixture.whenStable();
+
+      expect(casilla(fixture, 101)!.checked).toBe(false);
+      expect(casilla(fixture, 101)!.disabled).toBe(false);
+      expect(raiz(fixture).querySelector('[role="alert"]')?.textContent).toContain(
+        'No pudimos guardar la revisión.',
+      );
+    });
   });
 
   it.each([
@@ -224,20 +289,6 @@ describe('MisDocumentos: "Presentado físicamente" lo marca quien revisa', () =>
 });
 
 describe('MisDocumentos: rechazar con los motivos de la institución', () => {
-  /** La fila (`<li>`) del documento, buscada por su nombre. */
-  function filaDe(fixture: ComponentFixture<MisDocumentos>, documento: string): HTMLElement {
-    return Array.from(raiz(fixture).querySelectorAll('li')).find(
-      (li) => li.querySelector('p')?.textContent?.trim() === documento,
-    )!;
-  }
-
-  async function apretar(contenedor: HTMLElement, etiqueta: string, fixture: ComponentFixture<MisDocumentos>) {
-    Array.from(contenedor.querySelectorAll('button'))
-      .find((b) => b.textContent?.trim() === etiqueta)!
-      .click();
-    await fixture.whenStable();
-  }
-
   async function marcar(contenedor: HTMLElement, motivo: string, fixture: ComponentFixture<MisDocumentos>) {
     Array.from(contenedor.querySelectorAll<HTMLInputElement>('input[type="checkbox"]'))
       .find((c) => c.closest('label')?.textContent?.trim() === motivo)!
@@ -268,7 +319,8 @@ describe('MisDocumentos: rechazar con los motivos de la institución', () => {
 
     const comentario =
       'Dato de importancia ilegible; No se encuentra en formato pdf. Aclaración: se escaneó como imagen';
-    expect(auditorias).toEqual([[101, 'Rechazado', SECRETARIO.idUsuario, comentario]]);
+    // El DNI ya estaba en papel (`presentadoFisico: true`): el rechazo lo reenvía.
+    expect(auditorias).toEqual([[101, 'Rechazado', SECRETARIO.idUsuario, comentario, true]]);
     // Lo mismo que va a ver la persona en su legajo.
     expect(filaDe(fixture, 'DNI').textContent).toContain(`Motivo del rechazo: ${comentario}`);
   });

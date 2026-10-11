@@ -225,29 +225,59 @@ todavía no se imprimen.
 `presentado_fisico` dice si Secretaría tiene además el papel de ese documento.
 Desde el 04/10/2026 no lo declara quien sube: lo marca quien revisa.
 
-Al subir un documento, el Docente o el Alumno ve solo el recordatorio de
-entregarlo en papel, y `POST /api/Legajos` manda `presentadoFisico` siempre en
-`false`.
+**Al subir.** El Docente o el Alumno ve solo el recordatorio de entregarlo en
+papel. `POST /api/Legajos` no manda `presentadoFisico`: en `SubirLegajoDto` esa
+propiedad está comentada, el backend no lee lo que llegue y el documento nuevo
+queda con la columna en `NULL`. Mis Documentos lo muestra como no entregado.
 
-Al revisar un legajo ajeno (`legajo/usuario/:idUsuario`), el Secretario o el
-Director tiene la casilla "Presentado físicamente" en cada documento. Se puede
-tildar y no traba el veredicto, pero **no se guarda**: al recargar se pierde.
-
-Es un pendiente del backend. `presentado_fisico` solo se escribe en
-`POST /api/Legajos`; `AuditoriaLegajoDto` recibe únicamente `estado` y
-`comentario`, y `AuditarLegajo` no toca esa columna. Hoy no hay forma de
-ponerlo en `true` desde la aplicación. Lo que hace falta acordar:
+**Al revisar.** En un legajo ajeno (`legajo/usuario/:idUsuario`), el Secretario
+o el Director tiene la casilla "Presentado físicamente" en cada documento
+subido. Se guarda con la auditoría, en `PUT /api/Legajos/auditar/{idLegajo}`
+(desde el 06/10/2026, `AuditoriaLegajoDto.PresentadoFisico`, un `bool?`):
 
 ```jsonc
 // PUT /api/Legajos/auditar/{idLegajo}?idUsuarioAuditor={id}
 { "estado": "Aprobado", "comentario": null, "presentadoFisico": true }
 ```
 
-con `PresentadoFisico` como `bool?` en el DTO, para que un `null` no pise el
-valor, y `[Authorize(Roles = "Director,Secretario")]` en el endpoint.
+`AuditarLegajo` asigna **siempre** estos cuatro campos y guarda: el auditor, el
+estado, el comentario y `presentadoFisico`. Lo que no llega queda en `NULL`. Por
+eso el frontend los manda todos, y `presentadoFisico` siempre como booleano,
+nunca ausente. Responde `200`:
 
-Cuidado con los datos viejos: las filas que hoy tienen `presentado_fisico = 1`
-las tildó la propia persona al subir. No las verificó Secretaría.
+```json
+{
+  "message": "Auditoría de legajo actualizada correctamente.",
+  "idLegajo": 1,
+  "estado": "Aprobado",
+  "presentadoFisico": true
+}
+```
+
+Los errores son `404` si el legajo no existe y `400` si el auditor no es válido,
+los dos con `{ "message": "…" }`. El endpoint no manda mails.
+
+Cómo lo usa la pantalla:
+
+- **Documento pendiente.** La casilla se tilda en pantalla y viaja con el
+  veredicto, al aprobar o rechazar. No se guarda sola: eso le asignaría un
+  auditor a un documento que nadie revisó.
+- **Documento con veredicto.** Es el caso de "el papel llegó días después". Al
+  tildar o destildar se guarda en el momento, reenviando el mismo `estado` y el
+  mismo `comentario` que ya tiene, para que la auditoría no los pise. Mientras
+  se guarda la casilla queda deshabilitada y, si falla, vuelve a su valor
+  anterior y se muestra el error.
+- **Auditor.** Como el endpoint asigna siempre el auditor, tildar la casilla de
+  un documento que ya revisó otra persona deja a quien tildó como "Revisado
+  por".
+
+La lógica de qué se reenvía está en `core/legajos/entrega-en-papel.ts`.
+
+Todavía falta `[Authorize(Roles = "Director,Secretario")]` en el endpoint.
+
+Cuidado con los datos viejos: las filas que tienen `presentado_fisico = 1` de
+antes del 04/10/2026 las tildó la propia persona al subir. No las verificó
+Secretaría.
 
 `GET /api/Legajos/usuario/{id}` devuelve además `auditor`, el nombre de quien
 revisó o el texto `"Sin auditor asignado"`. Mis Documentos lo muestra como

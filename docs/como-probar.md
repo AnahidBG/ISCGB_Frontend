@@ -162,6 +162,10 @@ sesión vieja guardada en el navegador. Cerrá sesión y volvé a entrar.
 - [ ] "Control de Legajos" lista a las personas con sus conteos por estado.
 - [ ] "Ver legajo" abre el de esa persona, con lo que le falta entregar.
 - [ ] Aprobar pide confirmación. Rechazar exige elegir al menos un motivo.
+- [ ] En un documento pendiente, tildar "Presentado físicamente" no guarda nada
+      todavía; queda guardado al aprobar o rechazar.
+- [ ] En un documento ya aprobado o rechazado, tildar o destildar la casilla se
+      guarda en el momento, y al recargar sigue como quedó.
 
 ### Frecuencia de avisos
 

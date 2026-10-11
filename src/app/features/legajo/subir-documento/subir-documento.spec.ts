@@ -103,13 +103,13 @@ describe('SubirDocumento: quien sube no declara la entrega en papel', () => {
     expect(texto(fixture)).toContain(RECORDATORIO);
   });
 
-  it.each(QUIENES_SUBEN)('lo que sube %s viaja con presentadoFisico en false', async (_quien, sesion) => {
+  it.each(QUIENES_SUBEN)('lo que sube %s no lleva ninguna declaración de entrega', async (_quien, sesion) => {
     const fixture = await montar(sesion);
 
     await enviar(fixture);
 
     expect(enviados).toHaveLength(1);
-    expect(enviados[0].presentadoFisico).toBe(false);
+    expect(enviados[0]).not.toHaveProperty('presentadoFisico');
   });
 
   it('el recordatorio sigue a la vista en la pantalla de confirmación', async () => {

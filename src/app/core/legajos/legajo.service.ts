@@ -58,6 +58,12 @@ export abstract class LegajoService {
   /**
    * Aprueba o rechaza un documento del legajo.
    *
+   * `presentadoFisico` es la casilla "Presentado físicamente": se guarda con
+   * la auditoría. El backend reescribe el estado, el comentario y esa casilla
+   * en cada llamada, así que si alguno no llega queda en `null`. Para guardar
+   * solo la casilla de un documento que ya tiene veredicto hay que reenviar el
+   * mismo `veredicto` y el mismo `comentario` que tiene.
+   *
    * ⚠️ Igual que en justificativos: la regla de negocio #4 de CLAUDE.md pide
    * que rechazar dispare un email automático, y el backend todavía no lo
    * hace. Quien construya la pantalla que use esto tiene que decírselo a la
@@ -68,6 +74,7 @@ export abstract class LegajoService {
     veredicto: VeredictoLegajo,
     idUsuarioAuditor: number,
     comentario: string | null,
+    presentadoFisico: boolean,
   ): Observable<void>;
 
   /**

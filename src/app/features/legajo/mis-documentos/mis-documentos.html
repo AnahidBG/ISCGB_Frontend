@@ -188,16 +188,14 @@
 
               <!--
                 "Presentado físicamente": lo marca quien REVISA (Secretaría o
-                Dirección) después de cotejar el papel con el PDF, y antes de
-                aprobar o rechazar. Quien sube el documento ya no lo declara
-                (04/10/2026), por eso va acá y no en "Subir Documento".
+                Dirección) después de cotejar el papel con el PDF. Quien sube
+                el documento ya no lo declara (04/10/2026), por eso va acá y
+                no en "Subir Documento".
 
-                ⚠️ Solo en pantalla: arranca con lo que hay en la base y se
-                puede tildar, pero NO se guarda. Hoy `presentado_fisico` solo
-                se escribe al subir (`POST /api/Legajos`) y
-                `AuditoriaLegajoDto` recibe únicamente `estado` y
-                `comentario` (docs/contrato-api.md, "la entrega en papel").
-                No traba el veredicto.
+                Se guarda con la auditoría. En un documento pendiente la tilde
+                viaja con el veredicto (aprobar o rechazar); en uno que ya
+                tiene veredicto se guarda en el momento, y mientras tanto la
+                casilla queda deshabilitada. No traba el veredicto.
               -->
               <label
                 [attr.for]="'presentado-fisico-' + fila.idLegajo"
@@ -207,8 +205,9 @@
                   type="checkbox"
                   [id]="'presentado-fisico-' + fila.idLegajo"
                   [checked]="presentadoFisico(fila)"
+                  [disabled]="estaGuardando(fila.idLegajo)"
                   (change)="alMarcarEntregaEnPapel(fila, $event)"
-                  class="h-4 w-4 shrink-0 cursor-pointer rounded border-borde accent-principal"
+                  class="h-4 w-4 shrink-0 cursor-pointer rounded border-borde accent-principal disabled:cursor-not-allowed"
                 />
                 Presentado físicamente
               </label>
