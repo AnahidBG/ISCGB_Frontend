@@ -49,7 +49,9 @@ cuenta en el navegador.
 El 06/10/2026 se corrigió `RUTAS_API.materiasDisponibles`, que apuntaba a
 `/api/Asignaciones/materias-disponibles`. El backend había unificado esos
 endpoints en `MateriasController` y la ruta respondía 404, así que el
-desplegable de materias del reconocimiento de saberes quedaba vacío.
+desplegable de materias del reconocimiento de saberes quedaba vacío. Ese
+desplegable ya no usa esa ruta: desde el 05/10/2026 pide `mis-materias`, y
+`materias-disponibles` quedó para "Materias y asignaciones".
 
 ## Los datos que tienen que estar cargados
 
@@ -69,6 +71,9 @@ El orden para cargar datos:
 3. `Usuarios_roles`, para vincular a cada usuario con su rol.
 4. `roles_tipos_documentos`. Sin esto, `requeridos-por-rol` responde 404 y el
    progreso del legajo sale aproximado.
+5. `alumno_materia`, para cada alumno que tenga que pedir un reconocimiento de
+   saberes. Sin esto, `mis-materias` devuelve una lista vacía y el alumno no
+   puede elegir materia. Ningún endpoint las crea: van con un `INSERT` a mano.
 
 `POST /api/Auth/crear-usuario-prueba` crea el usuario con el rol 1 fijo, el
 correo `prueba@test.com` y sin nombre ni apellido. El login devuelve

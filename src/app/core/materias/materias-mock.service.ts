@@ -7,6 +7,7 @@ import {
   DocenteDisponible,
   NuevaMateria,
 } from './modelos/asignacion-materia';
+import { MateriaDelAlumno } from './modelos/materia-del-alumno';
 import { MateriaDisponible } from './modelos/materia-disponible';
 
 const DEMORA_SIMULADA_MS = 300;
@@ -16,6 +17,27 @@ const MATERIAS_DE_EJEMPLO: readonly MateriaDisponible[] = [
   { idMateria: 1, nombre: 'Didáctica General' },
   { idMateria: 2, nombre: 'Pedagogía' },
   { idMateria: 3, nombre: 'Programación I' },
+];
+
+/**
+ * Las materias en las que está inscripto el alumno de ejemplo: solo una parte
+ * de las del instituto, y con la carrera y el curso que trae `mis-materias`.
+ * `carrera` y `curso` pueden venir en `null`, como en la base.
+ */
+const MATERIAS_DEL_ALUMNO_DE_EJEMPLO: readonly MateriaDelAlumno[] = [
+  {
+    idMateria: 3,
+    nombre: 'Programación I',
+    carrera: 'Tecnicatura en Desarrollo de Software',
+    curso: 'Primer Año',
+  },
+  {
+    idMateria: 2,
+    nombre: 'Pedagogía',
+    carrera: 'Tecnicatura en Desarrollo de Software',
+    curso: null,
+  },
+  { idMateria: 1, nombre: 'Didáctica General', carrera: null, curso: null },
 ];
 
 const DOCENTES_DE_EJEMPLO: readonly DocenteDisponible[] = [
@@ -43,8 +65,8 @@ export class MateriasMockService extends MateriasService {
     return of(ordenadas).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
-  listarMisMaterias(): Observable<MateriaDisponible[]> {
-    return this.listarDisponibles();
+  listarMisMaterias(): Observable<MateriaDelAlumno[]> {
+    return of([...MATERIAS_DEL_ALUMNO_DE_EJEMPLO]).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
   listarDocentes(): Observable<DocenteDisponible[]> {

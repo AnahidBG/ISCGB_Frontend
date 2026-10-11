@@ -33,10 +33,11 @@ En el frontend cada pantalla tiene un contenedor y sus presentacionales. Cada do
 
 ```text
 src/app/
-├── core/       auth · busqueda · carga · certificados · comun · configuracion · justificativos ·
+├── core/       auth · busqueda · carga · certificados · comun · configuracion · examenes · justificativos ·
 │               legajos · materias · notificaciones · programas-materia · reconocimiento-saberes · usuarios
-├── features/   alumno · auth · crear-password · director · docente · inicio · justificativos · legajo ·
-│               materias · no-encontrado · proximamente · recuperar-contrasena · secretario · sistema-diseno
+├── features/   alumno · auth · calendario · crear-password · director · docente · inicio · justificativos ·
+│               legajo · materias · no-encontrado · proximamente · recuperar-contrasena · secretario ·
+│               sistema-diseno
 └── shared/ui/  aviso-legajo-completo · boton · campo-formulario · dialogo-confirmacion ·
                 documentacion-por-entregar · documentos-rechazados · encabezado · estructura-panel ·
                 fila-notificacion · icono · insignia-estado · panel-notificaciones · pantalla-carga ·
@@ -67,7 +68,7 @@ El front aplica de forma explícita Strategy con inversión de dependencias, Ada
 | `legajo` | Cada fila es un documento: archivo, estado, auditor, comentario, vencimiento y `presentado_fisico` |
 | `Justificativos` | Inasistencias: tipo, rango de fechas, nota, archivo, estado y auditor |
 | `reconocimiento_saberes` | Solicitudes de alumnos. Todavía no tiene columna `estado` |
-| `configuracion_sistema` | Cada cuántos días se envían los avisos de documentación faltante |
+| `configuracion_sistema` | Cada cuántos días se envían los avisos de documentación faltante y cuántos exámenes admite un día (`limite_parciales_diario`) |
 | `materias`, `comision`, `docente_materia`, `alumno_materia` | Oferta académica |
 | `programas_materia` y `contenidos` | Programa de materia con el formato ministerial, del que sale el PDF |
 | `Examenes`, `tipo_examen`, `mesa_examen` | Exámenes y mesas |
@@ -90,7 +91,7 @@ Con varios roles se entra al panel de mayor alcance, en el orden Director, Secre
 ## Alcance funcional del MVP
 
 - Alumno: login, certificados de inasistencia y notas aclaratorias, enlace al SIAADE, carga de la documentación del legajo, solicitud de reconocimiento de saberes, barra de progreso y descarga de formatos (Convenio Beca Fundación Encode, Autorización de uso de Imagen y Voz, Apto médico y Apto psicológico).
-- Docente: login, carga y actualización del legajo, justificativos, programa de materia en PDF, calendario de exámenes con un máximo de 2 por fecha y comisión, enlaces externos, plantillas IRAM/ISO, tutoriales, libro de temas y barra de progreso.
+- Docente: login, carga y actualización del legajo, justificativos, programa de materia en PDF, calendario de exámenes con un máximo de exámenes por día, igual para todo el instituto y definido por Secretaría Académica (hoy 2), enlaces externos, plantillas IRAM/ISO, tutoriales, libro de temas y barra de progreso.
 - Secretario: login, revisión de legajos y justificativos (aprobar, o rechazar con motivo), justificativos propios, contratos firmados, mesas de examen y gestión de usuarios.
 - Director: login, listas por rol, gestión de usuarios y roles, revisión de legajos y justificativos propios.
 

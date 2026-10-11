@@ -1,0 +1,48 @@
+<ul class="mt-4 flex flex-wrap gap-2" aria-label="Referencias de los colores">
+  @for (item of leyenda(); track item.estado) {
+    <li
+      class="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium text-texto"
+      [class]="apariencia[item.estado].chip"
+    >
+      <span
+        class="h-1.5 w-1.5 shrink-0 rounded-full"
+        [class]="apariencia[item.estado].marca"
+        aria-hidden="true"
+      ></span>
+      {{ item.etiqueta }}
+    </li>
+  }
+</ul>
+
+<table class="mt-4 w-full table-fixed border-collapse">
+  <!-- prettier-ignore -->
+  <caption class="sr-only">Calendario de exámenes de {{ titulo() }}</caption>
+  <thead>
+    <tr>
+      @for (dia of diasDeLaSemana; track dia.corto) {
+        <!-- El nombre completo va en `aria-label`: a la vista alcanza con la sigla. -->
+        <th
+          scope="col"
+          class="pb-2 text-xs font-medium text-texto-suave sm:text-sm"
+          [attr.aria-label]="dia.largo"
+        >
+          {{ dia.corto }}
+        </th>
+      }
+    </tr>
+  </thead>
+  <tbody>
+    @for (semana of semanas(); track semana[0].fecha.getTime()) {
+      <tr>
+        @for (dia of semana; track dia.fecha.getTime()) {
+          <td app-celda-dia [dia]="dia"></td>
+        }
+      </tr>
+    }
+  </tbody>
+</table>
+
+<p class="mt-4 flex items-start gap-2 text-sm text-texto-suave">
+  <app-icono nombre="informacion" class="mt-0.5 h-4 w-4 shrink-0" />
+  <span>{{ textoLimite() }}</span>
+</p>

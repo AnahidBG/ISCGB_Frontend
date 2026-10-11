@@ -1,0 +1,32 @@
+<div class="flex flex-wrap items-center justify-between gap-3">
+  <!-- El mes cambia sin recargar la página: `aria-live` hace que se lea el cambio. -->
+  <h2 class="text-2xl font-bold text-texto" aria-live="polite">{{ titulo() }}</h2>
+
+  <div class="flex items-center gap-1">
+    <button
+      type="button"
+      class="flex h-10 w-10 items-center justify-center rounded-full border border-borde bg-superficie text-texto transition-colors hover:bg-principal-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+      aria-label="Mes anterior"
+      (click)="anterior.emit()"
+    >
+      <app-icono nombre="anterior" class="h-5 w-5" />
+    </button>
+
+    <button
+      type="button"
+      class="rounded-full px-3 py-2 text-sm font-semibold text-principal transition-colors hover:bg-principal-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+      (click)="hoy.emit()"
+    >
+      Hoy
+    </button>
+
+    <button
+      type="button"
+      class="flex h-10 w-10 items-center justify-center rounded-full border border-borde bg-superficie text-texto transition-colors hover:bg-principal-suave focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+      aria-label="Mes siguiente"
+      (click)="siguiente.emit()"
+    >
+      <app-icono nombre="siguiente" class="h-5 w-5" />
+    </button>
+  </div>
+</div>

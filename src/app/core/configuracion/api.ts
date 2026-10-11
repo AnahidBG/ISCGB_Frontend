@@ -106,12 +106,16 @@ export const RUTAS_API = {
 
   // --- Materias (ISCGB_Backend/Controllers/MateriasController.cs) ---
   // Las rutas de materias viven bajo `api/Materias`.
-  // Los tres GET envuelven la lista en `{ data }`.
+  // `materias-disponibles`, `docentes-disponibles` y `comisiones-disponibles`
+  // envuelven la lista en `{ data }`; `mis-materias` devuelve el arreglo plano.
 
   /** Todas las materias del instituto, ordenadas por nombre. */
   materiasDisponibles: `${URL_BASE_API}/api/Materias/materias-disponibles`,
 
-  /** Materias asignadas al alumno autenticado. */
+  /**
+   * Materias en las que el alumno autenticado está inscripto, con su carrera y
+   * curso. Solo `Alumno`. Un 404 con texto = el usuario no tiene perfil de alumno.
+   */
   misMaterias: `${URL_BASE_API}/api/Materias/mis-materias`,
 
   /** Todos los docentes (fila en `Docentes`), ordenados por nombre. */
@@ -154,6 +158,18 @@ export const RUTAS_API = {
   /** Los justificativos de una persona, del más nuevo al más viejo. 404 = la persona no existe. */
   justificativosDeUsuario: (idUsuario: number) =>
     `${URL_BASE_API}/api/Justificativos/${idUsuario}/justificativos`,
+
+  // --- Calendario de exámenes (ISCGB_Backend/Controllers/CalendarioExamenesController.cs) ---
+  // La clase se llama `ConfiguracionCalendarioController`, así que la ruta es
+  // `api/ConfiguracionCalendario` aunque el archivo se llame distinto.
+
+  /**
+   * Qué días de un mes tienen exámenes y cuántos, más el límite diario. Mes de
+   * 1 a 12. Solo trae los días con al menos un examen: el resto son libres. Un
+   * mes inválido responde 500.
+   */
+  estadoMesCalendario: (anio: number, mes: number) =>
+    `${URL_BASE_API}/api/ConfiguracionCalendario/estado-mes?anio=${anio}&mes=${mes}`,
 } as const;
 
 /**

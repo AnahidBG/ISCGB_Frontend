@@ -261,9 +261,9 @@ export const routes: Routes = [
       ),
   },
   {
-    // Solicitud de reconocimiento de saberes — Sprint 2 (SCRUM-30). El
-    // endpoint todavía no existe en el backend: la pantalla lo avisa. Ver
-    // docs/contrato-reconocimiento-saberes.md.
+    // Solicitud de reconocimiento de saberes — Sprint 2 (SCRUM-30). Envía a
+    // `POST /api/ReconocimientoSaberes/solicitar` y arma el desplegable con
+    // `GET /api/Materias/mis-materias`. Ver docs/contrato-reconocimiento-saberes.md.
     path: 'alumno/reconocimiento-saberes',
     title: 'Reconocimiento de saberes · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.alumno)],
@@ -273,26 +273,21 @@ export const routes: Routes = [
       ),
   },
   {
-    // "Próximamente": calendario de mesas de examen (Sprint 3 del roadmap,
-    // ver docs/ISCGB-PROJECT.md). Sin roleGuard porque los cuatro roles lo
-    // van a usar — Docente y Director/Secretario para las mesas, Alumno para
-    // consultarlas. Ver features/proximamente/proximamente.ts.
+    // Calendario de exámenes parciales — Sprint 3 (SCRUM-183): consulta del
+    // estado de cada día del mes. `GET /api/ConfiguracionCalendario/estado-mes`.
+    // Sin roleGuard porque los cuatro roles lo ven igual y el backend no
+    // distingue: un filtro por rol dejaría pasar a los mismos que `authGuard`.
     path: 'calendario',
     title: 'Calendario de Exámenes · ISCGB',
     canActivate: [authGuard],
-    data: {
-      titulo: 'Calendario de Exámenes',
-      descripcion:
-        'Acá vas a poder ver las mesas de examen parciales y finales, para que a nadie se le superpongan fechas.',
-      disponibleDesde: 'Sprint 3 · octubre de 2026',
-      icono: 'calendario',
-    },
     loadComponent: () =>
-      import('./features/proximamente/proximamente').then((m) => m.Proximamente),
+      import('./features/calendario/calendario-examenes/calendario-examenes').then(
+        (m) => m.CalendarioExamenes,
+      ),
   },
   {
     // "Próximamente": cambio de contraseña y preferencias de cuenta
-    // (Sprint 3 del roadmap). Mismo criterio que 'calendario' de arriba.
+    // (Sprint 3 del roadmap). Ver features/proximamente/proximamente.ts.
     path: 'configuracion',
     title: 'Configuración · ISCGB',
     canActivate: [authGuard],

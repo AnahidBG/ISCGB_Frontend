@@ -128,7 +128,7 @@ export class EstructuraPanel {
    * (los cuatro dashboards), no hay "atrás" al que volver desde ahí. Tiene
    * sentido en pantallas que hacen una cosa puntual y dependen de dónde
    * viniste: "Subir Documento" vuelve al panel de quien lo abrió, y las
-   * pantallas "Próximamente" (Calendario, Configuración) también.
+   * pantallas "Próximamente" (hoy, Configuración) también.
    */
   readonly volverUrl = input<string | null>(null);
 

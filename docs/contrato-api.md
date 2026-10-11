@@ -335,10 +335,80 @@ Pendientes del backend:
   obligatorios del rol, y recorre a todos los usuarios. El mail puede listar
   documentos distintos de los que el frontend muestra como faltantes.
 
+## Calendario de exámenes
+
+Todo está en `ConfiguracionCalendarioController`, en `api/ConfiguracionCalendario`.
+El archivo se llama `CalendarioExamenesController.cs`, pero la clase y la ruta
+no. La regla de negocio es un límite de exámenes **por día**, único para todo el
+instituto, que define Secretaría Académica. Hoy vale 2 si nunca se configuró. No
+hay límite por comisión.
+
+Esta sección se relevó el 10/10/2026 contra el código del backend. El frontend
+consume solo `estado-mes`, en `/calendario`, para los cuatro roles.
+
+### `GET /api/ConfiguracionCalendario/estado-mes?anio=2026&mes=10`
+
+`mes` va de 1 a 12. Devuelve `200`:
+
+```json
+{
+  "limiteDiario": 2,
+  "diasOcupados": [
+    { "fecha": "2026-10-13T00:00:00", "cantidadExamenes": 1, "limiteAlcanzado": false }
+  ]
+}
+```
+
+- `diasOcupados` trae **solo** los días con al menos un examen. Los demás días del
+  mes no vienen: están libres.
+- `fecha` es un `DateTime` de .NET serializado sin zona, a medianoche. El frontend
+  lo convierte con `desdeFechaSola` para que no se corra un día por la zona
+  horaria.
+- `limiteAlcanzado` lo calcula el backend (`cantidadExamenes >= limiteDiario`) y el
+  frontend se fía de él: un día es `Completo` cuando viene en `true`, sin
+  recalcularlo con la cantidad.
+- No hay más campos. No trae qué exámenes son, de qué materia ni a qué hora.
+- Un mes inválido (0 o 13, por ejemplo) responde `500`: el controller arma un
+  `DateTime` con el valor sin validarlo.
+
+El frontend los traduce a tres estados: `Libre` (el día no viene en la lista),
+`ConExamenes` y `Completo`. La respuesta pasa a `EstadoMes` en
+`ExamenesHttpService`.
+
+### Lo que existe y el frontend todavía no consume
+
+- `POST /api/ConfiguracionCalendario/registrar` recibe
+  `{ fecha, idComision, idMateria, idTipoExamen }`. Responde `400` con
+  `{ message }` si el día ya alcanzó el límite.
+- `PUT /api/ConfiguracionCalendario/modificar/{idExamen}` recibe
+  `{ nuevaFecha }`. Responde `404` si el examen no existe y `400` si el día nuevo
+  ya está completo.
+- `DELETE /api/ConfiguracionCalendario/eliminar/{idExamen}`. Responde `404` si el
+  examen no existe.
+- `GET /api/ConfiguracionCalendario/tipos-examen`: `[{ idTipoExamen, nombre }]`.
+- `GET /api/ConfiguracionCalendario/mis-materias-docente`: las materias y
+  comisiones del docente de la sesión, con `[Authorize(Roles = "Docente")]`.
+- `PUT /api/ConfiguracionCalendario/limite-parciales` recibe `{ nuevoLimite }` y
+  cambia el límite diario.
+
+### Pendientes del backend
+
+- No hay un endpoint que liste los exámenes. Por eso el calendario dice cuántos
+  hay cada día y no cuáles: no se puede armar la agenda del mes ni mostrar la
+  materia, la hora o quién registró cada examen. Tampoco se puede saber, en el
+  front, cuáles son "los tuyos".
+- Solo `mis-materias-docente` exige rol. El resto no tiene `[Authorize]`: quien
+  tenga la dirección puede registrar, mover o borrar exámenes y cambiar el límite
+  sin iniciar sesión. En `limite-parciales` la línea está comentada en el código.
+- `PUT limite-parciales` valida `nuevoLimite <= 0`, pero `nuevoLimite` es `int?`:
+  un cuerpo sin ese campo pasa la validación y deja el límite en `null`, que el
+  resto del controller lee como 2.
+- Un mes inválido en `estado-mes` debería responder `400` con un mensaje.
+
 ## Materias y asignaciones
 
 Todo está en `MateriasController`, en `api/Materias`. La pantalla "Materias y
-asignaciones" usa los cuatro primeros.
+asignaciones" usa todos menos `mis-materias`.
 
 - `GET /api/Materias/docentes-disponibles`:
   `{ data: [{ idDocente, nombreCompleto }] }`.
@@ -348,10 +418,13 @@ asignaciones" usa los cuatro primeros.
   Responde 400 si ya está asignada en esa comisión.
 - `POST /api/Materias/cargar-materia`, con `{ nombreMateria, carrera, curso }`.
   Devuelve `{ message, idMateria }`, o 400 si el nombre se repite.
-- `GET /api/Materias/mis-materias`, solo para el rol Alumno.
+- `GET /api/Materias/mis-materias`, solo para el rol Alumno. Devuelve un
+  arreglo plano, sin `{ data }`: `[{ idMateria, nombre, carrera, curso }]`, con
+  las materias en las que el alumno está inscripto. Puede venir vacío, y con
+  `404` y un texto suelto si el usuario no tiene perfil de alumno. Lo usa el
+  reconocimiento de saberes.
 - `GET /api/Materias/materias-disponibles`:
-  `{ data: [{ idMateria, nombreMateria }] }`. Lo usa el reconocimiento de
-  saberes.
+  `{ data: [{ idMateria, nombreMateria }] }`, todas las materias del instituto.
 
 ## Reconocimiento de saberes
 

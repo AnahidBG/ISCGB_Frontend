@@ -40,9 +40,9 @@ Hay que respetarlos.
 
 ### 2.1 Strategy + inversión de dependencias: servicios abstractos con implementación HTTP y mock
 
-Cada dominio tiene `core/<dominio>/<dominio>.service.ts`, que es la clase abstracta, un `*-http.service.ts` y un `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes, Materias y FrecuenciaAvisos (`core/notificaciones/`).
+Cada dominio tiene `core/<dominio>/<dominio>.service.ts`, que es la clase abstracta, un `*-http.service.ts` y un `*-mock.service.ts`. Se eligen en `app.config.ts` con `{ provide: AuthService, useClass: AuthHttpService }`. Así están Auth, Legajo, Usuarios, Justificativos, Certificados, ProgramasMateria, ReconocimientoSaberes, Materias, FrecuenciaAvisos (`core/notificaciones/`) y Examenes (`core/examenes/`, el calendario).
 
-Todo dominio nuevo sigue el mismo trío, por ejemplo `core/examenes/` para el calendario. Si el endpoint todavía no existe, se arranca con el mock.
+Todo dominio nuevo sigue el mismo trío. Si el endpoint todavía no existe, se arranca con el mock.
 
 ### 2.2 Adapter: respuesta cruda de la API → modelo limpio
 
@@ -80,7 +80,7 @@ En todo el front hay `signal`, `computed` y `toSignal`, por ejemplo en `mis-docu
 
 El estado de la UI es un `signal` y lo derivado es un `computed`; no se copia a mano. Para leer un `Observable` en un componente se prefiere `toSignal`. Si hace falta un `subscribe`, que sea para una acción puntual, como enviar o guardar, y que no quede vivo después de destruir el componente (`takeUntilDestroyed`).
 
-**Pedido con fases (State liviano).** Cuando una pantalla tiene que distinguir cargando, error y listo, el pedido se modela como una unión discriminada por `fase`, y no como tres signals sueltos que pueden contradecirse. `cargarLegajoPropio(...)`, en `core/legajos/legajo-propio.ts`, devuelve `LegajoPropio`: `cargando`, `error` con su mensaje o `listo` con los datos. Nunca falla: el error es una fase más, así `toSignal` no lanza al dibujar. El contenedor lo lee con `toSignal` y un `Subject` de reintento (`startWith` más `switchMap`). El presentacional recibe la `fase` por `input()` y resuelve qué dibujar con una tabla por clave, como `documentacion-por-entregar`. La pantalla "Frecuencia de avisos" sigue el mismo criterio con `CargaFrecuencia`.
+**Pedido con fases (State liviano).** Cuando una pantalla tiene que distinguir cargando, error y listo, el pedido se modela como una unión discriminada por `fase`, y no como tres signals sueltos que pueden contradecirse. `cargarLegajoPropio(...)`, en `core/legajos/legajo-propio.ts`, devuelve `LegajoPropio`: `cargando`, `error` con su mensaje o `listo` con los datos. Nunca falla: el error es una fase más, así `toSignal` no lanza al dibujar. El contenedor lo lee con `toSignal` y un `Subject` de reintento (`startWith` más `switchMap`). El presentacional recibe la `fase` por `input()` y resuelve qué dibujar con una tabla por clave, como `documentacion-por-entregar`. La pantalla "Frecuencia de avisos" sigue el mismo criterio con `CargaFrecuencia`, y el calendario de exámenes con `CargaMes`, cuya fase `listo` guarda el mes al que pertenecen los datos. Ahí el pedido depende de un `signal` con el mes que se mira: `toObservable` más `switchMap` descartan la respuesta de un mes que ya no está en pantalla.
 
 **Valor derivado que la persona puede cambiar.** Va con `linkedSignal`, no con `signal` más `effect`. `SubirDocumento.idTipoElegido` arranca con el `?tipo=` de la URL (`tipoPedidoEn`), se recalcula cuando cambian la URL o la lista de tipos, y en el medio conserva lo que se eligió en el select. La URL se lee del observable `queryParamMap` con `toSignal` y no del `snapshot`, porque si se navega a la misma pantalla con otro `?tipo=` Angular reutiliza el componente.
 
@@ -92,7 +92,7 @@ El estado global vive solo en servicios de `core/`. Nada de variables mutables a
 
 ### 2.8 Tabla de estrategias por clave
 
-Es un Strategy liviano, que reemplaza condicionales. El ejemplo es `APARIENCIA_POR_ESTADO: Record<EstadoDocumento, AparienciaEstado>` en `insignia-estado.ts`, con `APARIENCIA_DESCONOCIDA` como valor por defecto para un `estado` nulo o inesperado. También lo son `enlacesPorSesion` para el menú, `destinoSegunRoles` y `rolPrincipalDe`.
+Es un Strategy liviano, que reemplaza condicionales. El ejemplo es `APARIENCIA_POR_ESTADO: Record<EstadoDocumento, AparienciaEstado>` en `insignia-estado.ts`, con `APARIENCIA_DESCONOCIDA` como valor por defecto para un `estado` nulo o inesperado. También lo son `enlacesPorSesion` para el menú, `destinoSegunRoles`, `rolPrincipalDe` y `APARIENCIA_POR_DIA`, que le da a cada estado del calendario su fondo, su barrita y su candado.
 
 Todo lo que cambia según el estado, el rol o el tipo se resuelve con una tabla en un solo lugar, nunca con `if` repetidos en cada pantalla. Siempre hay un caso por defecto, porque `estado` es `varchar NULL` en la base.
 
@@ -110,7 +110,7 @@ Son siempre reactivos y tipados, con los validadores declarados en la construcci
 
 ### 2.11 Fábricas simples: funciones puras que construyen objetos
 
-Son `enlacesPorSesion(...)`, `novedadesDelLegajo(...)`, `notificacionesPorRechazos(...)`, `contarPorEstado(...)`, `ultimasVersionesPorTipo(...)`, `validarArchivoPdf(...)` y `comentarioDeRechazo(...)`, entre otras.
+Son `enlacesPorSesion(...)`, `novedadesDelLegajo(...)`, `notificacionesPorRechazos(...)`, `contarPorEstado(...)`, `ultimasVersionesPorTipo(...)`, `validarArchivoPdf(...)`, `comentarioDeRechazo(...)` y, para el calendario, `estadoDelDia(...)` y `semanasDelMes(...)`, entre otras.
 
 La lógica de negocio del front, como conteos, progreso, validaciones y armado de menús, va en funciones puras en `core/`, con su `*.spec.ts`, y no adentro del componente. Así se prueban sin `TestBed`.
 
@@ -124,7 +124,19 @@ Tres de ellas son la única definición de algo, para que la campana y los panel
 
 ## 3. Patrones para lo que viene
 
-**Calendario de exámenes.** Cada día está libre, con un examen o completo, con un máximo de 2 por fecha y comisión. Va con State sobre estados derivados y una tabla por clave: una función pura `estadoDelDia(examenes, fecha, comision)` que devuelve `'Libre'`, `'UnExamen'` o `'Completo'`, y una tabla `APARIENCIA_POR_DIA` con el color y si permite cargar. El servicio nuevo es `core/examenes/`, con el trío de siempre.
+**Calendario de exámenes.** Hecho el 10/10/2026 (SCRUM-183), solo la consulta: la pantalla muestra un mes con el estado de cada día y deja pasar de mes. Registrar, modificar y eliminar exámenes no está.
+
+La regla es la del backend: hay un límite de exámenes por día, único para todo el instituto, que define Secretaría Académica y hoy vale 2. No hay límite por comisión. Cada día está en uno de tres estados, `Libre`, `ConExamenes` o `Completo`. Quien decide si un día está completo es el backend (`limiteAlcanzado`); el front no vuelve a compararlo con la cantidad.
+
+Cómo está armado:
+
+- `core/examenes/` tiene el trío de siempre: `ExamenesService` (abstracto), `ExamenesHttpService`, que traduce `estado-mes` al modelo `EstadoMes` sin correr la fecha un día (`desdeFechaSola`), y `ExamenesMockService`, que no se registra.
+- `core/examenes/calendario-mes.ts` reúne las funciones puras, con su spec. `estadoDelDia(...)` devuelve el estado de un día. `semanasDelMes(...)` arma la grilla de lunes a domingo, con días de relleno de los meses vecinos (que no tienen estado) y recibiendo "hoy" por parámetro. También están el cambio de mes con salto de año, el título y la leyenda según el límite.
+- `features/calendario/calendario-examenes/` es el contenedor, el único que conoce el servicio. Sus presentacionales están en `partes/`: `cabecera-mes`, `calendario-mes` (leyenda, tabla y nota del límite) y `celda-dia`, que es un `td` y no un elemento propio para no romper la tabla. La tabla por clave `APARIENCIA_POR_DIA` vive en `celda-dia.ts`.
+
+El color no es lo único que distingue un estado: la celda lleva además una etiqueta, y en pantallas chicas la cantidad en número o el candado. El texto va en `text-texto` y el color en la barrita, el fondo y el candado, porque `aprobado` y `pendiente` como texto no llegan a contraste AA.
+
+Lo que necesita que el backend liste los exámenes (la agenda del mes y la materia en cada celda) quedó fuera. Los pendientes están en `docs/contrato-api.md`.
 
 **Rechazo con motivo obligatorio.** Hecho en legajos el 05/10/2026: el catálogo único `MOTIVOS_RECHAZO`, en `core/legajos/motivos-rechazo.ts`, tiene los 7 motivos de la institución, con una aclaración opcional en lugar de "Otro". `comentarioDeRechazo(motivos, aclaracion)` arma el texto y el presentacional `mis-documentos/partes/cuadro-rechazo` no confirma sin al menos un motivo (CP23). **Falta en justificativos:** el catálogo es el mismo, pero el PUT no recibe comentario.
 
@@ -134,7 +146,7 @@ Tres de ellas son la única definición de algo, para que la campana y los panel
 
 **Listados de Director y Secretario.** El filtrado por estado de la cuenta y la búsqueda por nombre o DNI van en una función pura con test; el servicio expone los datos y el componente solo une signals. El de Secretaría ya está, con `core/usuarios/filtrar-usuarios.ts`.
 
-**Endpoints que todavía no existen**, como los del calendario. Se arranca con un mock que respeta el contrato acordado en `docs/contrato-*.md`. Cuando llega el endpoint real se cambia `useClass` y se ajusta el Adapter, sin tocar pantallas.
+**Endpoints que todavía no existen.** Se arranca con un mock que respeta el contrato acordado en `docs/contrato-*.md`. Cuando llega el endpoint real se cambia `useClass` y se ajusta el Adapter, sin tocar pantallas.
 
 ## 4. Deuda detectada
 
