@@ -47,7 +47,8 @@ Hoy la revisión está en el legajo de cada persona
 `PUT /api/Legajos/auditar/{idLegajo}` y exige un motivo para rechazar.
 
 **El backend todavía no manda el mail de rechazo** que pide la regla de negocio
-4: `AuditarLegajo` guarda el estado, el comentario y el auditor, y nada más.
+4: `AuditarLegajo` guarda el estado, el comentario, el auditor y la casilla
+"Presentado físicamente", y nada más.
 
 ## `LegajoService`
 

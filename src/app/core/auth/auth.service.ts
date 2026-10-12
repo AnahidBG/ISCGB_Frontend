@@ -81,6 +81,15 @@ export abstract class AuthService {
    */
   abstract establecerPassword(token: string, nuevaPassword: string): Observable<void>;
 
+  /**
+   * Cambia el correo de la sesión abierta, para que el encabezado lo muestre sin
+   * volver a iniciar sesión. Lo llama "Mi perfil" después de guardar bien.
+   *
+   * Es lo único de la sesión que la persona puede editar. Sin sesión abierta no
+   * hace nada.
+   */
+  abstract actualizarCorreo(correo: string): void;
+
   /** Borra la sesión actual. */
   abstract cerrarSesion(): void;
 }

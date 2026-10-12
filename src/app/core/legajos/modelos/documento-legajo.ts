@@ -33,8 +33,8 @@ export interface DocumentoLegajo {
   rutaArchivo?: string | null;
 
   /**
-   * Si Secretaría tiene además el papel físico de este documento. El backend
-   * ya lo devuelve; antes se descartaba al mapear la respuesta.
+   * Si Secretaría tiene además el papel físico de este documento. Lo marca
+   * quien revisa y se guarda con la auditoría (`LegajoService.auditar`).
    */
   presentadoFisico: boolean;
 

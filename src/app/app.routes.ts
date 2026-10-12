@@ -147,6 +147,20 @@ export const routes: Routes = [
       ),
   },
   {
+    // Cuántos parciales admite el calendario en el período (hoy, un día).
+    // Secretario y Director: son quienes lo definen. `PUT
+    // /api/ConfiguracionCalendario/limite-parciales`; el valor vigente se lee de
+    // `limiteDiario` en `estado-mes`. El backend no exige rol en ese endpoint, así
+    // que acá el `roleGuard` es lo único que lo limita.
+    path: 'secretario/limite-parciales',
+    title: 'Límite de parciales · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.secretario, ROLES.director)],
+    loadComponent: () =>
+      import('./features/secretario/limite-parciales/limite-parciales').then(
+        (m) => m.LimiteParciales,
+      ),
+  },
+  {
     // Alta de materias y asignación docente–materia–comisión
     // (`MateriasController`). Dirección y Secretaría.
     path: 'materias/asignaciones',
@@ -275,15 +289,24 @@ export const routes: Routes = [
   {
     // Calendario de exámenes parciales — Sprint 3 (SCRUM-183): consulta del
     // estado de cada día del mes. `GET /api/ConfiguracionCalendario/estado-mes`.
-    // Sin roleGuard porque los cuatro roles lo ven igual y el backend no
-    // distingue: un filtro por rol dejaría pasar a los mismos que `authGuard`.
+    // Docente, Secretario y Director: el Alumno no lo ve. El backend no exige
+    // rol en ese endpoint, así que acá el `roleGuard` es lo único que lo limita.
     path: 'calendario',
-    title: 'Calendario de Exámenes · ISCGB',
-    canActivate: [authGuard],
+    title: 'Calendario de parciales · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.docente, ROLES.secretario, ROLES.director)],
     loadComponent: () =>
       import('./features/calendario/calendario-examenes/calendario-examenes').then(
         (m) => m.CalendarioExamenes,
       ),
+  },
+  {
+    // Mi perfil: cualquier persona con sesión edita sus propios datos de contacto
+    // (`PUT /api/Usuarios/mi-perfil`, con `[Authorize]` y sin rol). Sin `roleGuard` a
+    // propósito: los cuatro roles la usan, y se llega desde el menú del avatar.
+    path: 'perfil',
+    title: 'Mi perfil · ISCGB',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/perfil/mi-perfil/mi-perfil').then((m) => m.MiPerfil),
   },
   {
     // "Próximamente": cambio de contraseña y preferencias de cuenta

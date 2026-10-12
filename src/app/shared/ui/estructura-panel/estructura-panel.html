@@ -442,9 +442,9 @@
               </span>
 
               <!--
-                La foto de perfil. El backend todavía no guarda ninguna imagen
-                (el modelo Usuario no tiene campo de foto), así que por ahora
-                el círculo muestra las iniciales.
+                La foto de perfil. El backend guarda la imagen, pero ningún
+                endpoint la devuelve, así que por ahora el círculo muestra las
+                iniciales.
               -->
               <span
                 class="flex h-10 w-10 items-center justify-center rounded-full border border-borde bg-principal-suave text-sm font-semibold text-principal"
@@ -481,24 +481,26 @@
                 </div>
 
                 <!--
-                  Editar el perfil y cambiar la foto están deshabilitados
-                  porque el backend no tiene con qué: no hay endpoint para
-                  modificar un usuario, ni columna donde guardar una imagen.
-                  Se muestran igual, apagados y con el motivo, en vez de
-                  esconderlos: así se ve que están previstos, y nadie los
-                  aprieta esperando que pase algo.
+                  "Editar perfil" lleva a "Mi perfil". Es un enlace y no un
+                  botón porque navega; el clic no llega al document (el menú lo
+                  frena arriba), así que cierra el menú a mano.
+
+                  "Cambiar foto" sigue deshabilitado: el backend guarda la
+                  imagen, pero ningún endpoint la devuelve después. Se muestra
+                  igual, apagado y con el motivo, en vez de esconderlo: así se
+                  ve que está previsto, y nadie lo aprieta esperando que pase
+                  algo.
                 -->
                 <div class="flex flex-col py-2">
-                  <button
-                    type="button"
+                  <a
+                    routerLink="/perfil"
                     role="menuitem"
-                    disabled
-                    title="Todavía no disponible"
-                    class="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-texto-suave opacity-50"
+                    class="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-texto transition-colors hover:bg-fondo-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-principal"
+                    (click)="cerrarMenuPerfil()"
                   >
                     <app-icono nombre="revision" class="h-4 w-4" />
                     Editar perfil
-                  </button>
+                  </a>
 
                   <button
                     type="button"
@@ -512,7 +514,7 @@
                   </button>
 
                   <p class="px-4 pb-2 pt-1 text-xs leading-relaxed text-texto-suave">
-                    Editar el perfil y cambiar la foto todavía no están disponibles.
+                    Cambiar la foto todavía no está disponible.
                   </p>
                 </div>
 

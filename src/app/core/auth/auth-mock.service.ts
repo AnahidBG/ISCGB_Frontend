@@ -78,6 +78,10 @@ export class AuthMockService extends AuthService {
     return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
+  actualizarCorreo(correo: string): void {
+    this.sesionActual.update((sesion) => (sesion === null ? null : { ...sesion, email: correo }));
+  }
+
   cerrarSesion(): void {
     this.sesionActual.set(null);
   }

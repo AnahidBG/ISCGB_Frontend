@@ -1,4 +1,5 @@
 import { Observable } from 'rxjs';
+import { MisDatos } from './modelos/mis-datos';
 import { PerfilUsuario } from './modelos/perfil-usuario';
 import { Provincia } from './modelos/provincia';
 import { UsuarioDetalle } from './modelos/usuario-detalle';
@@ -19,6 +20,14 @@ export const MENSAJE_ERROR_BAJA_USUARIO =
 /** Cuando la reactivación falla por algo que no es culpa de quien la pidió. */
 export const MENSAJE_ERROR_REACTIVAR_USUARIO =
   'No pudimos reactivar al usuario. Intentá de nuevo en un momento.';
+
+/** Cuando "Mi perfil" no puede traer los datos de la persona. */
+export const MENSAJE_ERROR_CARGAR_MIS_DATOS =
+  'No pudimos traer tus datos. Intentá de nuevo en un momento.';
+
+/** Cuando "Mi perfil" no puede guardar por algo que no es culpa de lo que cargó la persona. */
+export const MENSAJE_ERROR_ACTUALIZAR_MIS_DATOS =
+  'No pudimos guardar tus datos. Intentá de nuevo en un momento.';
 
 /**
  * El backend todavía no tiene publicados los endpoints de gestión de
@@ -61,6 +70,7 @@ export function mensajePerfilActualizado(nombre: string): string {
  *   · `PUT /api/UsuariosAdmin/alta/{id}`      → `reactivar` (main)
  *   · `GET  /api/Ubicaciones/paises` y `.../paises/{id}/provincias`
  *                                              → `listarProvincias`
+ *   · `PUT /api/Usuarios/mi-perfil`            → `actualizarMiPerfil` (cualquier rol)
  */
 export abstract class UsuariosService {
   /** Todas las personas del instituto, activas e inactivas, con sus roles. */
@@ -103,4 +113,15 @@ export abstract class UsuariosService {
    * aporta cero (no es un error). Falla si no se pudo traer la lista.
    */
   abstract listarProvincias(): Observable<Provincia[]>;
+
+  /**
+   * La persona de la sesión actualiza sus propios datos de contacto ("Mi perfil").
+   * El usuario sale del token: no se pasa ningún id.
+   *
+   * El backend solo aplica los campos que llegan con texto, así que un dato
+   * vacío NO se borra: se ignora (ver `datosAEnviar`). Falla con el mensaje del
+   * servidor cuando lo hay y es un rechazo del pedido (por ejemplo, un correo que
+   * ya usa otra persona), o con `MENSAJE_ERROR_ACTUALIZAR_MIS_DATOS`.
+   */
+  abstract actualizarMiPerfil(datos: MisDatos): Observable<void>;
 }

@@ -20,6 +20,7 @@ arrancar.
 src/app/
 ├── core/       guards, interceptores, servicios y modelos de datos
 ├── shared/ui/  componentes reutilizables entre roles
+├── shared/directivas/  directivas reutilizables, como `*siRol` (qué se muestra según el rol)
 └── features/   una carpeta por rol o área: features/<rol>/<pantalla>/
 ```
 

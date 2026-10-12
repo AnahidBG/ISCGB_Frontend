@@ -28,6 +28,8 @@ class AuthDePrueba extends AuthService {
     return of(undefined);
   }
 
+  actualizarCorreo(): void {}
+
   cerrarSesion(): void {
     this.sesionActual.set(null);
   }

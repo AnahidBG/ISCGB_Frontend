@@ -2,12 +2,60 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { RUTAS_API } from '../configuracion/api';
-import { AuthHttpService } from './auth-http.service';
+import { AuthHttpService, CLAVE_SESION } from './auth-http.service';
 import {
   MENSAJE_ENLACE_INVALIDO,
   MENSAJE_ERROR_CREAR_PASSWORD,
   MENSAJE_SIN_CONEXION,
 } from './auth.service';
+import { Sesion } from './modelos/sesion';
+
+describe('AuthHttpService.actualizarCorreo', () => {
+  const SESION: Sesion = {
+    token: 'token-de-prueba',
+    idUsuario: 5,
+    nombreCompleto: 'Ana Pérez',
+    dni: '12345678',
+    email: 'ana@ejemplo.com',
+    roles: ['Docente'],
+    rolesConId: [{ idRol: 3, nombreRol: 'Docente' }],
+    venceEl: new Date(Date.now() + 60 * 60 * 1000),
+  };
+
+  function crearServicio(): AuthHttpService {
+    TestBed.configureTestingModule({
+      providers: [AuthHttpService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    return TestBed.inject(AuthHttpService);
+  }
+
+  afterEach(() => sessionStorage.removeItem(CLAVE_SESION));
+
+  it('cambia el correo de la sesión abierta y lo deja guardado, con el mismo formato', () => {
+    sessionStorage.setItem(CLAVE_SESION, JSON.stringify(SESION));
+    const servicio = crearServicio();
+
+    servicio.actualizarCorreo('nuevo@ejemplo.com');
+
+    expect(servicio.sesion()?.email).toBe('nuevo@ejemplo.com');
+    // Lo demás de la sesión queda como estaba, incluido el vencimiento del token.
+    expect(servicio.sesion()?.venceEl).toEqual(SESION.venceEl);
+    expect(JSON.parse(sessionStorage.getItem(CLAVE_SESION) as string)).toEqual({
+      ...SESION,
+      email: 'nuevo@ejemplo.com',
+      venceEl: SESION.venceEl.toISOString(),
+    });
+  });
+
+  it('sin sesión abierta no hace nada ni guarda nada', () => {
+    const servicio = crearServicio();
+
+    servicio.actualizarCorreo('nuevo@ejemplo.com');
+
+    expect(servicio.sesion()).toBeNull();
+    expect(sessionStorage.getItem(CLAVE_SESION)).toBeNull();
+  });
+});
 
 describe('AuthHttpService.establecerPassword', () => {
   let servicio: AuthHttpService;

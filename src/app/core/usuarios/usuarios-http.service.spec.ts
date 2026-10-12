@@ -2,9 +2,13 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { RUTAS_API } from '../configuracion/api';
+import { MisDatos } from './modelos/mis-datos';
 import { PerfilUsuario } from './modelos/perfil-usuario';
 import { UsuariosHttpService } from './usuarios-http.service';
-import { MENSAJE_GESTION_NO_DISPONIBLE } from './usuarios.service';
+import {
+  MENSAJE_ERROR_ACTUALIZAR_MIS_DATOS,
+  MENSAJE_GESTION_NO_DISPONIBLE,
+} from './usuarios.service';
 
 const PERFIL: PerfilUsuario = {
   nombre: 'María',
@@ -196,6 +200,103 @@ describe('UsuariosHttpService', () => {
       });
 
     expect(activo).toBe(false);
+  });
+});
+
+describe('UsuariosHttpService.actualizarMiPerfil', () => {
+  let servicio: UsuariosHttpService;
+  let backend: HttpTestingController;
+
+  const DATOS: MisDatos = {
+    email: 'maria@ejemplo.com',
+    telefono: '3511234567',
+    telefonoEmergencia: '3517654321',
+    contactoEmergencia: 'Juan Gómez',
+    direccion: 'Av. Siempreviva 742',
+    lugarNacimiento: 'Villa Dolores',
+    idProvincia: 6,
+  };
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [UsuariosHttpService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    servicio = TestBed.inject(UsuariosHttpService);
+    backend = TestBed.inject(HttpTestingController);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    backend.verify();
+    vi.restoreAllMocks();
+  });
+
+  /** Dispara el guardado y devuelve cómo terminó. */
+  function guardar(datos: MisDatos): { completo: () => boolean; error: () => string | null } {
+    let completo = false;
+    let error: string | null = null;
+    servicio.actualizarMiPerfil(datos).subscribe({
+      complete: () => (completo = true),
+      error: (fallo: Error) => (error = fallo.message),
+    });
+    return { completo: () => completo, error: () => error };
+  }
+
+  it('hace PUT a mi-perfil y manda solo los campos con texto, sin espacios de más', () => {
+    const resultado = guardar({
+      ...DATOS,
+      email: ' maria@ejemplo.com ',
+      telefonoEmergencia: '',
+      direccion: '   ',
+      idProvincia: null,
+    });
+
+    const pedido = backend.expectOne(RUTAS_API.miPerfil);
+    expect(pedido.request.method).toBe('PUT');
+    // El backend ignora lo que llega vacío: no hay que mandarlo.
+    expect(pedido.request.body).toStrictEqual({
+      email: 'maria@ejemplo.com',
+      telefono: '3511234567',
+      contactoEmergencia: 'Juan Gómez',
+      lugarNacimiento: 'Villa Dolores',
+    });
+
+    pedido.flush({ message: 'Datos del perfil actualizados correctamente.' });
+    expect(resultado.completo()).toBe(true);
+    expect(resultado.error()).toBeNull();
+  });
+
+  it('manda la provincia elegida', () => {
+    guardar(DATOS);
+
+    const pedido = backend.expectOne(RUTAS_API.miPerfil);
+    expect(pedido.request.body.idProvincia).toBe(6);
+    pedido.flush({ message: 'ok' });
+  });
+
+  it('un 400 con message le muestra ese texto a la persona', () => {
+    const resultado = guardar(DATOS);
+
+    backend.expectOne(RUTAS_API.miPerfil).flush(
+      {
+        message: 'El correo electrónico ingresado ya está registrado a nombre de otra persona.',
+      },
+      { status: 400, statusText: 'Bad Request' },
+    );
+
+    expect(resultado.error()).toBe(
+      'El correo electrónico ingresado ya está registrado a nombre de otra persona.',
+    );
+  });
+
+  it('un 500 muestra el mensaje genérico, sin el detalle del servidor', () => {
+    const resultado = guardar(DATOS);
+
+    backend
+      .expectOne(RUTAS_API.miPerfil)
+      .flush({ message: 'detalle interno' }, { status: 500, statusText: 'Server Error' });
+
+    expect(resultado.error()).toBe(MENSAJE_ERROR_ACTUALIZAR_MIS_DATOS);
   });
 });
 

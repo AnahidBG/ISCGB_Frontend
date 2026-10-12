@@ -249,6 +249,7 @@ export class LegajoMockService extends LegajoService {
     _veredicto: VeredictoLegajo,
     _idUsuarioAuditor: number,
     _comentario: string | null,
+    _presentadoFisico: boolean,
   ): Observable<void> {
     return throwError(() => new Error(MENSAJE_SOLO_LECTURA));
   }

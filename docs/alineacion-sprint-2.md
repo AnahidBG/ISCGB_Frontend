@@ -32,10 +32,11 @@ sobre la versión vigente.
 Usa `GET /api/Legajos/resumen-estado`, `GET /api/Legajos/usuario/{id}`,
 `PUT /api/Legajos/auditar/{id}` y `GET /api/Legajos/requeridos-por-rol/{idRol}`.
 
-Dos criterios no se pueden cerrar desde el frontend. El mail al rechazar no
-sale, porque la auditoría no llama a `IEmailService`. Y la casilla "Presentado
-físicamente" se puede tildar al revisar pero no se guarda: `AuditoriaLegajoDto`
-solo recibe `estado` y `comentario`.
+Un criterio no se puede cerrar desde el frontend: el mail al rechazar no sale,
+porque la auditoría no llama a `IEmailService`. La casilla "Presentado
+físicamente" sí se guarda, con la auditoría, desde que el backend sumó
+`presentadoFisico` a `AuditoriaLegajoDto` (06/10/2026). El detalle está en
+`contrato-api.md`.
 
 ### SCRUM-7: notificación de documentación faltante
 
@@ -114,26 +115,26 @@ Por impacto.
    regla 4.
 4. **Motivo en el rechazo de un justificativo.** `AuditarJustificativoDto` solo
    tiene el auditor y el estado.
-5. **`presentadoFisico` en `AuditoriaLegajoDto`**, para guardar la casilla de la
-   revisión (SCRUM-167 y SCRUM-171).
-6. **`GET /api/Usuarios/{id}`** tiene que devolver CUIL, género, afiliación y
+5. **`GET /api/Usuarios/{id}`** tiene que devolver CUIL, género, afiliación y
    `DirectorSuplente`. Sin el último, editar a un suplente sin volver a tildar
    la casilla le quita la suplencia.
-7. **Validar el PDF por contenido** (magic bytes `%PDF-`) en Legajos y
+6. **Validar el PDF por contenido** (magic bytes `%PDF-`) en Legajos y
    Justificativos. Hoy se mira el `ContentType`, o nada. Es la regla 1.
-8. **Avisos automáticos.** El worker compara contra todos los tipos de
+7. **Avisos automáticos.** El worker compara contra todos los tipos de
    documento y no contra los obligatorios del rol, y el `PUT` de la frecuencia
    no tiene tope máximo. Detalle en `contrato-api.md`.
-9. **Sello del certificado, a verificar.** El archivo está en
+8. **Sello del certificado, a verificar.** El archivo está en
    `wwwRoot/Images/sello.png` y el `.csproj` no lo copia a la salida. Si el
    certificado responde 500, es esto. En Linux y Docker, además, las mayúsculas
    de `wwwRoot` e `Images` importan.
-10. `POST /api/Auth/crear-usuario-prueba` sigue expuesto sin autenticación.
+9. `POST /api/Auth/crear-usuario-prueba` sigue expuesto sin autenticación.
 
 Ya resueltos: la contraseña inicial del alta, que ahora se crea desde un enlace
 enviado por mail; las provincias, con `GET /api/Ubicaciones/paises`; la
-reactivación de cuentas; los endpoints de reconocimiento de saberes, y el
-`[Authorize]` de `UsuariosAdminController`.
+reactivación de cuentas; los endpoints de reconocimiento de saberes; el
+`[Authorize]` de `UsuariosAdminController`, y `presentadoFisico` en
+`AuditoriaLegajoDto` (06/10/2026), que guarda la casilla de la revisión
+(SCRUM-167 y SCRUM-171).
 
 ## Cómo probarlo
 

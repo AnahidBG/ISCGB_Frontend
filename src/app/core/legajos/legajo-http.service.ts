@@ -135,7 +135,6 @@ export class LegajoHttpService extends LegajoService {
     // mayúsculas al enlazar el formulario.
     cuerpo.append('idUsuario', String(documento.idUsuario));
     cuerpo.append('idTipoDoc', String(documento.idTipoDoc));
-    cuerpo.append('presentadoFisico', String(documento.presentadoFisico));
 
     if (documento.fechaVencimiento !== null) {
       cuerpo.append('fechaVencimiento', documento.fechaVencimiento.toISOString());
@@ -159,13 +158,17 @@ export class LegajoHttpService extends LegajoService {
     veredicto: VeredictoLegajo,
     idUsuarioAuditor: number,
     comentario: string | null,
+    presentadoFisico: boolean,
   ): Observable<void> {
     // El auditor va por query string y el veredicto por body: así lo definió
     // el backend (`[FromQuery] int idUsuarioAuditor, [FromBody] dto`).
+    // `AuditarLegajo` asigna estado, comentario y presentadoFisico SIEMPRE:
+    // lo que no viaje queda en null en la base. Por eso van los tres.
     return this.http
       .put(RUTAS_API.auditarLegajo(idLegajo, idUsuarioAuditor), {
         estado: veredicto,
         comentario,
+        presentadoFisico,
       })
       .pipe(
         map(() => undefined),

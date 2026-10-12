@@ -1,0 +1,88 @@
+<form
+  [formGroup]="formulario"
+  (ngSubmit)="alGuardar()"
+  aria-label="Datos de contacto"
+  class="flex flex-col gap-5 rounded-2xl border border-borde bg-superficie px-5 py-5 sm:px-6 sm:py-6"
+  novalidate
+>
+  <!-- `status` y no `alert`: confirma algo que la persona acaba de hacer, no la interrumpe. -->
+  @if (avisoDeGuardado(); as mensaje) {
+    <p
+      role="status"
+      class="rounded-lg border border-aprobado/30 bg-aprobado/10 px-4 py-3 text-sm text-texto"
+    >
+      {{ mensaje }}
+    </p>
+  }
+
+  @if (errorServidor(); as mensaje) {
+    <p
+      role="alert"
+      class="rounded-lg border border-rechazado/30 bg-rechazado/10 px-4 py-3 text-sm text-texto"
+    >
+      {{ mensaje }}
+    </p>
+  }
+
+  <div class="grid gap-5 sm:grid-cols-2">
+    @for (campo of campos; track campo.nombre) {
+      <app-campo-formulario
+        [class]="campo.anchoCompleto ? 'sm:col-span-2' : ''"
+        [etiqueta]="campo.etiqueta"
+        [idCampo]="'mis-datos-' + campo.nombre"
+        [requerido]="campo.requerido === true"
+        [error]="errores()[campo.nombre] ?? null"
+      >
+        <input
+          [id]="'mis-datos-' + campo.nombre"
+          [type]="campo.tipo"
+          [formControlName]="campo.nombre"
+          [attr.autocomplete]="campo.autocompletar"
+          [attr.aria-invalid]="errores()[campo.nombre] !== undefined"
+          [attr.aria-describedby]="descripcionDe(campo)"
+          [class]="clasesDe(errores()[campo.nombre])"
+        />
+        @if (campo.ayuda; as ayuda) {
+          <span [id]="'mis-datos-' + campo.nombre + '-ayuda'" class="text-xs text-texto-suave">
+            {{ ayuda }}
+          </span>
+        }
+      </app-campo-formulario>
+    }
+
+    <app-campo-formulario
+      etiqueta="Provincia de nacimiento"
+      idCampo="mis-datos-idProvincia"
+      [error]="errores().idProvincia ?? null"
+    >
+      <select
+        id="mis-datos-idProvincia"
+        formControlName="idProvincia"
+        [attr.aria-invalid]="errores().idProvincia !== undefined"
+        [attr.aria-describedby]="errores().idProvincia ? 'mis-datos-idProvincia-error' : null"
+        [class]="clasesDe(errores().idProvincia)"
+      >
+        <option value="">Elegí la provincia</option>
+        @for (grupo of provinciasPorPais(); track grupo.pais) {
+          <optgroup [label]="grupo.pais">
+            @for (provincia of grupo.provincias; track provincia.idProvincia) {
+              <option [value]="provincia.idProvincia">{{ provincia.nombre }}</option>
+            }
+          </optgroup>
+        }
+      </select>
+    </app-campo-formulario>
+  </div>
+
+  <div>
+    <app-boton
+      tipo="submit"
+      [conFlecha]="false"
+      [cargando]="guardando()"
+      textoCargando="Guardando…"
+      [deshabilitado]="sinCambios()"
+    >
+      Guardar cambios
+    </app-boton>
+  </div>
+</form>

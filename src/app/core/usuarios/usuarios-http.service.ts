@@ -5,11 +5,14 @@ import { ID_ROL, ROLES, Rol, RolApi } from '../auth/modelos/rol';
 import { esEndpointInexistente, mensajeDelServidor } from '../comun/error-api';
 import { aFechaSola, desdeFechaSola } from '../comun/fechas';
 import { RUTAS_API } from '../configuracion/api';
+import { datosAEnviar } from './mis-datos';
+import { MisDatos } from './modelos/mis-datos';
 import { PerfilUsuario } from './modelos/perfil-usuario';
 import { Provincia } from './modelos/provincia';
 import { UsuarioDetalle } from './modelos/usuario-detalle';
 import { UsuarioInstitucional } from './modelos/usuario-institucional';
 import {
+  MENSAJE_ERROR_ACTUALIZAR_MIS_DATOS,
   MENSAJE_ERROR_ALTA_USUARIO,
   MENSAJE_ERROR_BAJA_USUARIO,
   MENSAJE_ERROR_EDITAR_USUARIO,
@@ -87,6 +90,22 @@ interface CargaUsuarioApi {
   esDirectorSuplente: boolean;
 }
 
+/**
+ * `ActualizarPerfilDto` del backend, sin los dos campos que "Mi perfil" no usa
+ * (`genero` y `afiliacionEmergencia`: el `GET` no los devuelve, así que no se
+ * pueden precargar). Todo es opcional porque el backend solo aplica los campos
+ * que llegan con texto (`!string.IsNullOrWhiteSpace`) y la provincia si trae valor.
+ */
+interface ActualizarPerfilApi {
+  email?: string;
+  telefono?: string;
+  telefonoEmergencia?: string;
+  contactoEmergencia?: string;
+  direccion?: string;
+  lugarNacimiento?: string;
+  idProvincia?: number;
+}
+
 /** Cada fila de `GET /api/Ubicaciones/paises` (`UbicacionController.cs`). */
 interface PaisApi {
   idPais: number;
@@ -112,7 +131,7 @@ const REGISTROS_POR_PAGINA = 500;
 /**
  * Usuarios contra la API real.
  *
- * `listar` y `obtener` pegan contra `UsuariosController`.
+ * `listar`, `obtener` y `actualizarMiPerfil` pegan contra `UsuariosController`.
  * `crear`, `actualizar`, `darDeBaja` y `reactivar` pegan contra `UsuariosAdminController`:
  * contra un backend sin ese controlador responden 404 sin cuerpo, y se traduce a
  * `MENSAJE_GESTION_NO_DISPONIBLE` en vez de un error genérico.
@@ -163,6 +182,19 @@ export class UsuariosHttpService extends UsuariosService {
         console.error('Error al traer países y provincias:', error);
         return throwError(() => error);
       }),
+    );
+  }
+
+  actualizarMiPerfil(datos: MisDatos): Observable<void> {
+    // Adapter de salida: solo viaja lo que tiene contenido. El backend ignora lo
+    // vacío, y mandarlo daría a entender que se puede borrar un dato.
+    const cuerpo: ActualizarPerfilApi = datosAEnviar(datos);
+
+    return this.http.put(RUTAS_API.miPerfil, cuerpo).pipe(
+      map(() => undefined),
+      catchError((error: HttpErrorResponse) =>
+        throwError(() => new Error(mensajeAlActualizarMisDatos(error))),
+      ),
     );
   }
 
@@ -260,6 +292,25 @@ function traducirError(error: HttpErrorResponse, porDefecto: string): string {
   }
   console.error('Error en la gestión de usuarios:', error);
   return porDefecto;
+}
+
+/**
+ * El mensaje que ve la persona si "Mi perfil" no puede guardar.
+ *
+ * El del backend primero, pero solo si es un rechazo del pedido (4xx): ahí explica
+ * qué corregir ("El correo electrónico ingresado ya está registrado a nombre de
+ * otra persona."). Un 5xx, la falta de red o una ruta que no existe no le dicen
+ * nada útil a quien está en la pantalla: ahí va el genérico, y el detalle a la
+ * consola. No pasa por `traducirError`: su texto de "gestión no disponible" habla
+ * de otra cosa.
+ */
+function mensajeAlActualizarMisDatos(error: HttpErrorResponse): string {
+  const delServidor = mensajeDelServidor(error);
+  if (delServidor !== null && error.status >= 400 && error.status < 500) {
+    return delServidor;
+  }
+  console.error('Error al actualizar los datos del perfil:', error);
+  return MENSAJE_ERROR_ACTUALIZAR_MIS_DATOS;
 }
 
 function aCargaUsuarioApi(perfil: PerfilUsuario): CargaUsuarioApi {

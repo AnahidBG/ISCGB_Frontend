@@ -161,19 +161,58 @@ describe('LegajoHttpService: campos del backend que no se pierden al mapear', ()
     expect(ruta).toBe('/uploads/legajos/ISCGB_AnaGomez_DNI.pdf');
   });
 
-  it('la subida manda presentadoFisico tal cual se lo pasan', () => {
+  it('la subida no manda presentadoFisico: el backend ya no lo lee', () => {
     servicio
       .subirDocumento({
         idUsuario: ID_USUARIO,
         idTipoDoc: 4,
         fechaVencimiento: null,
-        presentadoFisico: true,
         archivo: new File(['%PDF-1.7'], 'dni.pdf', { type: 'application/pdf' }),
       })
       .subscribe();
 
     const pedido = backend.expectOne(RUTAS_API.subirLegajo);
-    expect((pedido.request.body as FormData).get('presentadoFisico')).toBe('true');
+    const cuerpo = pedido.request.body as FormData;
+    expect(cuerpo.has('presentadoFisico')).toBe(false);
+    expect(cuerpo.get('idTipoDoc')).toBe('4');
     pedido.flush({ message: 'ok', idLegajo: 1, ruta: '/uploads/legajos/x.pdf' });
+  });
+});
+
+describe('LegajoHttpService: la auditoría guarda el veredicto, el comentario y la entrega en papel', () => {
+  const ID_LEGAJO = 5;
+  const ID_AUDITOR = 9;
+
+  let servicio: LegajoHttpService;
+  let backend: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [
+        LegajoHttpService,
+        { provide: AuthService, useValue: { sesion: () => ({ idUsuario: ID_USUARIO }) } },
+        provideHttpClient(),
+        provideHttpClientTesting(),
+      ],
+    });
+    servicio = TestBed.inject(LegajoHttpService);
+    backend = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => backend.verify());
+
+  // El backend asigna estado, comentario y presentadoFisico en cada auditoría:
+  // lo que no llegue queda en null. Por eso viajan los tres siempre, y la
+  // casilla destildada va como `false`, nunca ausente.
+  it.each([
+    ['con la casilla tildada y un motivo', 'Rechazado', 'Documento incompleto', true],
+    ['con la casilla sin tildar y sin comentario', 'Aprobado', null, false],
+  ] as const)('%s', (_caso, veredicto, comentario, presentadoFisico) => {
+    servicio.auditar(ID_LEGAJO, veredicto, ID_AUDITOR, comentario, presentadoFisico).subscribe();
+
+    const pedido = backend.expectOne(RUTAS_API.auditarLegajo(ID_LEGAJO, ID_AUDITOR));
+    expect(pedido.request.method).toBe('PUT');
+    expect(pedido.request.body).toEqual({ estado: veredicto, comentario, presentadoFisico });
+    pedido.flush({ message: 'ok', idLegajo: ID_LEGAJO, estado: veredicto, presentadoFisico });
   });
 });

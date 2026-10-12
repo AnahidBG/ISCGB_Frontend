@@ -8,6 +8,7 @@ import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { normalizarTexto } from '../../../core/comun/texto';
 import { urlArchivoSubido } from '../../../core/configuracion/api';
+import { veredictoGuardado } from '../../../core/legajos/entrega-en-papel';
 import { LegajoService, VeredictoLegajo } from '../../../core/legajos/legajo.service';
 import { DocumentoLegajo } from '../../../core/legajos/modelos/documento-legajo';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
@@ -211,7 +212,7 @@ export class MisDocumentos {
    * Clave = `idLegajo`.
    */
   protected readonly overridesAuditoria = signal<
-    ReadonlyMap<number, { estado: string; comentario: string | null }>
+    ReadonlyMap<number, { estado: string; comentario: string | null; presentadoFisico: boolean }>
   >(new Map());
 
   /** `documentos()` con los overrides de auditoría ya aplicados encima. */
@@ -230,6 +231,7 @@ export class MisDocumentos {
             ...documento,
             estado: override.estado,
             comentario: override.comentario,
+            presentadoFisico: override.presentadoFisico,
             auditor: this.sesion()?.nombreCompleto || documento.auditor,
           };
     });
@@ -442,17 +444,19 @@ export class MisDocumentos {
   // no declara nada, y en su propio legajo tampoco se le muestra.
 
   /**
-   * Lo que quien revisa tildó en "Presentado físicamente". Clave = `idLegajo`.
+   * Lo que quien revisa tildó en "Presentado físicamente" y todavía no figura
+   * en la fila. Clave = `idLegajo`.
    *
-   * ⚠️ Vive SOLO en esta pantalla: al recargar o salir se pierde. El backend
-   * guarda `presentado_fisico` únicamente al subir el documento y
-   * `AuditoriaLegajoDto` no lo recibe, así que hoy no hay a dónde mandarlo
-   * (docs/contrato-api.md, "la entrega en papel"). No depende del veredicto:
-   * se puede aprobar o rechazar con la casilla tildada o sin tildar.
+   * La casilla se guarda con la auditoría (`PUT /api/Legajos/auditar`). En un
+   * documento pendiente la tilde espera acá hasta que se aprueba o se rechaza:
+   * guardarla sola le asignaría un auditor a algo que nadie revisó. En uno que
+   * ya tiene veredicto se guarda en el momento y la entrada dura lo que dura
+   * el pedido. Cuando algo se guarda, la fila pasa a mostrar lo guardado
+   * (`overridesAuditoria`) y la entrada se descarta.
    */
   protected readonly entregasEnPapel = signal<ReadonlyMap<number, boolean>>(new Map());
 
-  /** Lo tildado en esta pantalla; si no se tocó, lo que vino del backend. */
+  /** Lo tildado y pendiente de guardar; si no se tocó, lo que tiene la fila. */
   protected presentadoFisico(fila: FilaDocumento): boolean {
     const marcado = fila.idLegajo === null ? undefined : this.entregasEnPapel().get(fila.idLegajo);
     return marcado ?? fila.presentadoFisico;
@@ -460,13 +464,28 @@ export class MisDocumentos {
 
   protected alMarcarEntregaEnPapel(fila: FilaDocumento, evento: Event): void {
     const idLegajo = fila.idLegajo;
-    if (idLegajo === null) {
+    if (idLegajo === null || this.estaGuardando(idLegajo)) {
       return;
     }
-    const marcado = (evento.target as HTMLInputElement).checked;
+    this.fijarEntrega(idLegajo, (evento.target as HTMLInputElement).checked);
+
+    // Sin veredicto no se guarda sola: la tilde viaja con el veredicto. Con
+    // veredicto se guarda ya, reenviando el mismo estado y comentario porque
+    // la auditoría los reescribe.
+    const veredicto = veredictoGuardado(fila.estado);
+    if (veredicto !== null) {
+      this.enviarAuditoria(idLegajo, veredicto, fila.comentario);
+    }
+  }
+
+  private fijarEntrega(idLegajo: number, marcado: boolean): void {
+    this.entregasEnPapel.update((mapa) => new Map(mapa).set(idLegajo, marcado));
+  }
+
+  private quitarEntrega(idLegajo: number): void {
     this.entregasEnPapel.update((mapa) => {
       const nuevo = new Map(mapa);
-      nuevo.set(idLegajo, marcado);
+      nuevo.delete(idLegajo);
       return nuevo;
     });
   }
@@ -563,18 +582,33 @@ export class MisDocumentos {
       return;
     }
 
+    // La fila tal como está ahora: de ahí salen la casilla (tildada o no) y el
+    // estado que tenía antes de este pedido. Siempre viaja un booleano.
+    const fila = this.filas().find((candidata) => candidata.idLegajo === idLegajo);
+    const presentadoFisico = fila === undefined ? false : this.presentadoFisico(fila);
+    const teniaVeredicto = veredictoGuardado(fila?.estado ?? null) !== null;
+
     this.marcarGuardando(idLegajo, true);
     this.errorAuditoria.set(null);
 
-    this.legajos.auditar(idLegajo, veredicto, idAuditor, comentario).subscribe({
+    this.legajos.auditar(idLegajo, veredicto, idAuditor, comentario, presentadoFisico).subscribe({
       next: () => {
-        this.aplicarVeredictoLocal(idLegajo, veredicto, comentario);
+        this.aplicarVeredictoLocal(idLegajo, veredicto, comentario, presentadoFisico);
+        this.quitarEntrega(idLegajo);
         // Aprobar o rechazar cambia lo que espera revisión: la campana se entera.
-        this.campana.refrescar();
+        // Guardar solo la casilla de un documento ya revisado no lo cambia.
+        if (fila?.estado !== veredicto) {
+          this.campana.refrescar();
+        }
       },
       error: (fallo: Error) => {
         this.errorAuditoria.set(fallo.message);
         this.marcarGuardando(idLegajo, false);
+        // Con veredicto la tilde se guardaba sola: si falla, vuelve a lo que
+        // había. Sin veredicto es un borrador y se conserva para reintentar.
+        if (teniaVeredicto) {
+          this.quitarEntrega(idLegajo);
+        }
       },
       complete: () => this.marcarGuardando(idLegajo, false),
     });
@@ -582,16 +616,18 @@ export class MisDocumentos {
 
   /**
    * Actualiza el estado en memoria en vez de refetchear el legajo entero,
-   * igual criterio que tenía Control de Legajos antes de este cambio.
+   * igual criterio que tenía Control de Legajos antes de este cambio. Lo que
+   * se muestra es lo que se mandó, y el backend guarda exactamente eso.
    */
   private aplicarVeredictoLocal(
     idLegajo: number,
     veredicto: VeredictoLegajo,
     comentario: string | null,
+    presentadoFisico: boolean,
   ): void {
     this.overridesAuditoria.update((mapa) => {
       const nuevo = new Map(mapa);
-      nuevo.set(idLegajo, { estado: veredicto, comentario });
+      nuevo.set(idLegajo, { estado: veredicto, comentario, presentadoFisico });
       return nuevo;
     });
   }

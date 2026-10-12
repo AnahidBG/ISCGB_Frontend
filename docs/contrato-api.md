@@ -111,6 +111,84 @@ responde `400 "Debe asignar al menos un rol al usuario."`.
 
 El detalle campo por campo está en `contrato-alta-usuario.md`.
 
+## Mi perfil
+
+Cualquier persona con sesión, de cualquier rol, actualiza sus propios datos de
+contacto. Está en `UsuariosController`, en `api/Usuarios`. Se relevó el
+11/10/2026 contra el código del backend.
+
+### `PUT /api/Usuarios/mi-perfil`
+
+Con `[Authorize]` y sin rol. La persona sale del token (claim `NameIdentifier`),
+no de la URL ni del cuerpo. Recibe un `ActualizarPerfilDto`, con todos los
+campos opcionales:
+
+```json
+{
+  "telefono": "3511234567",
+  "telefonoEmergencia": "3517654321",
+  "lugarNacimiento": "Villa Dolores",
+  "contactoEmergencia": "Juan Gómez",
+  "direccion": "Av. Siempreviva 742",
+  "idProvincia": 6,
+  "genero": "Femenino",
+  "afiliacionEmergencia": "APROSS",
+  "email": "nuevo@ejemplo.com"
+}
+```
+
+Responde `200` con `{ "message": "Datos del perfil actualizados correctamente." }`.
+
+- **No borra campos.** Solo aplica los textos que llegan con contenido
+  (`!string.IsNullOrWhiteSpace`) y `idProvincia` si trae valor. Un campo vacío,
+  con solo espacios o ausente se ignora y queda el valor que había. Un cuerpo
+  `{}` responde `200` y no cambia nada. Para cambiar un dato hay que mandar otro;
+  no hay manera de dejarlo vacío.
+- **El correo no se puede repetir.** Si cambia y otra persona ya lo usa, responde
+  `400` con
+  `{ "message": "El correo electrónico ingresado ya está registrado a nombre de otra persona." }`.
+  No valida el formato: `"hola"` pasa.
+- Responde `404` con `{ "message": "Usuario no encontrado." }` si el id del token no
+  existe, y `401` sin cuerpo si el token no trae el id.
+- No valida el largo de los textos. Pasado el de la columna (`varchar`: teléfonos
+  30, dirección 255, correo, lugar de nacimiento y contacto de emergencia 150)
+  SQL Server corta el guardado y la API responde `500`.
+- Por acá no se cambian el nombre, el apellido, el DNI ni los roles. Eso lo hace
+  Dirección con `PUT /api/UsuariosAdmin/modificar/{id}`.
+
+`genero` y `afiliacionEmergencia` se pueden escribir pero no leer:
+`GET /api/Usuarios/{id}` no los devuelve (el login sí, pero solo los de quien
+inicia sesión, y `Sesion` no los guarda). Por eso la pantalla no los ofrece: no
+podría precargarlos, y pedirlos de cero obligaría a reescribir lo que ya estaba.
+
+Cómo lo usa el frontend, en `/perfil`:
+
+- `UsuariosService.actualizarMiPerfil(datos)` arma el cuerpo con `datosAEnviar`
+  (`core/usuarios/mis-datos.ts`): los textos con contenido, recortados, y la
+  provincia si hay una elegida. Lo vacío no viaja.
+- Como el backend ignora lo vacío, el formulario no deja vaciar un dato que ya estaba
+  cargado ("Este dato no se puede dejar vacío."). Uno que nunca se cargó sí puede
+  quedar vacío. El correo es obligatorio y tiene que parecer un correo.
+- El backend no valida el formato de los teléfonos ni el de los correos. El
+  formulario sí (`erroresDeMisDatos`): un teléfono tiene que tener solo números,
+  espacios, guiones, puntos o paréntesis, y entre 6 y 15 dígitos. Es una regla del
+  frontend; el formulario de Dirección no tiene ninguna.
+- Un `4xx` con texto se muestra tal cual (el del correo repetido, por ejemplo). Un
+  `5xx`, la falta de red o una ruta que no existe, con un mensaje genérico.
+- Si sale bien, `AuthService.actualizarCorreo(...)` pone el correo nuevo en la sesión
+  y en `sessionStorage`, para que el encabezado lo muestre sin volver a iniciar
+  sesión.
+
+### `POST /api/Usuarios/foto-perfil`
+
+Existe, con `[Authorize]` y sin rol, y el frontend no lo consume. Recibe la imagen
+en `multipart/form-data` (`Foto`, solo `.jpg`, `.jpeg` y `.png`), la guarda en
+`wwwroot/uploads/perfiles/` y la ruta queda en `Usuarios.FotoPerfil`. Pero ningún
+endpoint devuelve esa ruta: ni `GET /api/Usuarios`, ni `GET /api/Usuarios/{id}`, ni
+el login. El sistema guardaría la foto sin poder mostrarla, así que "Cambiar foto"
+sigue deshabilitado en el menú de la persona. Cuando algún endpoint devuelva
+`fotoPerfil`, se arma la pantalla y se usa `urlArchivoSubido(...)` para abrirla.
+
 ## Programa de materia
 
 ### `GET /api/ProgramasMateria/contexto-docente/{idUsuario}`
@@ -225,29 +303,59 @@ todavía no se imprimen.
 `presentado_fisico` dice si Secretaría tiene además el papel de ese documento.
 Desde el 04/10/2026 no lo declara quien sube: lo marca quien revisa.
 
-Al subir un documento, el Docente o el Alumno ve solo el recordatorio de
-entregarlo en papel, y `POST /api/Legajos` manda `presentadoFisico` siempre en
-`false`.
+**Al subir.** El Docente o el Alumno ve solo el recordatorio de entregarlo en
+papel. `POST /api/Legajos` no manda `presentadoFisico`: en `SubirLegajoDto` esa
+propiedad está comentada, el backend no lee lo que llegue y el documento nuevo
+queda con la columna en `NULL`. Mis Documentos lo muestra como no entregado.
 
-Al revisar un legajo ajeno (`legajo/usuario/:idUsuario`), el Secretario o el
-Director tiene la casilla "Presentado físicamente" en cada documento. Se puede
-tildar y no traba el veredicto, pero **no se guarda**: al recargar se pierde.
-
-Es un pendiente del backend. `presentado_fisico` solo se escribe en
-`POST /api/Legajos`; `AuditoriaLegajoDto` recibe únicamente `estado` y
-`comentario`, y `AuditarLegajo` no toca esa columna. Hoy no hay forma de
-ponerlo en `true` desde la aplicación. Lo que hace falta acordar:
+**Al revisar.** En un legajo ajeno (`legajo/usuario/:idUsuario`), el Secretario
+o el Director tiene la casilla "Presentado físicamente" en cada documento
+subido. Se guarda con la auditoría, en `PUT /api/Legajos/auditar/{idLegajo}`
+(desde el 06/10/2026, `AuditoriaLegajoDto.PresentadoFisico`, un `bool?`):
 
 ```jsonc
 // PUT /api/Legajos/auditar/{idLegajo}?idUsuarioAuditor={id}
 { "estado": "Aprobado", "comentario": null, "presentadoFisico": true }
 ```
 
-con `PresentadoFisico` como `bool?` en el DTO, para que un `null` no pise el
-valor, y `[Authorize(Roles = "Director,Secretario")]` en el endpoint.
+`AuditarLegajo` asigna **siempre** estos cuatro campos y guarda: el auditor, el
+estado, el comentario y `presentadoFisico`. Lo que no llega queda en `NULL`. Por
+eso el frontend los manda todos, y `presentadoFisico` siempre como booleano,
+nunca ausente. Responde `200`:
 
-Cuidado con los datos viejos: las filas que hoy tienen `presentado_fisico = 1`
-las tildó la propia persona al subir. No las verificó Secretaría.
+```json
+{
+  "message": "Auditoría de legajo actualizada correctamente.",
+  "idLegajo": 1,
+  "estado": "Aprobado",
+  "presentadoFisico": true
+}
+```
+
+Los errores son `404` si el legajo no existe y `400` si el auditor no es válido,
+los dos con `{ "message": "…" }`. El endpoint no manda mails.
+
+Cómo lo usa la pantalla:
+
+- **Documento pendiente.** La casilla se tilda en pantalla y viaja con el
+  veredicto, al aprobar o rechazar. No se guarda sola: eso le asignaría un
+  auditor a un documento que nadie revisó.
+- **Documento con veredicto.** Es el caso de "el papel llegó días después". Al
+  tildar o destildar se guarda en el momento, reenviando el mismo `estado` y el
+  mismo `comentario` que ya tiene, para que la auditoría no los pise. Mientras
+  se guarda la casilla queda deshabilitada y, si falla, vuelve a su valor
+  anterior y se muestra el error.
+- **Auditor.** Como el endpoint asigna siempre el auditor, tildar la casilla de
+  un documento que ya revisó otra persona deja a quien tildó como "Revisado
+  por".
+
+La lógica de qué se reenvía está en `core/legajos/entrega-en-papel.ts`.
+
+Todavía falta `[Authorize(Roles = "Director,Secretario")]` en el endpoint.
+
+Cuidado con los datos viejos: las filas que tienen `presentado_fisico = 1` de
+antes del 04/10/2026 las tildó la propia persona al subir. No las verificó
+Secretaría.
 
 `GET /api/Legajos/usuario/{id}` devuelve además `auditor`, el nombre de quien
 revisó o el texto `"Sin auditor asignado"`. Mis Documentos lo muestra como
@@ -326,8 +434,9 @@ próxima pasada.
 
 Pendientes del backend:
 
-- `ConfiguracionController` no tiene `[Authorize]`: los dos endpoints responden
-  sin autenticación.
+- Los dos endpoints de frecuencia no tienen `[Authorize]`: responden sin
+  autenticación. En el mismo controlador, `mis-notificaciones` sí exige el rol
+  Docente (ver "Mesas de examen asignadas al docente").
 - El `PUT` no tiene tope máximo. Con un valor muy grande el worker falla al
   calcular la fecha límite y no envía ningún aviso. El tope de 365 días es solo
   del frontend.
@@ -344,7 +453,12 @@ instituto, que define Secretaría Académica. Hoy vale 2 si nunca se configuró.
 hay límite por comisión.
 
 Esta sección se relevó el 10/10/2026 contra el código del backend. El frontend
-consume solo `estado-mes`, en `/calendario`, para los cuatro roles.
+consume `estado-mes` en `/calendario`, para Docente, Secretario y Director, y
+`limite-parciales` en `/secretario/limite-parciales`, para Secretario y Director.
+El Docente además registra parciales desde `/calendario` con `registrar`,
+`tipos-examen` y `mis-materias-docente`. De todos ellos, el backend exige rol solo
+en `mis-materias-docente`: lo único que deja afuera al Alumno en el resto es el
+`roleGuard` del frontend.
 
 ### `GET /api/ConfiguracionCalendario/estado-mes?anio=2026&mes=10`
 
@@ -364,46 +478,219 @@ consume solo `estado-mes`, en `/calendario`, para los cuatro roles.
 - `fecha` es un `DateTime` de .NET serializado sin zona, a medianoche. El frontend
   lo convierte con `desdeFechaSola` para que no se corra un día por la zona
   horaria.
-- `limiteAlcanzado` lo calcula el backend (`cantidadExamenes >= limiteDiario`) y el
-  frontend se fía de él: un día es `Completo` cuando viene en `true`, sin
-  recalcularlo con la cantidad.
+- `limiteAlcanzado` lo calcula el backend (`cantidadExamenes >= limiteDiario`). El
+  frontend no lo usa: calcula el estado de cada día él mismo con la cantidad y el
+  límite (`estadoDelDia`), que es la misma cuenta.
 - No hay más campos. No trae qué exámenes son, de qué materia ni a qué hora.
 - Un mes inválido (0 o 13, por ejemplo) responde `500`: el controller arma un
   `DateTime` con el valor sin validarlo.
 
-El frontend los traduce a tres estados: `Libre` (el día no viene en la lista),
-`ConExamenes` y `Completo`. La respuesta pasa a `EstadoMes` en
-`ExamenesHttpService`.
+El frontend arma con eso el modelo `CalendarioDelMes` (`aCalendarioDelMes`, en
+`core/examenes/adaptador-estado-mes.ts`): todos los días del mes, en orden, con
+`fecha` como `yyyy-MM-dd`, `cantidad` (0 en los que el backend no lista), `limite` y
+`estado`. El estado sale de `estadoDelDia(cantidad, limite)`: `disponible` sin
+parciales, `ocupado` si tiene alguno y falta para el límite, y `completo` si lo
+alcanzó. Si la cantidad o el límite no son números válidos, el día queda
+`disponible`.
+
+Una entrada de `diasOcupados` que no se puede leer (una fecha inválida, o una
+cantidad que no es un entero de 0 para arriba) se descarta y ese día queda
+disponible. Si la respuesta entera no se puede leer (`limiteDiario` no es un número
+o `diasOcupados` no es una lista) es un error.
+
+### `PUT /api/ConfiguracionCalendario/limite-parciales`
+
+Recibe `{ "nuevoLimite": 3 }` y cambia el límite de exámenes por día. Responde
+`200`:
+
+```json
+{ "message": "El límite de parciales por día se ha actualizado con éxito.", "nuevoLimite": 3 }
+```
+
+Con `nuevoLimite` en cero o negativo responde `400` con
+`{ "message": "El límite de parciales Diarios debe ser mayor a cero." }`.
+
+- El límite es por día y único para todo el instituto. Cuenta todos los tipos de
+  examen, no solo los parciales, aunque el endpoint se llame así.
+- No hay un GET propio. El valor vigente se lee de `limiteDiario` en
+  `estado-mes`, que es el mismo en cualquier mes:
+  `CalendarioExamenesHttpService.limiteDiario()` pide el mes actual y se queda con
+  ese campo.
+- El frontend lo usa en la pantalla "Límite de parciales"
+  (`/secretario/limite-parciales`), para Secretario y Director. Valida un entero
+  entre 1 y 99 antes de enviar y, si el backend rechaza el valor, muestra su
+  mensaje. El máximo de 99 es solo del frontend, para atajar un error de tipeo: el
+  backend no pone ninguno. El período que nombran los textos ("por día") sale de
+  una sola constante, `PERIODO_DEL_LIMITE`: en Jira el límite figura "por semana",
+  pero el backend cuenta por día.
+- El frontend siempre manda un entero: con `nuevoLimite` ausente el backend lo da
+  por válido (ver los pendientes).
+
+### `POST /api/ConfiguracionCalendario/registrar`
+
+Registra un examen. Recibe `CargaExamenDto`:
+
+```json
+{ "fecha": "2026-10-13T09:00:00", "idComision": 1, "idMateria": 4, "idTipoExamen": 1 }
+```
+
+Responde `200` con `{ "message": "Examen registrado correctamente." }`. **No
+devuelve el id del examen**, así que el frontend no puede abrirlo ni listarlo después.
+Si el día ya alcanzó el límite responde `400` con
+`{ "message": "No se puede registrar. Se ha superado el límite de parciales para ese día." }`.
+
+- `fecha` es un `DateTime` de .NET **sin zona y con hora**. El frontend manda la hora
+  local tal cual, como texto: `textoFechaYHora(dia, horario)`, en
+  `core/examenes/registro-examen.ts`. Nunca `toISOString()`: lo pasa a UTC y corre el
+  examen tres horas (un parcial a las 23:30 caería al día siguiente).
+- El límite cuenta los exámenes de la misma fecha sin mirar la hora, de cualquier
+  materia, comisión o tipo.
+- No valida que la materia, la comisión ni el tipo existan: con ids inválidos
+  responde `500`. Tampoco que la fecha no sea pasada, ni que el docente dicte esa
+  materia en esa comisión, ni que quien llama sea Docente: no tiene `[Authorize]`.
+  El frontend cuida la fecha (`errorDeDia`: no deja registrar en un día anterior a
+  hoy) y ofrece solo las materias del docente de la sesión; cualquier otro cliente
+  se las puede saltear.
+- Cómo lo usa el frontend: `CalendarioExamenesService.registrarExamen(...)`.
+  `CalendarioExamenesHttpService` arma el cuerpo desde `NuevoExamen` (día, horario y
+  los tres ids). Un `4xx` con texto se muestra tal cual (el del límite, por
+  ejemplo); un `5xx` o la falta de red, con el mensaje genérico. Va en segundo
+  plano, sin el velo global: el botón del modal ya muestra "Guardando…".
+
+### `GET /api/ConfiguracionCalendario/tipos-examen`
+
+Devuelve `200` con `[{ "idTipoExamen": 1, "nombre": "Parcial" }]`. No exige rol y no
+recibe parámetros. Hoy la base tiene cuatro: "Parcial", "Recupetario" (así, con el
+error de tipeo), "Parcial Integrador Final" y "Coloquio". El frontend los muestra
+tal cual vienen. Si la respuesta no se puede leer (no es una lista, o un tipo
+no trae id o nombre) es un error.
+
+### `GET /api/ConfiguracionCalendario/mis-materias-docente`
+
+Con `[Authorize(Roles = "Docente")]`. El docente sale del token (claim
+`NameIdentifier`). Devuelve `200` con cada materia en cada comisión que dicta:
+
+```json
+[
+  {
+    "idMateria": 4,
+    "nombreMateria": "Programacion II",
+    "carrera": "Tecnicatura en Desarrollo de Software",
+    "idComision": 1,
+    "nombreComision": "Comisión A"
+  }
+]
+```
+
+- Puede ser `[]`: un docente sin materias asignadas.
+- Responde `404` con `{ "message": "El usuario no tiene un perfil de docente." }` si el
+  usuario no tiene fila en `Docentes`, y `401` con `{ "message": "Token inválido." }` si
+  el token no trae el id. Con otro rol responde `403`.
+- Una misma materia en dos comisiones son dos elementos. `carrera` puede venir nula.
+- El frontend lo traduce a `MateriaDelDocente` (`materia`, `comision`, `carrera`). Un
+  `404` con texto se trata como "no tiene materias" y devuelve una lista vacía, igual
+  que las mesas asignadas: el modal dice "Todavía no tenés materias asignadas.
+  Consultá en Secretaría." Un `404` sin cuerpo (la ruta no existe), un `5xx` o una
+  respuesta que no se puede leer son un error, con "Reintentar".
 
 ### Lo que existe y el frontend todavía no consume
 
-- `POST /api/ConfiguracionCalendario/registrar` recibe
-  `{ fecha, idComision, idMateria, idTipoExamen }`. Responde `400` con
-  `{ message }` si el día ya alcanzó el límite.
 - `PUT /api/ConfiguracionCalendario/modificar/{idExamen}` recibe
   `{ nuevaFecha }`. Responde `404` si el examen no existe y `400` si el día nuevo
   ya está completo.
 - `DELETE /api/ConfiguracionCalendario/eliminar/{idExamen}`. Responde `404` si el
   examen no existe.
-- `GET /api/ConfiguracionCalendario/tipos-examen`: `[{ idTipoExamen, nombre }]`.
-- `GET /api/ConfiguracionCalendario/mis-materias-docente`: las materias y
-  comisiones del docente de la sesión, con `[Authorize(Roles = "Docente")]`.
-- `PUT /api/ConfiguracionCalendario/limite-parciales` recibe `{ nuevoLimite }` y
-  cambia el límite diario.
 
 ### Pendientes del backend
 
-- No hay un endpoint que liste los exámenes. Por eso el calendario dice cuántos
-  hay cada día y no cuáles: no se puede armar la agenda del mes ni mostrar la
-  materia, la hora o quién registró cada examen. Tampoco se puede saber, en el
-  front, cuáles son "los tuyos".
+- No hay un endpoint que liste los exámenes (`idExamen`, materia, comisión y tipo).
+  Por eso el calendario dice cuántos hay cada día y no cuáles: no se puede armar
+  la agenda del mes ni mostrar la materia, la hora o quién registró cada examen.
+  Tampoco se puede saber, en el front, cuáles son "los tuyos". La grilla ya tiene
+  dónde dibujarlos: `CalendarioExamenesService.examenesDelMes(...)` devuelve una
+  lista vacía contra la API real (`TODO(SCRUM-182)`) y solo el mock trae ejemplos.
+- El período del límite no está definido. El backend cuenta por día
+  (`limite_parciales_diario`) y en Jira figura "por semana". Si cambia, el frontend
+  toca `PERIODO_DEL_LIMITE`, que solo cambia la redacción, y tendría que revisar
+  también qué significa "completo" en cada celda.
+- `registrar` devuelve solo un mensaje, sin el id del examen creado. Sin el id el
+  frontend no puede, por ejemplo, ofrecer "Deshacer" ni abrir el parcial recién
+  cargado.
+- `registrar` no valida que los ids existan (responde `500`), ni que la fecha sea
+  futura, ni que el docente dicte esa materia en esa comisión. Debería responder
+  `400` con un mensaje en cada caso.
 - Solo `mis-materias-docente` exige rol. El resto no tiene `[Authorize]`: quien
   tenga la dirección puede registrar, mover o borrar exámenes y cambiar el límite
-  sin iniciar sesión. En `limite-parciales` la línea está comentada en el código.
+  sin iniciar sesión. En `limite-parciales` la línea está comentada en el código,
+  así que hoy solo el `roleGuard` del frontend limita quién cambia el límite.
 - `PUT limite-parciales` valida `nuevoLimite <= 0`, pero `nuevoLimite` es `int?`:
   un cuerpo sin ese campo pasa la validación y deja el límite en `null`, que el
-  resto del controller lee como 2.
+  resto del controller lee como 2. El frontend siempre manda un entero, pero
+  cualquier otro cliente puede dejar el límite sin valor.
+- `limite-parciales` no tiene máximo. Un valor enorme deja el límite sin efecto.
 - Un mes inválido en `estado-mes` debería responder `400` con un mensaje.
+
+## Mesas de examen asignadas al docente
+
+Está en `ConfiguracionController`, en `api/Configuracion`, junto a la frecuencia
+de avisos. No es del calendario ni de `ConfiguracionCalendario`: el dato son
+mesas de examen, pero la ruta dice "notificaciones" y vive en ese controlador.
+Se relevó el 10/10/2026 contra el código del backend.
+
+### `GET /api/Configuracion/mis-notificaciones`
+
+Con `[Authorize(Roles = "Docente")]`. No lleva parámetros: el docente sale del
+token (claim `NameIdentifier`). Devuelve `200` con las mesas a las que lo
+asignaron y cuya confirmación (`mesa_examen.estado_confirmacion`) sigue en
+`Pendiente`:
+
+```json
+[
+  {
+    "idExamen": 1,
+    "materia": "Redes",
+    "fecha": "2026-11-20T09:00:00",
+    "mensaje": "Ha sido asignado a la mesa de Redes el día 20/11/2026 09:00"
+  }
+]
+```
+
+- `fecha` es un `DateTime` de .NET serializado sin zona, **con hora**. El frontend
+  la lee en hora local.
+- `mensaje` lo arma el backend. El frontend no lo usa: redacta su propio texto,
+  con el mismo trato que el resto de la campana.
+- Sin mesas pendientes responde `200` con `[]`.
+- Responde `404` con `{ "message": "Docente no encontrado." }` si el usuario no
+  tiene fila en `Docentes`, y `401` sin cuerpo si el token no trae el id. Con
+  otro rol responde `403`.
+- **No filtra por fecha.** Devuelve todas las pendientes, también las de
+  exámenes que ya pasaron.
+
+Qué hace el frontend con eso:
+
+- `CalendarioExamenesService.mesasAsignadas()` lo pide en segundo plano, sin el velo global.
+  `CalendarioExamenesHttpService` lo traduce a `MesaAsignada`. Un `404` es una lista vacía
+  (no tiene perfil de docente, así que no tiene mesas); cualquier otro fallo, o
+  una respuesta que no se puede leer, es un error.
+- Lo consume solo la campana (`CampanaService`) y solo cuando el rol principal de
+  la sesión es Docente. Un Director o un Secretario que además es Docente sigue
+  viendo los pendientes del instituto.
+- `notificacionesPorMesas(...)`, en `core/notificaciones/notificaciones-mesas.ts`,
+  arma los avisos. Descarta las mesas de días anteriores a hoy: es una decisión
+  del frontend, porque el backend las devuelve todas. Las ordena por fecha, la más
+  próxima primero, y escribe "Te asignaron a la mesa de Redes" con el detalle
+  "Viernes 20/11/2026, 09:00 h". Cada aviso lleva a `/calendario`.
+- Los avisos se suman a las novedades del legajo del docente y al número de la
+  campana. Si el pedido de las mesas falla, la campana muestra igual el legajo.
+
+Pendientes del backend:
+
+- No hay forma de aceptar ni de rechazar una mesa: la confirmación queda siempre
+  en `Pendiente`. Por eso el aviso no se va solo: el frontend lo muestra hasta
+  que pasa el día del examen, y como la campana recuerda las leídas solo mientras
+  la pestaña sigue abierta (`sessionStorage`), reaparece al abrir otra.
+- Tampoco hay un endpoint para dar de alta una mesa, es decir, para asignar un
+  docente a un examen. Hoy las mesas se cargan a mano en la base.
 
 ## Materias y asignaciones
 

@@ -65,6 +65,13 @@ export const RUTAS_API = {
   /** Detalle de un usuario. */
   usuarioPorId: (id: number) => `${URL_BASE_API}/api/Usuarios/${id}`,
 
+  /**
+   * La persona de la sesión actualiza sus propios datos de contacto. `PUT`, con
+   * `[Authorize]` y sin rol: el usuario sale del token. Solo aplica los campos que
+   * llegan con texto; un campo vacío o ausente se ignora, no se borra.
+   */
+  miPerfil: `${URL_BASE_API}/api/Usuarios/mi-perfil`,
+
   // --- Gestión de usuarios (ISCGB_Backend/Controllers/CargaUsuarioController.cs) ---
   // La clase se llama `UsuariosAdminController`, así que la ruta es
   // `api/UsuariosAdmin` aunque el archivo se llame distinto.
@@ -170,6 +177,41 @@ export const RUTAS_API = {
    */
   estadoMesCalendario: (anio: number, mes: number) =>
     `${URL_BASE_API}/api/ConfiguracionCalendario/estado-mes?anio=${anio}&mes=${mes}`,
+
+  /**
+   * Cambia el límite de exámenes por día. Body: `{ nuevoLimite }`. Solo se
+   * puede escribir: el valor vigente se lee de `limiteDiario` en `estado-mes`.
+   */
+  limiteParcialesCalendario: `${URL_BASE_API}/api/ConfiguracionCalendario/limite-parciales`,
+
+  /**
+   * Registra un examen. Body: `{ fecha, idComision, idMateria, idTipoExamen }`, con
+   * `fecha` como `DateTime` sin zona y con hora ("2026-10-13T09:00:00"). Responde
+   * `200 { message }` (no devuelve el id del examen) y `400 { message }` si el día
+   * ya alcanzó el límite. No valida que la materia, la comisión ni el tipo existan
+   * (con ids inválidos responde 500) ni que la fecha no sea pasada.
+   */
+  registrarExamen: `${URL_BASE_API}/api/ConfiguracionCalendario/registrar`,
+
+  /** Los tipos de examen: `[{ idTipoExamen, nombre }]`. Sin rol. */
+  tiposDeExamen: `${URL_BASE_API}/api/ConfiguracionCalendario/tipos-examen`,
+
+  /**
+   * Las materias que dicta el docente de la sesión, cada una con su comisión. Solo
+   * `Docente`: el docente sale del token. Un 404 con texto = el usuario no tiene
+   * perfil de docente. Puede responder `[]`.
+   */
+  misMateriasDocente: `${URL_BASE_API}/api/ConfiguracionCalendario/mis-materias-docente`,
+
+  /**
+   * Las mesas de examen a las que asignaron al docente de la sesión y que siguen
+   * en "Pendiente". Ojo con el nombre: el controlador es `Configuracion` (no
+   * `ConfiguracionCalendario`) y la ruta dice "notificaciones", aunque el dato
+   * sean mesas de examen. Solo `Docente`: el docente sale del token. Trae
+   * también las de exámenes que ya pasaron. Un 404 = el usuario no tiene perfil
+   * de docente.
+   */
+  misMesasAsignadas: `${URL_BASE_API}/api/Configuracion/mis-notificaciones`,
 } as const;
 
 /**

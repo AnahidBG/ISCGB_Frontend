@@ -1,0 +1,116 @@
+<form
+  [formGroup]="formulario"
+  (ngSubmit)="alGuardar()"
+  aria-label="Registrar parcial"
+  class="flex flex-col gap-4"
+  novalidate
+>
+  @if (errorServidor(); as mensaje) {
+    <p
+      role="alert"
+      class="rounded-lg border border-rechazado/30 bg-rechazado/10 px-4 py-3 text-sm text-texto"
+    >
+      {{ mensaje }}
+    </p>
+  }
+
+  <app-campo-formulario
+    etiqueta="Materia y comisión"
+    idCampo="registro-materia"
+    [requerido]="true"
+    [error]="errorMateria"
+  >
+    <select
+      #campoMateria
+      id="registro-materia"
+      formControlName="materia"
+      [attr.aria-invalid]="errorMateria !== null"
+      [attr.aria-describedby]="descripcionDe('registro-materia', errorMateria)"
+      [class]="clasesDe(errorMateria)"
+    >
+      <option value="">Elegí una materia y comisión</option>
+      @for (materia of materias(); track claveDe(materia)) {
+        <option [value]="claveDe(materia)">{{ etiquetaDe(materia) }}</option>
+      }
+    </select>
+  </app-campo-formulario>
+
+  <app-campo-formulario
+    etiqueta="Tipo de examen"
+    idCampo="registro-tipo"
+    [requerido]="true"
+    [error]="errorTipo"
+  >
+    <select
+      id="registro-tipo"
+      formControlName="tipo"
+      [attr.aria-invalid]="errorTipo !== null"
+      [attr.aria-describedby]="descripcionDe('registro-tipo', errorTipo)"
+      [class]="clasesDe(errorTipo)"
+    >
+      <option value="">Elegí un tipo de examen</option>
+      @for (tipo of tipos(); track tipo.idTipoExamen) {
+        <option [value]="tipo.idTipoExamen">{{ tipo.nombre }}</option>
+      }
+    </select>
+  </app-campo-formulario>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    <app-campo-formulario
+      etiqueta="Fecha"
+      idCampo="registro-fecha"
+      [requerido]="true"
+      [error]="errorFecha"
+    >
+      <!--
+        `attr.min` y no `min`: es la ayuda nativa del navegador. La regla de verdad
+        es `errorDeDia`, que también ataja una fecha escrita a mano.
+      -->
+      <input
+        id="registro-fecha"
+        type="date"
+        formControlName="fecha"
+        [attr.min]="fechaMinima()"
+        [attr.aria-invalid]="errorFecha !== null"
+        [attr.aria-describedby]="descripcionDe('registro-fecha', errorFecha)"
+        [class]="clasesDe(errorFecha)"
+      />
+    </app-campo-formulario>
+
+    <app-campo-formulario
+      etiqueta="Horario"
+      idCampo="registro-horario"
+      [requerido]="true"
+      [error]="errorHorario"
+    >
+      <input
+        id="registro-horario"
+        type="time"
+        formControlName="horario"
+        [attr.aria-invalid]="errorHorario !== null"
+        [attr.aria-describedby]="descripcionDe('registro-horario', errorHorario, 'ayuda-horario')"
+        [class]="clasesDe(errorHorario)"
+      />
+      <span id="ayuda-horario" class="text-xs text-texto-suave">Horario en formato 24 h.</span>
+    </app-campo-formulario>
+  </div>
+
+  <div class="mt-2 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+    <app-boton
+      nivel="terciario"
+      [conFlecha]="false"
+      [deshabilitado]="guardando()"
+      (click)="cancelar.emit()"
+    >
+      Cancelar
+    </app-boton>
+    <app-boton
+      tipo="submit"
+      [conFlecha]="false"
+      [cargando]="guardando()"
+      textoCargando="Guardando…"
+    >
+      Guardar
+    </app-boton>
+  </div>
+</form>

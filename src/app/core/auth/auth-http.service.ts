@@ -14,7 +14,8 @@ import { CredencialesLogin } from './modelos/credenciales-login';
 import { RespuestaLogin } from './modelos/respuesta-login';
 import { Sesion } from './modelos/sesion';
 
-const CLAVE_SESION = 'iscgb.sesion';
+/** Dónde se guarda la sesión mientras la pestaña siga abierta. */
+export const CLAVE_SESION = 'iscgb.sesion';
 
 /**
  * Autenticación real contra la API de ISCGB.
@@ -66,6 +67,16 @@ export class AuthHttpService extends AuthService {
           return throwError(() => new Error(mensaje));
         }),
       );
+  }
+
+  actualizarCorreo(correo: string): void {
+    const sesion = this.sesionActual();
+    if (sesion === null) {
+      return;
+    }
+    // `guardar` además de cambiar el signal lo deja en `sessionStorage`: sin eso,
+    // al recargar la página el encabezado volvería a mostrar el correo viejo.
+    this.guardar({ ...sesion, email: correo });
   }
 
   cerrarSesion(): void {

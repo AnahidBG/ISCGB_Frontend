@@ -265,8 +265,8 @@ export class EstructuraPanel {
   /**
    * Las iniciales, para el círculo mientras no haya foto.
    *
-   * ⚠️ El backend todavía no guarda foto de perfil: el modelo `Usuario` no
-   * tiene ningún campo de imagen. Hasta que exista, el círculo muestra las
+   * El backend guarda la foto de perfil (`POST api/Usuarios/foto-perfil`), pero
+   * ningún endpoint la devuelve. Hasta que lo haga, el círculo muestra las
    * iniciales, que es mejor que un ícono genérico de persona: identifica de
    * un vistazo a quién pertenece la sesión.
    */

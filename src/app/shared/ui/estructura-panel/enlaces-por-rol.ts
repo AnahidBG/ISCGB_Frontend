@@ -88,6 +88,17 @@ export function enlacesPorSesion(
     });
   }
 
+  // Cuántos parciales admite el calendario en el período (hoy, un día): lo fijan
+  // Secretaría y Dirección. Para el Secretario va después de la frecuencia de
+  // avisos, con el resto de su configuración.
+  if (tieneAlgunRol(sesion, [ROLES.director, ROLES.secretario])) {
+    enlaces.push({
+      etiqueta: 'Límite de parciales',
+      url: '/secretario/limite-parciales',
+      icono: 'calendario',
+    });
+  }
+
   // "Mi Legajo" y "Subir Documento" son del legajo PROPIO: no van cuando la
   // pantalla actual ya es el legajo de otra persona.
   if (tieneAlgunRol(sesion, [ROLES.docente, ROLES.alumno]) && !opciones.legajoAjeno) {
@@ -118,6 +129,13 @@ export function enlacesPorSesion(
       etiqueta: 'Entregar programa de materia',
       url: '/docente/entrega-programa',
       icono: 'legajo',
+    });
+    // El Alumno no ve el calendario, y Secretaría y Dirección llegan a él desde
+    // "Límite de parciales".
+    enlaces.push({
+      etiqueta: 'Calendario de parciales',
+      url: '/calendario',
+      icono: 'calendario',
     });
   }
 

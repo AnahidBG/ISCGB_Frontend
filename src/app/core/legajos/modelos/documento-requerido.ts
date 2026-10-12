@@ -24,12 +24,6 @@ export interface NuevoDocumentoLegajo {
   fechaVencimiento: Date | null;
 
   /**
-   * Si Secretaría tiene además el papel. "Subir Documento" lo manda siempre
-   * en `false`: quien sube no lo declara, lo marca quien revisa el legajo.
-   */
-  presentadoFisico: boolean;
-
-  /**
    * El archivo.
    *
    * ⚠️ Tiene que ser PDF (CLAUDE.md, regla de negocio #1). El frontend valida

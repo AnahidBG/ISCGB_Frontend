@@ -58,7 +58,8 @@ import { ZonaArchivo } from '../../../shared/ui/zona-archivo/zona-archivo';
  * volvió a sacar el mismo día: quien la tilda sin haber llevado el papel
  * queda igual de "presentado" en el sistema. Que el papel está lo marca quien
  * lo recibe y lo coteja —Secretaría o Dirección— al revisar el legajo (ver
- * `MisDocumentos`, legajo ajeno).
+ * `MisDocumentos`, legajo ajeno), y queda guardado con la auditoría. Subir un
+ * documento no manda nada sobre el papel.
  *
  * La validación de PDF que hace esta pantalla es SOLO por comodidad: avisa
  * antes de subir algo que va a fallar. La validación de verdad va del lado
@@ -187,10 +188,6 @@ export class SubirDocumento {
         idUsuario,
         idTipoDoc,
         fechaVencimiento: this.fechaAEnviar(),
-        // Siempre `false`: la pantalla no le pregunta a nadie si entregó el
-        // papel (ver el recordatorio rojo del template). Quien confirma la
-        // entrega física es Secretaría o Dirección, al revisar el legajo.
-        presentadoFisico: false,
         archivo: elegido,
       })
       .subscribe({
