@@ -452,13 +452,14 @@ no. La regla de negocio es un límite de exámenes **por día**, único para tod
 instituto, que define Secretaría Académica. Hoy vale 2 si nunca se configuró. No
 hay límite por comisión.
 
-Esta sección se relevó el 10/10/2026 contra el código del backend. El frontend
-consume `estado-mes` en `/calendario`, para Docente, Secretario y Director, y
-`limite-parciales` en `/secretario/limite-parciales`, para Secretario y Director.
-El Docente además registra parciales desde `/calendario` con `registrar`,
-`tipos-examen` y `mis-materias-docente`. De todos ellos, el backend exige rol solo
-en `mis-materias-docente`: lo único que deja afuera al Alumno en el resto es el
-`roleGuard` del frontend.
+Esta sección se relevó el 10/10/2026 contra el código del backend, y los
+endpoints `modificar` y `eliminar` se volvieron a verificar el 12/10/2026. El
+frontend consume `estado-mes` en `/calendario`, para Docente, Secretario y
+Director, y `limite-parciales` en `/secretario/limite-parciales`, para Secretario y
+Director. El Docente además registra parciales desde `/calendario` con `registrar`,
+`tipos-examen` y `mis-materias-docente`, y los reprograma y elimina con `modificar`
+y `eliminar`. De todos ellos, el backend exige rol solo en `mis-materias-docente`:
+lo único que deja afuera al Alumno en el resto es el `roleGuard` del frontend.
 
 ### `GET /api/ConfiguracionCalendario/estado-mes?anio=2026&mes=10`
 
@@ -593,22 +594,63 @@ Con `[Authorize(Roles = "Docente")]`. El docente sale del token (claim
   Consultá en Secretaría." Un `404` sin cuerpo (la ruta no existe), un `5xx` o una
   respuesta que no se puede leer son un error, con "Reintentar".
 
-### Lo que existe y el frontend todavía no consume
+### `PUT /api/ConfiguracionCalendario/modificar/{idExamen}`
 
-- `PUT /api/ConfiguracionCalendario/modificar/{idExamen}` recibe
-  `{ nuevaFecha }`. Responde `404` si el examen no existe y `400` si el día nuevo
-  ya está completo.
-- `DELETE /api/ConfiguracionCalendario/eliminar/{idExamen}`. Responde `404` si el
-  examen no existe.
+Cambia la fecha y la hora de un examen. Recibe `ModificarFechaExamenDto`:
+
+```json
+{ "nuevaFecha": "2026-10-20T09:00:00" }
+```
+
+Responde `200` con `{ "message": "La fecha del examen se ha modificado correctamente." }`.
+
+- `404` con `{ "message": "No se encontró el examen especificado." }` si el examen
+  no existe.
+- `400` con
+  `{ "message": "No se puede reprogramar. El día ha superado el límite de parciales." }`
+  si el día nuevo ya alcanzó el límite. El examen no se cuenta a sí mismo: cambiarle
+  solo la hora, o dejarlo en su día, no choca con el límite.
+- Solo cambia la fecha y la hora. La materia, la comisión y el tipo no se pueden
+  cambiar: por eso "Modificar parcial" los muestra de solo lectura.
+- `nuevaFecha` es un `DateTime` de .NET **sin zona y con hora**, igual que `fecha` en
+  `registrar`: el frontend la arma con `textoFechaYHora(dia, horario)` y nunca con
+  `toISOString()`.
+- No valida que la fecha no sea pasada, ni que quien llama sea Docente, ni que el
+  examen sea suyo: no tiene `[Authorize]`. El frontend cuida la fecha (`errorDeDia`)
+  y solo ofrece mover un parcial al Docente.
+- Cómo lo usa el frontend: `CalendarioExamenesService.reprogramarExamen(idExamen,
+  fechaYHora)`. Un `4xx` con texto se muestra tal cual (el del límite, por ejemplo); un
+  `5xx` o la falta de red, con el mensaje genérico. Va en segundo plano, sin el velo
+  global. Lo usan dos caminos: el modal "Modificar parcial", donde el rechazo se ve
+  dentro del formulario, y el arrastre de un parcial a otro día de la grilla, donde
+  se ve arriba de la grilla y el parcial conserva su horario.
+
+### `DELETE /api/ConfiguracionCalendario/eliminar/{idExamen}`
+
+Quita un examen del calendario. No recibe cuerpo. Responde `200` con
+`{ "message": "El examen ha sido eliminado del calendario correctamente." }` y `404`
+con `{ "message": "No se encontró el examen especificado." }` si no existe.
+
+- Tampoco exige rol ni que el examen sea del docente que llama.
+- Cómo lo usa el frontend: `CalendarioExamenesService.eliminarExamen(idExamen)`, desde
+  "Modificar parcial" y recién después de confirmar en el diálogo "¿Eliminar el
+  parcial de…?". Mismo criterio de errores que `modificar`.
+
+Los dos necesitan el `idExamen`, y el backend no tiene un endpoint que liste los
+exámenes (ver los pendientes). Por eso hoy la pantalla solo ofrece reprogramar y
+eliminar con los servicios simulados, que sí traen parciales; contra la API real la
+grilla no tiene ninguno que tocar. Ver `docs/como-probar.md`.
 
 ### Pendientes del backend
 
-- No hay un endpoint que liste los exámenes (`idExamen`, materia, comisión y tipo).
-  Por eso el calendario dice cuántos hay cada día y no cuáles: no se puede armar
-  la agenda del mes ni mostrar la materia, la hora o quién registró cada examen.
-  Tampoco se puede saber, en el front, cuáles son "los tuyos". La grilla ya tiene
-  dónde dibujarlos: `CalendarioExamenesService.examenesDelMes(...)` devuelve una
-  lista vacía contra la API real (`TODO(SCRUM-182)`) y solo el mock trae ejemplos.
+- No hay un endpoint que liste los exámenes (`idExamen`, materia, comisión, tipo y
+  horario). Por eso el calendario dice cuántos hay cada día y no cuáles: no se puede
+  armar la agenda del mes ni mostrar la materia, la hora o quién registró cada
+  examen, y tampoco abrir, reprogramar o eliminar uno desde la grilla, que es donde
+  se obtiene su id. Tampoco se puede saber, en el front, cuáles son "los tuyos". La
+  grilla ya tiene dónde dibujarlos y los modales de modificar y eliminar están hechos:
+  `CalendarioExamenesService.examenesDelMes(...)` devuelve una lista vacía contra la
+  API real (`TODO(SCRUM-182)`) y solo el mock trae ejemplos.
 - El período del límite no está definido. El backend cuenta por día
   (`limite_parciales_diario`) y en Jira figura "por semana". Si cambia, el frontend
   toca `PERIODO_DEL_LIMITE`, que solo cambia la redacción, y tendría que revisar

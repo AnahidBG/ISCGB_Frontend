@@ -24,6 +24,7 @@ import { idRolDocumental } from '../../../core/legajos/rol-documental';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
+import { AccesoSiaade } from '../../../shared/ui/acceso-siaade/acceso-siaade';
 import { AvisoLegajoCompleto } from '../../../shared/ui/aviso-legajo-completo/aviso-legajo-completo';
 import { DocumentacionPorEntregar } from '../../../shared/ui/documentacion-por-entregar/documentacion-por-entregar';
 import { DocumentosRechazados } from '../../../shared/ui/documentos-rechazados/documentos-rechazados';
@@ -43,9 +44,8 @@ const ACCION_ALUMNO: AccionPanel = {
  * Muestra el legajo propio y el progreso de entrega ("Módulo de Salida",
  * ISCGB-PROJECT.md), y los accesos de autogestión estudiantil del Sprint 2:
  * certificado de alumno regular (con y sin horario), reconocimiento de
- * saberes y justificar inasistencia. El enlace a SIAADE es del Sprint 3 y
- * todavía no tiene URL definida con el instituto, así que no se inventa un
- * botón que no lleva a ningún lado.
+ * saberes y justificar inasistencia. También el acceso a SIAADE (SCRUM-15),
+ * que abre el sistema académico en otra pestaña.
  *
  * El legajo es real: sale de `GET /api/Legajos/usuario/{id}`.
  */
@@ -61,6 +61,7 @@ const ACCION_ALUMNO: AccionPanel = {
     DocumentacionPorEntregar,
     AvisoLegajoCompleto,
     DocumentosRechazados,
+    AccesoSiaade,
   ],
   templateUrl: './panel-alumno.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

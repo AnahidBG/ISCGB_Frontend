@@ -23,9 +23,7 @@ import { TipoExamen } from '../../../../../core/examenes/modelos/tipo-examen';
 import { errorDeDia, errorDeHorario } from '../../../../../core/examenes/registro-examen';
 import { Boton } from '../../../../../shared/ui/boton/boton';
 import { CampoFormulario } from '../../../../../shared/ui/campo-formulario/campo-formulario';
-
-const CLASES_DEL_CAMPO =
-  'w-full rounded-lg border bg-superficie px-4 py-3 text-texto hover:border-acento-verde focus:border-principal focus:ring-2 focus:ring-principal/20 focus:outline-none';
+import { clasesDelCampo, descripcionDelCampo } from '../campo-del-formulario';
 
 /**
  * El formulario para registrar un parcial: materia con su comisión, tipo de
@@ -122,16 +120,8 @@ export class FormularioParcial {
     return this.seIntentoGuardar() ? errorDeHorario(this.formulario.controls.horario.value) : null;
   }
 
-  /** Las clases de un campo: el borde rojo si tiene error. */
-  protected clasesDe(error: string | null): string {
-    return `${CLASES_DEL_CAMPO} ${error === null ? 'border-borde' : 'border-rechazado'}`;
-  }
-
-  /** Une la ayuda de un campo con su error, para que un lector de pantalla lea los dos. */
-  protected descripcionDe(idCampo: string, error: string | null, idAyuda?: string): string | null {
-    const ids = [idAyuda, error === null ? null : `${idCampo}-error`].filter(Boolean);
-    return ids.length === 0 ? null : ids.join(' ');
-  }
+  protected readonly clasesDe = clasesDelCampo;
+  protected readonly descripcionDe = descripcionDelCampo;
 
   protected alGuardar(): void {
     this.seIntentoGuardar.set(true);

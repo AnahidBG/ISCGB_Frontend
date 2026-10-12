@@ -7,11 +7,13 @@ import { RUTAS_API } from '../configuracion/api';
 import { CalendarioExamenesHttpService } from './calendario-examenes-http.service';
 import {
   MENSAJE_ERROR_CALENDARIO,
+  MENSAJE_ERROR_ELIMINAR_EXAMEN,
   MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO,
   MENSAJE_ERROR_LIMITE_DIARIO,
   MENSAJE_ERROR_MATERIAS_DEL_DOCENTE,
   MENSAJE_ERROR_MESAS_ASIGNADAS,
   MENSAJE_ERROR_REGISTRAR_EXAMEN,
+  MENSAJE_ERROR_REPROGRAMAR_EXAMEN,
   MENSAJE_ERROR_TIPOS_DE_EXAMEN,
 } from './calendario-examenes.service';
 import { CalendarioDelMes } from './modelos/calendario-del-mes';
@@ -437,5 +439,93 @@ describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
 
       expect(mensaje).toBe(MENSAJE_ERROR_REGISTRAR_EXAMEN);
     });
+  });
+
+  describe('reprogramar y eliminar un parcial (SCRUM-184)', () => {
+    it('reprogramar manda { nuevaFecha } por PUT al id del examen, en segundo plano', () => {
+      let reprogramado = false;
+      servicio
+        .reprogramarExamen(7, '2026-10-20T23:30:00', { enSegundoPlano: true })
+        .subscribe(() => (reprogramado = true));
+
+      const pedido = backend.expectOne(RUTAS_API.modificarExamen(7));
+      expect(pedido.request.method).toBe('PUT');
+      expect(pedido.request.url).toContain('/api/ConfiguracionCalendario/modificar/7');
+      expect(pedido.request.context.get(SIN_CARGA_GLOBAL)).toBe(true);
+      // La fecha viaja tal cual la armó quien llama: sin pasar por UTC.
+      expect(pedido.request.body).toEqual({ nuevaFecha: '2026-10-20T23:30:00' });
+      pedido.flush({ message: 'La fecha del examen se ha modificado correctamente.' });
+
+      expect(reprogramado).toBe(true);
+    });
+
+    it('eliminar pega un DELETE al id del examen, en segundo plano', () => {
+      let eliminado = false;
+      servicio.eliminarExamen(7, { enSegundoPlano: true }).subscribe(() => (eliminado = true));
+
+      const pedido = backend.expectOne(RUTAS_API.eliminarExamen(7));
+      expect(pedido.request.method).toBe('DELETE');
+      expect(pedido.request.url).toContain('/api/ConfiguracionCalendario/eliminar/7');
+      expect(pedido.request.context.get(SIN_CARGA_GLOBAL)).toBe(true);
+      pedido.flush({ message: 'El examen ha sido eliminado del calendario correctamente.' });
+
+      expect(eliminado).toBe(true);
+    });
+
+    const LIMITE_SUPERADO = 'No se puede reprogramar. El día ha superado el límite de parciales.';
+    const NO_ENCONTRADO = 'No se encontró el examen especificado.';
+
+    it.each<[string, () => Observable<void>, string, number, string, string]>([
+      [
+        'reprogramar con el día completo (400)',
+        () => servicio.reprogramarExamen(7, '2026-10-20T09:00:00'),
+        RUTAS_API.modificarExamen(7),
+        400,
+        LIMITE_SUPERADO,
+        LIMITE_SUPERADO,
+      ],
+      [
+        'reprogramar un examen que no existe (404)',
+        () => servicio.reprogramarExamen(7, '2026-10-20T09:00:00'),
+        RUTAS_API.modificarExamen(7),
+        404,
+        NO_ENCONTRADO,
+        NO_ENCONTRADO,
+      ],
+      [
+        'reprogramar con un error del servidor (500)',
+        () => servicio.reprogramarExamen(7, '2026-10-20T09:00:00'),
+        RUTAS_API.modificarExamen(7),
+        500,
+        'NullReferenceException',
+        MENSAJE_ERROR_REPROGRAMAR_EXAMEN,
+      ],
+      [
+        'eliminar un examen que no existe (404)',
+        () => servicio.eliminarExamen(7),
+        RUTAS_API.eliminarExamen(7),
+        404,
+        NO_ENCONTRADO,
+        NO_ENCONTRADO,
+      ],
+      [
+        'eliminar con un error del servidor (500)',
+        () => servicio.eliminarExamen(7),
+        RUTAS_API.eliminarExamen(7),
+        500,
+        'Violación de clave foránea',
+        MENSAJE_ERROR_ELIMINAR_EXAMEN,
+      ],
+    ])(
+      '%s: el texto del backend si es un rechazo del pedido, y el genérico si no',
+      (_caso, pedir, ruta, status, delServidor, esperado) => {
+        let mensaje: string | undefined;
+        pedir().subscribe({ error: (fallo: Error) => (mensaje = fallo.message) });
+
+        backend.expectOne(ruta).flush({ message: delServidor }, { status, statusText: 'Error' });
+
+        expect(mensaje).toBe(esperado);
+      },
+    );
   });
 });

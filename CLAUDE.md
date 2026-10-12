@@ -31,6 +31,7 @@ No generes código ni configuración para .NET 8 o 9, ni para Angular anterior a
 - Badge de estado: es `insignia-estado`, en `shared/ui/insignia-estado/`.
 - Sesión: en `sessionStorage`, con la clave `iscgb.sesion` (`auth-http.service.ts`).
 - URLs de la API: solo en `core/configuracion/api.ts`.
+- Enlaces a sitios de afuera, como SIAADE: solo en `core/configuracion/enlaces-externos.ts`. SIAADE tiene una dirección para el alumno y otra para el docente.
 - Estado de un día del calendario de parciales: `disponible`, `ocupado` o `completo`, que calcula `estadoDelDia(cantidad, limite)` en `core/examenes/estado-del-dia.ts`. Los estados de un documento son otra cosa.
 - Período del límite de parciales: una sola constante, `PERIODO_DEL_LIMITE`, en `core/examenes/periodo-limite.ts`. Todo texto que nombre el período sale de ahí.
 - Fechas en español: el locale `es-AR` está registrado en `app.config.ts`. Para nombres de días y meses se usa `DatePipe` o `formatDate` con `LOCALE_ID`, no listas escritas a mano.

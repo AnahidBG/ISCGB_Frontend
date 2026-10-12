@@ -4,15 +4,20 @@ import { LOCALE_ID } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { aCalendarioDelMes } from '../../../../../core/examenes/adaptador-estado-mes';
 import { DiaCalendario } from '../../../../../core/examenes/modelos/dia-calendario';
+import { ExamenCalendario } from '../../../../../core/examenes/modelos/examen-calendario';
 import { GrillaCalendario } from './grilla-calendario';
 
 registerLocaleData(localeEsAr);
 
-/** Octubre de 2026: un parcial el 21 y el límite alcanzado el 20. Hoy es sábado 10. */
+/**
+ * Octubre de 2026: un parcial el 21, el límite alcanzado el 20 (de acá en adelante)
+ * y el 7 (ya pasado). Hoy es sábado 10.
+ */
 const OCTUBRE = aCalendarioDelMes(
   {
     limiteDiario: 2,
     diasOcupados: [
+      { fecha: '2026-10-07T00:00:00', cantidadExamenes: 2, limiteAlcanzado: true },
       { fecha: '2026-10-20T00:00:00', cantidadExamenes: 2, limiteAlcanzado: true },
       { fecha: '2026-10-21T00:00:00', cantidadExamenes: 1, limiteAlcanzado: false },
     ],
@@ -20,9 +25,23 @@ const OCTUBRE = aCalendarioDelMes(
   { anio: 2026, mes: 10 },
 );
 
+const PARCIAL_DEL_21: ExamenCalendario = {
+  idExamen: 4,
+  fecha: '2026-10-21',
+  horario: '10:00',
+  materia: 'Pedagogía',
+  comision: 'Comisión 2° A',
+  tipo: 'Parcial',
+};
+
+/** Un parcial que ya pasó: no se arrastra. */
+const PARCIAL_DEL_5: ExamenCalendario = { ...PARCIAL_DEL_21, idExamen: 1, fecha: '2026-10-05' };
+
 async function montar(seleccionable: boolean): Promise<{
   fixture: ComponentFixture<GrillaCalendario>;
   elegidos: DiaCalendario[];
+  bloqueados: DiaCalendario[];
+  movidos: { examen: ExamenCalendario; dia: DiaCalendario }[];
 }> {
   TestBed.configureTestingModule({ providers: [{ provide: LOCALE_ID, useValue: 'es-AR' }] });
   const fixture = TestBed.createComponent(GrillaCalendario);
@@ -32,9 +51,13 @@ async function montar(seleccionable: boolean): Promise<{
   fixture.componentRef.setInput('seleccionable', seleccionable);
 
   const elegidos: DiaCalendario[] = [];
+  const bloqueados: DiaCalendario[] = [];
+  const movidos: { examen: ExamenCalendario; dia: DiaCalendario }[] = [];
   fixture.componentInstance.diaSeleccionado.subscribe((dia) => elegidos.push(dia));
+  fixture.componentInstance.diaBloqueado.subscribe((dia) => bloqueados.push(dia));
+  fixture.componentInstance.examenMovido.subscribe((movimiento) => movidos.push(movimiento));
   await fixture.whenStable();
-  return { fixture, elegidos };
+  return { fixture, elegidos, bloqueados, movidos };
 }
 
 function celda(fixture: ComponentFixture<GrillaCalendario>, fecha: string): HTMLElement {
@@ -86,28 +109,95 @@ describe('GrillaCalendario', () => {
     expect(document.activeElement).toBe(celda(fixture, '2026-10-31'));
   });
 
-  it('un día pasado o completo no se puede elegir, y sin habilitar la selección ninguno', async () => {
-    const { fixture, elegidos } = await montar(false);
+  it('un día pasado o completo no se puede elegir, y uno completo que no pasó avisa que está bloqueado', async () => {
+    const { fixture, elegidos, bloqueados } = await montar(false);
 
-    // Por defecto la selección está deshabilitada: ningún día emite.
+    // Por defecto la selección está deshabilitada: ningún día emite, ni elige ni avisa.
     celda(fixture, '2026-10-21').click();
+    celda(fixture, '2026-10-20').click();
     expect(elegidos).toEqual([]);
+    expect(bloqueados).toEqual([]);
 
     fixture.componentRef.setInput('seleccionable', true);
     await fixture.whenStable();
 
-    // Un día pasado y uno completo: ni con clic ni con Enter ni con Espacio.
+    // Un día pasado, completo o no, no hace nada.
     celda(fixture, '2026-10-05').click();
+    celda(fixture, '2026-10-07').click();
+    await teclear(fixture, '2026-10-07', 'Enter');
+    expect(elegidos).toEqual([]);
+    expect(bloqueados).toEqual([]);
+
+    // Uno completo que no pasó no se elige, pero con clic, Enter o Espacio avisa que está bloqueado.
+    celda(fixture, '2026-10-20').click();
     await teclear(fixture, '2026-10-20', 'Enter');
     await teclear(fixture, '2026-10-20', ' ');
     expect(elegidos).toEqual([]);
+    expect(bloqueados.map((dia) => dia.fecha)).toEqual(['2026-10-20', '2026-10-20', '2026-10-20']);
     expect(celda(fixture, '2026-10-05').getAttribute('aria-disabled')).toBe('true');
     expect(celda(fixture, '2026-10-20').getAttribute('aria-disabled')).toBe('true');
+    // Sigue en el recorrido del teclado y se lee como completo.
+    expect(celda(fixture, '2026-10-20').getAttribute('tabindex')).not.toBeNull();
+    expect(celda(fixture, '2026-10-20').getAttribute('aria-label')).toContain('completo');
 
-    // Hoy y los días que vienen sí.
+    // Hoy y los días que vienen sí se eligen.
     celda(fixture, '2026-10-21').click();
     await teclear(fixture, '2026-10-22', 'Enter');
     expect(elegidos.map((dia) => dia.fecha)).toEqual(['2026-10-21', '2026-10-22']);
     expect(celda(fixture, '2026-10-21').getAttribute('aria-disabled')).toBeNull();
+  });
+
+  it('un parcial se arrastra a un día que lo admita, y a ningún otro', async () => {
+    const { fixture, movidos } = await montar(true);
+    fixture.componentRef.setInput('examenes', [PARCIAL_DEL_21, PARCIAL_DEL_5]);
+    fixture.componentRef.setInput('arrastrable', true);
+    await fixture.whenStable();
+
+    // Solo el parcial que no pasó se puede agarrar.
+    const agarrables = (fixture.nativeElement as HTMLElement).querySelectorAll(
+      '[draggable="true"]',
+    );
+    expect(agarrables).toHaveLength(1);
+    expect(celda(fixture, '2026-10-21').contains(agarrables[0])).toBe(true);
+
+    // jsdom no trae `DataTransfer`: el parcial arrastrado vive en el estado de la grilla.
+    agarrables[0].dispatchEvent(new Event('dragstart', { bubbles: true }));
+    await fixture.whenStable();
+
+    // Se marcan los días que lo admiten: ni el mismo día, ni uno completo, ni uno pasado.
+    const marcados = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('td[data-destino="true"]'),
+    ).map((td) => td.getAttribute('data-fecha'));
+    expect(marcados).toContain('2026-10-22');
+    expect(marcados).not.toContain('2026-10-21');
+    expect(marcados).not.toContain('2026-10-20');
+    expect(marcados).not.toContain('2026-10-05');
+
+    // `dragover` solo se acepta (se le hace `preventDefault`) donde se puede soltar.
+    const arrastrarSobre = (fecha: string) => {
+      const evento = new Event('dragover', { bubbles: true, cancelable: true });
+      celda(fixture, fecha).dispatchEvent(evento);
+      return evento.defaultPrevented;
+    };
+    expect(arrastrarSobre('2026-10-22')).toBe(true);
+    expect(arrastrarSobre('2026-10-20')).toBe(false);
+
+    const soltarEn = async (fecha: string) => {
+      celda(fixture, fecha).dispatchEvent(new Event('drop', { bubbles: true, cancelable: true }));
+      await fixture.whenStable();
+    };
+    await soltarEn('2026-10-20');
+    await soltarEn('2026-10-21');
+    await soltarEn('2026-10-05');
+    expect(movidos).toEqual([]);
+
+    await soltarEn('2026-10-22');
+    expect(movidos).toHaveLength(1);
+    expect(movidos[0].examen).toEqual(PARCIAL_DEL_21);
+    expect(movidos[0].dia.fecha).toBe('2026-10-22');
+    // Al soltar se limpian las marcas.
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[data-destino="true"]'),
+    ).toBeNull();
   });
 });

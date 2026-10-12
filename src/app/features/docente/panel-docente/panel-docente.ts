@@ -25,6 +25,7 @@ import { idRolDocumental } from '../../../core/legajos/rol-documental';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
+import { AccesoSiaade } from '../../../shared/ui/acceso-siaade/acceso-siaade';
 import { AvisoLegajoCompleto } from '../../../shared/ui/aviso-legajo-completo/aviso-legajo-completo';
 import { DocumentacionPorEntregar } from '../../../shared/ui/documentacion-por-entregar/documentacion-por-entregar';
 import { DocumentosRechazados } from '../../../shared/ui/documentos-rechazados/documentos-rechazados';
@@ -64,6 +65,7 @@ interface ProximoPaso {
     DocumentacionPorEntregar,
     AvisoLegajoCompleto,
     DocumentosRechazados,
+    AccesoSiaade,
   ],
   templateUrl: './panel-docente.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

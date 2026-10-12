@@ -58,11 +58,15 @@
         El aspecto de cada celda es el del Figma: lo dibuja `app-resumen-dia`
         adentro de la celda que arma la grilla.
 
-        Elegir un día solo sirve para registrar un parcial, que es cosa del
-        Docente: para los demás la selección queda deshabilitada. No se escucha
-        `examenSeleccionado`: con la API real la lista de parciales viene vacía.
+        Elegir un día, modificar un parcial y arrastrarlo son cosas del Docente: para
+        los demás el calendario es de consulta. Un día completo no se elige, pero
+        explica por qué (el aviso de arriba). Con la API real la lista de parciales
+        viene vacía, así que no hay parcial que tocar ni arrastrar.
       -->
       <div class="mt-4">
+        @if (alerta(); as alertaActual) {
+          <app-aviso-calendario class="mb-3" [aviso]="alertaActual" />
+        }
         <ng-template #plantillaDia let-celda>
           <app-resumen-dia [celda]="celda" />
         </ng-template>
@@ -73,7 +77,11 @@
           [hoy]="hoy"
           [plantillaCelda]="plantillaDia"
           [seleccionable]="puedeRegistrar()"
+          [arrastrable]="puedeRegistrar()"
           (diaSeleccionado)="abrirRegistro($event)"
+          (diaBloqueado)="mostrarFechaBloqueada($event)"
+          (examenSeleccionado)="abrirModificacion($event)"
+          (examenMovido)="moverParcial($event)"
         />
       </div>
 
@@ -106,6 +114,18 @@
       (guardar)="registrar($event)"
       (cerrar)="cerrarRegistro()"
       (reintentar)="cargarOpciones()"
+    />
+  }
+
+  @if (parcialAModificar(); as parcial) {
+    <app-modificar-parcial
+      [examen]="parcial"
+      [hoy]="hoy"
+      [guardando]="modificando()"
+      [errorServidor]="errorModificacion()"
+      (guardar)="reprogramar($event)"
+      (eliminar)="eliminar()"
+      (cerrar)="cerrarModificacion()"
     />
   }
 </app-estructura-panel>

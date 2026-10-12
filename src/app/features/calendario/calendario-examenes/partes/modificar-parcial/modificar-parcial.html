@@ -1,0 +1,49 @@
+<!--
+  Mientras se pregunta si eliminar, el modal queda inerte y sin cerrarse: la
+  pregunta es lo único con lo que se puede interactuar, y Escape la cancela a ella.
+-->
+<app-dialogo-modal
+  titulo="Modificar parcial"
+  [subtitulo]="diaEnTexto()"
+  [bloqueado]="guardando() || confirmando()"
+  [attr.inert]="confirmando() ? '' : null"
+  (cerrar)="cerrar.emit()"
+>
+  <!-- Solo lectura: el backend cambia la fecha y la hora, nada más. -->
+  <dl class="mb-4 grid gap-3 rounded-lg bg-fondo-panel px-4 py-3 text-sm sm:grid-cols-3">
+    <div class="min-w-0">
+      <dt class="text-xs text-texto-suave">Materia</dt>
+      <dd class="break-words font-medium text-texto">{{ examen().materia }}</dd>
+    </div>
+    <div class="min-w-0">
+      <dt class="text-xs text-texto-suave">Comisión</dt>
+      <dd class="break-words font-medium text-texto">{{ examen().comision }}</dd>
+    </div>
+    <div class="min-w-0">
+      <dt class="text-xs text-texto-suave">Tipo</dt>
+      <dd class="break-words font-medium text-texto">{{ examen().tipo }}</dd>
+    </div>
+  </dl>
+
+  <app-formulario-modificacion
+    [examen]="examen()"
+    [hoy]="hoy()"
+    [guardando]="guardando()"
+    [errorServidor]="errorServidor()"
+    (guardar)="guardar.emit($event)"
+    (cancelar)="cerrar.emit()"
+    (eliminar)="pedirConfirmacion()"
+  />
+</app-dialogo-modal>
+
+@if (confirmando()) {
+  <app-dialogo-confirmacion
+    titulo="Eliminar parcial"
+    textoConfirmar="Eliminar"
+    textoCancelar="Cancelar"
+    (confirmar)="confirmarEliminacion()"
+    (cancelar)="cancelarConfirmacion()"
+  >
+    {{ pregunta() }}
+  </app-dialogo-confirmacion>
+}

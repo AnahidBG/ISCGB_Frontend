@@ -1,0 +1,23 @@
+<!--
+  `rel="noopener noreferrer"`: el sitio que se abre no recibe una referencia a
+  esta pestaña ni la dirección desde la que se llegó.
+-->
+<a
+  [href]="enlace()"
+  target="_blank"
+  rel="noopener noreferrer"
+  class="flex items-center gap-3 rounded-2xl border border-borde bg-superficie p-5 transition-colors hover:bg-fondo-panel"
+>
+  <span
+    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-fondo-panel text-texto-suave"
+  >
+    <app-icono nombre="panel" class="h-5 w-5" />
+  </span>
+  <span class="min-w-0">
+    <span class="block text-sm font-semibold text-texto">SIAADE</span>
+    <span class="mt-0.5 block text-xs text-texto-suave">{{ descripcion() }}</span>
+    <span class="mt-0.5 block text-xs text-texto-suave">
+      Se abre en otra pestaña y te pide tu usuario y contraseña de SIAADE.
+    </span>
+  </span>
+</a>
