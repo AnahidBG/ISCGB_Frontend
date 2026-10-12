@@ -24,8 +24,11 @@ motivo, la documentación que falta entregar y, cuando corresponde, el aviso de
 legajo completo.
 
 El Alumno tiene además los accesos al certificado de alumno regular, al
-reconocimiento de saberes y a justificar una inasistencia. El enlace a SIAADE
-no tiene URL definida con el instituto y es del Sprint 3.
+reconocimiento de saberes y a justificar una inasistencia.
+
+El Alumno y el Docente tienen el acceso a SIAADE, el sistema académico del
+instituto (SCRUM-15). Abre en otra pestaña y cada uno entra por su propia
+dirección; las dos están en `core/configuracion/enlaces-externos.ts`.
 
 ## Panel del Secretario
 

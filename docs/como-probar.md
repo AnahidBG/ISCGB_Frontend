@@ -126,6 +126,19 @@ Si caés en `/inicio`, la sesión no trae roles.
 Para ver el estado de error, apagá el backend con el panel abierto y recargá:
 tiene que aparecer el aviso con "Reintentar", no una pantalla rota.
 
+### Acceso a SIAADE
+
+No depende del backend: es un enlace al sistema académico del instituto.
+
+- [ ] En el panel del Alumno, la tarjeta "SIAADE" está arriba de los accesos de
+      autogestión y dice para qué sirve: consultar la situación académica y
+      actualizar los datos personales.
+- [ ] En el panel del Docente, la tarjeta está al final, también con el backend
+      apagado.
+- [ ] El clic abre SIAADE en otra pestaña y la de ISCGB queda como estaba. La del
+      Alumno y la del Docente llevan a direcciones distintas.
+- [ ] SIAADE pide su propio usuario y contraseña: la sesión de ISCGB no sirve ahí.
+
 ### El menú de la persona
 
 - [ ] El círculo con las iniciales, arriba a la derecha, abre el panel.
