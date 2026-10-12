@@ -1,0 +1,117 @@
+<div class="flex min-h-screen items-center justify-center bg-fondo p-4">
+  <div class="w-full max-w-md rounded-tarjeta bg-superficie p-8 shadow-marca-md border border-borde">
+    
+    @if (!exito()) {
+      <!-- VISTA 1: FORMULARIO DE NUEVA CONTRASEÑA -->
+      <h2 class="text-2xl font-bold text-texto">Nueva contraseña</h2>
+      <p class="mt-1.5 text-sm text-texto-suave">
+        Ingresá tu nueva clave para actualizar el acceso a tu cuenta.
+      </p>
+
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" class="mt-6 flex flex-col gap-5">
+        
+        <!-- Campo Nueva Contraseña -->
+        <div class="flex flex-col gap-1.5">
+          <label for="password" class="text-xs font-semibold text-texto">
+            Nueva contraseña
+          </label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            placeholder="••••••••"
+            class="w-full rounded-control border border-borde bg-superficie px-4 py-2.5 text-sm text-texto outline-none transition-colors focus:border-principal focus:ring-1 focus:ring-principal"
+          />
+        </div>
+
+        <!-- Requisitos de Contraseña -->
+        <app-requisitos-password 
+          [password]="form.get('password')?.value || ''"
+          [omitir]="['sin-dni']"
+        ></app-requisitos-password>
+
+        <!-- Campo Confirmar Contraseña -->
+        <div class="flex flex-col gap-1.5">
+          <label for="confirmPassword" class="text-xs font-semibold text-texto">
+            Confirmar contraseña
+          </label>
+          <input
+            id="confirmPassword"
+            type="password"
+            formControlName="confirmPassword"
+            placeholder="••••••••"
+            class="w-full rounded-control border border-borde bg-superficie px-4 py-2.5 text-sm text-texto outline-none transition-colors focus:border-principal focus:ring-1 focus:ring-principal"
+          />
+          @if (form.errors?.['noCoinciden'] && form.get('confirmPassword')?.touched) {
+            <p class="text-xs text-rechazado font-medium px-1">
+              Las contraseñas no coinciden.
+            </p>
+          }
+        </div>
+
+        <!-- Botón de Envío -->
+        <button
+  type="button"
+  (click)="onSubmit()"
+  [disabled]="form.invalid || cargando()"
+  class="mt-2 w-full rounded-control bg-principal py-3 text-sm font-semibold text-superficie hover:bg-principal-oscuro disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-marca-sm"
+>
+  @if (cargando()) {
+    Guardando...
+  } @else {
+    Restablecer contraseña
+  }
+</button>
+
+      </form>
+
+      <div class="mt-6 text-center">
+        <a routerLink="/login" class="text-xs font-medium text-principal hover:underline">
+          Volver a iniciar sesión
+        </a>
+      </div>
+
+    } @else {
+
+      <!-- VISTA 2: MENSAJE DE ÉXITO Y REDIRECCIÓN -->
+      <div class="flex flex-col items-center text-center py-4">
+        
+        <div class="flex h-14 w-14 items-center justify-center rounded-full bg-principal-suave text-principal mb-4">
+          <svg viewBox="0 0 16 16" class="h-7 w-7 shrink-0" aria-hidden="true">
+            <path
+              d="m3.5 8.5 3 3 6-7"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </div>
+
+        <h2 class="text-2xl font-bold text-texto">¡Contraseña restablecida!</h2>
+        <p class="mt-2 text-sm text-texto-suave">
+          Tu clave ha sido actualizada con éxito. Serás redirigido al inicio de sesión en unos segundos...
+        </p>
+
+        <!-- Spinner de Carga -->
+        <div class="mt-6 flex items-center gap-2 text-xs text-principal font-medium">
+          <svg class="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Redirigiendo a iniciar sesión...
+        </div>
+
+        <div class="mt-8">
+          <a routerLink="/login" class="text-xs font-semibold text-principal hover:underline">
+            Ir a iniciar sesión inmediatamente
+          </a>
+        </div>
+
+      </div>
+
+    }
+
+  </div>
+</div>

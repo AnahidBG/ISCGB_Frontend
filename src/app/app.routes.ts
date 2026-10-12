@@ -3,7 +3,7 @@ import { authGuard } from './core/auth/auth.guard';
 import { ROLES } from './core/auth/modelos/rol';
 import { roleGuard } from './core/auth/role.guard';
 import { confirmarSalidaGuard } from './core/comun/confirmar-salida.guard';
-
+import { RestablecerContrasena } from './shared/ui/restablecer-contrasena/restablecer-contrasena';
 /**
  * Rutas de la aplicación.
  *
@@ -336,6 +336,14 @@ export const routes: Routes = [
     path: '',
     pathMatch: 'full',
     redirectTo: 'login',
+  },
+
+  {
+    path: 'restablecer-contrasena',
+    loadComponent: () =>
+      import('./shared/ui/restablecer-contrasena/restablecer-contrasena').then(
+        (m) => m.RestablecerContrasena
+      ),
   },
   {
     // 404. Antes esta ruta redirigía al login sin decir nada, y eso confunde:
