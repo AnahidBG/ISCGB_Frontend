@@ -1,6 +1,6 @@
 # Cómo probar el sistema, paso a paso
 
-Actualizado el **10/10/2026**.
+Actualizado el **11/10/2026**.
 
 Guía para levantar la base, el backend y el frontend, y comprobar que lo
 construido funciona. El orden importa: cada paso da por hecho que el anterior
@@ -130,10 +130,58 @@ tiene que aparecer el aviso con "Reintentar", no una pantalla rota.
 
 - [ ] El círculo con las iniciales, arriba a la derecha, abre el panel.
 - [ ] Muestra el nombre completo, el rol y el correo.
-- [ ] "Editar perfil" y "Cambiar foto" están apagados. Es correcto: el backend
-      no tiene endpoint para eso.
+- [ ] "Editar perfil" está activo: abre "Mi perfil" (`/perfil`) y cierra el menú.
+- [ ] "Cambiar foto" está apagado, con la nota "Cambiar la foto todavía no está
+      disponible." Es correcto: el backend guarda la foto pero ningún endpoint la
+      devuelve.
 - [ ] Se cierra tocando afuera o con Escape.
 - [ ] "Cerrar sesión" vuelve al login.
+
+### Mi perfil
+
+Para los cuatro roles, desde "Editar perfil" en el menú de la persona. Hace falta
+una persona con algunos datos de contacto cargados y otra sin ninguno; el alta de
+usuarios los pide todos, así que una cuenta sin datos se arma desde la base o con
+`POST /api/Auth/crear-usuario-prueba`. Para el caso del correo repetido, otra
+persona con otro correo.
+
+- [ ] Abre en `/perfil`, con la pestaña "Mi perfil · ISCGB", el título "Mi perfil" y
+      la línea "Actualizá tus datos de contacto." Sin sesión, la dirección `/perfil`
+      manda al login.
+- [ ] Arriba muestra nombre y apellido, DNI con puntos y roles (todos, si tiene
+      más de uno), con la aclaración "Estos datos los actualiza Dirección." No se
+      pueden editar.
+- [ ] El formulario trae lo que hay en la base: compará con
+      `GET /api/Usuarios/{idUsuario}` en Swagger. Lo que no tiene cargado aparece
+      vacío, y la provincia de nacimiento, elegida en el desplegable.
+- [ ] "Guardar cambios" está apagado hasta que algo cambie, y vuelve a apagarse si
+      deshacés el cambio.
+- [ ] Cambiar un teléfono y guardar: el botón pasa a "Guardando…" y no se puede apretar
+      dos veces. Sale el aviso "Tus datos se actualizaron." y el botón vuelve a
+      apagarse. Al recargar la página, el valor nuevo sigue ahí.
+- [ ] En Network, el `PUT /api/Usuarios/mi-perfil` lleva solo los campos con texto,
+      sin espacios de los costados. Un dato que nunca se cargó y sigue vacío no viaja.
+- [ ] Vaciar un dato que ya estaba cargado (el teléfono, por ejemplo) y guardar marca
+      "Este dato no se puede dejar vacío." y no manda nada. Es por cómo funciona el
+      backend: ignora lo vacío, así que no hay forma de borrar un dato.
+- [ ] El correo vacío, o uno como `ana@`, marca el error. Un teléfono con letras
+      ("llamar a Juan") o de menos de 6 números marca el error.
+- [ ] Escribir otra vez después de guardar hace desaparecer el aviso "Tus datos se
+      actualizaron."
+- [ ] Poner el correo de otra persona muestra, dentro del formulario, "El correo
+      electrónico ingresado ya está registrado a nombre de otra persona." El formulario
+      conserva lo escrito.
+- [ ] Cambiar el correo y guardar actualiza el correo del menú de la persona sin
+      volver a iniciar sesión, y sigue ahí al recargar (en Application, Session
+      Storage, la clave `iscgb.sesion`).
+- [ ] Con el backend apagado, abrir la pantalla muestra el aviso con "Reintentar". Si
+      se apaga con la pantalla ya abierta, "Guardar cambios" muestra "No pudimos guardar
+      tus datos. Intentá de nuevo en un momento." dentro del formulario.
+- [ ] Con Tab los campos se recorren en orden y cada error queda asociado a su campo
+      (un lector de pantalla lo lee junto a la etiqueta). A 375 px de ancho no hay
+      scroll horizontal y los campos quedan en una sola columna.
+- [ ] Una cuenta sin roles (que existe en el sistema pero no tiene permisos) también
+      abre la pantalla y dice "Sin rol asignado".
 
 ### Subir Documento
 
@@ -360,9 +408,13 @@ mirando si la llamada salió y qué contestó.
 No está roto: no existe.
 
 - El buscador de la barra superior está deshabilitado.
-- Editar el perfil y cambiar la foto: el backend ya tiene
-  `PUT /api/Usuarios/mi-perfil` y `POST /api/Usuarios/foto-perfil` desde el
-  10/10/2026, pero el frontend todavía no tiene la pantalla.
+- Cambiar la foto de perfil: el backend ya tiene `POST /api/Usuarios/foto-perfil`
+  desde el 10/10/2026 y la guarda, pero ningún endpoint la devuelve, así que el
+  sistema no tiene cómo mostrarla. "Cambiar foto" sigue apagado en el menú de la
+  persona.
+- Editar en "Mi perfil" el género y la afiliación de emergencia: el backend los
+  acepta, pero `GET /api/Usuarios/{id}` no los devuelve, y la pantalla no los
+  ofrece. El nombre, el apellido, el DNI y los roles los cambia Dirección.
 - Recuperar la contraseña: la pantalla existe, pero simula el envío y no manda
   ningún correo.
 - El mail al rechazar un documento o un justificativo.

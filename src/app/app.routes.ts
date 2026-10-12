@@ -300,6 +300,15 @@ export const routes: Routes = [
       ),
   },
   {
+    // Mi perfil: cualquier persona con sesión edita sus propios datos de contacto
+    // (`PUT /api/Usuarios/mi-perfil`, con `[Authorize]` y sin rol). Sin `roleGuard` a
+    // propósito: los cuatro roles la usan, y se llega desde el menú del avatar.
+    path: 'perfil',
+    title: 'Mi perfil · ISCGB',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/perfil/mi-perfil/mi-perfil').then((m) => m.MiPerfil),
+  },
+  {
     // "Próximamente": cambio de contraseña y preferencias de cuenta
     // (Sprint 3 del roadmap). Ver features/proximamente/proximamente.ts.
     path: 'configuracion',

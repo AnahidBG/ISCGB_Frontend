@@ -65,6 +65,13 @@ export const RUTAS_API = {
   /** Detalle de un usuario. */
   usuarioPorId: (id: number) => `${URL_BASE_API}/api/Usuarios/${id}`,
 
+  /**
+   * La persona de la sesión actualiza sus propios datos de contacto. `PUT`, con
+   * `[Authorize]` y sin rol: el usuario sale del token. Solo aplica los campos que
+   * llegan con texto; un campo vacío o ausente se ignora, no se borra.
+   */
+  miPerfil: `${URL_BASE_API}/api/Usuarios/mi-perfil`,
+
   // --- Gestión de usuarios (ISCGB_Backend/Controllers/CargaUsuarioController.cs) ---
   // La clase se llama `UsuariosAdminController`, así que la ruta es
   // `api/UsuariosAdmin` aunque el archivo se llame distinto.

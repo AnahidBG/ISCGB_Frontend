@@ -1,0 +1,23 @@
+<section
+  aria-label="Datos que actualiza Dirección"
+  class="rounded-2xl border border-borde bg-superficie px-5 py-5 sm:px-6 sm:py-6"
+>
+  <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-3">
+    <div class="min-w-0">
+      <dt class="text-xs font-medium text-texto-suave">Nombre y apellido</dt>
+      <dd class="mt-1 break-words text-sm font-semibold text-texto">{{ nombreAMostrar() }}</dd>
+    </div>
+
+    <div class="min-w-0">
+      <dt class="text-xs font-medium text-texto-suave">DNI</dt>
+      <dd class="mt-1 text-sm font-semibold text-texto">{{ dniAMostrar() }}</dd>
+    </div>
+
+    <div class="min-w-0">
+      <dt class="text-xs font-medium text-texto-suave">Roles</dt>
+      <dd class="mt-1 break-words text-sm font-semibold text-texto">{{ rolesAMostrar() }}</dd>
+    </div>
+  </dl>
+
+  <p class="mt-4 text-xs text-texto-suave">Estos datos los actualiza Dirección.</p>
+</section>

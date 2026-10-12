@@ -36,8 +36,8 @@ src/app/
 ├── core/       auth · busqueda · carga · certificados · comun · configuracion · examenes · justificativos ·
 │               legajos · materias · notificaciones · programas-materia · reconocimiento-saberes · usuarios
 ├── features/   alumno · auth · calendario · crear-password · director · docente · inicio · justificativos ·
-│               legajo · materias · no-encontrado · proximamente · recuperar-contrasena · secretario ·
-│               sistema-diseno
+│               legajo · materias · no-encontrado · perfil · proximamente · recuperar-contrasena ·
+│               secretario · sistema-diseno
 ├── shared/directivas/  si-rol
 └── shared/ui/  aviso-legajo-completo · boton · campo-formulario · dialogo-confirmacion ·
                 documentacion-por-entregar · documentos-rechazados · encabezado · estructura-panel ·
@@ -51,7 +51,7 @@ Las rutas, por rol:
 - Secretario: `/secretario/panel`, `/secretario/listados`, `/secretario/control-legajos`, `/secretario/reconocimiento-saberes`, `/secretario/frecuencia-avisos` y `/secretario/limite-parciales`, que también abre el Director.
 - Docente: `/docente/panel` y `/docente/entrega-programa`.
 - Alumno: `/alumno/panel`, `/alumno/certificado/regular`, `/alumno/certificado/regular-con-horario` y `/alumno/reconocimiento-saberes`.
-- Compartidas: `/legajo/subir-documento`, `/legajo/mis-documentos`, `/legajo/usuario/:idUsuario`, `/materias/asignaciones`, `/justificativos/cargar`, `/configuracion` e `/inicio`.
+- Compartidas: `/legajo/subir-documento`, `/legajo/mis-documentos`, `/legajo/usuario/:idUsuario`, `/materias/asignaciones`, `/justificativos/cargar`, `/perfil` (Mi perfil: cada persona edita sus datos de contacto), `/configuracion` e `/inicio`.
 - Docente, Secretario y Director: `/calendario`, el calendario de exámenes parciales. El Alumno no lo ve.
 - Públicas: `/login`, `/crear-password` y `/recuperar-contrasena`.
 

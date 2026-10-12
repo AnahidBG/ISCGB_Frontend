@@ -111,6 +111,84 @@ responde `400 "Debe asignar al menos un rol al usuario."`.
 
 El detalle campo por campo está en `contrato-alta-usuario.md`.
 
+## Mi perfil
+
+Cualquier persona con sesión, de cualquier rol, actualiza sus propios datos de
+contacto. Está en `UsuariosController`, en `api/Usuarios`. Se relevó el
+11/10/2026 contra el código del backend.
+
+### `PUT /api/Usuarios/mi-perfil`
+
+Con `[Authorize]` y sin rol. La persona sale del token (claim `NameIdentifier`),
+no de la URL ni del cuerpo. Recibe un `ActualizarPerfilDto`, con todos los
+campos opcionales:
+
+```json
+{
+  "telefono": "3511234567",
+  "telefonoEmergencia": "3517654321",
+  "lugarNacimiento": "Villa Dolores",
+  "contactoEmergencia": "Juan Gómez",
+  "direccion": "Av. Siempreviva 742",
+  "idProvincia": 6,
+  "genero": "Femenino",
+  "afiliacionEmergencia": "APROSS",
+  "email": "nuevo@ejemplo.com"
+}
+```
+
+Responde `200` con `{ "message": "Datos del perfil actualizados correctamente." }`.
+
+- **No borra campos.** Solo aplica los textos que llegan con contenido
+  (`!string.IsNullOrWhiteSpace`) y `idProvincia` si trae valor. Un campo vacío,
+  con solo espacios o ausente se ignora y queda el valor que había. Un cuerpo
+  `{}` responde `200` y no cambia nada. Para cambiar un dato hay que mandar otro;
+  no hay manera de dejarlo vacío.
+- **El correo no se puede repetir.** Si cambia y otra persona ya lo usa, responde
+  `400` con
+  `{ "message": "El correo electrónico ingresado ya está registrado a nombre de otra persona." }`.
+  No valida el formato: `"hola"` pasa.
+- Responde `404` con `{ "message": "Usuario no encontrado." }` si el id del token no
+  existe, y `401` sin cuerpo si el token no trae el id.
+- No valida el largo de los textos. Pasado el de la columna (`varchar`: teléfonos
+  30, dirección 255, correo, lugar de nacimiento y contacto de emergencia 150)
+  SQL Server corta el guardado y la API responde `500`.
+- Por acá no se cambian el nombre, el apellido, el DNI ni los roles. Eso lo hace
+  Dirección con `PUT /api/UsuariosAdmin/modificar/{id}`.
+
+`genero` y `afiliacionEmergencia` se pueden escribir pero no leer:
+`GET /api/Usuarios/{id}` no los devuelve (el login sí, pero solo los de quien
+inicia sesión, y `Sesion` no los guarda). Por eso la pantalla no los ofrece: no
+podría precargarlos, y pedirlos de cero obligaría a reescribir lo que ya estaba.
+
+Cómo lo usa el frontend, en `/perfil`:
+
+- `UsuariosService.actualizarMiPerfil(datos)` arma el cuerpo con `datosAEnviar`
+  (`core/usuarios/mis-datos.ts`): los textos con contenido, recortados, y la
+  provincia si hay una elegida. Lo vacío no viaja.
+- Como el backend ignora lo vacío, el formulario no deja vaciar un dato que ya estaba
+  cargado ("Este dato no se puede dejar vacío."). Uno que nunca se cargó sí puede
+  quedar vacío. El correo es obligatorio y tiene que parecer un correo.
+- El backend no valida el formato de los teléfonos ni el de los correos. El
+  formulario sí (`erroresDeMisDatos`): un teléfono tiene que tener solo números,
+  espacios, guiones, puntos o paréntesis, y entre 6 y 15 dígitos. Es una regla del
+  frontend; el formulario de Dirección no tiene ninguna.
+- Un `4xx` con texto se muestra tal cual (el del correo repetido, por ejemplo). Un
+  `5xx`, la falta de red o una ruta que no existe, con un mensaje genérico.
+- Si sale bien, `AuthService.actualizarCorreo(...)` pone el correo nuevo en la sesión
+  y en `sessionStorage`, para que el encabezado lo muestre sin volver a iniciar
+  sesión.
+
+### `POST /api/Usuarios/foto-perfil`
+
+Existe, con `[Authorize]` y sin rol, y el frontend no lo consume. Recibe la imagen
+en `multipart/form-data` (`Foto`, solo `.jpg`, `.jpeg` y `.png`), la guarda en
+`wwwroot/uploads/perfiles/` y la ruta queda en `Usuarios.FotoPerfil`. Pero ningún
+endpoint devuelve esa ruta: ni `GET /api/Usuarios`, ni `GET /api/Usuarios/{id}`, ni
+el login. El sistema guardaría la foto sin poder mostrarla, así que "Cambiar foto"
+sigue deshabilitado en el menú de la persona. Cuando algún endpoint devuelva
+`fotoPerfil`, se arma la pantalla y se usa `urlArchivoSubido(...)` para abrirla.
+
 ## Programa de materia
 
 ### `GET /api/ProgramasMateria/contexto-docente/{idUsuario}`

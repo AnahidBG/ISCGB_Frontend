@@ -1,6 +1,9 @@
-import { Injectable } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, delay, of, throwError } from 'rxjs';
+import { AuthService } from '../auth/auth.service';
 import { ID_ROL, ROLES } from '../auth/modelos/rol';
+import { datosAEnviar } from './mis-datos';
+import { MisDatos, MisDatosAEnviar } from './modelos/mis-datos';
 import { PerfilUsuario } from './modelos/perfil-usuario';
 import { Provincia } from './modelos/provincia';
 import { UsuarioDetalle } from './modelos/usuario-detalle';
@@ -132,8 +135,14 @@ const PROVINCIAS_DE_EJEMPLO: readonly Provincia[] = [
 
 @Injectable()
 export class UsuariosMockService extends UsuariosService {
+  /** Quién es "yo" en `actualizarMiPerfil`: el backend real lo saca del token. */
+  private readonly auth = inject(AuthService);
+
   /** Los que se dieron de alta o se modificaron en esta sesión (en memoria). */
   private readonly usuarios: UsuarioInstitucional[] = USUARIOS_INVENTADOS.map((u) => ({ ...u }));
+
+  /** Lo que cada persona cambió desde "Mi perfil" en esta sesión, para que `obtener` lo devuelva. */
+  private readonly misDatos = new Map<number, MisDatosAEnviar>();
 
   /** Nombre del director suplente actual, o `null`. */
   private suplente: string | null = null;
@@ -190,6 +199,7 @@ export class UsuariosMockService extends UsuariosService {
     }
 
     const [nombre, ...resto] = encontrado.nombreCompleto.split(' ');
+    const propios = this.misDatos.get(encontrado.idUsuario) ?? {};
 
     return of<UsuarioDetalle>({
       idUsuario: encontrado.idUsuario,
@@ -197,12 +207,12 @@ export class UsuariosMockService extends UsuariosService {
       nombre: nombre ?? '',
       apellido: resto.join(' '),
       email: encontrado.email ?? '',
-      telefono: null,
-      telefonoEmergencia: null,
-      lugarNacimiento: null,
-      contactoEmergencia: null,
-      direccion: null,
-      idProvincia: null,
+      telefono: propios.telefono ?? null,
+      telefonoEmergencia: propios.telefonoEmergencia ?? null,
+      lugarNacimiento: propios.lugarNacimiento ?? null,
+      contactoEmergencia: propios.contactoEmergencia ?? null,
+      direccion: propios.direccion ?? null,
+      idProvincia: propios.idProvincia ?? null,
       fechaNac: null,
       estadoUsuario: encontrado.activo,
       roles: [...encontrado.roles],
@@ -243,6 +253,33 @@ export class UsuariosMockService extends UsuariosService {
 
   listarProvincias(): Observable<Provincia[]> {
     return of([...PROVINCIAS_DE_EJEMPLO]).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  /**
+   * Imita a `PUT /api/Usuarios/mi-perfil`: aplica solo lo que llega con texto (un
+   * campo vacío NO borra el dato) y rechaza un correo que ya usa otra persona.
+   */
+  actualizarMiPerfil(datos: MisDatos): Observable<void> {
+    const idUsuario = this.auth.sesion()?.idUsuario;
+    const usuario = this.usuarios.find((u) => u.idUsuario === idUsuario);
+    if (usuario === undefined) {
+      return this.fallar('Usuario no encontrado.');
+    }
+
+    const cambios = datosAEnviar(datos);
+    const correoNuevo = cambios.email;
+    if (
+      correoNuevo !== undefined &&
+      this.usuarios.some((otro) => otro.idUsuario !== idUsuario && otro.email === correoNuevo)
+    ) {
+      return this.fallar(
+        'El correo electrónico ingresado ya está registrado a nombre de otra persona.',
+      );
+    }
+
+    usuario.email = correoNuevo ?? usuario.email;
+    this.misDatos.set(usuario.idUsuario, { ...this.misDatos.get(usuario.idUsuario), ...cambios });
+    return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
   private fallar(mensaje: string): Observable<never> {

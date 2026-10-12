@@ -257,6 +257,24 @@ describe('EstructuraPanel', () => {
       expect(menuPerfil()).not.toBeNull();
     });
 
+    it('"Editar perfil" lleva a /perfil y cierra el menú; "Cambiar foto" sigue apagado', async () => {
+      botonPersona().click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      const opciones = Array.from(menuPerfil()!.querySelectorAll<HTMLElement>('[role="menuitem"]'));
+      const editar = opciones.find((o) => o.textContent?.trim() === 'Editar perfil');
+      const foto = opciones.find((o) => o.textContent?.trim() === 'Cambiar foto');
+      expect(editar?.getAttribute('href')).toBe('/perfil');
+      expect((foto as HTMLButtonElement).disabled).toBe(true);
+
+      editar!.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(menuPerfil()).toBeNull();
+    });
+
     it('el menú de la persona SÍ se cierra con un clic afuera', async () => {
       botonPersona().click();
       await fixture.whenStable();
