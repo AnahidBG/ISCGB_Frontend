@@ -28,10 +28,17 @@ export const MENSAJE_ERROR_TIPOS_DE_EXAMEN =
 export const MENSAJE_ERROR_REGISTRAR_EXAMEN =
   'No pudimos registrar el parcial. Intentá de nuevo en un momento.';
 
+export const MENSAJE_ERROR_REPROGRAMAR_EXAMEN =
+  'No pudimos reprogramar el parcial. Intentá de nuevo en un momento.';
+
+export const MENSAJE_ERROR_ELIMINAR_EXAMEN =
+  'No pudimos eliminar el parcial. Intentá de nuevo en un momento.';
+
 /**
  * El calendario de parciales (SCRUM-183, consulta del estado de cada día), el
- * registro de un parcial por parte del docente, el límite de parciales, que fija
- * Secretaría, y las mesas de examen que le asignaron al docente.
+ * registro, la reprogramación y la baja de un parcial por parte del docente, el
+ * límite de parciales, que fija Secretaría, y las mesas de examen que le
+ * asignaron al docente.
  *
  * Mismo patrón que el resto de `core/`: una clase abstracta con una
  * implementación HTTP y una simulada, intercambiables desde `app.config.ts`.
@@ -43,12 +50,14 @@ export const MENSAJE_ERROR_REGISTRAR_EXAMEN =
  *   · `GET /api/ConfiguracionCalendario/mis-materias-docente` → `materiasDelDocente`
  *   · `GET /api/ConfiguracionCalendario/tipos-examen` → `tiposDeExamen`
  *   · `POST /api/ConfiguracionCalendario/registrar` → `registrarExamen`
+ *   · `PUT /api/ConfiguracionCalendario/modificar/{idExamen}` → `reprogramarExamen`
+ *   · `DELETE /api/ConfiguracionCalendario/eliminar/{idExamen}` → `eliminarExamen`
  *   · `GET /api/Configuracion/mis-notificaciones` → `mesasAsignadas`
  *
- * Modificar y eliminar parciales existen en el backend y todavía no se
- * consumen. Tampoco hay un endpoint que liste los parciales: por eso
- * `examenesDelMes` devuelve una lista vacía contra la API real. Y no hay forma
- * de aceptar ni rechazar una mesa ni de darla de alta.
+ * No hay un endpoint que liste los parciales: por eso `examenesDelMes` devuelve
+ * una lista vacía contra la API real, y con ella la pantalla no tiene ningún
+ * parcial que reprogramar o eliminar (solo la simulada trae ejemplos). Y no hay
+ * forma de aceptar ni rechazar una mesa ni de darla de alta.
  */
 export abstract class CalendarioExamenesService {
   /**
@@ -130,6 +139,33 @@ export abstract class CalendarioExamenesService {
    * alcanzado, por ejemplo), o con `MENSAJE_ERROR_REGISTRAR_EXAMEN`.
    */
   abstract registrarExamen(examen: NuevoExamen, opciones?: OpcionesPedido): Observable<void>;
+
+  /**
+   * Mueve un examen a otra fecha u hora. Es lo único que el backend deja cambiar:
+   * la materia, la comisión y el tipo se quedan como están.
+   *
+   * `fechaYHora` es el texto local sin zona que arma `textoFechaYHora`
+   * ("2026-10-20T09:00:00"), nunca un `toISOString()`.
+   *
+   * El backend rechaza el día que ya alcanzó el límite (sin contar al propio
+   * examen) y un examen que no existe, y no valida que la fecha no sea pasada.
+   *
+   * Falla con el mensaje del backend cuando rechaza el pedido, o con
+   * `MENSAJE_ERROR_REPROGRAMAR_EXAMEN`.
+   */
+  abstract reprogramarExamen(
+    idExamen: number,
+    fechaYHora: string,
+    opciones?: OpcionesPedido,
+  ): Observable<void>;
+
+  /**
+   * Quita un examen del calendario.
+   *
+   * Falla con el mensaje del backend cuando el examen no existe, o con
+   * `MENSAJE_ERROR_ELIMINAR_EXAMEN`.
+   */
+  abstract eliminarExamen(idExamen: number, opciones?: OpcionesPedido): Observable<void>;
 
   /**
    * Las mesas de examen a las que asignaron al docente de la sesión y que

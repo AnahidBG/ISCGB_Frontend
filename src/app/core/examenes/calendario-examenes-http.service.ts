@@ -10,11 +10,13 @@ import { mesDe } from './calendario-mes';
 import {
   CalendarioExamenesService,
   MENSAJE_ERROR_CALENDARIO,
+  MENSAJE_ERROR_ELIMINAR_EXAMEN,
   MENSAJE_ERROR_GUARDAR_LIMITE_DIARIO,
   MENSAJE_ERROR_LIMITE_DIARIO,
   MENSAJE_ERROR_MATERIAS_DEL_DOCENTE,
   MENSAJE_ERROR_MESAS_ASIGNADAS,
   MENSAJE_ERROR_REGISTRAR_EXAMEN,
+  MENSAJE_ERROR_REPROGRAMAR_EXAMEN,
   MENSAJE_ERROR_TIPOS_DE_EXAMEN,
 } from './calendario-examenes.service';
 import { CalendarioDelMes } from './modelos/calendario-del-mes';
@@ -37,6 +39,12 @@ interface CargaExamenApi {
   idComision: number;
   idMateria: number;
   idTipoExamen: number;
+}
+
+/** El cuerpo del `PUT .../modificar/{idExamen}` (`ModificarFechaExamenDto`). */
+interface ModificarFechaExamenApi {
+  /** Un `DateTime` de .NET, con hora y sin zona: "2026-10-20T09:00:00". */
+  nuevaFecha: string;
 }
 
 /** Un elemento del `GET .../mis-materias-docente`. */
@@ -210,6 +218,53 @@ export class CalendarioExamenesHttpService extends CalendarioExamenesService {
       );
   }
 
+  reprogramarExamen(
+    idExamen: number,
+    fechaYHora: string,
+    opciones?: OpcionesPedido,
+  ): Observable<void> {
+    // La fecha ya viene como texto local sin zona (`textoFechaYHora`): se manda tal cual.
+    const cuerpo: ModificarFechaExamenApi = { nuevaFecha: fechaYHora };
+
+    return this.http
+      .put(RUTAS_API.modificarExamen(idExamen), cuerpo, { context: contextoDePedido(opciones) })
+      .pipe(
+        map(() => undefined),
+        catchError((error: HttpErrorResponse) =>
+          throwError(
+            () =>
+              new Error(
+                traducirRechazo(
+                  error,
+                  MENSAJE_ERROR_REPROGRAMAR_EXAMEN,
+                  'Error al reprogramar el parcial:',
+                ),
+              ),
+          ),
+        ),
+      );
+  }
+
+  eliminarExamen(idExamen: number, opciones?: OpcionesPedido): Observable<void> {
+    return this.http
+      .delete(RUTAS_API.eliminarExamen(idExamen), { context: contextoDePedido(opciones) })
+      .pipe(
+        map(() => undefined),
+        catchError((error: HttpErrorResponse) =>
+          throwError(
+            () =>
+              new Error(
+                traducirRechazo(
+                  error,
+                  MENSAJE_ERROR_ELIMINAR_EXAMEN,
+                  'Error al eliminar el parcial:',
+                ),
+              ),
+          ),
+        ),
+      );
+  }
+
   mesasAsignadas(opciones?: OpcionesPedido): Observable<MesaAsignada[]> {
     return this.http
       .get<MesaAsignadaApi[]>(RUTAS_API.misMesasAsignadas, {
@@ -235,7 +290,8 @@ export class CalendarioExamenesHttpService extends CalendarioExamenesService {
  *
  * El del backend primero, pero solo si es un rechazo del pedido (4xx): ahí
  * explica qué corregir ("El límite de parciales Diarios debe ser mayor a cero.",
- * "No se puede registrar. Se ha superado el límite de parciales para ese día.").
+ * "No se puede registrar. Se ha superado el límite de parciales para ese día.",
+ * "No se encontró el examen especificado.").
  * Un 5xx o una ruta que no existe no le dicen nada útil a quien está en la
  * pantalla: ahí va el mensaje genérico, y el detalle a la consola.
  */

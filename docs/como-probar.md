@@ -232,8 +232,9 @@ Solo para Secretario, en el menú lateral.
 Lo ven el Docente, el Secretario y el Director. El Docente lo tiene en "Calendario
 de parciales" del menú lateral; Secretaría y Dirección llegan desde "Límite de
 parciales", con el enlace "Ver el calendario de parciales". Solo el Docente puede
-registrar parciales (ver "Registrar un parcial", más abajo). Mover o borrar un
-parcial no está en la pantalla.
+registrar parciales (ver "Registrar un parcial", más abajo), tocar un día completo
+para ver por qué está bloqueado (ver "Fecha bloqueada") y reprogramar, eliminar o
+arrastrar uno ya cargado (ver "Reprogramar, eliminar y arrastrar un parcial").
 
 Para tener algo que ver con un Secretario o un Director, registrá parciales con el
 Docente o desde Swagger con `POST /api/ConfiguracionCalendario/registrar`:
@@ -298,8 +299,8 @@ dos parciales el mismo día).
 - [ ] "Fecha" viene con el día elegido, se puede cambiar y no deja ir antes de hoy.
       "Horario" dice "Horario en formato 24 h.".
 - [ ] Guardar con algún campo vacío marca los que faltan y no manda nada (mirá
-      Network). Con una fecha anterior a hoy escrita a mano, dice que no se puede
-      registrar en una fecha pasada.
+      Network). Con una fecha anterior a hoy escrita a mano, dice "La fecha no puede
+      ser anterior a hoy."
 - [ ] Con todo completo, "Guardar" pasa a "Guardando…" y no se puede apretar dos
       veces. En Network, el `POST` a `registrar` sale sin el velo de carga y el cuerpo
       es `{ fecha, idComision, idMateria, idTipoExamen }`, con la fecha como
@@ -324,6 +325,65 @@ dos parciales el mismo día).
       se cierra.
 - [ ] A 375 px de ancho el modal entra sin scroll horizontal, con "Fecha" y "Horario"
       uno debajo del otro.
+
+### Fecha bloqueada
+
+Con el backend real y el Docente. Hace falta un día con el límite alcanzado (con el
+límite en 2, dos parciales el mismo día) que no sea pasado.
+
+- [ ] Tocar ese día, con clic, Enter o Espacio, no abre "Registrar parcial". Aparece
+      arriba de la grilla una franja roja suave con borde izquierdo rojo: "20 de
+      octubre · Fecha bloqueada" y debajo "Ya se completó el máximo de parciales por
+      día. Elegí otra fecha."
+- [ ] El día completo sigue en el recorrido de las flechas, y un lector de pantalla lo
+      dice como "20 de octubre, 2 de 2 parciales, completo". El aviso se anuncia solo
+      cuando aparece.
+- [ ] El aviso desaparece al pasar de mes, al elegir un día disponible (que abre el
+      registro) y al abrir cualquier modal.
+- [ ] Un día completo que ya pasó no hace nada.
+- [ ] Con Secretario o Director, tocar un día completo no muestra el aviso: para ellos
+      el calendario es de consulta.
+
+### Reprogramar, eliminar y arrastrar un parcial
+
+Solo para el Docente. El backend todavía no tiene un endpoint que liste los exámenes,
+así que contra la API real la grilla no muestra ningún parcial y esto no se puede ver.
+Se prueba con el servicio simulado: en `src/app/app.config.ts` cambiá
+`CalendarioExamenesHttpService` por `CalendarioExamenesMockService` en el `provide` de
+`CalendarioExamenesService` (y su `import`). El simulado trae cuatro parciales por mes,
+los días 5, 12 (dos, con el límite en 2 ese día queda completo) y 21, y lo que muevas
+o borres se queda hasta que recargues la página. Los endpoints reales se pueden probar
+a mano en Swagger con el id de un examen de la base: `PUT .../modificar/{id}` y
+`DELETE .../eliminar/{id}`.
+
+- [ ] Cada parcial aparece en su día con el nombre de la materia. Con Secretario o
+      Director no abre nada ni se arrastra.
+- [ ] Con el Docente, tocar un parcial abre "Modificar parcial", con el día debajo del
+      título. Arriba muestra la materia, la comisión y el tipo, de solo lectura, y
+      abajo "Fecha" y "Horario" con los del parcial.
+- [ ] "Guardar" está apagado mientras no cambies nada. Con una fecha anterior a hoy no
+      guarda y dice por qué.
+- [ ] Cambiar la fecha o el horario y guardar cierra el modal, avisa "Parcial
+      reprogramado para el miércoles 14 de octubre a las 09:00." y el foco queda en el
+      día nuevo. Si lo pasaste a otro mes, queda en el día donde estaba.
+- [ ] Pasarlo a un día completo (el 12) muestra, dentro del formulario, "No se puede
+      reprogramar. El día ha superado el límite de parciales." El modal sigue abierto.
+      Cambiarle solo la hora a uno de los dos del 12 sí se puede.
+- [ ] "Eliminar parcial" pide confirmación: "¿Eliminar el parcial de Matemática del
+      martes 12 de octubre?". "Cancelar" y Escape cierran la pregunta y dejan el modal
+      abierto, con el foco otra vez en "Eliminar parcial". "Eliminar" lo borra, avisa
+      "Parcial de Matemática del martes 12 de octubre eliminado." y el día cambia de
+      color.
+- [ ] Con el mouse, un parcial se arrastra a otro día. Mientras lo llevás, los días
+      donde se puede soltar tienen un contorno verde y el que está bajo el puntero se
+      ilumina. Soltarlo en un día disponible lo mueve y conserva su horario, y aparece
+      el mismo aviso verde.
+- [ ] Soltarlo en el mismo día, en un día pasado o en uno completo no hace nada. Un
+      parcial de un día pasado no se arrastra.
+- [ ] Si el backend rechaza el movimiento, aparece arriba de la grilla "No se pudo mover
+      el parcial" con su motivo.
+- [ ] Con teclado: Tab llega al parcial desde el día, Enter abre "Modificar parcial" y ahí
+      se cambia la fecha. El arrastre es solo para el mouse.
 
 ### Límite de parciales
 
@@ -418,10 +478,11 @@ No está roto: no existe.
 - Recuperar la contraseña: la pantalla existe, pero simula el envío y no manda
   ningún correo.
 - El mail al rechazar un documento o un justificativo.
-- Del calendario de parciales, el Docente puede registrar uno. Modificar y eliminar
-  parciales, y abrir uno ya cargado, no están en la pantalla. El backend tampoco
-  tiene un listado de exámenes, así que la grilla no muestra la materia de cada
-  parcial.
+- Del calendario de parciales, con el backend real, abrir, reprogramar, eliminar o
+  arrastrar un parcial ya cargado: las pantallas están, pero el backend no tiene un
+  listado de exámenes, así que la grilla no muestra la materia de cada parcial ni
+  hay uno que tocar. Se ven con el servicio simulado (ver "Reprogramar, eliminar y
+  arrastrar un parcial").
 - Aceptar o rechazar una mesa de examen, y darla de alta. La campana del Docente
   avisa las mesas asignadas, pero el backend no tiene endpoints para responderlas.
 - La configuración de la cuenta, que es del Sprint 3.

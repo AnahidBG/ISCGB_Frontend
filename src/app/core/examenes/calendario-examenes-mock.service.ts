@@ -6,6 +6,7 @@ import {
   CalendarioExamenesService,
   MENSAJE_ERROR_CALENDARIO,
   MENSAJE_ERROR_REGISTRAR_EXAMEN,
+  MENSAJE_ERROR_REPROGRAMAR_EXAMEN,
 } from './calendario-examenes.service';
 import { CalendarioDelMes } from './modelos/calendario-del-mes';
 import { ExamenCalendario } from './modelos/examen-calendario';
@@ -23,6 +24,16 @@ const LIMITE_POR_DEFECTO = 2;
 /** Lo que responde el backend (400) cuando el día ya alcanzó el límite. */
 const MENSAJE_LIMITE_SUPERADO =
   'No se puede registrar. Se ha superado el límite de parciales para ese día.';
+
+/** Lo que responde el backend (400) al reprogramar a un día que ya alcanzó el límite. */
+const MENSAJE_LIMITE_SUPERADO_AL_REPROGRAMAR =
+  'No se puede reprogramar. El día ha superado el límite de parciales.';
+
+/** Lo que responde el backend (404) cuando el examen no existe. */
+const MENSAJE_EXAMEN_NO_ENCONTRADO = 'No se encontró el examen especificado.';
+
+/** "2026-10-20T09:00:00" → el día y el horario. Lo que el backend lee como un `DateTime` sin zona. */
+const FECHA_Y_HORA = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/;
 
 /** Las materias del docente de ejemplo: una de ellas, en dos comisiones. */
 const MATERIAS_DEL_DOCENTE: readonly MateriaDelDocente[] = [
@@ -51,9 +62,10 @@ const TIPOS_DE_EXAMEN: readonly TipoExamen[] = [
   { idTipoExamen: 4, nombre: 'Coloquio' },
 ];
 
-/** Un parcial de ejemplo: el día del mes en que cae y de qué es. */
+/** Un parcial de ejemplo: el día del mes en que cae, a qué hora y de qué es. */
 interface EjemploDeParcial {
   dia: number;
+  horario: string;
   materia: string;
   comision: string;
   tipo: string;
@@ -61,10 +73,22 @@ interface EjemploDeParcial {
 
 /** Los parciales de ejemplo de cualquier mes. */
 const EJEMPLOS: readonly EjemploDeParcial[] = [
-  { dia: 5, materia: 'Introducción a Sistemas', comision: 'Comisión 1° A', tipo: 'Parcial' },
-  { dia: 12, materia: 'Matemática', comision: 'Comisión 1° A', tipo: 'Parcial' },
-  { dia: 12, materia: 'Didáctica General', comision: 'Comisión 2° A', tipo: 'Parcial' },
-  { dia: 21, materia: 'Pedagogía', comision: 'Comisión 2° A', tipo: 'Parcial' },
+  {
+    dia: 5,
+    horario: '09:00',
+    materia: 'Introducción a Sistemas',
+    comision: 'Comisión 1° A',
+    tipo: 'Parcial',
+  },
+  { dia: 12, horario: '14:00', materia: 'Matemática', comision: 'Comisión 1° A', tipo: 'Parcial' },
+  {
+    dia: 12,
+    horario: '18:30',
+    materia: 'Didáctica General',
+    comision: 'Comisión 2° A',
+    tipo: 'Parcial',
+  },
+  { dia: 21, horario: '10:00', materia: 'Pedagogía', comision: 'Comisión 2° A', tipo: 'Parcial' },
 ];
 
 /** Un mes fuera de 1 a 12 falla: es el 500 del backend. */
@@ -85,12 +109,18 @@ function esMesValido(mes: number): boolean {
  * también rige para el calendario.
  *
  * A diferencia de la API real, acá SÍ hay un listado de parciales
- * (`examenesDelMes`), con los mismos días que cuenta `calendarioDelMes`.
+ * (`examenesDelMes`), con los mismos días que cuenta `calendarioDelMes`. Los de
+ * ejemplo de un mes se cargan la primera vez que se pide ese mes, y desde ahí todo
+ * vive en una sola lista en memoria.
  *
- * Registrar un parcial lo suma a los de ejemplo, así el día cambia de estado al
- * volver a pedir el mes. Rechaza el día que ya alcanzó el límite con el mismo
- * texto del backend, y una materia, comisión o tipo que no existen con el error
- * genérico (el backend responde 500). No valida la fecha, igual que el backend.
+ * Registrar un parcial lo suma a la lista, así el día cambia de estado al volver a
+ * pedir el mes. Rechaza el día que ya alcanzó el límite con el mismo texto del
+ * backend, y una materia, comisión o tipo que no existen con el error genérico (el
+ * backend responde 500). No valida la fecha, igual que el backend.
+ *
+ * Reprogramar mueve un parcial de la lista con la misma regla del límite, sin
+ * contar al propio parcial, y con el mismo texto del backend; eliminar lo saca.
+ * Un id que no está falla como el 404.
  *
  * Las mesas asignadas caen siempre en el futuro (una y dos semanas desde hoy):
  * así la campana de un docente las muestra sin importar cuándo se use el mock.
@@ -99,9 +129,12 @@ function esMesValido(mes: number): boolean {
 export class CalendarioExamenesMockService extends CalendarioExamenesService {
   private limite = LIMITE_POR_DEFECTO;
 
-  /** Los parciales que se registraron en esta sesión, además de los de ejemplo. */
-  private readonly registrados: ExamenCalendario[] = [];
-  private siguienteIdExamen = EJEMPLOS.length + 1;
+  /** Todos los parciales: los de ejemplo de los meses que ya se pidieron y los que se registraron. */
+  private readonly examenes: ExamenCalendario[] = [];
+
+  /** Los meses ("2026-10") cuyos parciales de ejemplo ya están en la lista. */
+  private readonly mesesConEjemplos = new Set<string>();
+  private siguienteIdExamen = 1;
 
   calendarioDelMes(anio: number, mes: number): Observable<CalendarioDelMes> {
     if (!esMesValido(mes)) {
@@ -159,9 +192,10 @@ export class CalendarioExamenesMockService extends CalendarioExamenesService {
       return throwError(() => new Error(MENSAJE_LIMITE_SUPERADO));
     }
 
-    this.registrados.push({
+    this.examenes.push({
       idExamen: this.siguienteIdExamen++,
       fecha: examen.dia,
+      horario: examen.horario,
       materia: materia.materia,
       comision: materia.comision,
       tipo: tipo.nombre,
@@ -169,16 +203,57 @@ export class CalendarioExamenesMockService extends CalendarioExamenesService {
     return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
-  /** Los parciales de un mes: los de ejemplo (caen en los mismos días de cualquier mes) y los registrados. */
-  private examenesDe(anio: number, mes: number): ExamenCalendario[] {
-    const ejemplos = EJEMPLOS.map(({ dia, ...datos }, indice): ExamenCalendario => ({
-      idExamen: indice + 1,
-      fecha: aFechaSola(new Date(anio, mes - 1, dia)),
-      ...datos,
-    }));
-    const prefijo = aFechaSola(new Date(anio, mes - 1, 1)).slice(0, 8);
+  reprogramarExamen(idExamen: number, fechaYHora: string): Observable<void> {
+    const posicion = this.examenes.findIndex((examen) => examen.idExamen === idExamen);
+    if (posicion === -1) {
+      return throwError(() => new Error(MENSAJE_EXAMEN_NO_ENCONTRADO));
+    }
 
-    return [...ejemplos, ...this.registrados.filter(({ fecha }) => fecha.startsWith(prefijo))];
+    const coincidencia = FECHA_Y_HORA.exec(fechaYHora);
+    const fecha = coincidencia === null ? null : desdeFechaSola(coincidencia[1]);
+    if (coincidencia === null || fecha === null) {
+      return throwError(() => new Error(MENSAJE_ERROR_REPROGRAMAR_EXAMEN));
+    }
+    const [, dia, horario] = coincidencia;
+
+    // Los otros del día: el propio examen no se cuenta a sí mismo (como en el backend).
+    const delDia = this.examenesDe(fecha.getFullYear(), fecha.getMonth() + 1).filter(
+      (existente) => existente.fecha === dia && existente.idExamen !== idExamen,
+    );
+    if (delDia.length + 1 > this.limite) {
+      return throwError(() => new Error(MENSAJE_LIMITE_SUPERADO_AL_REPROGRAMAR));
+    }
+
+    this.examenes[posicion] = { ...this.examenes[posicion], fecha: dia, horario };
+    return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  eliminarExamen(idExamen: number): Observable<void> {
+    const posicion = this.examenes.findIndex((examen) => examen.idExamen === idExamen);
+    if (posicion === -1) {
+      return throwError(() => new Error(MENSAJE_EXAMEN_NO_ENCONTRADO));
+    }
+
+    this.examenes.splice(posicion, 1);
+    return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  /** Los parciales de un mes. Los de ejemplo caen en los mismos días de cualquier mes y se cargan al pedirlo. */
+  private examenesDe(anio: number, mes: number): ExamenCalendario[] {
+    const clave = `${anio}-${mes}`;
+    if (!this.mesesConEjemplos.has(clave)) {
+      this.mesesConEjemplos.add(clave);
+      for (const { dia, ...datos } of EJEMPLOS) {
+        this.examenes.push({
+          idExamen: this.siguienteIdExamen++,
+          fecha: aFechaSola(new Date(anio, mes - 1, dia)),
+          ...datos,
+        });
+      }
+    }
+
+    const prefijo = aFechaSola(new Date(anio, mes - 1, 1)).slice(0, 8);
+    return this.examenes.filter(({ fecha }) => fecha.startsWith(prefijo));
   }
 
   limiteDiario(): Observable<number> {

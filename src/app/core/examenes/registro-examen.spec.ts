@@ -1,6 +1,8 @@
 import { registerLocaleData } from '@angular/common';
 import localeEsAr from '@angular/common/locales/es-AR';
+import { PERIODO_DEL_LIMITE } from './periodo-limite';
 import {
+  avisoDeFechaBloqueada,
   avisoDeParcialRegistrado,
   diaEnPalabras,
   errorDeDia,
@@ -63,7 +65,7 @@ describe('errorDeDia', () => {
   it.each([
     ['vacío', '', 'Elegí la fecha del parcial.'],
     ['sin dato', null, 'Elegí la fecha del parcial.'],
-    ['un día pasado', '2026-10-09', 'No se puede registrar un parcial en una fecha pasada.'],
+    ['un día pasado', '2026-10-09', 'La fecha no puede ser anterior a hoy.'],
     ['un día que no existe', '2026-02-30', 'La fecha no es válida.'],
     ['un texto que no es una fecha', 'pronto', 'La fecha no es válida.'],
   ])('%s no se puede guardar, y dice por qué', (_caso, dia, mensaje) => {
@@ -80,5 +82,12 @@ describe('textos del día', () => {
     expect(avisoDeParcialRegistrado('2026-10-13', '09:00', 'es-AR')).toBe(
       'Parcial registrado para el martes 13 de octubre a las 09:00.',
     );
+  });
+
+  it('el aviso de fecha bloqueada nombra el día y toma el período del límite', () => {
+    expect(avisoDeFechaBloqueada('2026-10-18', 'es-AR')).toEqual({
+      titulo: '18 de octubre · Fecha bloqueada',
+      texto: `Ya se completó el máximo de parciales por ${PERIODO_DEL_LIMITE}. Elegí otra fecha.`,
+    });
   });
 });

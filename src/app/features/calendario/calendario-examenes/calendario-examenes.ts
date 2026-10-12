@@ -2,14 +2,27 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  Injector,
   LOCALE_ID,
+  afterNextRender,
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { Subject, catchError, combineLatest, map, merge, of, startWith, switchMap } from 'rxjs';
+import {
+  Observable,
+  Subject,
+  catchError,
+  combineLatest,
+  map,
+  merge,
+  of,
+  startWith,
+  switchMap,
+} from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ROLES } from '../../../core/auth/modelos/rol';
 import { tieneAlgunRol } from '../../../core/auth/modelos/sesion';
@@ -18,8 +31,10 @@ import { OpcionesPedido } from '../../../core/comun/opciones-pedido';
 import {
   CalendarioExamenesService,
   MENSAJE_ERROR_CALENDARIO,
+  MENSAJE_ERROR_ELIMINAR_EXAMEN,
   MENSAJE_ERROR_MATERIAS_DEL_DOCENTE,
   MENSAJE_ERROR_REGISTRAR_EXAMEN,
+  MENSAJE_ERROR_REPROGRAMAR_EXAMEN,
 } from '../../../core/examenes/calendario-examenes.service';
 import {
   MesCalendario,
@@ -29,11 +44,20 @@ import {
   textoDelLimite,
   tituloDelMes,
 } from '../../../core/examenes/calendario-mes';
+import { AvisoDelCalendario } from '../../../core/examenes/modelos/aviso-calendario';
 import { CalendarioDelMes } from '../../../core/examenes/modelos/calendario-del-mes';
 import { DiaCalendario } from '../../../core/examenes/modelos/dia-calendario';
 import { ExamenCalendario } from '../../../core/examenes/modelos/examen-calendario';
 import { NuevoExamen } from '../../../core/examenes/modelos/nuevo-examen';
-import { avisoDeParcialRegistrado } from '../../../core/examenes/registro-examen';
+import {
+  avisoDeParcialEliminado,
+  avisoDeParcialReprogramado,
+} from '../../../core/examenes/modificacion-examen';
+import {
+  avisoDeFechaBloqueada,
+  avisoDeParcialRegistrado,
+  textoFechaYHora,
+} from '../../../core/examenes/registro-examen';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { SiRol } from '../../../shared/directivas/si-rol/si-rol';
 import { Boton } from '../../../shared/ui/boton/boton';
@@ -41,9 +65,12 @@ import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-po
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
+import { AvisoCalendario } from './partes/aviso-calendario/aviso-calendario';
 import { CabeceraMes } from './partes/cabecera-mes/cabecera-mes';
-import { GrillaCalendario } from './partes/grilla-calendario/grilla-calendario';
+import { CambioDeParcial } from './partes/formulario-modificacion/formulario-modificacion';
+import { GrillaCalendario, MovimientoDeExamen } from './partes/grilla-calendario/grilla-calendario';
 import { LeyendaCalendario } from './partes/leyenda-calendario/leyenda-calendario';
+import { ModificarParcial } from './partes/modificar-parcial/modificar-parcial';
 import {
   CargaOpcionesDeRegistro,
   RegistroParcial,
@@ -75,6 +102,9 @@ interface PedidoDeMes {
 const CARGANDO: CargaMes = { fase: 'cargando' };
 const OPCIONES_CARGANDO: CargaOpcionesDeRegistro = { fase: 'cargando' };
 
+/** El título del aviso cuando el backend no deja mover un parcial arrastrado a otro día. */
+const TITULO_PARCIAL_NO_MOVIDO = 'No se pudo mover el parcial';
+
 /**
  * La pantalla ya muestra su propia espera dentro de la tarjeta: al pasar de mes
  * no tiene que taparse todo con el velo global. Lo mismo vale para el modal de
@@ -83,7 +113,8 @@ const OPCIONES_CARGANDO: CargaOpcionesDeRegistro = { fase: 'cargando' };
 const EN_SEGUNDO_PLANO: OpcionesPedido = { enSegundoPlano: true };
 
 /**
- * Calendario de exámenes parciales (SCRUM-183): consulta y registro.
+ * Calendario de exámenes parciales (SCRUM-183): consulta, registro, reprogramación
+ * y baja.
  *
  * Muestra un mes a la vez, con el estado de cada día: libre, con parciales o
  * completo. El límite de parciales es uno solo, para todo el instituto, y lo
@@ -96,10 +127,18 @@ const EN_SEGUNDO_PLANO: OpcionesPedido = { enSegundoPlano: true };
  * Si el backend lo rechaza (el día ya alcanzó el límite) su mensaje se muestra en
  * el formulario y el modal queda abierto para elegir otra fecha; si sale bien se
  * avisa y se vuelve a pedir el mes, sin tapar la grilla, para que el día cambie de
- * color. Modificar o eliminar un parcial no está en esta pantalla.
+ * color. Un día completo, en cambio, no abre nada: explica arriba de la grilla que
+ * la fecha está bloqueada (SCRUM-185).
+ *
+ * Con un parcial ya cargado (SCRUM-184) el Docente puede tocarlo, para abrir
+ * "Modificar parcial" y cambiar su fecha y horario (`PUT .../modificar/{id}`) o
+ * eliminarlo, con confirmación (`DELETE .../eliminar/{id}`), o arrastrarlo a otro
+ * día con el mouse, que conserva el horario. Con la API real la grilla no trae
+ * parciales que tocar: el backend todavía no los lista.
  *
  * Contenedor: es el único que conoce `CalendarioExamenesService`. El encabezado,
- * la leyenda, la grilla, lo de adentro de cada celda y el modal viven en `partes/`.
+ * la leyenda, la grilla, lo de adentro de cada celda, los avisos y los modales
+ * viven en `partes/`.
  */
 @Component({
   selector: 'app-calendario-examenes',
@@ -114,7 +153,9 @@ const EN_SEGUNDO_PLANO: OpcionesPedido = { enSegundoPlano: true };
     LeyendaCalendario,
     GrillaCalendario,
     ResumenDia,
+    AvisoCalendario,
     RegistroParcial,
+    ModificarParcial,
   ],
   templateUrl: './calendario-examenes.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -126,6 +167,10 @@ export class CalendarioExamenes {
   private readonly router = inject(Router);
   private readonly locale = inject(LOCALE_ID);
   private readonly destruccion = inject(DestroyRef);
+  private readonly injector = inject(Injector);
+
+  /** La grilla, para devolverle el foco después de un cambio. Solo existe con el mes ya cargado. */
+  private readonly grilla = viewChild(GrillaCalendario);
 
   protected readonly sesion = this.auth.sesion;
 
@@ -141,8 +186,9 @@ export class CalendarioExamenes {
   protected readonly rolesDelLimite = [ROLES.secretario, ROLES.director];
 
   /**
-   * Quiénes pueden registrar un parcial: el Docente. Habilita elegir un día en la
-   * grilla y muestra el texto de ayuda. Secretaría y Dirección solo miran.
+   * Quiénes pueden registrar, modificar y mover parciales: el Docente. Habilita
+   * elegir un día y arrastrar un parcial en la grilla, y muestra el texto de ayuda.
+   * Secretaría y Dirección solo miran.
    */
   protected readonly rolesQueRegistran = [ROLES.docente];
   protected readonly puedeRegistrar = computed(() =>
@@ -269,25 +315,40 @@ export class CalendarioExamenes {
   /** Por qué el backend no registró el parcial, en sus palabras. Se muestra en el formulario. */
   protected readonly errorRegistro = signal<string | null>(null);
 
-  /** El aviso de que el parcial quedó registrado. */
+  /** El aviso de que el parcial quedó registrado, reprogramado o eliminado. */
   protected readonly aviso = signal<string | null>(null);
+
+  /**
+   * El aviso rojo de arriba de la grilla: una fecha bloqueada, o un parcial que el
+   * backend no dejó mover. Se va al cambiar de mes y al abrir cualquier modal.
+   */
+  protected readonly alerta = signal<AvisoDelCalendario | null>(null);
+
+  /** El parcial que se está modificando, tal como estaba al tocarlo, o `null` con el modal cerrado. */
+  protected readonly parcialAModificar = signal<ExamenCalendario | null>(null);
+
+  /** `true` mientras se reprograma o elimina un parcial. */
+  protected readonly modificando = signal(false);
+
+  /** Por qué el backend no reprogramó ni eliminó el parcial, en sus palabras. Va en el formulario. */
+  protected readonly errorModificacion = signal<string | null>(null);
 
   constructor() {
     this.campana.refrescar();
   }
 
   protected irAlMesAnterior(): void {
-    this.aviso.set(null);
+    this.limpiarAvisos();
     this.mes.update(mesAnterior);
   }
 
   protected irAlMesSiguiente(): void {
-    this.aviso.set(null);
+    this.limpiarAvisos();
     this.mes.update(mesSiguiente);
   }
 
   protected irAHoy(): void {
-    this.aviso.set(null);
+    this.limpiarAvisos();
     this.mes.set(mesDe(this.hoy));
   }
 
@@ -295,9 +356,20 @@ export class CalendarioExamenes {
     this.reintento.next();
   }
 
+  private limpiarAvisos(): void {
+    this.aviso.set(null);
+    this.alerta.set(null);
+  }
+
+  /** Explica por qué no se puede elegir un día completo, sin abrir nada. */
+  protected mostrarFechaBloqueada(dia: DiaCalendario): void {
+    this.aviso.set(null);
+    this.alerta.set(avisoDeFechaBloqueada(dia.fecha, this.locale));
+  }
+
   /** Abre el modal para registrar un parcial en el día elegido. */
   protected abrirRegistro(dia: DiaCalendario): void {
-    this.aviso.set(null);
+    this.limpiarAvisos();
     this.errorRegistro.set(null);
     this.diaARegistrar.set(dia.fecha);
     this.cargarOpciones();
@@ -338,6 +410,141 @@ export class CalendarioExamenes {
           );
         },
       });
+  }
+
+  /** Abre el modal para modificar o eliminar el parcial que se tocó. Es cosa del Docente. */
+  protected abrirModificacion(examen: ExamenCalendario): void {
+    if (!this.puedeRegistrar()) {
+      return;
+    }
+    this.limpiarAvisos();
+    this.errorModificacion.set(null);
+    this.parcialAModificar.set(examen);
+  }
+
+  protected cerrarModificacion(): void {
+    // Mientras se guarda no se cierra: se perdería la respuesta.
+    if (!this.modificando()) {
+      this.parcialAModificar.set(null);
+    }
+  }
+
+  /** Cambia la fecha y el horario del parcial abierto. */
+  protected reprogramar({ dia, horario }: CambioDeParcial): void {
+    const examen = this.parcialAModificar();
+    if (examen === null || this.modificando()) {
+      return;
+    }
+    this.errorModificacion.set(null);
+
+    this.cambiarParcial(
+      this.servicio.reprogramarExamen(
+        examen.idExamen,
+        textoFechaYHora(dia, horario),
+        EN_SEGUNDO_PLANO,
+      ),
+      MENSAJE_ERROR_REPROGRAMAR_EXAMEN,
+      {
+        // Si pasó a otro mes, el foco vuelve al día donde estaba.
+        alTerminar: () =>
+          this.cerrarModificacionHecha(avisoDeParcialReprogramado(dia, horario, this.locale), [
+            dia,
+            examen.fecha,
+          ]),
+        alFallar: (mensaje) => this.errorModificacion.set(mensaje),
+      },
+    );
+  }
+
+  /** Elimina el parcial abierto. Ya se confirmó en el modal. */
+  protected eliminar(): void {
+    const examen = this.parcialAModificar();
+    if (examen === null || this.modificando()) {
+      return;
+    }
+    this.errorModificacion.set(null);
+
+    this.cambiarParcial(
+      this.servicio.eliminarExamen(examen.idExamen, EN_SEGUNDO_PLANO),
+      MENSAJE_ERROR_ELIMINAR_EXAMEN,
+      {
+        alTerminar: () =>
+          this.cerrarModificacionHecha(
+            avisoDeParcialEliminado(examen.materia, examen.fecha, this.locale),
+            [examen.fecha],
+          ),
+        alFallar: (mensaje) => this.errorModificacion.set(mensaje),
+      },
+    );
+  }
+
+  /**
+   * Un parcial soltado en otro día de la grilla: se reprograma conservando su
+   * horario. Si el backend lo rechaza (el día se completó mientras tanto), el
+   * motivo va arriba de la grilla, que es donde la persona está mirando.
+   */
+  protected moverParcial({ examen, dia }: MovimientoDeExamen): void {
+    if (!this.puedeRegistrar() || this.modificando()) {
+      return;
+    }
+    this.limpiarAvisos();
+
+    this.cambiarParcial(
+      this.servicio.reprogramarExamen(
+        examen.idExamen,
+        textoFechaYHora(dia.fecha, examen.horario),
+        EN_SEGUNDO_PLANO,
+      ),
+      MENSAJE_ERROR_REPROGRAMAR_EXAMEN,
+      {
+        alTerminar: () =>
+          this.aviso.set(avisoDeParcialReprogramado(dia.fecha, examen.horario, this.locale)),
+        alFallar: (texto) => this.alerta.set({ titulo: TITULO_PARCIAL_NO_MOVIDO, texto }),
+      },
+    );
+  }
+
+  /**
+   * Corre un cambio sobre un parcial. Mientras tanto no se acepta otro. Si sale
+   * bien vuelve a pedir el mes sin taparlo, para que la grilla se actualice en su
+   * lugar; si falla, se lo cuenta a quien lo pidió, con el mensaje del backend o
+   * con `porDefecto`.
+   */
+  private cambiarParcial(
+    pedido: Observable<void>,
+    porDefecto: string,
+    { alTerminar, alFallar }: { alTerminar: () => void; alFallar: (mensaje: string) => void },
+  ): void {
+    this.modificando.set(true);
+
+    pedido.pipe(takeUntilDestroyed(this.destruccion)).subscribe({
+      next: () => {
+        this.modificando.set(false);
+        alTerminar();
+        this.actualizacion.next();
+      },
+      error: (fallo: unknown) => {
+        this.modificando.set(false);
+        alFallar(fallo instanceof Error ? fallo.message : porDefecto);
+      },
+    });
+  }
+
+  /**
+   * Cierra el modal, avisa, y le devuelve el foco a la grilla: el botón del
+   * parcial que lo tenía se mueve o desaparece. Prueba con cada fecha en orden y se
+   * queda con la primera que sea de este mes.
+   */
+  private cerrarModificacionHecha(aviso: string, fechasParaElFoco: readonly string[]): void {
+    this.parcialAModificar.set(null);
+    this.aviso.set(aviso);
+
+    afterNextRender(
+      () => {
+        fechasParaElFoco.some((fecha) => this.grilla()?.enfocarDia(fecha) ?? false);
+      },
+      { injector: this.injector },
+    );
   }
 
   protected cerrarSesion(): void {

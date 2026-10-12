@@ -193,6 +193,21 @@ export const RUTAS_API = {
    */
   registrarExamen: `${URL_BASE_API}/api/ConfiguracionCalendario/registrar`,
 
+  /**
+   * Cambia la fecha y la hora de un examen. Body: `{ nuevaFecha }`, un `DateTime`
+   * sin zona y con hora ("2026-10-20T09:00:00"). Es lo ÚNICO que se puede cambiar:
+   * ni la materia, ni la comisión, ni el tipo. Responde `200 { message }`, `404
+   * { message }` si el examen no existe y `400 { message }` si el día nuevo ya
+   * alcanzó el límite (el propio examen no se cuenta). No valida que la fecha no
+   * sea pasada.
+   */
+  modificarExamen: (idExamen: number) =>
+    `${URL_BASE_API}/api/ConfiguracionCalendario/modificar/${idExamen}`,
+
+  /** Quita un examen del calendario. Responde `200 { message }` y `404 { message }` si no existe. */
+  eliminarExamen: (idExamen: number) =>
+    `${URL_BASE_API}/api/ConfiguracionCalendario/eliminar/${idExamen}`,
+
   /** Los tipos de examen: `[{ idTipoExamen, nombre }]`. Sin rol. */
   tiposDeExamen: `${URL_BASE_API}/api/ConfiguracionCalendario/tipos-examen`,
 
