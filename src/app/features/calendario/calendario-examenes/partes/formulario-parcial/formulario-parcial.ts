@@ -23,7 +23,10 @@ import { TipoExamen } from '../../../../../core/examenes/modelos/tipo-examen';
 import { errorDeDia, errorDeHorario } from '../../../../../core/examenes/registro-examen';
 import { Boton } from '../../../../../shared/ui/boton/boton';
 import { CampoFormulario } from '../../../../../shared/ui/campo-formulario/campo-formulario';
-import { clasesDelCampo, descripcionDelCampo } from '../campo-del-formulario';
+import {
+  clasesDelCampo,
+  descripcionDelCampo,
+} from '../../../../../shared/ui/campo-formulario/clases-del-campo';
 
 /**
  * El formulario para registrar un parcial: materia con su comisión, tipo de
