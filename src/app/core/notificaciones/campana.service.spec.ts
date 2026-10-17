@@ -12,6 +12,8 @@ import { LegajoService } from '../legajos/legajo.service';
 import { DocumentoLegajo } from '../legajos/modelos/documento-legajo';
 import { DocumentoRequerido } from '../legajos/modelos/documento-requerido';
 import { ResumenUsuarioLegajo } from '../legajos/modelos/resumen-usuario-legajo';
+import { MesasExamenService } from '../mesas/mesas-examen.service';
+import { AlertaRechazo } from '../mesas/modelos/alerta-rechazo';
 import { CampanaService } from './campana.service';
 
 function sesionDe(idUsuario: number, roles: string[]): Sesion {
@@ -60,6 +62,14 @@ const PERSONA: ResumenUsuarioLegajo = {
 };
 
 const MESA: MesaAsignada = { idExamen: 1, materia: 'Redes', fecha: new Date(2026, 10, 20, 9, 0) };
+
+const ALERTA: AlertaRechazo = {
+  idExamen: 31,
+  idDocente: 8,
+  docente: 'Ana Pérez',
+  materia: 'Redes',
+  fecha: new Date(2026, 10, 20, 9, 0),
+};
 
 /** La campana es accesoria: nunca debe tapar la pantalla con el velo "Cargando…". */
 const EN_SEGUNDO_PLANO = { enSegundoPlano: true };
@@ -317,6 +327,74 @@ describe('CampanaService', () => {
 
       expect(() => servicio().refrescar()).not.toThrow();
       expect(servicio().total()).toBe(2);
+    });
+
+    describe('además, las mesas que rechazó algún docente (SCRUM-247)', () => {
+      let alertas: () => Observable<AlertaRechazo[]>;
+      const pedidosDeAlertas = vi.fn();
+
+      beforeEach(() => {
+        pedidosDeAlertas.mockClear();
+        alertas = () => of([ALERTA]);
+        TestBed.configureTestingModule({
+          providers: [
+            {
+              provide: MesasExamenService,
+              useValue: {
+                alertasDeRechazo: (opciones?: unknown) => {
+                  pedidosDeAlertas(opciones);
+                  return alertas();
+                },
+              },
+            },
+          ],
+        });
+      });
+
+      it.each([ROLES.secretario, ROLES.director])(
+        'con rol %s las pone primero, en segundo plano',
+        (rol) => {
+          sesion.set(sesionDe(2, [rol]));
+          resumenUsuarios = () => of([PERSONA]);
+
+          servicio().refrescar();
+
+          expect(pedidosDeAlertas).toHaveBeenCalledWith(EN_SEGUNDO_PLANO);
+          expect(servicio().total()).toBe(3);
+          expect(servicio().detalle().map((n) => n.titulo)).toEqual([
+            'Ana Pérez rechazó la mesa de Redes',
+            'Juan Gómez',
+          ]);
+        },
+      );
+
+      it('si falla el pedido de las alertas, igual muestra los pendientes', () => {
+        sesion.set(sesionDe(2, [ROLES.secretario]));
+        resumenUsuarios = () => of([PERSONA]);
+        alertas = () => throwError(() => new Error('403'));
+
+        servicio().refrescar();
+
+        expect(servicio().total()).toBe(2);
+      });
+
+      it('si solo llegan las alertas, muestra las alertas', () => {
+        sesion.set(sesionDe(2, [ROLES.director]));
+        pendientesJustificativos = () => throwError(() => new Error('500'));
+        resumenUsuarios = () => throwError(() => new Error('500'));
+
+        servicio().refrescar();
+
+        expect(servicio().total()).toBe(1);
+      });
+
+      it('el Docente no las pide', () => {
+        sesion.set(sesionDe(1, [ROLES.docente]));
+
+        servicio().refrescar();
+
+        expect(pedidosDeAlertas).not.toHaveBeenCalled();
+      });
     });
   });
 

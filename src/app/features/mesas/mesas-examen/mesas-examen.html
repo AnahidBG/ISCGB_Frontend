@@ -2,7 +2,7 @@
   [enlaces]="enlaces()"
   encabezado="titulo"
   tituloPagina="Mesas de examen"
-  subtitulo="Armá las mesas de examen y convocá a quien las preside."
+  subtitulo="Armá las mesas de examen, convocá a quien las preside y resolvé las que rechazaron."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
@@ -17,15 +17,53 @@
     </div>
   }
 
-  @if (cargando()) {
-    <app-pantalla-carga tamano="md" mensaje="Cargando materias, comisiones y docentes…" />
-  } @else if (opciones(); as listas) {
-    <div class="grid gap-5 sm:gap-6 lg:grid-cols-2">
+  <div class="grid gap-5 sm:gap-6 lg:grid-cols-2">
+    <section
+      data-seccion="alertas"
+      class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6"
+    >
+      <h2 class="text-base font-semibold text-texto">Mesas rechazadas</h2>
+      <p class="mt-1 mb-5 text-sm text-texto-suave">
+        Cuando un docente rechaza una mesa, aparece acá para que convoquen a otro.
+      </p>
+
+      @if (errorAlertas(); as mensaje) {
+        <p role="alert" class="mb-4 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+          {{ mensaje }}
+        </p>
+      } @else if (exitoAlertas(); as mensaje) {
+        <p role="status" class="mb-4 rounded-xl bg-aprobado/10 px-4 py-3 text-sm text-texto">
+          {{ mensaje }}
+        </p>
+      }
+
+      @if (cargandoAlertas()) {
+        <app-pantalla-carga tamano="md" mensaje="Cargando las mesas rechazadas…" />
+      } @else if (errorCargaAlertas(); as mensaje) {
+        <div role="alert" class="rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+          {{ mensaje }}
+          <button type="button" class="ml-2 underline" (click)="cargarAlertas()">Reintentar</button>
+        </div>
+      } @else {
+        <app-alertas-rechazo
+          [alertas]="alertas()"
+          [docentes]="opciones()?.docentes ?? []"
+          [puedeReasignar]="puedeReasignar()"
+          [procesando]="procesandoAlerta()"
+          (archivar)="archivarAlerta($event)"
+          (reasignar)="reasignar($event)"
+        />
+      }
+    </section>
+
+    @if (cargando()) {
+      <app-pantalla-carga tamano="md" mensaje="Cargando materias, comisiones y docentes…" />
+    } @else if (opciones(); as listas) {
       <section class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
         <h2 class="text-base font-semibold text-texto">Nueva mesa de examen</h2>
         <p class="mt-1 mb-5 text-sm text-texto-suave">
-          El docente recibe el aviso y confirma si puede estar. Si la rechaza, te avisamos para que
-          convoques a otro.
+          El docente recibe el aviso y confirma si puede estar. Si la rechaza, aparece en "Mesas
+          rechazadas".
         </p>
         <app-formulario-mesa
           [materias]="listas.materias"
@@ -40,6 +78,6 @@
           (guardar)="crearMesa($event)"
         />
       </section>
-    </div>
-  }
+    }
+  </div>
 </app-estructura-panel>
