@@ -103,14 +103,16 @@ tiene la bandeja de solicitudes. El contrato está en
 
 ## Pendientes para el backend
 
-Por impacto.
+Por impacto. Revisada el 17/10/2026 contra el backend de ese día (commit `d771acb`).
 
-1. **`[Authorize(Roles = ...)]`** falta en Usuarios, Legajos, Justificativos,
-   ProgramasMateria y Configuracion. Cualquiera con Postman puede aprobar un
-   legajo o cambiar la frecuencia de los avisos. Es la regla 5.
-2. **`POST /api/UsuariosAdmin/establecer-password`** quedó debajo del
-   `[Authorize]` de la clase, sin `[AllowAnonymous]`. Quien crea su contraseña
-   desde el mail no tiene sesión y recibe 401.
+1. **Volver a poner `app.UseAuthorization()`** después de `app.UseAuthentication()`
+   en `Program.cs`. Se quitó el 17/10/2026, en el mismo commit que sumó los
+   `[Authorize]`. En .NET 10 `WebApplication` lo agrega solo pero antes de
+   `UseAuthentication`, así que lo protegido probablemente responda 401 con token
+   válido, y sin CORS. Detalle en `contrato-api.md`, "Calendario de exámenes".
+2. **`[Authorize(Roles = ...)]`** sigue faltando en Justificativos, en el resto de
+   Legajos (solo `auditar` lo tiene) y en `modificar` y `eliminar` del calendario,
+   que además no verifican que el examen sea del docente. Es la regla 5.
 3. **Mail al rechazar**, en `AuditarLegajo` y `AuditarJustificativo`. Es la
    regla 4.
 4. **Motivo en el rechazo de un justificativo.** `AuditarJustificativoDto` solo
@@ -123,18 +125,26 @@ Por impacto.
 7. **Avisos automáticos.** El worker compara contra todos los tipos de
    documento y no contra los obligatorios del rol, y el `PUT` de la frecuencia
    no tiene tope máximo. Detalle en `contrato-api.md`.
-8. **Sello del certificado, a verificar.** El archivo está en
-   `wwwRoot/Images/sello.png` y el `.csproj` no lo copia a la salida. Si el
-   certificado responde 500, es esto. En Linux y Docker, además, las mayúsculas
-   de `wwwRoot` e `Images` importan.
-9. `POST /api/Auth/crear-usuario-prueba` sigue expuesto sin autenticación.
+8. **Calendario y mesas.** `del-mes` debería recibir año y mes; el límite es por
+   día y Jira dice por semana (SCRUM-187); `asignar-docente` pide el rol
+   `Administrador`, que no existe, y deja afuera a Secretaría; las mesas no mandan
+   el mail que anuncian. Detalle en `contrato-api.md`.
+9. **Sello del certificado, a verificar.** Ahora es `sello.JPG`, pero el código lo
+   busca en `wwwroot/images/` y en el repo está en `wwwRoot/Images/`. En Windows
+   anda; en Linux y Docker las mayúsculas importan y el certificado respondería 500.
+10. `POST /api/Auth/crear-usuario-prueba` sigue expuesto sin autenticación.
+11. `Program.cs` llama a `DbSeeder.Inicializar(context)` sin `await`, pero es
+    `async Task`: corre suelto y el `try/catch` no atrapa sus errores.
 
 Ya resueltos: la contraseña inicial del alta, que ahora se crea desde un enlace
-enviado por mail; las provincias, con `GET /api/Ubicaciones/paises`; la
-reactivación de cuentas; los endpoints de reconocimiento de saberes; el
-`[Authorize]` de `UsuariosAdminController`, y `presentadoFisico` en
-`AuditoriaLegajoDto` (06/10/2026), que guarda la casilla de la revisión
-(SCRUM-167 y SCRUM-171).
+enviado por mail (y `establecer-password` tiene `[AllowAnonymous]`); las
+provincias, con `GET /api/Ubicaciones/paises`; la reactivación de cuentas; los
+endpoints de reconocimiento de saberes; el `[Authorize]` de
+`UsuariosAdminController`; `presentadoFisico` en `AuditoriaLegajoDto` (06/10/2026),
+que guarda la casilla de la revisión (SCRUM-167 y SCRUM-171), y, el 17/10/2026, el
+listado de exámenes del mes, las mesas de examen, la foto de perfil en el login,
+el borrado de datos en "Mi perfil" y los roles en Materias, ProgramasMateria,
+Configuracion y Docente.
 
 ## Cómo probarlo
 

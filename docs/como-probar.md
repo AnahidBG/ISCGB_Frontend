@@ -141,12 +141,10 @@ No depende del backend: es un enlace al sistema académico del instituto.
 
 ### El menú de la persona
 
-- [ ] El círculo con las iniciales, arriba a la derecha, abre el panel.
+- [ ] El círculo de arriba a la derecha muestra la foto de perfil, o las iniciales si
+      no tiene (o si la imagen no carga), y abre el panel.
 - [ ] Muestra el nombre completo, el rol y el correo.
-- [ ] "Editar perfil" está activo: abre "Mi perfil" (`/perfil`) y cierra el menú.
-- [ ] "Cambiar foto" está apagado, con la nota "Cambiar la foto todavía no está
-      disponible." Es correcto: el backend guarda la foto pero ningún endpoint la
-      devuelve.
+- [ ] "Editar perfil" y "Cambiar foto" abren "Mi perfil" (`/perfil`) y cierran el menú.
 - [ ] Se cierra tocando afuera o con Escape.
 - [ ] "Cerrar sesión" vuelve al login.
 
@@ -172,11 +170,16 @@ persona con otro correo.
 - [ ] Cambiar un teléfono y guardar: el botón pasa a "Guardando…" y no se puede apretar
       dos veces. Sale el aviso "Tus datos se actualizaron." y el botón vuelve a
       apagarse. Al recargar la página, el valor nuevo sigue ahí.
-- [ ] En Network, el `PUT /api/Usuarios/mi-perfil` lleva solo los campos con texto,
-      sin espacios de los costados. Un dato que nunca se cargó y sigue vacío no viaja.
-- [ ] Vaciar un dato que ya estaba cargado (el teléfono, por ejemplo) y guardar marca
-      "Este dato no se puede dejar vacío." y no manda nada. Es por cómo funciona el
-      backend: ignora lo vacío, así que no hay forma de borrar un dato.
+- [ ] En Network, el `PUT /api/Usuarios/mi-perfil` lleva todos los campos, sin
+      espacios de los costados: los vacíos van como `""` y, sin provincia, `idProvincia`
+      va en `0`.
+- [ ] Vaciar un dato que ya estaba cargado (el teléfono, por ejemplo) y guardar lo
+      borra: al recargar la página sigue vacío. Hace falta el backend del 17/10/2026
+      o posterior; con uno anterior el dato vuelve.
+- [ ] "Foto de perfil": "Cambiar foto" abre el selector. Un GIF, un PDF o una imagen
+      de más de 2 MB marcan el error sin mandar nada. Un JPG o un PNG pasa a
+      "Subiendo…", sale "Tu foto se actualizó." y la foto aparece al instante en la
+      sección y en el encabezado; al recargar la página sigue ahí.
 - [ ] El correo vacío, o uno como `ana@`, marca el error. Un teléfono con letras
       ("llamar a Juan") o de menos de 6 números marca el error.
 - [ ] Escribir otra vez después de guardar hace desaparecer el aviso "Tus datos se
@@ -252,8 +255,11 @@ arrastrar uno ya cargado (ver "Reprogramar, eliminar y arrastrar un parcial").
 Para tener algo que ver con un Secretario o un Director, registrá parciales con el
 Docente o desde Swagger con `POST /api/ConfiguracionCalendario/registrar`:
 `{ "fecha": "2026-10-13T09:00:00", "idComision": 1, "idMateria": 1, "idTipoExamen": 1 }`.
-Los ids tienen que existir en la base. El backend todavía no lista los exámenes: la
-pantalla cuenta cuántos hay cada día, pero no dice de qué materia son.
+Los ids tienen que existir en la base. Desde el 17/10/2026 `registrar` pide el rol
+Docente y que dicte esa materia, así que desde Swagger hay que autorizar con el
+token de ese docente. El backend lista los exámenes solo del mes en curso
+(`del-mes`): en ese mes cada parcial aparece en su día con la materia; en los demás
+la pantalla cuenta cuántos hay cada día, pero no dice de qué materia son.
 
 - [ ] El título de la página es "Calendario de exámenes parciales". Abre en el mes
       actual, con el título del mes y el año ("Octubre 2026"), la leyenda y la grilla
@@ -359,15 +365,13 @@ límite en 2, dos parciales el mismo día) que no sea pasado.
 
 ### Reprogramar, eliminar y arrastrar un parcial
 
-Solo para el Docente. El backend todavía no tiene un endpoint que liste los exámenes,
-así que contra la API real la grilla no muestra ningún parcial y esto no se puede ver.
-Se prueba con el servicio simulado: en `src/app/app.config.ts` cambiá
+Solo para el Docente. Contra la API real se ve en el mes en curso, que es el único
+que lista `del-mes`: registrá un par de parciales este mes y tocalos. Para probarlo en
+cualquier mes, usá el servicio simulado: en `src/app/app.config.ts` cambiá
 `CalendarioExamenesHttpService` por `CalendarioExamenesMockService` en el `provide` de
 `CalendarioExamenesService` (y su `import`). El simulado trae cuatro parciales por mes,
 los días 5, 12 (dos, con el límite en 2 ese día queda completo) y 21, y lo que muevas
-o borres se queda hasta que recargues la página. Los endpoints reales se pueden probar
-a mano en Swagger con el id de un examen de la base: `PUT .../modificar/{id}` y
-`DELETE .../eliminar/{id}`.
+o borres se queda hasta que recargues la página.
 
 - [ ] Cada parcial aparece en su día con el nombre de la materia. Con Secretario o
       Director no abre nada ni se arrastra.
@@ -414,28 +418,46 @@ un enlace "Ver el calendario de parciales".
 - [ ] Con el backend apagado muestra el aviso con "Reintentar".
 - [ ] Con el Docente o el Alumno, la dirección `/secretario/limite-parciales` no abre.
 
-### Mesas de examen en la campana del Docente
+### Mesas de examen (Dirección y Secretaría)
 
-Las mesas todavía no se pueden dar de alta desde el sistema ni desde la API: hoy
-se cargan en la base. Hace falta un examen con fecha futura (el del calendario, por
-ejemplo) y la fila del docente en `Docentes`:
-
-```sql
-SELECT id_docente FROM Docentes WHERE id_usuario = 5;  -- el idUsuario del login
-
-INSERT INTO mesa_examen (id_examen, id_docente, estado_confirmacion)
-VALUES (1, 1, 'Pendiente');
-```
-
-La columna `estado_confirmacion` la crea la migración `SincronizacionManual`
+Desde el 17/10/2026 se arman desde el sistema, en "Mesas de examen" del menú lateral
+(`/mesas-examen`). Hace falta al menos un docente con su fila en `Docentes`. La
+columna `estado_confirmacion` la crea la migración `SincronizacionManual`
 (`dotnet ef database update`). El script `BASE_DATOS_DEFINITIVA_.sql` no la tiene.
+
+- [ ] "Nueva mesa de examen" pide fecha, horario, materia, comisión, tipo y docente.
+      Vacío marca qué falta; una fecha anterior a hoy no se acepta.
+- [ ] Al crearla sale el mensaje del backend y el formulario queda vacío. La mesa
+      aparece en la campana del docente elegido.
+- [ ] "Mesas rechazadas" muestra las que algún docente rechazó: "Ana Pérez rechazó la
+      mesa de Redes" con la fecha. "Ya lo vi" la saca de la lista y de la campana.
+- [ ] Con Dirección, cada una tiene "Convocar a otro docente" (sin el que la
+      rechazó) y "Reasignar": convoca, archiva la alerta y avisa. Con Secretaría no
+      aparece: dice "pedíselo a Dirección" (el backend no se lo permite).
+- [ ] La campana de Secretario y Director muestra las rechazadas primero, en rojo, y
+      lleva a esta pantalla.
+- [ ] Con el Docente o el Alumno, la dirección `/mesas-examen` no abre.
+
+### Mis mesas de examen (Docente)
+
+En "Mis mesas de examen" del menú lateral (`/docente/mesas`), y desde la campana.
+
+- [ ] Lista las mesas a las que lo convocaron, de la más próxima a la más lejana, sin
+      las de días que ya pasaron. Sin ninguna dice "No tenés mesas de examen por
+      responder."
+- [ ] "Aceptar" la saca de la lista y confirma "Aceptaste la mesa de…".
+- [ ] "Rechazar" pregunta antes. "Volver" o Escape no hacen nada; "Sí, rechazar" la
+      saca de la lista y avisa que Dirección y Secretaría reciben el aviso. La mesa
+      aparece en "Mesas rechazadas".
+
+### Mesas de examen en la campana del Docente
 
 - [ ] Con ese Docente, la campana suma el aviso "Te asignaron a la mesa de" con el
       nombre de la materia y el detalle "Viernes 20/11/2026, 09:00 h" (día de la
       semana, fecha y hora de 24 h).
 - [ ] El número de la campana cuenta ese aviso además de los del legajo, y el aviso
       va después de ellos.
-- [ ] Al tocarlo abre "Calendario de parciales".
+- [ ] Al tocarlo abre "Mis mesas de examen".
 - [ ] Una mesa de un examen de una fecha anterior a hoy no aparece. La de hoy sí,
       aunque la hora ya haya pasado.
 - [ ] Con varias mesas, la más próxima está primero.
@@ -469,8 +491,12 @@ mirando si la llamada salió y qué contestó.
 - El enlace para crear la contraseña responde 401: el backend que corre es
   anterior al 10/10/2026. Desde ese día `establecer-password` no pide sesión.
 - El desplegable de materias de Reconocimiento de saberes sale vacío: ese alumno
-  no tiene filas en `alumno_materia`. Hoy se cargan a mano en la base; ni el alta
-  de usuarios ni "Materias y asignaciones" las crean.
+  no tiene filas en `alumno_materia`. Se cargan en "Materias y asignaciones",
+  sección "Inscribir alumno en una materia" (desde el 14/10/2026).
+- Todo lo que pide rol responde 401 y la sesión se cierra sola, aunque recién
+  hayas entrado: es el `app.UseAuthorization()` que falta en `Program.cs` desde el
+  17/10/2026. Hasta que el backend lo vuelva a poner, no hay nada que arreglar del
+  lado del frontend. Detalle en `contrato-api.md`.
 - La bandeja de Secretaría no muestra una solicitud de reconocimiento que está en
   la base: solo lista las que no tienen docente asignado (`id_docente` en NULL).
 - `npm start` no compila: suele ser un import mal escrito después de mover
@@ -481,10 +507,6 @@ mirando si la llamada salió y qué contestó.
 No está roto: no existe.
 
 - El buscador de la barra superior está deshabilitado.
-- Cambiar la foto de perfil: el backend ya tiene `POST /api/Usuarios/foto-perfil`
-  desde el 10/10/2026 y la guarda, pero ningún endpoint la devuelve, así que el
-  sistema no tiene cómo mostrarla. "Cambiar foto" sigue apagado en el menú de la
-  persona.
 - Editar en "Mi perfil" el género y la afiliación de emergencia: el backend los
   acepta, pero `GET /api/Usuarios/{id}` no los devuelve, y la pantalla no los
   ofrece. El nombre, el apellido, el DNI y los roles los cambia Dirección.

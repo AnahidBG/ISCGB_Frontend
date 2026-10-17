@@ -150,8 +150,8 @@ export const routes: Routes = [
     // Cuántos parciales admite el calendario en el período (hoy, un día).
     // Secretario y Director: son quienes lo definen. `PUT
     // /api/ConfiguracionCalendario/limite-parciales`; el valor vigente se lee de
-    // `limiteDiario` en `estado-mes`. El backend no exige rol en ese endpoint, así
-    // que acá el `roleGuard` es lo único que lo limita.
+    // `limiteDiario` en `estado-mes`. Desde el 17/10/2026 el backend también pide
+    // esos dos roles en el `PUT`.
     path: 'secretario/limite-parciales',
     title: 'Límite de parciales · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.secretario, ROLES.director)],
