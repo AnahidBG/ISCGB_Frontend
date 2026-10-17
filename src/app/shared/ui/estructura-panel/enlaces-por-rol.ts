@@ -137,6 +137,12 @@ export function enlacesPorSesion(
       url: '/calendario',
       icono: 'calendario',
     });
+    // Las mesas de examen a las que lo convocaron, para aceptarlas o rechazarlas (SCRUM-246).
+    enlaces.push({
+      etiqueta: 'Mis mesas de examen',
+      url: '/docente/mesas',
+      icono: 'revision',
+    });
   }
 
   enlaces.push(...ENLACES_COMUNES);

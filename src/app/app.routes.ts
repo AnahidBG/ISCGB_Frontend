@@ -195,6 +195,17 @@ export const routes: Routes = [
       ),
   },
   {
+    // Las mesas de examen a las que convocaron al docente, para aceptarlas o
+    // rechazarlas (SCRUM-246). Lee `GET /api/Configuracion/mis-notificaciones` y
+    // responde con `PUT /api/Docente/responder-asignacion`; los dos piden el rol
+    // Docente. La campana del docente lleva acá.
+    path: 'docente/mesas',
+    title: 'Mis mesas de examen · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.docente)],
+    loadComponent: () =>
+      import('./features/docente/mesas-asignadas/mesas-asignadas').then((m) => m.MesasAsignadas),
+  },
+  {
     // Subir un documento al legajo propio. La comparten Docente y Alumno:
     // los dos presentan documentación, cambia solo QUÉ documentos les pide
     // el instituto — y eso lo resuelve el propio backend según el rol

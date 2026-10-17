@@ -2,8 +2,8 @@ import { DIAS_DE_LA_SEMANA } from '../examenes/calendario-mes';
 import { MesaAsignada } from '../examenes/modelos/mesa-asignada';
 import { NotificacionPanel } from './modelos/notificacion-panel';
 
-/** A dónde lleva el aviso de una mesa: al calendario, que es donde se ve el día. */
-const URL_CALENDARIO = '/calendario';
+/** A dónde lleva el aviso de una mesa: a donde el docente la acepta o la rechaza (SCRUM-246). */
+const URL_MIS_MESAS = '/docente/mesas';
 
 function conDosDigitos(numero: number): string {
   return String(numero).padStart(2, '0');
@@ -54,7 +54,7 @@ export function notificacionesPorMesas(
     .map((mesa) => ({
       titulo: `Te asignaron a la mesa de ${mesa.materia}`,
       detalle: fechaYHora(mesa.fecha),
-      url: URL_CALENDARIO,
+      url: URL_MIS_MESAS,
       tono: 'pendiente' as const,
     }));
 }

@@ -13,12 +13,12 @@ describe('notificacionesPorMesas', () => {
     expect(notificacionesPorMesas([], HOY)).toEqual([]);
   });
 
-  it('arma el aviso con la materia, el día y la hora, y lleva al calendario', () => {
+  it('arma el aviso con la materia, el día y la hora, y lleva a donde se responde (SCRUM-246)', () => {
     expect(notificacionesPorMesas([mesa({ idExamen: 1 })], HOY)).toEqual([
       {
         titulo: 'Te asignaron a la mesa de Redes',
         detalle: 'Viernes 20/11/2026, 09:00 h',
-        url: '/calendario',
+        url: '/docente/mesas',
         tono: 'pendiente',
       },
     ]);
