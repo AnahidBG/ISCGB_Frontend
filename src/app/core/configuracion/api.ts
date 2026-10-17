@@ -181,14 +181,25 @@ export const RUTAS_API = {
   /**
    * Cambia el límite de exámenes por día. Body: `{ nuevoLimite }`. Solo se
    * puede escribir: el valor vigente se lee de `limiteDiario` en `estado-mes`.
+   * Solo `Director` y `Secretario` (desde el 17/10/2026).
    */
   limiteParcialesCalendario: `${URL_BASE_API}/api/ConfiguracionCalendario/limite-parciales`,
 
   /**
+   * Los exámenes del MES EN CURSO, con su materia, comisión y tipo:
+   * `[{ idExamen, materia, fecha, comision, tipoExamen }]`, con `fecha` como
+   * `DateTime` sin zona y con hora. No recibe año ni mes: el backend usa su
+   * propio `DateTime.Now`, así que para otro mes no hay listado. Pide sesión,
+   * sin rol. Agregado el 17/10/2026 (commit `d771acb`).
+   */
+  examenesDelMesEnCurso: `${URL_BASE_API}/api/ConfiguracionCalendario/del-mes`,
+
+  /**
    * Registra un examen. Body: `{ fecha, idComision, idMateria, idTipoExamen }`, con
-   * `fecha` como `DateTime` sin zona y con hora ("2026-10-13T09:00:00"). Responde
-   * `200 { message }` (no devuelve el id del examen) y `400 { message }` si el día
-   * ya alcanzó el límite. No valida que la materia, la comisión ni el tipo existan
+   * `fecha` como `DateTime` sin zona y con hora ("2026-10-13T09:00:00"). Solo
+   * `Docente`: el docente sale del token y tiene que dictar esa materia (si no,
+   * `400 { message }`). Responde `200 { message, idExamen }` y `400 { message }`
+   * si el día ya alcanzó el límite. No valida que la comisión ni el tipo existan
    * (con ids inválidos responde 500) ni que la fecha no sea pasada.
    */
   registrarExamen: `${URL_BASE_API}/api/ConfiguracionCalendario/registrar`,

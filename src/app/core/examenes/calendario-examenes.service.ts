@@ -46,6 +46,7 @@ export const MENSAJE_ERROR_ELIMINAR_EXAMEN =
  * Endpoints del backend:
  *
  *   · `GET /api/ConfiguracionCalendario/estado-mes?anio=&mes=` → `calendarioDelMes` y `limiteDiario`
+ *   · `GET /api/ConfiguracionCalendario/del-mes` → `examenesDelMes` (solo el mes en curso)
  *   · `PUT /api/ConfiguracionCalendario/limite-parciales` → `guardarLimiteDiario`
  *   · `GET /api/ConfiguracionCalendario/mis-materias-docente` → `materiasDelDocente`
  *   · `GET /api/ConfiguracionCalendario/tipos-examen` → `tiposDeExamen`
@@ -54,10 +55,11 @@ export const MENSAJE_ERROR_ELIMINAR_EXAMEN =
  *   · `DELETE /api/ConfiguracionCalendario/eliminar/{idExamen}` → `eliminarExamen`
  *   · `GET /api/Configuracion/mis-notificaciones` → `mesasAsignadas`
  *
- * No hay un endpoint que liste los parciales: por eso `examenesDelMes` devuelve
- * una lista vacía contra la API real, y con ella la pantalla no tiene ningún
- * parcial que reprogramar o eliminar (solo la simulada trae ejemplos). Y no hay
- * forma de aceptar ni rechazar una mesa ni de darla de alta.
+ * `del-mes` solo lista el mes en curso (el backend usa su propio reloj y no
+ * recibe año ni mes): en los demás meses `examenesDelMes` devuelve una lista
+ * vacía contra la API real, y ahí la pantalla no tiene parciales que reprogramar
+ * o eliminar. Las mesas de examen (alta, asignación, respuesta y alertas) son
+ * otro dominio: `MesasExamenService`.
  */
 export abstract class CalendarioExamenesService {
   /**
@@ -78,10 +80,10 @@ export abstract class CalendarioExamenesService {
 
   /**
    * Los parciales registrados en un mes, con su materia, comisión y tipo, para
-   * listarlos en el día que les toca. `mes` va de 1 a 12.
+   * listarlos en el día que les toca, ordenados por día y hora. `mes` va de 1 a 12.
    *
-   * El backend todavía no tiene un endpoint que los liste: la implementación
-   * HTTP devuelve una lista vacía y solo la simulada trae ejemplos.
+   * El backend solo los lista para el mes en curso: con la implementación HTTP,
+   * cualquier otro mes da una lista vacía sin pedir nada.
    *
    * Falla con `MENSAJE_ERROR_CALENDARIO`.
    */

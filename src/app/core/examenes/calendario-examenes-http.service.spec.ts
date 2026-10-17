@@ -138,12 +138,72 @@ describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
     expect(mensaje).toBe(MENSAJE_ERROR_CALENDARIO);
   });
 
-  it('el listado de exámenes del mes viene vacío y no pega contra el backend', () => {
-    let examenes: ExamenCalendario[] | undefined;
-    servicio.examenesDelMes(2026, 10).subscribe((valor) => (examenes = valor));
+  describe('exámenes del mes (`del-mes`)', () => {
+    beforeEach(() => {
+      // Solo el reloj: los timers de verdad tienen que seguir andando.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date(2026, 9, 10));
+    });
 
-    // `backend.verify()`, en el afterEach, falla si salió algún pedido.
-    expect(examenes).toEqual([]);
+    it('en el mes en curso los pide a `del-mes` y los adapta', () => {
+      let examenes: ExamenCalendario[] | undefined;
+      servicio.examenesDelMes(2026, 10).subscribe((valor) => (examenes = valor));
+
+      const pedido = backend.expectOne(RUTAS_API.examenesDelMesEnCurso);
+      expect(pedido.request.method).toBe('GET');
+      expect(pedido.request.url).toContain('/api/ConfiguracionCalendario/del-mes');
+      pedido.flush([
+        {
+          idExamen: 7,
+          materia: 'Redes',
+          fecha: '2026-10-20T09:00:00',
+          comision: 'Comisión 1° A',
+          tipoExamen: 'Parcial',
+        },
+      ]);
+
+      expect(examenes).toEqual([
+        {
+          idExamen: 7,
+          fecha: '2026-10-20',
+          horario: '09:00',
+          materia: 'Redes',
+          comision: 'Comisión 1° A',
+          tipo: 'Parcial',
+        },
+      ]);
+    });
+
+    it('otro mes no pega contra el backend: `del-mes` solo trae el mes en curso', () => {
+      let examenes: ExamenCalendario[] | undefined;
+      servicio.examenesDelMes(2026, 11).subscribe((valor) => (examenes = valor));
+
+      // `backend.verify()`, en el afterEach, falla si salió algún pedido.
+      expect(examenes).toEqual([]);
+    });
+
+    it('en segundo plano el pedido lleva SIN_CARGA_GLOBAL', () => {
+      servicio.examenesDelMes(2026, 10, { enSegundoPlano: true }).subscribe();
+
+      const pedido = backend.expectOne(RUTAS_API.examenesDelMesEnCurso);
+      expect(pedido.request.context.get(SIN_CARGA_GLOBAL)).toBe(true);
+      pedido.flush([]);
+    });
+
+    it.each([
+      ['el servidor falla', () => ({ cuerpo: null, opciones: { status: 500, statusText: 'Error' } })],
+      ['la respuesta no es una lista', () => ({ cuerpo: { data: [] }, opciones: {} })],
+    ])('falla con el mensaje del calendario cuando %s', (_caso, respuesta) => {
+      let mensaje: string | undefined;
+      servicio
+        .examenesDelMes(2026, 10)
+        .subscribe({ error: (fallo: Error) => (mensaje = fallo.message) });
+
+      const { cuerpo, opciones } = respuesta();
+      backend.expectOne(RUTAS_API.examenesDelMesEnCurso).flush(cuerpo, opciones);
+
+      expect(mensaje).toBe(MENSAJE_ERROR_CALENDARIO);
+    });
   });
 
   it('el límite vigente sale del `estado-mes` del mes actual', () => {
