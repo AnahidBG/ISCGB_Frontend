@@ -4,6 +4,7 @@
   tituloPagina="Solicitudes de reconocimiento"
   subtitulo="Pedidos de reconocimiento de saberes que mandaron los alumnos."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"

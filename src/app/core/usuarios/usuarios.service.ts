@@ -29,6 +29,10 @@ export const MENSAJE_ERROR_CARGAR_MIS_DATOS =
 export const MENSAJE_ERROR_ACTUALIZAR_MIS_DATOS =
   'No pudimos guardar tus datos. Intentá de nuevo en un momento.';
 
+/** Cuando la foto no se pudo subir por algo que no es culpa del archivo elegido. */
+export const MENSAJE_ERROR_SUBIR_FOTO =
+  'No pudimos subir tu foto. Intentá de nuevo en un momento.';
+
 /**
  * El backend todavía no tiene publicados los endpoints de gestión de
  * usuarios en todas sus ramas.
@@ -118,10 +122,19 @@ export abstract class UsuariosService {
    * La persona de la sesión actualiza sus propios datos de contacto ("Mi perfil").
    * El usuario sale del token: no se pasa ningún id.
    *
-   * El backend solo aplica los campos que llegan con texto, así que un dato
-   * vacío NO se borra: se ignora (ver `datosAEnviar`). Falla con el mensaje del
+   * Un dato vacío se borra, salvo el correo, que es obligatorio (ver
+   * `datosAEnviar`). Falla con el mensaje del
    * servidor cuando lo hay y es un rechazo del pedido (por ejemplo, un correo que
    * ya usa otra persona), o con `MENSAJE_ERROR_ACTUALIZAR_MIS_DATOS`.
    */
   abstract actualizarMiPerfil(datos: MisDatos): Observable<void>;
+
+  /**
+   * La persona de la sesión sube su foto de perfil. Devuelve la URL completa de
+   * la foto nueva, lista para un `<img>` y para `AuthService.actualizarFoto`.
+   *
+   * Falla con el mensaje del backend cuando rechaza el archivo (un formato que
+   * no es JPG ni PNG), o con `MENSAJE_ERROR_SUBIR_FOTO`.
+   */
+  abstract subirFotoPerfil(archivo: File): Observable<string>;
 }

@@ -5,9 +5,11 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { MateriasService } from '../../../core/materias/materias.service';
 import {
+  AlumnoDisponible,
   AsignacionMateria,
   ComisionDisponible,
   DocenteDisponible,
+  InscripcionAlumno,
   NuevaMateria,
 } from '../../../core/materias/modelos/asignacion-materia';
 import { MateriaDisponible } from '../../../core/materias/modelos/materia-disponible';
@@ -16,25 +18,34 @@ import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-po
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 import { FormularioAsignacion } from './partes/formulario-asignacion/formulario-asignacion';
+import { FormularioInscripcion } from './partes/formulario-inscripcion/formulario-inscripcion';
 import { FormularioNuevaMateria } from './partes/formulario-nueva-materia/formulario-nueva-materia';
 
 /**
  * Materias y asignaciones — Dirección y Secretaría (`MateriasController`).
  *
- * CONTENEDOR: trae materias, docentes y comisiones, y habla con
- * `MateriasService`. Los dos formularios viven en `partes/`.
+ * CONTENEDOR: trae materias, docentes, comisiones y alumnos, y habla con
+ * `MateriasService`. Los tres formularios viven en `partes/`.
  *
  *   · Nueva materia: `POST /api/Materias/cargar-materia`. Al crearla se
  *     vuelve a pedir la lista, así ya se puede asignar.
  *   · Asignar: `POST /api/Materias/asignar`. Es lo que después ve el
  *     docente en "Entregar programa de materia".
+ *   · Inscribir alumno (SCRUM-248): `POST /api/Materias/asignar-alumno`. Es lo
+ *     que después ve el alumno en "Reconocimiento de saberes" (`mis-materias`).
  *
- * ⚠️ El backend no tiene endpoint para LISTAR las asignaciones hechas ni para
- * borrarlas: la pantalla lo dice.
+ * ⚠️ El backend no tiene endpoint para LISTAR las asignaciones ni las
+ * inscripciones hechas, ni para borrarlas: la pantalla lo dice.
  */
 @Component({
   selector: 'app-asignaciones',
-  imports: [EstructuraPanel, PantallaCarga, FormularioNuevaMateria, FormularioAsignacion],
+  imports: [
+    EstructuraPanel,
+    PantallaCarga,
+    FormularioNuevaMateria,
+    FormularioAsignacion,
+    FormularioInscripcion,
+  ],
   templateUrl: './asignaciones.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -53,6 +64,7 @@ export class Asignaciones {
   protected readonly materias = signal<MateriaDisponible[]>([]);
   protected readonly docentes = signal<DocenteDisponible[]>([]);
   protected readonly comisiones = signal<ComisionDisponible[]>([]);
+  protected readonly alumnos = signal<AlumnoDisponible[]>([]);
   protected readonly cargando = signal(true);
   protected readonly errorCarga = signal<string | null>(null);
 
@@ -66,6 +78,11 @@ export class Asignaciones {
   protected readonly exitoAsignacion = signal<string | null>(null);
   protected readonly reinicioAsignacion = signal(0);
 
+  protected readonly inscribiendo = signal(false);
+  protected readonly errorInscripcion = signal<string | null>(null);
+  protected readonly exitoInscripcion = signal<string | null>(null);
+  protected readonly reinicioInscripcion = signal(0);
+
   constructor() {
     this.campana.refrescar();
     this.cargar();
@@ -78,11 +95,13 @@ export class Asignaciones {
       materias: this.materiasService.listarDisponibles(),
       docentes: this.materiasService.listarDocentes(),
       comisiones: this.materiasService.listarComisiones(),
+      alumnos: this.materiasService.listarAlumnos(),
     }).subscribe({
-      next: ({ materias, docentes, comisiones }) => {
+      next: ({ materias, docentes, comisiones, alumnos }) => {
         this.materias.set(materias);
         this.docentes.set(docentes);
         this.comisiones.set(comisiones);
+        this.alumnos.set(alumnos);
         this.cargando.set(false);
       },
       error: (fallo: Error) => {
@@ -133,6 +152,27 @@ export class Asignaciones {
       error: (fallo: Error) => {
         this.asignando.set(false);
         this.errorAsignacion.set(fallo.message);
+      },
+    });
+  }
+
+  protected inscribir(inscripcion: InscripcionAlumno): void {
+    if (this.inscribiendo()) {
+      return;
+    }
+    this.inscribiendo.set(true);
+    this.errorInscripcion.set(null);
+    this.exitoInscripcion.set(null);
+
+    this.materiasService.inscribirAlumno(inscripcion).subscribe({
+      next: (mensaje) => {
+        this.inscribiendo.set(false);
+        this.exitoInscripcion.set(mensaje);
+        this.reinicioInscripcion.update((n) => n + 1);
+      },
+      error: (fallo: Error) => {
+        this.inscribiendo.set(false);
+        this.errorInscripcion.set(fallo.message);
       },
     });
   }

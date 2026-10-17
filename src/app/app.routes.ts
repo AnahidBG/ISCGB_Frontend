@@ -150,8 +150,8 @@ export const routes: Routes = [
     // Cuántos parciales admite el calendario en el período (hoy, un día).
     // Secretario y Director: son quienes lo definen. `PUT
     // /api/ConfiguracionCalendario/limite-parciales`; el valor vigente se lee de
-    // `limiteDiario` en `estado-mes`. El backend no exige rol en ese endpoint, así
-    // que acá el `roleGuard` es lo único que lo limita.
+    // `limiteDiario` en `estado-mes`. Desde el 17/10/2026 el backend también pide
+    // esos dos roles en el `PUT`.
     path: 'secretario/limite-parciales',
     title: 'Límite de parciales · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.secretario, ROLES.director)],
@@ -159,6 +159,16 @@ export const routes: Routes = [
       import('./features/secretario/limite-parciales/limite-parciales').then(
         (m) => m.LimiteParciales,
       ),
+  },
+  {
+    // Mesas de examen (SCRUM-245): Dirección y Secretaría arman la mesa y
+    // convocan al docente que la preside. `POST
+    // /api/ConfiguracionCalendario/registrar-mesa`, que pide los mismos dos roles.
+    path: 'mesas-examen',
+    title: 'Mesas de examen · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.director, ROLES.secretario)],
+    loadComponent: () =>
+      import('./features/mesas/mesas-examen/mesas-examen').then((m) => m.MesasExamen),
   },
   {
     // Alta de materias y asignación docente–materia–comisión
@@ -193,6 +203,17 @@ export const routes: Routes = [
       import('./features/docente/entrega-programa/entrega-programa').then(
         (m) => m.EntregaPrograma,
       ),
+  },
+  {
+    // Las mesas de examen a las que convocaron al docente, para aceptarlas o
+    // rechazarlas (SCRUM-246). Lee `GET /api/Configuracion/mis-notificaciones` y
+    // responde con `PUT /api/Docente/responder-asignacion`; los dos piden el rol
+    // Docente. La campana del docente lleva acá.
+    path: 'docente/mesas',
+    title: 'Mis mesas de examen · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.docente)],
+    loadComponent: () =>
+      import('./features/docente/mesas-asignadas/mesas-asignadas').then((m) => m.MesasAsignadas),
   },
   {
     // Subir un documento al legajo propio. La comparten Docente y Alumno:

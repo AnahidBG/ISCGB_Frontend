@@ -4,6 +4,7 @@
   [tituloPagina]="datos.titulo"
   [volverUrl]="rutaPanel()"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"

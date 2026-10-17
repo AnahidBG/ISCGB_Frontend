@@ -133,8 +133,9 @@ const EN_SEGUNDO_PLANO: OpcionesPedido = { enSegundoPlano: true };
  * Con un parcial ya cargado (SCRUM-184) el Docente puede tocarlo, para abrir
  * "Modificar parcial" y cambiar su fecha y horario (`PUT .../modificar/{id}`) o
  * eliminarlo, con confirmación (`DELETE .../eliminar/{id}`), o arrastrarlo a otro
- * día con el mouse, que conserva el horario. Con la API real la grilla no trae
- * parciales que tocar: el backend todavía no los lista.
+ * día con el mouse, que conserva el horario. Con la API real la grilla lista los
+ * parciales del mes en curso (`GET .../del-mes`); en los otros meses solo se ve
+ * el estado de cada día, porque el backend no los lista.
  *
  * Contenedor: es el único que conoce `CalendarioExamenesService`. El encabezado,
  * la leyenda, la grilla, lo de adentro de cada celda, los avisos y los modales

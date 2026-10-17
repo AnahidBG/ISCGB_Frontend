@@ -1,6 +1,5 @@
 import {
   LARGO_MAXIMO,
-  MENSAJE_DATO_VACIO,
   datosAEnviar,
   erroresDeMisDatos,
   hayCambios,
@@ -33,23 +32,29 @@ const CARGADOS: MisDatos = {
 };
 
 describe('datosAEnviar', () => {
-  it('manda solo los campos con texto, sin los espacios de los costados', () => {
+  // Desde el backend del 17/10/2026 (commit d771acb), un texto vacío borra el dato.
+  it('manda todos los campos sin los espacios de los costados, y los vacíos vacíos', () => {
     const datos: MisDatos = {
       ...SIN_CARGAR,
       email: '  ana@ejemplo.com ',
       telefono: ' 3511234567',
-      direccion: '   ', // solo espacios: no hay nada que mandar
+      direccion: '   ', // solo espacios: viaja vacío, y el backend lo borra
     };
 
     expect(datosAEnviar(datos)).toStrictEqual({
       email: 'ana@ejemplo.com',
       telefono: '3511234567',
+      telefonoEmergencia: '',
+      contactoEmergencia: '',
+      direccion: '',
+      lugarNacimiento: '',
+      idProvincia: 0,
     });
   });
 
-  it('la provincia viaja si hay una elegida, y no si no hay ninguna', () => {
+  it('la provincia viaja con su id, y sin ninguna viaja 0, que el backend lee como "borrarla"', () => {
     expect(datosAEnviar({ ...SIN_CARGAR, idProvincia: 6 })).toHaveProperty('idProvincia', 6);
-    expect(datosAEnviar(SIN_CARGAR)).not.toHaveProperty('idProvincia');
+    expect(datosAEnviar(SIN_CARGAR)).toHaveProperty('idProvincia', 0);
   });
 });
 
@@ -59,7 +64,7 @@ describe('erroresDeMisDatos', () => {
     expect(erroresDeMisDatos({ ...CARGADOS, direccion: 'Belgrano 12' }, CARGADOS)).toEqual({});
   });
 
-  // El backend ignora un campo vacío: no hay forma de borrar un dato, solo de cambiarlo.
+  // Desde el backend del 17/10/2026 un campo vacío borra el dato: ya no es un error.
   it.each([
     ['telefono', ''],
     ['telefonoEmergencia', '   '],
@@ -67,10 +72,8 @@ describe('erroresDeMisDatos', () => {
     ['direccion', ''],
     ['lugarNacimiento', ''],
     ['idProvincia', null],
-  ] as const)('%s: un dato que ya estaba cargado no se puede dejar vacío', (campo, vacio) => {
-    const errores = erroresDeMisDatos({ ...CARGADOS, [campo]: vacio }, CARGADOS);
-
-    expect(errores).toEqual({ [campo]: MENSAJE_DATO_VACIO });
+  ] as const)('%s: un dato que ya estaba cargado se puede vaciar para borrarlo', (campo, vacio) => {
+    expect(erroresDeMisDatos({ ...CARGADOS, [campo]: vacio }, CARGADOS)).toEqual({});
   });
 
   it('un dato que nunca se cargó puede quedar vacío', () => {

@@ -4,6 +4,7 @@
   tituloPagina="Frecuencia de avisos"
   subtitulo="Cada cuánto se le recuerda a cada persona la documentación que le falta entregar."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"

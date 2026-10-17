@@ -11,11 +11,15 @@ function archivo(nombre: string, tipo: string, bytes = 10): File {
 }
 
 describe('validarFotoPerfil', () => {
-  it('acepta JPG, PNG y GIF', () => {
+  it('acepta JPG y PNG', () => {
     expect(validarFotoPerfil(archivo('a.jpg', 'image/jpeg'))).toBeNull();
     expect(validarFotoPerfil(archivo('a.JPEG', 'image/jpeg'))).toBeNull();
     expect(validarFotoPerfil(archivo('a.png', 'image/png'))).toBeNull();
-    expect(validarFotoPerfil(archivo('a.gif', 'image/gif'))).toBeNull();
+  });
+
+  it('rechaza GIF: el backend solo acepta .jpg, .jpeg y .png (`UsuariosController.SubirFotoPerfil`)', () => {
+    expect(validarFotoPerfil(archivo('a.gif', 'image/gif'))).toBe(MENSAJE_FOTO_FORMATO);
+    expect(validarFotoPerfil(archivo('a.gif', ''))).toBe(MENSAJE_FOTO_FORMATO);
   });
 
   it('acepta type vacío si la extensión es válida', () => {

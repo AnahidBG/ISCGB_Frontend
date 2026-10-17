@@ -11,9 +11,10 @@ import { JustificativosService } from '../justificativos/justificativos.service'
 import { LegajoService } from '../legajos/legajo.service';
 import { DocumentoRequerido } from '../legajos/modelos/documento-requerido';
 import { idRolDocumental } from '../legajos/rol-documental';
+import { MesasExamenService } from '../mesas/mesas-examen.service';
 import { NotificacionPanel } from './modelos/notificacion-panel';
 import { NovedadesLegajo, novedadesDelLegajo } from './notificaciones-legajo';
-import { notificacionesPorMesas } from './notificaciones-mesas';
+import { notificacionesPorMesas, notificacionesPorMesasRechazadas } from './notificaciones-mesas';
 import { novedadesPendientesDelInstituto } from './pendientes-instituto';
 
 /**
@@ -32,6 +33,8 @@ interface Dependencias {
   justificativos: JustificativosService;
   /** Solo lo usa el Docente, y es opcional: sin él ve únicamente su legajo. */
   examenes: CalendarioExamenesService | null;
+  /** Solo lo usan Secretario y Director, y es opcional: sin él no ven las mesas rechazadas. */
+  mesas: MesasExamenService | null;
 }
 
 function pesoNotificacion(notificacion: NotificacionPanel): number {
@@ -97,22 +100,36 @@ const fuenteDocente: FuenteDeCampana = (deps, sesion) => {
   );
 };
 
-/** Secretario y Director: lo que espera revisión en todo el instituto. */
-const fuentePendientesDelInstituto: FuenteDeCampana = ({ legajos, justificativos }) =>
+/**
+ * Secretario y Director: lo que espera revisión en todo el instituto, más las
+ * mesas de examen que algún docente rechazó (SCRUM-247), que van primero porque
+ * hay que convocar a otro docente.
+ */
+const fuentePendientesDelInstituto: FuenteDeCampana = ({ legajos, justificativos, mesas }) =>
   forkJoin({
-    // Cada fuente falla por separado: si cae una, la campana muestra la otra.
+    // Cada fuente falla por separado: si cae una, la campana muestra las otras.
     justificativos: justificativos
       .listarPendientes(EN_SEGUNDO_PLANO)
       .pipe(catchError(() => of(null))),
     personas: legajos
       .obtenerResumenUsuarios(EN_SEGUNDO_PLANO)
       .pipe(catchError(() => of(null))),
+    alertas:
+      mesas === null
+        ? of(null)
+        : mesas.alertasDeRechazo(EN_SEGUNDO_PLANO).pipe(catchError(() => of(null))),
   }).pipe(
-    map(({ justificativos: pendientes, personas }) =>
-      pendientes === null && personas === null
-        ? null
-        : novedadesPendientesDelInstituto(pendientes ?? [], personas ?? []),
-    ),
+    map(({ justificativos: pendientes, personas, alertas }): NovedadesLegajo | null => {
+      if (pendientes === null && personas === null && alertas === null) {
+        return null;
+      }
+      const instituto = novedadesPendientesDelInstituto(pendientes ?? [], personas ?? []);
+      const rechazos = notificacionesPorMesasRechazadas(alertas ?? []);
+      return {
+        total: instituto.total + rechazos.length,
+        detalle: [...rechazos, ...instituto.detalle],
+      };
+    }),
   );
 
 /**
@@ -189,8 +206,9 @@ function guardarLeidas(idUsuario: number, leidas: Set<string>): void {
  * ── Patrones ──────────────────────────────────────────────────────────────
  *   · Singleton (`providedIn: 'root'`): el estado vive acá y no se pierde al
  *     navegar, por eso la campana no parpadea a vacío entre pantallas.
- *   · Facade: compone `LegajoService`, `JustificativosService` y, para el
- *     Docente, `CalendarioExamenesService` (las clases ABSTRACTAS), así funciona igual
+ *   · Facade: compone `LegajoService`, `JustificativosService`, para el
+ *     Docente `CalendarioExamenesService` y, para Secretario y Director,
+ *     `MesasExamenService` (las clases ABSTRACTAS), así funciona igual
  *     con la implementación HTTP y con el mock. No es un dominio HTTP nuevo: no
  *     llama a ningún endpoint propio, y por eso no tiene par `*-http` / `*-mock`.
  *   · Tabla por clave: `FUENTE_POR_ROL`, con caso por defecto = campana vacía.
@@ -207,6 +225,9 @@ function guardarLeidas(idUsuario: number, leidas: Set<string>): void {
  *     secundario y no debe romper la pantalla. Queda con lo que tenía.
  *   · El Docente ve además las mesas de examen que le asignaron. Es un
  *     agregado: si ese pedido falla, la campana muestra igual su legajo.
+ *   · Secretario y Director ven primero las mesas que algún docente rechazó
+ *     (SCRUM-247). También es un agregado: si ese pedido falla, ven igual los
+ *     pendientes del instituto.
  *
  * Con más de un rol manda el rol principal (Director > Secretario > Docente >
  * Alumno): un Director que además es Docente ve los pendientes del instituto,
@@ -218,9 +239,15 @@ export class CampanaService {
   private readonly legajos = inject(LegajoService, { optional: true });
   private readonly justificativos = inject(JustificativosService, { optional: true });
   private readonly examenes = inject(CalendarioExamenesService, { optional: true });
+  private readonly mesas = inject(MesasExamenService, { optional: true });
   private readonly dependencias: Dependencias | null =
     this.legajos !== null && this.justificativos !== null
-      ? { legajos: this.legajos, justificativos: this.justificativos, examenes: this.examenes }
+      ? {
+          legajos: this.legajos,
+          justificativos: this.justificativos,
+          examenes: this.examenes,
+          mesas: this.mesas,
+        }
       : null;
 
   private readonly contenido = signal<Contenido>(SIN_CONTENIDO);

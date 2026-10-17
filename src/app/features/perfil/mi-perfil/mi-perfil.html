@@ -4,6 +4,7 @@
   tituloPagina="Mi perfil"
   [subtitulo]="subtitulo"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"
@@ -31,6 +32,14 @@
     </div>
   } @else if (persona !== null && guardados !== null) {
     <div class="flex max-w-2xl flex-col gap-5">
+      <app-foto-perfil
+        [fotoUrl]="sesion()?.fotoUrl ?? null"
+        [nombreCompleto]="nombreCompleto()"
+        [subiendo]="subiendoFoto()"
+        [errorServidor]="errorFoto()"
+        [confirmacion]="confirmacionFoto()"
+        (elegir)="subirFoto($event)"
+      />
       <app-datos-de-identidad
         [nombreCompleto]="nombreCompleto()"
         [dni]="persona.dni"

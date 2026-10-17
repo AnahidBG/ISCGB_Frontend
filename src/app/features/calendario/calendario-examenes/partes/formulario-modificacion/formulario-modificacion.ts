@@ -18,7 +18,10 @@ import { hayCambiosEnElParcial } from '../../../../../core/examenes/modificacion
 import { errorDeDia, errorDeHorario } from '../../../../../core/examenes/registro-examen';
 import { Boton } from '../../../../../shared/ui/boton/boton';
 import { CampoFormulario } from '../../../../../shared/ui/campo-formulario/campo-formulario';
-import { clasesDelCampo, descripcionDelCampo } from '../campo-del-formulario';
+import {
+  clasesDelCampo,
+  descripcionDelCampo,
+} from '../../../../../shared/ui/campo-formulario/clases-del-campo';
 
 /** Lo que se cambia de un parcial: el día ("2026-10-14") y el horario ("09:00"). */
 export interface CambioDeParcial {

@@ -5,13 +5,15 @@ import { UsuarioDetalle } from './modelos/usuario-detalle';
  * Las reglas de "Mi perfil", en funciones puras para probarlas sin `TestBed`.
  *
  * Todo gira alrededor de cómo se comporta `PUT /api/Usuarios/mi-perfil`
- * (`UsuarioController.ActualizarPerfil`): solo aplica los campos que llegan con
- * texto y se queda con el valor anterior en los que llegan vacíos o ausentes.
- * Por eso:
+ * (`UsuarioController.ActualizarPerfil`). Desde el 17/10/2026 (commit `d771acb`):
  *
- *   · `datosAEnviar` manda únicamente lo que tiene contenido.
- *   · `erroresDeMisDatos` no deja vaciar un dato que ya estaba cargado: el
- *     backend lo ignoraría y la pantalla diría "se actualizó" sin que cambie nada.
+ *   · Un texto que llega vacío BORRA el dato (`""` → `null`), y uno ausente se
+ *     deja como estaba. La provincia con un id menor o igual a 0 también se borra.
+ *   · El correo es la excepción: uno vacío se ignora. Por eso es obligatorio.
+ *
+ * Por eso `datosAEnviar` manda todos los campos, y `erroresDeMisDatos` deja
+ * vaciar cualquiera menos el correo. Antes el backend ignoraba los vacíos y no
+ * había forma de borrar un dato.
  */
 
 /** Los campos de texto, en el orden en que se muestran. */
@@ -43,8 +45,8 @@ export const LARGO_MAXIMO: Readonly<Record<CampoDeTexto, number>> = {
   lugarNacimiento: 150,
 };
 
-/** Qué dice un campo que ya tenía un dato y se intenta dejar vacío. */
-export const MENSAJE_DATO_VACIO = 'Este dato no se puede dejar vacío.';
+/** La provincia que se manda para borrarla: el backend lee un id <= 0 como "ninguna". */
+const SIN_PROVINCIA = 0;
 
 const MENSAJE_CORREO_VACIO = 'Ingresá tu correo electrónico.';
 const MENSAJE_CORREO_INVALIDO = 'Ese correo no parece válido.';
@@ -87,23 +89,12 @@ export function limpiarMisDatos(datos: MisDatos): MisDatos {
 }
 
 /**
- * Lo que viaja al backend: los campos con texto (recortados) y la provincia si
- * hay una elegida. Un campo vacío no se manda porque el backend lo ignoraría
- * igual, y mandarlo daría a entender que se puede borrar un dato.
+ * Lo que viaja al backend: TODOS los campos, recortados. Uno vacío viaja vacío
+ * para que el backend lo borre, y sin provincia viaja `SIN_PROVINCIA`.
  */
 export function datosAEnviar(datos: MisDatos): MisDatosAEnviar {
   const limpios = limpiarMisDatos(datos);
-  const aEnviar: MisDatosAEnviar = {};
-
-  for (const campo of CAMPOS_DE_TEXTO) {
-    if (limpios[campo] !== '') {
-      aEnviar[campo] = limpios[campo];
-    }
-  }
-  if (limpios.idProvincia !== null) {
-    aEnviar.idProvincia = limpios.idProvincia;
-  }
-  return aEnviar;
+  return { ...limpios, idProvincia: limpios.idProvincia ?? SIN_PROVINCIA };
 }
 
 /** ¿Lo que hay en el formulario es distinto de lo que está guardado? Sin contar espacios. */
@@ -120,16 +111,14 @@ export function hayCambios(actuales: MisDatos, guardados: MisDatos): boolean {
 /**
  * Qué campos no se pueden guardar y por qué. Vacío (`{}`) si está todo bien.
  *
- * Recibe lo guardado además de lo escrito porque la regla central depende de eso:
+ * Recibe lo guardado además de lo escrito porque un dato que no se tocó no se
+ * vuelve a revisar: lo que ya está en la base pudo cargarse con otro criterio y
+ * no tiene por qué impedir cambiar otro campo.
  *
- *   · Un dato que ya estaba cargado no se puede dejar vacío (el backend ignora
- *     los vacíos, así que no hay manera de borrarlo). Uno que nunca se cargó sí
- *     puede quedar vacío.
- *   · El correo es siempre obligatorio y tiene que parecer un correo.
+ *   · El correo es siempre obligatorio y tiene que parecer un correo: el backend
+ *     ignora uno vacío, así que no se puede borrar.
+ *   · Cualquier otro dato se puede dejar vacío: así se borra.
  *   · Los teléfonos, si hay algo escrito, tienen que parecer un teléfono.
- *
- * Un dato que no se tocó no se vuelve a revisar: lo que ya está en la base
- * pudo cargarse con otro criterio y no tiene por qué impedir cambiar otro campo.
  */
 export function erroresDeMisDatos(actuales: MisDatos, guardados: MisDatos): ErroresDeMisDatos {
   const escritos = limpiarMisDatos(actuales);
@@ -142,8 +131,6 @@ export function erroresDeMisDatos(actuales: MisDatos, guardados: MisDatos): Erro
     if (valor === '') {
       if (campo === 'email') {
         errores.email = MENSAJE_CORREO_VACIO;
-      } else if (previos[campo] !== '') {
-        errores[campo] = MENSAJE_DATO_VACIO;
       }
       continue;
     }
@@ -155,10 +142,6 @@ export function erroresDeMisDatos(actuales: MisDatos, guardados: MisDatos): Erro
     if (error !== null) {
       errores[campo] = error;
     }
-  }
-
-  if (escritos.idProvincia === null && previos.idProvincia !== null) {
-    errores.idProvincia = MENSAJE_DATO_VACIO;
   }
   return errores;
 }

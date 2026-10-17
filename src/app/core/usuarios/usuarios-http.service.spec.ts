@@ -1,12 +1,13 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { RUTAS_API } from '../configuracion/api';
+import { RUTAS_API, urlArchivoSubido } from '../configuracion/api';
 import { MisDatos } from './modelos/mis-datos';
 import { PerfilUsuario } from './modelos/perfil-usuario';
 import { UsuariosHttpService } from './usuarios-http.service';
 import {
   MENSAJE_ERROR_ACTUALIZAR_MIS_DATOS,
+  MENSAJE_ERROR_SUBIR_FOTO,
   MENSAJE_GESTION_NO_DISPONIBLE,
 } from './usuarios.service';
 
@@ -242,7 +243,7 @@ describe('UsuariosHttpService.actualizarMiPerfil', () => {
     return { completo: () => completo, error: () => error };
   }
 
-  it('hace PUT a mi-perfil y manda solo los campos con texto, sin espacios de más', () => {
+  it('hace PUT a mi-perfil con todos los campos, sin espacios de más y los vacíos vacíos', () => {
     const resultado = guardar({
       ...DATOS,
       email: ' maria@ejemplo.com ',
@@ -253,12 +254,15 @@ describe('UsuariosHttpService.actualizarMiPerfil', () => {
 
     const pedido = backend.expectOne(RUTAS_API.miPerfil);
     expect(pedido.request.method).toBe('PUT');
-    // El backend ignora lo que llega vacío: no hay que mandarlo.
+    // El backend borra lo que llega vacío ("" → null) y la provincia con id 0.
     expect(pedido.request.body).toStrictEqual({
       email: 'maria@ejemplo.com',
       telefono: '3511234567',
+      telefonoEmergencia: '',
       contactoEmergencia: 'Juan Gómez',
+      direccion: '',
       lugarNacimiento: 'Villa Dolores',
+      idProvincia: 0,
     });
 
     pedido.flush({ message: 'Datos del perfil actualizados correctamente.' });
@@ -297,6 +301,69 @@ describe('UsuariosHttpService.actualizarMiPerfil', () => {
       .flush({ message: 'detalle interno' }, { status: 500, statusText: 'Server Error' });
 
     expect(resultado.error()).toBe(MENSAJE_ERROR_ACTUALIZAR_MIS_DATOS);
+  });
+});
+
+describe('UsuariosHttpService.subirFotoPerfil', () => {
+  let servicio: UsuariosHttpService;
+  let backend: HttpTestingController;
+  const FOTO = new File([new Uint8Array(10)], 'yo.png', { type: 'image/png' });
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [UsuariosHttpService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    servicio = TestBed.inject(UsuariosHttpService);
+    backend = TestBed.inject(HttpTestingController);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    backend.verify();
+    vi.restoreAllMocks();
+  });
+
+  it('manda la foto como multipart en el campo `Foto` y devuelve la URL completa', () => {
+    let url: string | undefined;
+    servicio.subirFotoPerfil(FOTO).subscribe((valor) => (url = valor));
+
+    const pedido = backend.expectOne(RUTAS_API.fotoPerfil);
+    expect(pedido.request.method).toBe('POST');
+    expect(pedido.request.url).toContain('/api/Usuarios/foto-perfil');
+    expect((pedido.request.body as FormData).get('Foto')).toBe(FOTO);
+    pedido.flush({
+      message: 'Foto de perfil actualizada exitosamente.',
+      url: '/uploads/perfiles/usuario_5_abc.png',
+    });
+
+    expect(url).toBe(urlArchivoSubido('/uploads/perfiles/usuario_5_abc.png'));
+  });
+
+  it('un 400 muestra el mensaje del backend', () => {
+    let mensaje: string | undefined;
+    servicio.subirFotoPerfil(FOTO).subscribe({ error: (fallo: Error) => (mensaje = fallo.message) });
+
+    backend
+      .expectOne(RUTAS_API.fotoPerfil)
+      .flush(
+        { message: 'Formato no válido. Solo se permiten JPG y PNG.' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    expect(mensaje).toBe('Formato no válido. Solo se permiten JPG y PNG.');
+  });
+
+  it.each([
+    ['el servidor falla', () => ({ cuerpo: null, opciones: { status: 500, statusText: 'Error' } })],
+    ['la respuesta no trae la URL', () => ({ cuerpo: { message: 'ok' }, opciones: {} })],
+  ])('da el mensaje genérico cuando %s', (_caso, respuesta) => {
+    let mensaje: string | undefined;
+    servicio.subirFotoPerfil(FOTO).subscribe({ error: (fallo: Error) => (mensaje = fallo.message) });
+
+    const { cuerpo, opciones } = respuesta();
+    backend.expectOne(RUTAS_API.fotoPerfil).flush(cuerpo, opciones);
+
+    expect(mensaje).toBe(MENSAJE_ERROR_SUBIR_FOTO);
   });
 });
 

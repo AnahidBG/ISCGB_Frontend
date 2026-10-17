@@ -67,10 +67,19 @@ export const RUTAS_API = {
 
   /**
    * La persona de la sesión actualiza sus propios datos de contacto. `PUT`, con
-   * `[Authorize]` y sin rol: el usuario sale del token. Solo aplica los campos que
-   * llegan con texto; un campo vacío o ausente se ignora, no se borra.
+   * `[Authorize]` y sin rol: el usuario sale del token. Desde el 17/10/2026 un
+   * campo que llega vacío (`""`) se BORRA y uno ausente se deja como está; la
+   * provincia con id <= 0 también se borra. El correo vacío se ignora.
    */
   miPerfil: `${URL_BASE_API}/api/Usuarios/mi-perfil`,
+
+  /**
+   * La persona de la sesión sube su foto de perfil. `POST` multipart con el
+   * archivo en `Foto`, con `[Authorize]` y sin rol. Solo `.jpg`, `.jpeg` y
+   * `.png` (si no, `400 { message }`). Responde `200 { message, url }`, con la
+   * ruta relativa ("/uploads/perfiles/…"). La foto vuelve en el login (`foto`).
+   */
+  fotoPerfil: `${URL_BASE_API}/api/Usuarios/foto-perfil`,
 
   // --- Gestión de usuarios (ISCGB_Backend/Controllers/CargaUsuarioController.cs) ---
   // La clase se llama `UsuariosAdminController`, así que la ruta es
@@ -137,6 +146,19 @@ export const RUTAS_API = {
   /** Asigna una materia a un docente en una comisión. Body: `AsignarMateriaDto`. */
   asignarMateria: `${URL_BASE_API}/api/Materias/asignar`,
 
+  /**
+   * Todos los alumnos, `{ data: [{ idAlumno, nombreCompleto }] }`, con el nombre
+   * como "Apellido, Nombre (Legajo: X)". Sin rol. Agregado el 14/10/2026.
+   */
+  alumnosDisponibles: `${URL_BASE_API}/api/Materias/alumnos-disponibles`,
+
+  /**
+   * Inscribe a un alumno en una materia y comisión. Body: `{ idAlumno, idMateria,
+   * idComision }`. Solo `Director` y `Secretario`. `400 { message }` si algo no
+   * existe o si ya estaba inscripto. Agregado el 14/10/2026.
+   */
+  asignarMateriaAlumno: `${URL_BASE_API}/api/Materias/asignar-alumno`,
+
   // --- Buscador (ISCGB_Backend/Controllers/BusquedaController.cs, clase `BuscadorController`) ---
 
   /** Personas, materias y justificativos que contienen el término. Menos de 2 letras = vacío. */
@@ -181,14 +203,25 @@ export const RUTAS_API = {
   /**
    * Cambia el límite de exámenes por día. Body: `{ nuevoLimite }`. Solo se
    * puede escribir: el valor vigente se lee de `limiteDiario` en `estado-mes`.
+   * Solo `Director` y `Secretario` (desde el 17/10/2026).
    */
   limiteParcialesCalendario: `${URL_BASE_API}/api/ConfiguracionCalendario/limite-parciales`,
 
   /**
+   * Los exámenes del MES EN CURSO, con su materia, comisión y tipo:
+   * `[{ idExamen, materia, fecha, comision, tipoExamen }]`, con `fecha` como
+   * `DateTime` sin zona y con hora. No recibe año ni mes: el backend usa su
+   * propio `DateTime.Now`, así que para otro mes no hay listado. Pide sesión,
+   * sin rol. Agregado el 17/10/2026 (commit `d771acb`).
+   */
+  examenesDelMesEnCurso: `${URL_BASE_API}/api/ConfiguracionCalendario/del-mes`,
+
+  /**
    * Registra un examen. Body: `{ fecha, idComision, idMateria, idTipoExamen }`, con
-   * `fecha` como `DateTime` sin zona y con hora ("2026-10-13T09:00:00"). Responde
-   * `200 { message }` (no devuelve el id del examen) y `400 { message }` si el día
-   * ya alcanzó el límite. No valida que la materia, la comisión ni el tipo existan
+   * `fecha` como `DateTime` sin zona y con hora ("2026-10-13T09:00:00"). Solo
+   * `Docente`: el docente sale del token y tiene que dictar esa materia (si no,
+   * `400 { message }`). Responde `200 { message, idExamen }` y `400 { message }`
+   * si el día ya alcanzó el límite. No valida que la comisión ni el tipo existan
    * (con ids inválidos responde 500) ni que la fecha no sea pasada.
    */
   registrarExamen: `${URL_BASE_API}/api/ConfiguracionCalendario/registrar`,
@@ -227,6 +260,44 @@ export const RUTAS_API = {
    * de docente.
    */
   misMesasAsignadas: `${URL_BASE_API}/api/Configuracion/mis-notificaciones`,
+
+  // --- Mesas de examen (backend del 17/10/2026, commit `d771acb`) ---
+  // Viven en tres controladores: `ConfiguracionCalendario`, `Docente` y `Configuracion`.
+
+  /**
+   * Crea la mesa y convoca a su docente, en una transacción. Body: `{ fecha,
+   * idMateria, idComision, idTipoExamen, idDocente }`, con `fecha` como `DateTime`
+   * sin zona y con hora. Solo `Director` y `Secretario`. Responde `200 { message,
+   * idExamen }`, `400 { message }` si el docente no existe y `500 { message }`.
+   */
+  registrarMesaExamen: `${URL_BASE_API}/api/ConfiguracionCalendario/registrar-mesa`,
+
+  /**
+   * Convoca a otro docente a una mesa existente. Body: `{ idExamen, idDocente }`.
+   * Pide `Director,Administrador`: como el rol Administrador no existe, en la
+   * práctica es solo `Director`. `400 { message }` si ya estaba asignado.
+   */
+  asignarDocenteAMesa: `${URL_BASE_API}/api/ConfiguracionCalendario/asignar-docente`,
+
+  /**
+   * El docente de la sesión acepta o rechaza su mesa. Body: `{ idExamen, acepta }`.
+   * Solo `Docente`. `404 { message }` si no la encuentra y `400 { message }` si ya
+   * la respondió.
+   */
+  responderAsignacionMesa: `${URL_BASE_API}/api/Docente/responder-asignacion`,
+
+  /**
+   * Las mesas rechazadas sin archivar: `[{ idExamen, idDocente, docente, materia,
+   * fecha, mensaje }]`, de la más próxima a la más lejana. Solo `Director` y
+   * `Secretario`.
+   */
+  alertasRechazoMesas: `${URL_BASE_API}/api/Configuracion/alertas-rechazos`,
+
+  /**
+   * Archiva una alerta de rechazo ("Rechazada" → "Rechazada_Vista"). Body:
+   * `{ idExamen, idDocente }`. Solo `Director` y `Secretario`.
+   */
+  ocultarAlertaRechazoMesa: `${URL_BASE_API}/api/Configuracion/ocultar-alerta-rechazo`,
 } as const;
 
 /**

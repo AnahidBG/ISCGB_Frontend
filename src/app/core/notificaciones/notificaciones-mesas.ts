@@ -1,9 +1,13 @@
 import { DIAS_DE_LA_SEMANA } from '../examenes/calendario-mes';
 import { MesaAsignada } from '../examenes/modelos/mesa-asignada';
+import { AlertaRechazo } from '../mesas/modelos/alerta-rechazo';
 import { NotificacionPanel } from './modelos/notificacion-panel';
 
-/** A dónde lleva el aviso de una mesa: al calendario, que es donde se ve el día. */
-const URL_CALENDARIO = '/calendario';
+/** A dónde lleva el aviso de una mesa: a donde el docente la acepta o la rechaza (SCRUM-246). */
+const URL_MIS_MESAS = '/docente/mesas';
+
+/** A dónde lleva el aviso de un rechazo: a donde se reasigna o se archiva (SCRUM-247). */
+const URL_MESAS_EXAMEN = '/mesas-examen';
 
 function conDosDigitos(numero: number): string {
   return String(numero).padStart(2, '0');
@@ -54,7 +58,28 @@ export function notificacionesPorMesas(
     .map((mesa) => ({
       titulo: `Te asignaron a la mesa de ${mesa.materia}`,
       detalle: fechaYHora(mesa.fecha),
-      url: URL_CALENDARIO,
+      url: URL_MIS_MESAS,
       tono: 'pendiente' as const,
+    }));
+}
+
+/**
+ * Las mesas que un docente rechazó, como novedades de la campana de Dirección y
+ * Secretaría (SCRUM-247). Son urgentes: hay que convocar a otro docente.
+ *
+ * A diferencia de las mesas asignadas, acá no se descartan las que ya pasaron:
+ * la alerta sigue hasta que alguien la archiva ("Ya lo vi"), que es lo que la
+ * saca del backend. Van de la más próxima a la más lejana.
+ */
+export function notificacionesPorMesasRechazadas(
+  alertas: readonly AlertaRechazo[],
+): NotificacionPanel[] {
+  return [...alertas]
+    .sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
+    .map((alerta) => ({
+      titulo: `${alerta.docente} rechazó la mesa de ${alerta.materia}`,
+      detalle: fechaYHora(alerta.fecha),
+      url: URL_MESAS_EXAMEN,
+      tono: 'rechazado' as const,
     }));
 }

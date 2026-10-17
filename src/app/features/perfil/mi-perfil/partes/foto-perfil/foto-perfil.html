@@ -1,0 +1,55 @@
+<section data-seccion="foto" class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
+  <h2 class="text-base font-semibold text-texto">Foto de perfil</h2>
+
+  <div class="mt-4 flex flex-wrap items-center gap-4">
+    <span
+      class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-borde bg-principal-suave text-lg font-semibold text-principal"
+    >
+      @if (fotoVisible(); as foto) {
+        <img [src]="foto" alt="Tu foto de perfil" class="h-full w-full object-cover" (error)="fotoRota.set(true)" />
+      } @else {
+        {{ iniciales() }}
+      }
+    </span>
+
+    <div class="flex flex-col gap-1">
+      <!--
+        El `<input type="file">` va oculto con `sr-only` y la etiqueta hace de
+        botón: así se ve como el resto del sistema y sigue andando con teclado y
+        lector de pantalla.
+      -->
+      <label
+        for="foto-perfil"
+        class="inline-flex w-fit cursor-pointer items-center rounded-full border border-principal/30 px-4 py-2 text-sm font-semibold text-principal transition-colors hover:bg-principal/10 focus-within:ring-2 focus-within:ring-principal"
+        [class.pointer-events-none]="subiendo()"
+        [class.opacity-50]="subiendo()"
+      >
+        @if (subiendo()) {
+          Subiendo…
+        } @else {
+          Cambiar foto
+        }
+        <input
+          id="foto-perfil"
+          type="file"
+          class="sr-only"
+          [accept]="acepta"
+          [disabled]="subiendo()"
+          aria-describedby="ayuda-foto-perfil"
+          (change)="alElegir($event)"
+        />
+      </label>
+      <span id="ayuda-foto-perfil" class="text-xs text-texto-suave">JPG o PNG, hasta 2 MB.</span>
+    </div>
+  </div>
+
+  @if (error(); as mensaje) {
+    <p role="alert" class="mt-4 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+      {{ mensaje }}
+    </p>
+  } @else if (confirmacion(); as mensaje) {
+    <p role="status" class="mt-4 rounded-xl bg-aprobado/10 px-4 py-3 text-sm text-texto">
+      {{ mensaje }}
+    </p>
+  }
+</section>

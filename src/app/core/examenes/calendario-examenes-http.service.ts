@@ -6,6 +6,7 @@ import { esEndpointInexistente, mensajeDelServidor } from '../comun/error-api';
 import { OpcionesPedido } from '../comun/opciones-pedido';
 import { RUTAS_API } from '../configuracion/api';
 import { aCalendarioDelMes } from './adaptador-estado-mes';
+import { aExamenesDelMes } from './adaptador-examenes-mes';
 import { mesDe } from './calendario-mes';
 import {
   CalendarioExamenesService,
@@ -101,21 +102,30 @@ export class CalendarioExamenesHttpService extends CalendarioExamenesService {
   }
 
   /**
-   * El backend todavía no tiene un endpoint que liste los exámenes (con su
-   * materia, comisión y tipo): `estado-mes` solo cuenta cuántos hay por día.
-   * Hasta entonces el calendario no lista ninguno y esto devuelve una lista
-   * vacía, sin pegarle al backend. Solo el mock trae ejemplos.
+   * `del-mes` no recibe año ni mes: devuelve los exámenes del mes en curso según
+   * el reloj del servidor. Para cualquier otro mes no hay listado, así que se
+   * devuelve una lista vacía sin pegarle al backend (los días se siguen viendo
+   * ocupados por `estado-mes`, que sí recibe el mes).
    */
   examenesDelMes(
-    _anio: number,
-    _mes: number,
-    _opciones?: OpcionesPedido,
+    anio: number,
+    mes: number,
+    opciones?: OpcionesPedido,
   ): Observable<ExamenCalendario[]> {
-    // TODO(SCRUM-182): consumir el listado de exámenes del mes cuando el backend
-    // lo tenga (hoy no hay ningún endpoint que devuelva idExamen, materia,
-    // comisión y tipo). Hay que adaptar su respuesta a `ExamenCalendario`, con
-    // la fecha como "yyyy-MM-dd" (`desdeFechaSola` + `aFechaSola`).
-    return of<ExamenCalendario[]>([]);
+    const enCurso = mesDe(new Date());
+    if (anio !== enCurso.anio || mes !== enCurso.mes) {
+      return of<ExamenCalendario[]>([]);
+    }
+
+    return this.http
+      .get<unknown>(RUTAS_API.examenesDelMesEnCurso, { context: contextoDePedido(opciones) })
+      .pipe(
+        map((respuesta) => aExamenesDelMes(respuesta, { anio, mes })),
+        catchError((error: unknown) => {
+          console.error('Error al traer los exámenes del mes:', error);
+          return throwError(() => new Error(MENSAJE_ERROR_CALENDARIO));
+        }),
+      );
   }
 
   /**

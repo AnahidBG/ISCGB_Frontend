@@ -4,6 +4,7 @@
   tituloPagina="Calendario de exámenes parciales"
   subtitulo="Consultá la disponibilidad de fechas de parciales."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"

@@ -11,9 +11,11 @@ import {
   MateriasService,
 } from './materias.service';
 import {
+  AlumnoDisponible,
   AsignacionMateria,
   ComisionDisponible,
   DocenteDisponible,
+  InscripcionAlumno,
   NuevaMateria,
 } from './modelos/asignacion-materia';
 import { MateriaDelAlumno } from './modelos/materia-del-alumno';
@@ -49,6 +51,12 @@ interface DocenteApi {
 interface ComisionApi {
   idComision: number;
   nombreComision: string | null;
+}
+
+/** Cada fila de `alumnos-disponibles`: el nombre ya viene armado con el legajo. */
+interface AlumnoApi {
+  idAlumno: number;
+  nombreCompleto: string | null;
 }
 
 /** Lo que devuelven el alta de materia y la asignación en un 200. */
@@ -140,6 +148,31 @@ export class MateriasHttpService extends MateriasService {
       map((respuesta) => respuesta?.message?.trim() || 'Materia asignada correctamente.'),
       catchError((error: HttpErrorResponse) => throwError(() => new Error(traducirError(error)))),
     );
+  }
+
+  listarAlumnos(): Observable<AlumnoDisponible[]> {
+    return this.http.get<ListaApi<AlumnoApi>>(RUTAS_API.alumnosDisponibles).pipe(
+      map((respuesta) =>
+        (respuesta?.data ?? []).map((alumno) => ({
+          idAlumno: alumno.idAlumno,
+          // El backend concatena apellido y nombre anulables: puede llegar vacío.
+          nombreCompleto: alumno.nombreCompleto?.trim() || 'Alumno sin nombre cargado',
+        })),
+      ),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error al traer los alumnos:', error);
+        return throwError(() => new Error(MENSAJE_ERROR_DATOS_ASIGNACION));
+      }),
+    );
+  }
+
+  inscribirAlumno(inscripcion: InscripcionAlumno): Observable<string> {
+    return this.http
+      .post<RespuestaGuardadoApi>(RUTAS_API.asignarMateriaAlumno, inscripcion)
+      .pipe(
+        map((respuesta) => respuesta?.message?.trim() || 'Alumno inscripto correctamente.'),
+        catchError((error: HttpErrorResponse) => throwError(() => new Error(traducirError(error)))),
+      );
   }
 }
 

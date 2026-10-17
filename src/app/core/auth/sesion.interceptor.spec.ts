@@ -34,6 +34,8 @@ class AuthDePrueba extends AuthService {
 
   actualizarCorreo(): void {}
 
+  actualizarFoto(): void {}
+
   cerrarSesion(): void {
     this.sesionActual.set(null);
   }

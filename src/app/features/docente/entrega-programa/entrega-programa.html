@@ -5,6 +5,7 @@
   subtitulo="Completá los datos generales, las unidades de contenido y las condiciones de aprobación. Se envía todo junto en un solo paso."
   [volverUrl]="rutaPanel()"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"

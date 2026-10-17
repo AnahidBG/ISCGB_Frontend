@@ -48,6 +48,26 @@ describe('enlacesPorSesion', () => {
     }
   });
 
+  it('"Mis mesas de examen" es solo del Docente, después del calendario (SCRUM-246)', () => {
+    const delDocente = urlsDe('Docente');
+
+    expect(etiquetasDe('Docente')).toContain('Mis mesas de examen');
+    expect(delDocente.indexOf('/docente/mesas')).toBe(delDocente.indexOf('/calendario') + 1);
+    for (const rol of ['Alumno', 'Secretario', 'Director'] as const) {
+      expect(urlsDe(rol)).not.toContain('/docente/mesas');
+    }
+  });
+
+  it('"Mesas de examen" es de Dirección y Secretaría, después del límite (SCRUM-245)', () => {
+    for (const rol of ['Director', 'Secretario'] as const) {
+      const urls = urlsDe(rol);
+      expect(urls.indexOf('/mesas-examen')).toBe(urls.indexOf('/secretario/limite-parciales') + 1);
+    }
+    for (const rol of ['Docente', 'Alumno'] as const) {
+      expect(urlsDe(rol)).not.toContain('/mesas-examen');
+    }
+  });
+
   it('un Director que además es Docente tiene los dos enlaces, cada uno una sola vez', () => {
     const urls = urlsDe('Director', 'Docente');
 

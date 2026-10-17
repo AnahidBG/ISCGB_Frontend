@@ -1,0 +1,42 @@
+@if (mesas().length === 0) {
+  <p class="rounded-2xl border border-borde bg-superficie px-5 py-4 text-sm text-texto-suave sm:px-6">
+    No tenés mesas de examen por responder.
+  </p>
+} @else {
+  <ul class="flex flex-col gap-3">
+    @for (mesa of mesas(); track mesa.idExamen) {
+      @let bloqueada = respondiendo() !== null;
+      <li
+        [attr.data-mesa]="mesa.idExamen"
+        class="flex flex-col gap-4 rounded-2xl border border-borde bg-superficie p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6"
+      >
+        <div class="min-w-0">
+          <h3 class="text-base font-semibold text-texto">{{ mesa.materia }}</h3>
+          <p class="mt-1 text-sm text-texto-suave">{{ fecha(mesa) }}</p>
+        </div>
+        <div class="flex shrink-0 items-center gap-3">
+          <app-boton
+            data-accion="rechazar"
+            nivel="terciario"
+            [conFlecha]="false"
+            [deshabilitado]="bloqueada"
+            (click)="!bloqueada && rechazar.emit(mesa)"
+          >
+            Rechazar
+          </app-boton>
+          <app-boton
+            data-accion="aceptar"
+            nivel="secundario"
+            [conFlecha]="false"
+            [deshabilitado]="bloqueada"
+            [cargando]="respondiendo() === mesa.idExamen"
+            textoCargando="Guardando…"
+            (click)="!bloqueada && aceptar.emit(mesa)"
+          >
+            Aceptar
+          </app-boton>
+        </div>
+      </li>
+    }
+  </ul>
+}

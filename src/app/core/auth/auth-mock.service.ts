@@ -82,6 +82,10 @@ export class AuthMockService extends AuthService {
     this.sesionActual.update((sesion) => (sesion === null ? null : { ...sesion, email: correo }));
   }
 
+  actualizarFoto(fotoUrl: string): void {
+    this.sesionActual.update((sesion) => (sesion === null ? null : { ...sesion, fotoUrl }));
+  }
+
   cerrarSesion(): void {
     this.sesionActual.set(null);
   }

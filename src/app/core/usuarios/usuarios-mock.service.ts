@@ -141,7 +141,7 @@ export class UsuariosMockService extends UsuariosService {
   /** Los que se dieron de alta o se modificaron en esta sesión (en memoria). */
   private readonly usuarios: UsuarioInstitucional[] = USUARIOS_INVENTADOS.map((u) => ({ ...u }));
 
-  /** Lo que cada persona cambió desde "Mi perfil" en esta sesión, para que `obtener` lo devuelva. */
+  /** Lo que cada persona guardó desde "Mi perfil" en esta sesión, para que `obtener` lo devuelva. */
   private readonly misDatos = new Map<number, MisDatosAEnviar>();
 
   /** Nombre del director suplente actual, o `null`. */
@@ -199,20 +199,21 @@ export class UsuariosMockService extends UsuariosService {
     }
 
     const [nombre, ...resto] = encontrado.nombreCompleto.split(' ');
-    const propios = this.misDatos.get(encontrado.idUsuario) ?? {};
+    const propios = this.misDatos.get(encontrado.idUsuario);
 
+    // Como el backend: lo que se guardó vacío vuelve como `null`, y la provincia 0 también.
     return of<UsuarioDetalle>({
       idUsuario: encontrado.idUsuario,
       dni: encontrado.dni,
       nombre: nombre ?? '',
       apellido: resto.join(' '),
       email: encontrado.email ?? '',
-      telefono: propios.telefono ?? null,
-      telefonoEmergencia: propios.telefonoEmergencia ?? null,
-      lugarNacimiento: propios.lugarNacimiento ?? null,
-      contactoEmergencia: propios.contactoEmergencia ?? null,
-      direccion: propios.direccion ?? null,
-      idProvincia: propios.idProvincia ?? null,
+      telefono: propios?.telefono || null,
+      telefonoEmergencia: propios?.telefonoEmergencia || null,
+      lugarNacimiento: propios?.lugarNacimiento || null,
+      contactoEmergencia: propios?.contactoEmergencia || null,
+      direccion: propios?.direccion || null,
+      idProvincia: propios?.idProvincia || null,
       fechaNac: null,
       estadoUsuario: encontrado.activo,
       roles: [...encontrado.roles],
@@ -256,8 +257,8 @@ export class UsuariosMockService extends UsuariosService {
   }
 
   /**
-   * Imita a `PUT /api/Usuarios/mi-perfil`: aplica solo lo que llega con texto (un
-   * campo vacío NO borra el dato) y rechaza un correo que ya usa otra persona.
+   * Imita a `PUT /api/Usuarios/mi-perfil`: guarda todo lo que llega (un campo
+   * vacío borra el dato) y rechaza un correo que ya usa otra persona.
    */
   actualizarMiPerfil(datos: MisDatos): Observable<void> {
     const idUsuario = this.auth.sesion()?.idUsuario;
@@ -269,7 +270,7 @@ export class UsuariosMockService extends UsuariosService {
     const cambios = datosAEnviar(datos);
     const correoNuevo = cambios.email;
     if (
-      correoNuevo !== undefined &&
+      correoNuevo !== '' &&
       this.usuarios.some((otro) => otro.idUsuario !== idUsuario && otro.email === correoNuevo)
     ) {
       return this.fallar(
@@ -277,9 +278,22 @@ export class UsuariosMockService extends UsuariosService {
       );
     }
 
-    usuario.email = correoNuevo ?? usuario.email;
-    this.misDatos.set(usuario.idUsuario, { ...this.misDatos.get(usuario.idUsuario), ...cambios });
+    // Un correo vacío se ignora, como en el backend.
+    usuario.email = correoNuevo || usuario.email;
+    this.misDatos.set(usuario.idUsuario, cambios);
     return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  /**
+   * Imita a `POST /api/Usuarios/foto-perfil`: rechaza lo que no es JPG ni PNG con
+   * el mismo texto. Como no hay servidor que la sirva, devuelve una URL local del
+   * propio archivo, que vale mientras la pestaña siga abierta.
+   */
+  subirFotoPerfil(archivo: File): Observable<string> {
+    if (!/\.(jpe?g|png)$/i.test(archivo.name)) {
+      return this.fallar('Formato no válido. Solo se permiten JPG y PNG.');
+    }
+    return of(URL.createObjectURL(archivo)).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
   private fallar(mensaje: string): Observable<never> {

@@ -17,6 +17,23 @@ export interface ComisionDisponible {
   nombre: string;
 }
 
+/**
+ * Un alumno para el desplegable (`GET /api/Materias/alumnos-disponibles`).
+ * `idAlumno` es el de la tabla `Alumnos`, no el de `Usuarios`. El backend arma
+ * el nombre como "Apellido, Nombre (Legajo: X)".
+ */
+export interface AlumnoDisponible {
+  idAlumno: number;
+  nombreCompleto: string;
+}
+
+/** `AsignarMateriaAlumnoDto`: en qué materia y comisión se inscribe un alumno (SCRUM-248). */
+export interface InscripcionAlumno {
+  idAlumno: number;
+  idMateria: number;
+  idComision: number;
+}
+
 /** `AsignarMateriaDto`: qué docente dicta qué materia en qué comisión. */
 export interface AsignacionMateria {
   idDocente: number;

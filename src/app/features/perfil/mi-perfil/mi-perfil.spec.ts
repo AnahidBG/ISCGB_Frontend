@@ -1,7 +1,7 @@
 import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Sesion } from '../../../core/auth/modelos/sesion';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
@@ -52,12 +52,19 @@ const PROVINCIAS: Provincia[] = [
 /** Lo que se guardó y los correos que se pusieron en la sesión, en orden. */
 let guardados: MisDatos[];
 let correosDeSesion: string[];
+/** Las fotos que se subieron y las que se pusieron en la sesión, en orden. */
+let fotosSubidas: File[];
+let fotosDeSesion: string[];
 
 async function montar(
   guardar: (datos: MisDatos) => Observable<void> = () => of(undefined),
+  subirFoto: (archivo: File) => Observable<string> = () =>
+    of('http://localhost:5231/uploads/perfiles/nueva.png'),
 ): Promise<ComponentFixture<MiPerfil>> {
   guardados = [];
   correosDeSesion = [];
+  fotosSubidas = [];
+  fotosDeSesion = [];
 
   TestBed.configureTestingModule({
     providers: [
@@ -68,6 +75,7 @@ async function montar(
           sesion: signal(SESION),
           cerrarSesion: () => {},
           actualizarCorreo: (correo: string) => correosDeSesion.push(correo),
+          actualizarFoto: (url: string) => fotosDeSesion.push(url),
         },
       },
       {
@@ -89,6 +97,10 @@ async function montar(
           actualizarMiPerfil: (datos: MisDatos) => {
             guardados.push(datos);
             return guardar(datos);
+          },
+          subirFotoPerfil: (archivo: File) => {
+            fotosSubidas.push(archivo);
+            return subirFoto(archivo);
           },
         },
       },
@@ -161,5 +173,56 @@ describe('MiPerfil', () => {
     // Lo guardado es el nuevo punto de partida: vuelve a no haber nada para guardar.
     expect(campo<HTMLInputElement>(fixture, 'email').value).toBe('nueva@ejemplo.com');
     expect(botonGuardar(fixture).disabled).toBe(true);
+  });
+
+  describe('foto de perfil', () => {
+    /** Elige un archivo en el `<input type="file">`, como lo haría la persona. */
+    async function elegirFoto(fixture: ComponentFixture<MiPerfil>, archivo: File) {
+      const entrada = raiz(fixture).querySelector<HTMLInputElement>('#foto-perfil')!;
+      Object.defineProperty(entrada, 'files', { value: [archivo], configurable: true });
+      entrada.dispatchEvent(new Event('change'));
+      await fixture.whenStable();
+    }
+
+    function seccionFoto(fixture: ComponentFixture<MiPerfil>): HTMLElement {
+      return raiz(fixture).querySelector('[data-seccion="foto"]') as HTMLElement;
+    }
+
+    it('sube la foto elegida, la pone en la sesión y lo confirma', async () => {
+      const fixture = await montar();
+      const foto = new File([new Uint8Array(10)], 'yo.png', { type: 'image/png' });
+
+      await elegirFoto(fixture, foto);
+
+      expect(fotosSubidas).toEqual([foto]);
+      expect(fotosDeSesion).toEqual(['http://localhost:5231/uploads/perfiles/nueva.png']);
+      expect(seccionFoto(fixture).querySelector('[role="status"]')?.textContent).toContain(
+        'Tu foto se actualizó.',
+      );
+    });
+
+    it('un archivo que no es JPG ni PNG no se sube y explica por qué', async () => {
+      const fixture = await montar();
+
+      await elegirFoto(fixture, new File([new Uint8Array(10)], 'yo.gif', { type: 'image/gif' }));
+
+      expect(fotosSubidas).toEqual([]);
+      expect(seccionFoto(fixture).querySelector('[role="alert"]')?.textContent).toContain(
+        'JPG o PNG',
+      );
+    });
+
+    it('si el backend rechaza la foto muestra su mensaje y no toca la sesión', async () => {
+      const fixture = await montar(undefined, () =>
+        throwError(() => new Error('Formato no válido. Solo se permiten JPG y PNG.')),
+      );
+
+      await elegirFoto(fixture, new File([new Uint8Array(10)], 'yo.png', { type: 'image/png' }));
+
+      expect(fotosDeSesion).toEqual([]);
+      expect(seccionFoto(fixture).querySelector('[role="alert"]')?.textContent).toContain(
+        'Formato no válido',
+      );
+    });
   });
 });

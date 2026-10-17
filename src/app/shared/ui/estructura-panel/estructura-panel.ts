@@ -5,6 +5,7 @@ import {
   inject,
   ElementRef,
   input,
+  linkedSignal,
   output,
   signal,
   viewChild,
@@ -138,6 +139,9 @@ export class EstructuraPanel {
   readonly rolPrincipal = input<string>('');
   readonly emailUsuario = input<string>('');
 
+  /** La URL de la foto de perfil (`Sesion.fotoUrl`). Sin foto, el círculo muestra las iniciales. */
+  readonly fotoUsuario = input<string | null>(null);
+
   /** El botón verde de arriba a la derecha. Sin esto no se dibuja ninguno. */
   readonly accionPrincipal = input<AccionPanel | null>(null);
 
@@ -263,14 +267,22 @@ export class EstructuraPanel {
   });
 
   /**
-   * Las iniciales, para el círculo mientras no haya foto.
-   *
-   * El backend guarda la foto de perfil (`POST api/Usuarios/foto-perfil`), pero
-   * ningún endpoint la devuelve. Hasta que lo haga, el círculo muestra las
-   * iniciales, que es mejor que un ícono genérico de persona: identifica de
-   * un vistazo a quién pertenece la sesión.
+   * Las iniciales, para el círculo cuando no hay foto: identifican de un
+   * vistazo a quién pertenece la sesión, mejor que un ícono genérico de persona.
    */
   protected readonly iniciales = computed(() => inicialesDe(this.nombreUsuario()) || '?');
+
+  /**
+   * `true` si la foto no se pudo cargar (el archivo se borró, el servidor no la
+   * sirve…): entonces vuelven las iniciales en vez de un ícono de imagen rota.
+   * Se reinicia con cada foto nueva, para volver a intentar.
+   */
+  protected readonly fotoRota = linkedSignal({ source: this.fotoUsuario, computation: () => false });
+
+  /** La foto que se muestra, o `null` si van las iniciales. */
+  protected readonly fotoVisible = computed(() =>
+    this.fotoRota() ? null : this.fotoUsuario() || null,
+  );
 
   /** Solo el nombre de pila, que es como saluda el encabezado del Figma. */
   protected readonly primerNombre = computed(

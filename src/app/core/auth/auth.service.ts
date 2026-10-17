@@ -90,6 +90,13 @@ export abstract class AuthService {
    */
   abstract actualizarCorreo(correo: string): void;
 
+  /**
+   * Cambia la foto de la sesión abierta (`Sesion.fotoUrl`), para que el
+   * encabezado la muestre sin volver a iniciar sesión. Lo llama "Mi perfil"
+   * después de subirla. Sin sesión abierta no hace nada.
+   */
+  abstract actualizarFoto(fotoUrl: string): void;
+
   /** Borra la sesión actual. */
   abstract cerrarSesion(): void;
 }

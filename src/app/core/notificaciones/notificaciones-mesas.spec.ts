@@ -1,5 +1,6 @@
 import { MesaAsignada } from '../examenes/modelos/mesa-asignada';
-import { notificacionesPorMesas } from './notificaciones-mesas';
+import { AlertaRechazo } from '../mesas/modelos/alerta-rechazo';
+import { notificacionesPorMesas, notificacionesPorMesasRechazadas } from './notificaciones-mesas';
 
 function mesa(parcial: Partial<MesaAsignada> & { idExamen: number }): MesaAsignada {
   return { materia: 'Redes', fecha: new Date(2026, 10, 20, 9, 0), ...parcial };
@@ -13,12 +14,12 @@ describe('notificacionesPorMesas', () => {
     expect(notificacionesPorMesas([], HOY)).toEqual([]);
   });
 
-  it('arma el aviso con la materia, el día y la hora, y lleva al calendario', () => {
+  it('arma el aviso con la materia, el día y la hora, y lleva a donde se responde (SCRUM-246)', () => {
     expect(notificacionesPorMesas([mesa({ idExamen: 1 })], HOY)).toEqual([
       {
         titulo: 'Te asignaron a la mesa de Redes',
         detalle: 'Viernes 20/11/2026, 09:00 h',
-        url: '/calendario',
+        url: '/docente/mesas',
         tono: 'pendiente',
       },
     ]);
@@ -64,5 +65,44 @@ describe('notificacionesPorMesas', () => {
       JSON.stringify([aviso.titulo, aviso.detalle, aviso.url, aviso.tono]),
     );
     expect(new Set(claves).size).toBe(3);
+  });
+});
+
+function alerta(parcial: Partial<AlertaRechazo> & { idExamen: number }): AlertaRechazo {
+  return {
+    idDocente: 8,
+    docente: 'Ana Pérez',
+    materia: 'Redes',
+    fecha: new Date(2026, 10, 20, 9, 0),
+    ...parcial,
+  };
+}
+
+describe('notificacionesPorMesasRechazadas (SCRUM-247)', () => {
+  it('sin alertas no hay avisos', () => {
+    expect(notificacionesPorMesasRechazadas([])).toEqual([]);
+  });
+
+  it('dice quién rechazó qué mesa y cuándo, en rojo, y lleva a donde se reasigna', () => {
+    expect(notificacionesPorMesasRechazadas([alerta({ idExamen: 1 })])).toEqual([
+      {
+        titulo: 'Ana Pérez rechazó la mesa de Redes',
+        detalle: 'Viernes 20/11/2026, 09:00 h',
+        url: '/mesas-examen',
+        tono: 'rechazado',
+      },
+    ]);
+  });
+
+  it('ordena de la más próxima a la más lejana y no descarta las que ya pasaron', () => {
+    const avisos = notificacionesPorMesasRechazadas([
+      alerta({ idExamen: 1, fecha: new Date(2026, 10, 20, 9, 0) }),
+      alerta({ idExamen: 2, fecha: new Date(2020, 0, 2, 10, 0) }),
+    ]);
+
+    expect(avisos.map((aviso) => aviso.detalle)).toEqual([
+      'Jueves 02/01/2020, 10:00 h',
+      'Viernes 20/11/2026, 09:00 h',
+    ]);
   });
 });

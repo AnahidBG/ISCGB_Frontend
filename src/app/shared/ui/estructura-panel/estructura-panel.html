@@ -442,14 +442,18 @@
               </span>
 
               <!--
-                La foto de perfil. El backend guarda la imagen, pero ningún
-                endpoint la devuelve, así que por ahora el círculo muestra las
-                iniciales.
+                La foto de perfil, que viaja en el login desde el 17/10/2026. Sin
+                foto, o si no carga, el círculo muestra las iniciales. `alt` vacío
+                a propósito: el botón ya se anuncia con el nombre de la persona.
               -->
               <span
-                class="flex h-10 w-10 items-center justify-center rounded-full border border-borde bg-principal-suave text-sm font-semibold text-principal"
+                class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-borde bg-principal-suave text-sm font-semibold text-principal"
               >
-                {{ iniciales() }}
+                @if (fotoVisible(); as foto) {
+                  <img [src]="foto" alt="" class="h-full w-full object-cover" (error)="fotoRota.set(true)" />
+                } @else {
+                  {{ iniciales() }}
+                }
               </span>
             </button>
 
@@ -465,9 +469,13 @@
               >
                 <div class="flex items-center gap-3 border-b border-borde px-4 py-4">
                   <span
-                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-principal-suave text-base font-semibold text-principal"
+                    class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-principal-suave text-base font-semibold text-principal"
                   >
-                    {{ iniciales() }}
+                    @if (fotoVisible(); as foto) {
+                      <img [src]="foto" alt="" class="h-full w-full object-cover" (error)="fotoRota.set(true)" />
+                    } @else {
+                      {{ iniciales() }}
+                    }
                   </span>
                   <div class="min-w-0">
                     <p class="truncate text-sm font-semibold text-texto">{{ nombreUsuario() }}</p>
@@ -481,15 +489,13 @@
                 </div>
 
                 <!--
-                  "Editar perfil" lleva a "Mi perfil". Es un enlace y no un
-                  botón porque navega; el clic no llega al document (el menú lo
-                  frena arriba), así que cierra el menú a mano.
+                  "Editar perfil" y "Cambiar foto" llevan a "Mi perfil", donde
+                  están los datos y la foto. Son enlaces y no botones porque
+                  navegan; el clic no llega al document (el menú lo frena
+                  arriba), así que cierran el menú a mano.
 
-                  "Cambiar foto" sigue deshabilitado: el backend guarda la
-                  imagen, pero ningún endpoint la devuelve después. Se muestra
-                  igual, apagado y con el motivo, en vez de esconderlo: así se
-                  ve que está previsto, y nadie lo aprieta esperando que pase
-                  algo.
+                  "Cambiar foto" estuvo apagado hasta el 17/10/2026: el backend
+                  guardaba la imagen pero no la devolvía. Ahora viaja en el login.
                 -->
                 <div class="flex flex-col py-2">
                   <a
@@ -502,20 +508,15 @@
                     Editar perfil
                   </a>
 
-                  <button
-                    type="button"
+                  <a
+                    routerLink="/perfil"
                     role="menuitem"
-                    disabled
-                    title="Todavía no disponible"
-                    class="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-texto-suave opacity-50"
+                    class="flex items-center gap-3 px-4 py-2.5 text-left text-sm text-texto transition-colors hover:bg-fondo-panel focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-principal"
+                    (click)="cerrarMenuPerfil()"
                   >
                     <app-icono nombre="subir" class="h-4 w-4" />
                     Cambiar foto
-                  </button>
-
-                  <p class="px-4 pb-2 pt-1 text-xs leading-relaxed text-texto-suave">
-                    Cambiar la foto todavía no está disponible.
-                  </p>
+                  </a>
                 </div>
 
                 <div class="border-t border-borde py-2">
