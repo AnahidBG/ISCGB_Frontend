@@ -93,17 +93,19 @@ interface CargaUsuarioApi {
 /**
  * `ActualizarPerfilDto` del backend, sin los dos campos que "Mi perfil" no usa
  * (`genero` y `afiliacionEmergencia`: el `GET` no los devuelve, así que no se
- * pueden precargar). Todo es opcional porque el backend solo aplica los campos
- * que llegan con texto (`!string.IsNullOrWhiteSpace`) y la provincia si trae valor.
+ * pueden precargar, y un campo ausente el backend lo deja como estaba).
+ *
+ * Desde el 17/10/2026 un texto vacío borra el dato y una provincia <= 0 la
+ * borra; el correo vacío se ignora. Ver `datosAEnviar`.
  */
 interface ActualizarPerfilApi {
-  email?: string;
-  telefono?: string;
-  telefonoEmergencia?: string;
-  contactoEmergencia?: string;
-  direccion?: string;
-  lugarNacimiento?: string;
-  idProvincia?: number;
+  email: string;
+  telefono: string;
+  telefonoEmergencia: string;
+  contactoEmergencia: string;
+  direccion: string;
+  lugarNacimiento: string;
+  idProvincia: number;
 }
 
 /** Cada fila de `GET /api/Ubicaciones/paises` (`UbicacionController.cs`). */
@@ -186,8 +188,7 @@ export class UsuariosHttpService extends UsuariosService {
   }
 
   actualizarMiPerfil(datos: MisDatos): Observable<void> {
-    // Adapter de salida: solo viaja lo que tiene contenido. El backend ignora lo
-    // vacío, y mandarlo daría a entender que se puede borrar un dato.
+    // Adapter de salida: viajan todos los campos. Uno vacío borra el dato.
     const cuerpo: ActualizarPerfilApi = datosAEnviar(datos);
 
     return this.http.put(RUTAS_API.miPerfil, cuerpo).pipe(

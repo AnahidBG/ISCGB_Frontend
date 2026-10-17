@@ -67,8 +67,9 @@ export const RUTAS_API = {
 
   /**
    * La persona de la sesión actualiza sus propios datos de contacto. `PUT`, con
-   * `[Authorize]` y sin rol: el usuario sale del token. Solo aplica los campos que
-   * llegan con texto; un campo vacío o ausente se ignora, no se borra.
+   * `[Authorize]` y sin rol: el usuario sale del token. Desde el 17/10/2026 un
+   * campo que llega vacío (`""`) se BORRA y uno ausente se deja como está; la
+   * provincia con id <= 0 también se borra. El correo vacío se ignora.
    */
   miPerfil: `${URL_BASE_API}/api/Usuarios/mi-perfil`,
 

@@ -242,7 +242,7 @@ describe('UsuariosHttpService.actualizarMiPerfil', () => {
     return { completo: () => completo, error: () => error };
   }
 
-  it('hace PUT a mi-perfil y manda solo los campos con texto, sin espacios de más', () => {
+  it('hace PUT a mi-perfil con todos los campos, sin espacios de más y los vacíos vacíos', () => {
     const resultado = guardar({
       ...DATOS,
       email: ' maria@ejemplo.com ',
@@ -253,12 +253,15 @@ describe('UsuariosHttpService.actualizarMiPerfil', () => {
 
     const pedido = backend.expectOne(RUTAS_API.miPerfil);
     expect(pedido.request.method).toBe('PUT');
-    // El backend ignora lo que llega vacío: no hay que mandarlo.
+    // El backend borra lo que llega vacío ("" → null) y la provincia con id 0.
     expect(pedido.request.body).toStrictEqual({
       email: 'maria@ejemplo.com',
       telefono: '3511234567',
+      telefonoEmergencia: '',
       contactoEmergencia: 'Juan Gómez',
+      direccion: '',
       lugarNacimiento: 'Villa Dolores',
+      idProvincia: 0,
     });
 
     pedido.flush({ message: 'Datos del perfil actualizados correctamente.' });

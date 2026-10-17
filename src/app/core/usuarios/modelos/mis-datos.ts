@@ -23,7 +23,7 @@ export interface MisDatos {
 }
 
 /**
- * Los mismos datos, pero solo los que tienen contenido: lo que de verdad viaja
- * al backend. Un campo sin contenido no está (ni vacío ni `null`: no existe).
+ * Lo que de verdad viaja al backend: todos los campos, sin nulos. Un texto vacío
+ * es "borrar este dato" y la provincia 0 es "sin provincia".
  */
-export type MisDatosAEnviar = Partial<{ [campo in keyof MisDatos]: NonNullable<MisDatos[campo]> }>;
+export type MisDatosAEnviar = { [campo in keyof MisDatos]: NonNullable<MisDatos[campo]> };

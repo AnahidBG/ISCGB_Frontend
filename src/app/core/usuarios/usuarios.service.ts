@@ -118,8 +118,8 @@ export abstract class UsuariosService {
    * La persona de la sesión actualiza sus propios datos de contacto ("Mi perfil").
    * El usuario sale del token: no se pasa ningún id.
    *
-   * El backend solo aplica los campos que llegan con texto, así que un dato
-   * vacío NO se borra: se ignora (ver `datosAEnviar`). Falla con el mensaje del
+   * Un dato vacío se borra, salvo el correo, que es obligatorio (ver
+   * `datosAEnviar`). Falla con el mensaje del
    * servidor cuando lo hay y es un rechazo del pedido (por ejemplo, un correo que
    * ya usa otra persona), o con `MENSAJE_ERROR_ACTUALIZAR_MIS_DATOS`.
    */
