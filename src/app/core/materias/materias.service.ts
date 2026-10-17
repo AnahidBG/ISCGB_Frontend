@@ -1,8 +1,10 @@
 import { Observable } from 'rxjs';
 import {
+  AlumnoDisponible,
   AsignacionMateria,
   ComisionDisponible,
   DocenteDisponible,
+  InscripcionAlumno,
   NuevaMateria,
 } from './modelos/asignacion-materia';
 import { MateriaDelAlumno } from './modelos/materia-del-alumno';
@@ -23,8 +25,8 @@ export const MENSAJE_ERROR_GUARDAR_MATERIAS =
 
 /**
  * Materias del instituto (`MateriasController`, ruta `api/Materias`):
- * la lista de materias, el alta de una materia nueva y la asignación
- * docente–materia–comisión.
+ * la lista de materias, el alta de una materia nueva, la asignación
+ * docente–materia–comisión y la inscripción alumno–materia–comisión.
  *
  * "Materias y asignaciones" (Dirección y Secretaría) usa la lista completa;
  * "Reconocimiento de saberes" (el alumno elige la materia) usa solo las del
@@ -59,4 +61,18 @@ export abstract class MateriasService {
    * confirmación. Falla con el mensaje del backend si ya estaba asignada.
    */
   abstract asignar(asignacion: AsignacionMateria): Observable<string>;
+
+  /**
+   * Todos los alumnos del instituto, ordenados por apellido (SCRUM-248).
+   *
+   * Falla con `MENSAJE_ERROR_DATOS_ASIGNACION`.
+   */
+  abstract listarAlumnos(): Observable<AlumnoDisponible[]>;
+
+  /**
+   * Inscribe a un alumno en una materia y comisión (SCRUM-248). Devuelve el
+   * mensaje de confirmación. Falla con el mensaje del backend si el alumno, la
+   * materia o la comisión no existen o si ya estaba inscripto.
+   */
+  abstract inscribirAlumno(inscripcion: InscripcionAlumno): Observable<string>;
 }

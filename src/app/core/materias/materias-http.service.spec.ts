@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { RUTAS_API } from '../configuracion/api';
 import { MateriasHttpService } from './materias-http.service';
 import {
+  MENSAJE_ERROR_DATOS_ASIGNACION,
   MENSAJE_ERROR_GUARDAR_MATERIAS,
   MENSAJE_ERROR_MATERIAS,
   MENSAJE_ERROR_MIS_MATERIAS,
@@ -278,5 +279,85 @@ describe('MateriasHttpService: alta de materias y asignaciones', () => {
       .flush(null, { status: 500, statusText: 'Server Error' });
 
     expect(mensaje).toBe(MENSAJE_ERROR_GUARDAR_MATERIAS);
+  });
+});
+
+describe('MateriasHttpService: inscribir alumnos (SCRUM-248)', () => {
+  let servicio: MateriasHttpService;
+  let backend: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [MateriasHttpService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    servicio = TestBed.inject(MateriasHttpService);
+    backend = TestBed.inject(HttpTestingController);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    backend.verify();
+    vi.restoreAllMocks();
+  });
+
+  it('lista los alumnos desenvolviendo `data`', () => {
+    let alumnos: unknown = null;
+    servicio.listarAlumnos().subscribe((a) => (alumnos = a));
+
+    const pedido = backend.expectOne(RUTAS_API.alumnosDisponibles);
+    expect(pedido.request.url).toContain('/api/Materias/alumnos-disponibles');
+    pedido.flush({
+      data: [
+        { idAlumno: 3, nombreCompleto: 'Gómez, Juan (Legajo: 1203)' },
+        { idAlumno: 4, nombreCompleto: '   ' },
+      ],
+    });
+
+    expect(alumnos).toEqual([
+      { idAlumno: 3, nombreCompleto: 'Gómez, Juan (Legajo: 1203)' },
+      { idAlumno: 4, nombreCompleto: 'Alumno sin nombre cargado' },
+    ]);
+  });
+
+  it('si no se pueden traer los alumnos da el mensaje de los datos de asignación', () => {
+    let mensaje = '';
+    servicio.listarAlumnos().subscribe({ error: (e: Error) => (mensaje = e.message) });
+
+    backend
+      .expectOne(RUTAS_API.alumnosDisponibles)
+      .flush(null, { status: 500, statusText: 'Server Error' });
+
+    expect(mensaje).toBe(MENSAJE_ERROR_DATOS_ASIGNACION);
+  });
+
+  it('la inscripción manda AsignarMateriaAlumnoDto y devuelve el mensaje', () => {
+    let mensaje = '';
+    servicio
+      .inscribirAlumno({ idAlumno: 3, idMateria: 14, idComision: 1 })
+      .subscribe((m) => (mensaje = m));
+
+    const pedido = backend.expectOne(RUTAS_API.asignarMateriaAlumno);
+    expect(pedido.request.method).toBe('POST');
+    expect(pedido.request.url).toContain('/api/Materias/asignar-alumno');
+    expect(pedido.request.body).toEqual({ idAlumno: 3, idMateria: 14, idComision: 1 });
+    pedido.flush({ message: 'Materia y comisión asignadas al alumno correctamente.' });
+
+    expect(mensaje).toBe('Materia y comisión asignadas al alumno correctamente.');
+  });
+
+  it('una inscripción repetida muestra el mensaje del backend', () => {
+    let mensaje = '';
+    servicio
+      .inscribirAlumno({ idAlumno: 3, idMateria: 14, idComision: 1 })
+      .subscribe({ error: (e: Error) => (mensaje = e.message) });
+
+    backend
+      .expectOne(RUTAS_API.asignarMateriaAlumno)
+      .flush(
+        { message: 'El alumno ya se encuentra inscripto en esa materia y comisión.' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    expect(mensaje).toBe('El alumno ya se encuentra inscripto en esa materia y comisión.');
   });
 });

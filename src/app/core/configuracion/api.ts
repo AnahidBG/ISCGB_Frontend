@@ -137,6 +137,19 @@ export const RUTAS_API = {
   /** Asigna una materia a un docente en una comisión. Body: `AsignarMateriaDto`. */
   asignarMateria: `${URL_BASE_API}/api/Materias/asignar`,
 
+  /**
+   * Todos los alumnos, `{ data: [{ idAlumno, nombreCompleto }] }`, con el nombre
+   * como "Apellido, Nombre (Legajo: X)". Sin rol. Agregado el 14/10/2026.
+   */
+  alumnosDisponibles: `${URL_BASE_API}/api/Materias/alumnos-disponibles`,
+
+  /**
+   * Inscribe a un alumno en una materia y comisión. Body: `{ idAlumno, idMateria,
+   * idComision }`. Solo `Director` y `Secretario`. `400 { message }` si algo no
+   * existe o si ya estaba inscripto. Agregado el 14/10/2026.
+   */
+  asignarMateriaAlumno: `${URL_BASE_API}/api/Materias/asignar-alumno`,
+
   // --- Buscador (ISCGB_Backend/Controllers/BusquedaController.cs, clase `BuscadorController`) ---
 
   /** Personas, materias y justificativos que contienen el término. Menos de 2 letras = vacío. */
