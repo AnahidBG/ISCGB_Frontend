@@ -238,6 +238,44 @@ export const RUTAS_API = {
    * de docente.
    */
   misMesasAsignadas: `${URL_BASE_API}/api/Configuracion/mis-notificaciones`,
+
+  // --- Mesas de examen (backend del 17/10/2026, commit `d771acb`) ---
+  // Viven en tres controladores: `ConfiguracionCalendario`, `Docente` y `Configuracion`.
+
+  /**
+   * Crea la mesa y convoca a su docente, en una transacción. Body: `{ fecha,
+   * idMateria, idComision, idTipoExamen, idDocente }`, con `fecha` como `DateTime`
+   * sin zona y con hora. Solo `Director` y `Secretario`. Responde `200 { message,
+   * idExamen }`, `400 { message }` si el docente no existe y `500 { message }`.
+   */
+  registrarMesaExamen: `${URL_BASE_API}/api/ConfiguracionCalendario/registrar-mesa`,
+
+  /**
+   * Convoca a otro docente a una mesa existente. Body: `{ idExamen, idDocente }`.
+   * Pide `Director,Administrador`: como el rol Administrador no existe, en la
+   * práctica es solo `Director`. `400 { message }` si ya estaba asignado.
+   */
+  asignarDocenteAMesa: `${URL_BASE_API}/api/ConfiguracionCalendario/asignar-docente`,
+
+  /**
+   * El docente de la sesión acepta o rechaza su mesa. Body: `{ idExamen, acepta }`.
+   * Solo `Docente`. `404 { message }` si no la encuentra y `400 { message }` si ya
+   * la respondió.
+   */
+  responderAsignacionMesa: `${URL_BASE_API}/api/Docente/responder-asignacion`,
+
+  /**
+   * Las mesas rechazadas sin archivar: `[{ idExamen, idDocente, docente, materia,
+   * fecha, mensaje }]`, de la más próxima a la más lejana. Solo `Director` y
+   * `Secretario`.
+   */
+  alertasRechazoMesas: `${URL_BASE_API}/api/Configuracion/alertas-rechazos`,
+
+  /**
+   * Archiva una alerta de rechazo ("Rechazada" → "Rechazada_Vista"). Body:
+   * `{ idExamen, idDocente }`. Solo `Director` y `Secretario`.
+   */
+  ocultarAlertaRechazoMesa: `${URL_BASE_API}/api/Configuracion/ocultar-alerta-rechazo`,
 } as const;
 
 /**
