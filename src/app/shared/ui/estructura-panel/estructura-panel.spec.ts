@@ -80,6 +80,49 @@ describe('EstructuraPanel', () => {
     expect((component as any).iniciales()).toBe('?');
   });
 
+  describe('foto de perfil', () => {
+    const FOTO = 'http://localhost:5231/uploads/perfiles/usuario_5_abc.jpg';
+
+    /** El botón de la persona: hay otros con `aria-haspopup` (menú y campana). */
+    function circulo(): HTMLElement {
+      return fixture.nativeElement.querySelector('button[aria-label^="Menú de"]') as HTMLElement;
+    }
+
+    it('sin foto, el círculo muestra las iniciales', async () => {
+      fixture.componentRef.setInput('nombreUsuario', 'Milena Previgliano');
+      await fixture.whenStable();
+
+      expect(circulo().querySelector('img')).toBeNull();
+      expect(circulo().textContent).toContain('MP');
+    });
+
+    it('con foto, el círculo la muestra en lugar de las iniciales', async () => {
+      fixture.componentRef.setInput('nombreUsuario', 'Milena Previgliano');
+      fixture.componentRef.setInput('fotoUsuario', FOTO);
+      await fixture.whenStable();
+
+      expect(circulo().querySelector('img')?.getAttribute('src')).toBe(FOTO);
+      expect(circulo().textContent).not.toContain('MP');
+    });
+
+    it('si la imagen no carga vuelve a las iniciales, y una foto nueva lo vuelve a intentar', async () => {
+      fixture.componentRef.setInput('nombreUsuario', 'Milena Previgliano');
+      fixture.componentRef.setInput('fotoUsuario', FOTO);
+      await fixture.whenStable();
+
+      circulo().querySelector('img')!.dispatchEvent(new Event('error'));
+      await fixture.whenStable();
+
+      expect(circulo().querySelector('img')).toBeNull();
+      expect(circulo().textContent).toContain('MP');
+
+      fixture.componentRef.setInput('fotoUsuario', `${FOTO}?v=2`);
+      await fixture.whenStable();
+
+      expect(circulo().querySelector('img')?.getAttribute('src')).toBe(`${FOTO}?v=2`);
+    });
+  });
+
   it('con nombre vacío, la etiqueta del menú de la persona sigue siendo legible', () => {
     fixture.componentRef.setInput('nombreUsuario', '');
     fixture.detectChanges();

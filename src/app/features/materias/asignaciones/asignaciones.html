@@ -4,6 +4,7 @@
   tituloPagina="Materias y asignaciones"
   subtitulo="Cargá materias, asigná quién dicta cada una y en qué comisión, e inscribí a los alumnos."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"

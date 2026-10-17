@@ -442,14 +442,18 @@
               </span>
 
               <!--
-                La foto de perfil. El backend guarda la imagen, pero ningún
-                endpoint la devuelve, así que por ahora el círculo muestra las
-                iniciales.
+                La foto de perfil, que viaja en el login desde el 17/10/2026. Sin
+                foto, o si no carga, el círculo muestra las iniciales. `alt` vacío
+                a propósito: el botón ya se anuncia con el nombre de la persona.
               -->
               <span
-                class="flex h-10 w-10 items-center justify-center rounded-full border border-borde bg-principal-suave text-sm font-semibold text-principal"
+                class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-borde bg-principal-suave text-sm font-semibold text-principal"
               >
-                {{ iniciales() }}
+                @if (fotoVisible(); as foto) {
+                  <img [src]="foto" alt="" class="h-full w-full object-cover" (error)="fotoRota.set(true)" />
+                } @else {
+                  {{ iniciales() }}
+                }
               </span>
             </button>
 
@@ -465,9 +469,13 @@
               >
                 <div class="flex items-center gap-3 border-b border-borde px-4 py-4">
                   <span
-                    class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-principal-suave text-base font-semibold text-principal"
+                    class="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-principal-suave text-base font-semibold text-principal"
                   >
-                    {{ iniciales() }}
+                    @if (fotoVisible(); as foto) {
+                      <img [src]="foto" alt="" class="h-full w-full object-cover" (error)="fotoRota.set(true)" />
+                    } @else {
+                      {{ iniciales() }}
+                    }
                   </span>
                   <div class="min-w-0">
                     <p class="truncate text-sm font-semibold text-texto">{{ nombreUsuario() }}</p>

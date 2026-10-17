@@ -5,6 +5,7 @@
   subtitulo="Para presentar en la entidad que te lo pida."
   volverUrl="/alumno/panel"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"

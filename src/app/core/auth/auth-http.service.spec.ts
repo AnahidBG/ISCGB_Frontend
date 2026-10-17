@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { RUTAS_API } from '../configuracion/api';
+import { RUTAS_API, urlArchivoSubido } from '../configuracion/api';
 import { AuthHttpService, CLAVE_SESION } from './auth-http.service';
 import {
   MENSAJE_ENLACE_INVALIDO,
@@ -54,6 +54,68 @@ describe('AuthHttpService.actualizarCorreo', () => {
 
     expect(servicio.sesion()).toBeNull();
     expect(sessionStorage.getItem(CLAVE_SESION)).toBeNull();
+  });
+});
+
+describe('AuthHttpService.iniciarSesion: foto de perfil', () => {
+  /** Un JWT legible: solo importa que el contenido traiga un `exp` futuro. */
+  const TOKEN = `cabecera.${btoa(
+    JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600 }),
+  )}.firma`;
+
+  function respuestaLogin(extra: Record<string, unknown> = {}) {
+    return {
+      token: TOKEN,
+      usuario: 'Ana Pérez',
+      estado_usuario: true,
+      dni: '12345678',
+      telefono: null,
+      telefonoEmergencia: null,
+      lugar_Nacimiento: null,
+      nombreContactoEmergencia: null,
+      direccion: null,
+      email: 'ana@ejemplo.com',
+      idUsuario: 5,
+      roles: [{ idRol: 3, nombreRol: 'Docente' }],
+      ...extra,
+    };
+  }
+
+  let servicio: AuthHttpService;
+  let backend: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.configureTestingModule({
+      providers: [AuthHttpService, provideHttpClient(), provideHttpClientTesting()],
+    });
+    servicio = TestBed.inject(AuthHttpService);
+    backend = TestBed.inject(HttpTestingController);
+  });
+
+  afterEach(() => {
+    backend.verify();
+    sessionStorage.removeItem(CLAVE_SESION);
+  });
+
+  it('arma la URL completa de la foto que devuelve el login desde el 17/10', () => {
+    servicio.iniciarSesion({ dni: '12345678', password: 'x' }).subscribe();
+
+    backend
+      .expectOne(RUTAS_API.login)
+      .flush(respuestaLogin({ foto: '/uploads/perfiles/usuario_5_abc.jpg' }));
+
+    expect(servicio.sesion()?.fotoUrl).toBe(urlArchivoSubido('/uploads/perfiles/usuario_5_abc.jpg'));
+  });
+
+  it.each([
+    ['viene en null', { foto: null }],
+    ['no viene (un backend anterior)', {}],
+  ])('sin foto la sesión queda con `fotoUrl` en null cuando %s', (_caso, extra) => {
+    servicio.iniciarSesion({ dni: '12345678', password: 'x' }).subscribe();
+
+    backend.expectOne(RUTAS_API.login).flush(respuestaLogin(extra));
+
+    expect(servicio.sesion()?.fotoUrl).toBeNull();
   });
 });
 

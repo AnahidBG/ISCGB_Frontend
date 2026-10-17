@@ -4,6 +4,7 @@
   tituloPagina="Panel del Director"
   subtitulo="Todo el instituto y el estado de su documentación."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"

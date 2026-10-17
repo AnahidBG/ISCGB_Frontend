@@ -4,6 +4,7 @@
   tituloPagina="Mis mesas de examen"
   subtitulo="Las mesas a las que te convocaron. Confirmá si podés estar, o avisá que no para que la reasignen."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"

@@ -1,7 +1,7 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
-import { RUTAS_API } from '../configuracion/api';
+import { RUTAS_API, urlArchivoSubido } from '../configuracion/api';
 import {
   AuthService,
   MENSAJE_CREDENCIALES_INVALIDAS,
@@ -102,6 +102,8 @@ export class AuthHttpService extends AuthService {
       // Los mismos roles, pero con su id además del nombre. Hace falta para
       // los endpoints que piden número y no texto — ver `Sesion.rolesConId`.
       rolesConId: respuesta.roles ?? [],
+      // La ruta llega relativa ("/uploads/perfiles/…"): se arma la URL una sola vez acá.
+      fotoUrl: urlArchivoSubido(respuesta.foto ?? null),
       venceEl: fechaDeVencimiento(payload),
     };
   }

@@ -4,6 +4,7 @@
   tituloPagina="Mesas de examen"
   subtitulo="Armá las mesas de examen, convocá a quien las preside y resolvé las que rechazaron."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"

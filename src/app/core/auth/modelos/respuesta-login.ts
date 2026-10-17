@@ -54,6 +54,14 @@ export interface RespuestaLogin {
    * permisos salen de `roles`.
    */
   esDirectorSuplente?: boolean;
+
+  /**
+   * La foto de perfil (`Usuarios.foto_perfil`), como ruta relativa:
+   * "/uploads/perfiles/usuario_5_….jpg", o `null` si nunca subió una. Agregada
+   * por el backend el 17/10/2026 (commit `d771acb`). Pasa a `Sesion.fotoUrl`
+   * ya armada con `urlArchivoSubido`.
+   */
+  foto?: string | null;
 }
 
 /**

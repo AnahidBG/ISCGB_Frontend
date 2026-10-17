@@ -44,6 +44,13 @@ export interface Sesion {
    */
   rolesConId?: RolApi[];
 
+  /**
+   * La URL completa de la foto de perfil, lista para un `<img>`, o `null` si no
+   * tiene. OPCIONAL por la misma razón que `rolesConId`: el mock y una sesión
+   * guardada de antes del 17/10/2026 no la traen.
+   */
+  fotoUrl?: string | null;
+
   /** Momento exacto en que el token deja de servir. */
   venceEl: Date;
 }

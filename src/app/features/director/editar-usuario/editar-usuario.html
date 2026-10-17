@@ -5,6 +5,7 @@
   [subtitulo]="nombreCompleto() ? 'Modificando el perfil de ' + nombreCompleto() + '.' : ''"
   volverUrl="/director/panel"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
   [rolPrincipal]="rolPrincipal()"
   [notificaciones]="notificaciones()"
