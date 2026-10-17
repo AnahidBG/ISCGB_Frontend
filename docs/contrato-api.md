@@ -479,12 +479,13 @@ Roles desde el 17/10/2026: `limite-parciales` pide Director o Secretario,
 `registrar` y `mis-materias-docente` piden Docente, y `del-mes` pide sesión. Siguen
 sin `[Authorize]` `estado-mes`, `tipos-examen`, `modificar` y `eliminar`.
 
-> ⚠️ En el mismo commit se quitó `app.UseAuthorization()` de `Program.cs`. En .NET 10
-> `WebApplication` lo agrega solo, pero **antes** de `UseCors` y `UseAuthentication`,
-> así que lo más probable es que todo endpoint con `[Authorize]` responda `401` aunque
-> el token sea válido, y sin headers de CORS (el navegador lo muestra como error de
-> CORS). Hasta que el backend lo vuelva a poner después de `UseAuthentication()`, el
-> `sesionInterceptor` va a cerrar la sesión con cualquier pedido protegido.
+> En ese commit se quitó `app.UseAuthorization()` de `Program.cs`, y volvió el mismo
+> día con el commit `2a39708` ("fix useauthorization", PR #37 del backend): la
+> cadena es `UseCors` → `UseStaticFiles` → `UseAuthentication` → `UseAuthorization`
+> → `MapControllers`. Sin esa línea, en .NET 10 `WebApplication` agrega la
+> autorización sola pero **antes** de la autenticación, y todo endpoint con
+> `[Authorize]` respondería `401` con un token válido. Si vuelve a pasar, es lo
+> primero que hay que mirar.
 
 ### `GET /api/ConfiguracionCalendario/estado-mes?anio=2026&mes=10`
 
@@ -712,8 +713,6 @@ la grilla muestra cuántos hay cada día, sin listarlos. Ver `docs/como-probar.m
   mensaje en cada caso.
 - `modificar` y `eliminar` siguen sin `[Authorize]` y no verifican que el examen sea
   del docente que llama: cualquiera puede mover o borrar un parcial ajeno.
-- Falta `app.UseAuthorization()` después de `app.UseAuthentication()` en
-  `Program.cs` (ver el aviso de arriba).
 - `PUT limite-parciales` valida `nuevoLimite <= 0`, pero `nuevoLimite` es `int?`:
   un cuerpo sin ese campo pasa la validación y deja el límite en `null`, que el
   resto del controller lee como 2. El frontend siempre manda un entero, pero

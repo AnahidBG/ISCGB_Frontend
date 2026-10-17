@@ -103,37 +103,33 @@ tiene la bandeja de solicitudes. El contrato está en
 
 ## Pendientes para el backend
 
-Por impacto. Revisada el 17/10/2026 contra el backend de ese día (commit `d771acb`).
+Por impacto. Revisada el 17/10/2026 contra el backend de ese día (commits `d771acb`
+y `2a39708`).
 
-1. **Volver a poner `app.UseAuthorization()`** después de `app.UseAuthentication()`
-   en `Program.cs`. Se quitó el 17/10/2026, en el mismo commit que sumó los
-   `[Authorize]`. En .NET 10 `WebApplication` lo agrega solo pero antes de
-   `UseAuthentication`, así que lo protegido probablemente responda 401 con token
-   válido, y sin CORS. Detalle en `contrato-api.md`, "Calendario de exámenes".
-2. **`[Authorize(Roles = ...)]`** sigue faltando en Justificativos, en el resto de
+1. **`[Authorize(Roles = ...)]`** sigue faltando en Justificativos, en el resto de
    Legajos (solo `auditar` lo tiene) y en `modificar` y `eliminar` del calendario,
    que además no verifican que el examen sea del docente. Es la regla 5.
-3. **Mail al rechazar**, en `AuditarLegajo` y `AuditarJustificativo`. Es la
+2. **Mail al rechazar**, en `AuditarLegajo` y `AuditarJustificativo`. Es la
    regla 4.
-4. **Motivo en el rechazo de un justificativo.** `AuditarJustificativoDto` solo
+3. **Motivo en el rechazo de un justificativo.** `AuditarJustificativoDto` solo
    tiene el auditor y el estado.
-5. **`GET /api/Usuarios/{id}`** tiene que devolver CUIL, género, afiliación y
+4. **`GET /api/Usuarios/{id}`** tiene que devolver CUIL, género, afiliación y
    `DirectorSuplente`. Sin el último, editar a un suplente sin volver a tildar
    la casilla le quita la suplencia.
-6. **Validar el PDF por contenido** (magic bytes `%PDF-`) en Legajos y
+5. **Validar el PDF por contenido** (magic bytes `%PDF-`) en Legajos y
    Justificativos. Hoy se mira el `ContentType`, o nada. Es la regla 1.
-7. **Avisos automáticos.** El worker compara contra todos los tipos de
+6. **Avisos automáticos.** El worker compara contra todos los tipos de
    documento y no contra los obligatorios del rol, y el `PUT` de la frecuencia
    no tiene tope máximo. Detalle en `contrato-api.md`.
-8. **Calendario y mesas.** `del-mes` debería recibir año y mes; el límite es por
+7. **Calendario y mesas.** `del-mes` debería recibir año y mes; el límite es por
    día y Jira dice por semana (SCRUM-187); `asignar-docente` pide el rol
    `Administrador`, que no existe, y deja afuera a Secretaría; las mesas no mandan
    el mail que anuncian. Detalle en `contrato-api.md`.
-9. **Sello del certificado, a verificar.** Ahora es `sello.JPG`, pero el código lo
+8. **Sello del certificado, a verificar.** Ahora es `sello.JPG`, pero el código lo
    busca en `wwwroot/images/` y en el repo está en `wwwRoot/Images/`. En Windows
    anda; en Linux y Docker las mayúsculas importan y el certificado respondería 500.
-10. `POST /api/Auth/crear-usuario-prueba` sigue expuesto sin autenticación.
-11. `Program.cs` llama a `DbSeeder.Inicializar(context)` sin `await`, pero es
+9. `POST /api/Auth/crear-usuario-prueba` sigue expuesto sin autenticación.
+10. `Program.cs` llama a `DbSeeder.Inicializar(context)` sin `await`, pero es
     `async Task`: corre suelto y el `try/catch` no atrapa sus errores.
 
 Ya resueltos: la contraseña inicial del alta, que ahora se crea desde un enlace
@@ -143,8 +139,9 @@ endpoints de reconocimiento de saberes; el `[Authorize]` de
 `UsuariosAdminController`; `presentadoFisico` en `AuditoriaLegajoDto` (06/10/2026),
 que guarda la casilla de la revisión (SCRUM-167 y SCRUM-171), y, el 17/10/2026, el
 listado de exámenes del mes, las mesas de examen, la foto de perfil en el login,
-el borrado de datos en "Mi perfil" y los roles en Materias, ProgramasMateria,
-Configuracion y Docente.
+el borrado de datos en "Mi perfil", los roles en Materias, ProgramasMateria,
+Configuracion y Docente, y `app.UseAuthorization()`, que se había quitado en
+`d771acb` y volvió en `2a39708`.
 
 ## Cómo probarlo
 
