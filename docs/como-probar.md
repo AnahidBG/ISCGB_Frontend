@@ -494,9 +494,10 @@ mirando si la llamada salió y qué contestó.
   no tiene filas en `alumno_materia`. Se cargan en "Materias y asignaciones",
   sección "Inscribir alumno en una materia" (desde el 14/10/2026).
 - Todo lo que pide rol responde 401 y la sesión se cierra sola, aunque recién
-  hayas entrado: es el `app.UseAuthorization()` que falta en `Program.cs` desde el
-  17/10/2026. Hasta que el backend lo vuelva a poner, no hay nada que arreglar del
-  lado del frontend. Detalle en `contrato-api.md`.
+  hayas entrado: el backend que corre no tiene `app.UseAuthorization()` después de
+  `app.UseAuthentication()` en `Program.cs`. Pasó con el commit `d771acb` y se
+  arregló en `2a39708` (17/10/2026): actualizá el backend. No hay nada que arreglar
+  del lado del frontend. Detalle en `contrato-api.md`.
 - La bandeja de Secretaría no muestra una solicitud de reconocimiento que está en
   la base: solo lista las que no tienen docente asignado (`id_docente` en NULL).
 - `npm start` no compila: suele ser un import mal escrito después de mover
