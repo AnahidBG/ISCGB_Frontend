@@ -97,6 +97,12 @@ export function enlacesPorSesion(
       url: '/secretario/limite-parciales',
       icono: 'calendario',
     });
+    // Armar mesas de examen y convocar a quien las preside (SCRUM-245).
+    enlaces.push({
+      etiqueta: 'Mesas de examen',
+      url: '/mesas-examen',
+      icono: 'calendario',
+    });
   }
 
   // "Mi Legajo" y "Subir Documento" son del legajo PROPIO: no van cuando la

@@ -58,6 +58,16 @@ describe('enlacesPorSesion', () => {
     }
   });
 
+  it('"Mesas de examen" es de Dirección y Secretaría, después del límite (SCRUM-245)', () => {
+    for (const rol of ['Director', 'Secretario'] as const) {
+      const urls = urlsDe(rol);
+      expect(urls.indexOf('/mesas-examen')).toBe(urls.indexOf('/secretario/limite-parciales') + 1);
+    }
+    for (const rol of ['Docente', 'Alumno'] as const) {
+      expect(urlsDe(rol)).not.toContain('/mesas-examen');
+    }
+  });
+
   it('un Director que además es Docente tiene los dos enlaces, cada uno una sola vez', () => {
     const urls = urlsDe('Director', 'Docente');
 

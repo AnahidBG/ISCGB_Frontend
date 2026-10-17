@@ -161,6 +161,16 @@ export const routes: Routes = [
       ),
   },
   {
+    // Mesas de examen (SCRUM-245): Dirección y Secretaría arman la mesa y
+    // convocan al docente que la preside. `POST
+    // /api/ConfiguracionCalendario/registrar-mesa`, que pide los mismos dos roles.
+    path: 'mesas-examen',
+    title: 'Mesas de examen · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.director, ROLES.secretario)],
+    loadComponent: () =>
+      import('./features/mesas/mesas-examen/mesas-examen').then((m) => m.MesasExamen),
+  },
+  {
     // Alta de materias y asignación docente–materia–comisión
     // (`MateriasController`). Dirección y Secretaría.
     path: 'materias/asignaciones',

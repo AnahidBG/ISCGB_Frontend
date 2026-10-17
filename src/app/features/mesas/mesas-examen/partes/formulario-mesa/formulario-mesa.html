@@ -1,0 +1,145 @@
+<form
+  [formGroup]="formulario"
+  (ngSubmit)="enviar()"
+  aria-label="Nueva mesa de examen"
+  class="flex flex-col gap-4"
+  novalidate
+>
+  @if (error(); as mensaje) {
+    <p role="alert" class="rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+      {{ mensaje }}
+    </p>
+  } @else if (exito(); as mensaje) {
+    <p role="status" class="rounded-xl bg-aprobado/10 px-4 py-3 text-sm text-texto">
+      {{ mensaje }}
+    </p>
+  }
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    @let errorDia = errorDe('dia');
+    <app-campo-formulario etiqueta="Fecha" idCampo="mesa-dia" [requerido]="true" [error]="errorDia">
+      <input
+        id="mesa-dia"
+        type="date"
+        formControlName="dia"
+        [attr.min]="fechaMinima()"
+        [attr.aria-invalid]="errorDia !== null"
+        [attr.aria-describedby]="descripcionDe('mesa-dia', errorDia)"
+        [class]="clasesDe(errorDia)"
+      />
+    </app-campo-formulario>
+
+    @let errorHorario = errorDe('horario');
+    <app-campo-formulario
+      etiqueta="Horario"
+      idCampo="mesa-horario"
+      [requerido]="true"
+      [error]="errorHorario"
+    >
+      <input
+        id="mesa-horario"
+        type="time"
+        formControlName="horario"
+        [attr.aria-invalid]="errorHorario !== null"
+        [attr.aria-describedby]="descripcionDe('mesa-horario', errorHorario, 'ayuda-mesa-horario')"
+        [class]="clasesDe(errorHorario)"
+      />
+      <span id="ayuda-mesa-horario" class="text-xs text-texto-suave">Horario en formato 24 h.</span>
+    </app-campo-formulario>
+  </div>
+
+  @let errorMateria = errorDe('idMateria');
+  <app-campo-formulario
+    etiqueta="Materia"
+    idCampo="mesa-materia"
+    [requerido]="true"
+    [error]="errorMateria"
+  >
+    <select
+      id="mesa-materia"
+      formControlName="idMateria"
+      [attr.aria-invalid]="errorMateria !== null"
+      [attr.aria-describedby]="descripcionDe('mesa-materia', errorMateria)"
+      [class]="clasesDe(errorMateria)"
+    >
+      <option value="">Elegí una materia</option>
+      @for (materia of materias(); track materia.idMateria) {
+        <option [value]="materia.idMateria">{{ materia.nombre }}</option>
+      }
+    </select>
+  </app-campo-formulario>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    @let errorComision = errorDe('idComision');
+    <app-campo-formulario
+      etiqueta="Comisión"
+      idCampo="mesa-comision"
+      [requerido]="true"
+      [error]="errorComision"
+    >
+      <select
+        id="mesa-comision"
+        formControlName="idComision"
+        [attr.aria-invalid]="errorComision !== null"
+        [attr.aria-describedby]="descripcionDe('mesa-comision', errorComision)"
+        [class]="clasesDe(errorComision)"
+      >
+        <option value="">Elegí una comisión</option>
+        @for (comision of comisiones(); track comision.idComision) {
+          <option [value]="comision.idComision">{{ comision.nombre }}</option>
+        }
+      </select>
+    </app-campo-formulario>
+
+    @let errorTipo = errorDe('idTipoExamen');
+    <app-campo-formulario
+      etiqueta="Tipo de examen"
+      idCampo="mesa-tipo"
+      [requerido]="true"
+      [error]="errorTipo"
+    >
+      <select
+        id="mesa-tipo"
+        formControlName="idTipoExamen"
+        [attr.aria-invalid]="errorTipo !== null"
+        [attr.aria-describedby]="descripcionDe('mesa-tipo', errorTipo)"
+        [class]="clasesDe(errorTipo)"
+      >
+        <option value="">Elegí un tipo de examen</option>
+        @for (tipo of tipos(); track tipo.idTipoExamen) {
+          <option [value]="tipo.idTipoExamen">{{ tipo.nombre }}</option>
+        }
+      </select>
+    </app-campo-formulario>
+  </div>
+
+  @let errorDocente = errorDe('idDocente');
+  <app-campo-formulario
+    etiqueta="Docente que la preside"
+    idCampo="mesa-docente"
+    [requerido]="true"
+    [error]="errorDocente"
+  >
+    <select
+      id="mesa-docente"
+      formControlName="idDocente"
+      [attr.aria-invalid]="errorDocente !== null"
+      [attr.aria-describedby]="descripcionDe('mesa-docente', errorDocente, 'ayuda-mesa-docente')"
+      [class]="clasesDe(errorDocente)"
+    >
+      <option value="">Elegí un docente</option>
+      @for (docente of docentes(); track docente.idDocente) {
+        <option [value]="docente.idDocente">{{ docente.nombreCompleto }}</option>
+      }
+    </select>
+    <span id="ayuda-mesa-docente" class="text-xs text-texto-suave">
+      Le llega el aviso para que acepte o rechace la mesa.
+    </span>
+  </app-campo-formulario>
+
+  <div class="mt-2 flex justify-end">
+    <app-boton tipo="submit" [conFlecha]="false" [cargando]="enviando()" textoCargando="Creando…">
+      Crear mesa
+    </app-boton>
+  </div>
+</form>

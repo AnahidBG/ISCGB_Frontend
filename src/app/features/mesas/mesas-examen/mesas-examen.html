@@ -1,0 +1,45 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Mesas de examen"
+  subtitulo="Armá las mesas de examen y convocá a quien las preside."
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  @if (errorCarga(); as mensaje) {
+    <div role="alert" class="mb-6 rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+      {{ mensaje }}
+      <button type="button" class="ml-2 underline" (click)="cargar()">Reintentar</button>
+    </div>
+  }
+
+  @if (cargando()) {
+    <app-pantalla-carga tamano="md" mensaje="Cargando materias, comisiones y docentes…" />
+  } @else if (opciones(); as listas) {
+    <div class="grid gap-5 sm:gap-6 lg:grid-cols-2">
+      <section class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
+        <h2 class="text-base font-semibold text-texto">Nueva mesa de examen</h2>
+        <p class="mt-1 mb-5 text-sm text-texto-suave">
+          El docente recibe el aviso y confirma si puede estar. Si la rechaza, te avisamos para que
+          convoques a otro.
+        </p>
+        <app-formulario-mesa
+          [materias]="listas.materias"
+          [comisiones]="listas.comisiones"
+          [tipos]="listas.tipos"
+          [docentes]="listas.docentes"
+          [hoy]="hoy"
+          [enviando]="creando()"
+          [error]="errorMesa()"
+          [exito]="exitoMesa()"
+          [reinicio]="reinicioMesa()"
+          (guardar)="crearMesa($event)"
+        />
+      </section>
+    </div>
+  }
+</app-estructura-panel>
