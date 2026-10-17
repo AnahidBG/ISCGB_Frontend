@@ -44,22 +44,30 @@ export function validarArchivoPdf(archivo: File): string | null {
 /** Tope de la foto de perfil: alcanza de sobra para un avatar. */
 export const TAMANO_MAXIMO_FOTO_BYTES = 2 * 1024 * 1024;
 
-export const MENSAJE_FOTO_FORMATO =
-  'La foto debe ser una imagen JPG, PNG o GIF.';
+export const MENSAJE_FOTO_FORMATO = 'La foto debe ser una imagen JPG o PNG.';
 
 export const MENSAJE_FOTO_MUY_GRANDE =
   'La foto supera los 2 MB. Probá con una imagen más liviana.';
 
+/**
+ * Los formatos que acepta el backend (`UsuariosController.SubirFotoPerfil`:
+ * `.jpg`, `.jpeg` y `.png`). GIF se sacó el 17/10/2026: el front lo dejaba
+ * pasar y el backend lo rechazaba con un 400.
+ */
 const TIPOS_FOTO: Record<string, string[]> = {
   'image/jpeg': ['.jpg', '.jpeg'],
   'image/png': ['.png'],
-  'image/gif': ['.gif'],
 };
 
+/** Lo que va en el `accept` del `<input type="file">` de la foto. */
+export const ACEPTA_FOTO = [...Object.keys(TIPOS_FOTO), ...Object.values(TIPOS_FOTO).flat()].join(
+  ',',
+);
+
 /**
- * Valida una foto de perfil con los criterios habituales de plataformas como
- * Moodle: JPG, PNG o GIF y un peso acotado. No restringe dimensiones (se
- * reescalan al mostrarlas). Devuelve el mensaje de error o `null`.
+ * Valida una foto de perfil: JPG o PNG (lo que acepta el backend) y un peso
+ * acotado. No restringe dimensiones (se reescalan al mostrarlas). Devuelve el
+ * mensaje de error o `null`.
  *
  * ⚠️ Igual que `validarArchivoPdf`, no es seguridad: la validación real por
  * contenido corresponde al servidor.

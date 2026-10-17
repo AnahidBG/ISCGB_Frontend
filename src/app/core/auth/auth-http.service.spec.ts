@@ -55,6 +55,18 @@ describe('AuthHttpService.actualizarCorreo', () => {
     expect(servicio.sesion()).toBeNull();
     expect(sessionStorage.getItem(CLAVE_SESION)).toBeNull();
   });
+
+  it('actualizarFoto cambia la foto de la sesión abierta y la deja guardada', () => {
+    sessionStorage.setItem(CLAVE_SESION, JSON.stringify(SESION));
+    const servicio = crearServicio();
+
+    servicio.actualizarFoto('http://localhost:5231/uploads/perfiles/nueva.png');
+
+    expect(servicio.sesion()?.fotoUrl).toBe('http://localhost:5231/uploads/perfiles/nueva.png');
+    expect(JSON.parse(sessionStorage.getItem(CLAVE_SESION) as string).fotoUrl).toBe(
+      'http://localhost:5231/uploads/perfiles/nueva.png',
+    );
+  });
 });
 
 describe('AuthHttpService.iniciarSesion: foto de perfil', () => {

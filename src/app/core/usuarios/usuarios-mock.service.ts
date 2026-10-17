@@ -284,6 +284,18 @@ export class UsuariosMockService extends UsuariosService {
     return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
+  /**
+   * Imita a `POST /api/Usuarios/foto-perfil`: rechaza lo que no es JPG ni PNG con
+   * el mismo texto. Como no hay servidor que la sirva, devuelve una URL local del
+   * propio archivo, que vale mientras la pestaña siga abierta.
+   */
+  subirFotoPerfil(archivo: File): Observable<string> {
+    if (!/\.(jpe?g|png)$/i.test(archivo.name)) {
+      return this.fallar('Formato no válido. Solo se permiten JPG y PNG.');
+    }
+    return of(URL.createObjectURL(archivo)).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
   private fallar(mensaje: string): Observable<never> {
     return throwError(() => new Error(mensaje)).pipe(delay(DEMORA_SIMULADA_MS));
   }

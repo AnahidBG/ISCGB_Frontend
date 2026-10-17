@@ -73,6 +73,14 @@ export const RUTAS_API = {
    */
   miPerfil: `${URL_BASE_API}/api/Usuarios/mi-perfil`,
 
+  /**
+   * La persona de la sesión sube su foto de perfil. `POST` multipart con el
+   * archivo en `Foto`, con `[Authorize]` y sin rol. Solo `.jpg`, `.jpeg` y
+   * `.png` (si no, `400 { message }`). Responde `200 { message, url }`, con la
+   * ruta relativa ("/uploads/perfiles/…"). La foto vuelve en el login (`foto`).
+   */
+  fotoPerfil: `${URL_BASE_API}/api/Usuarios/foto-perfil`,
+
   // --- Gestión de usuarios (ISCGB_Backend/Controllers/CargaUsuarioController.cs) ---
   // La clase se llama `UsuariosAdminController`, así que la ruta es
   // `api/UsuariosAdmin` aunque el archivo se llame distinto.

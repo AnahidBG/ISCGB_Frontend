@@ -79,6 +79,15 @@ export class AuthHttpService extends AuthService {
     this.guardar({ ...sesion, email: correo });
   }
 
+  actualizarFoto(fotoUrl: string): void {
+    const sesion = this.sesionActual();
+    if (sesion === null) {
+      return;
+    }
+    // Mismo criterio que el correo: guardada, así sobrevive a una recarga.
+    this.guardar({ ...sesion, fotoUrl });
+  }
+
   cerrarSesion(): void {
     this.sesionActual.set(null);
     sessionStorage.removeItem(CLAVE_SESION);

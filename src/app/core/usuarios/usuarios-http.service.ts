@@ -4,7 +4,7 @@ import { Observable, catchError, forkJoin, map, of, switchMap, throwError } from
 import { ID_ROL, ROLES, Rol, RolApi } from '../auth/modelos/rol';
 import { esEndpointInexistente, mensajeDelServidor } from '../comun/error-api';
 import { aFechaSola, desdeFechaSola } from '../comun/fechas';
-import { RUTAS_API } from '../configuracion/api';
+import { RUTAS_API, urlArchivoSubido } from '../configuracion/api';
 import { datosAEnviar } from './mis-datos';
 import { MisDatos } from './modelos/mis-datos';
 import { PerfilUsuario } from './modelos/perfil-usuario';
@@ -17,6 +17,7 @@ import {
   MENSAJE_ERROR_BAJA_USUARIO,
   MENSAJE_ERROR_EDITAR_USUARIO,
   MENSAJE_ERROR_REACTIVAR_USUARIO,
+  MENSAJE_ERROR_SUBIR_FOTO,
   MENSAJE_GESTION_NO_DISPONIBLE,
   UsuariosService,
   mensajePerfilActualizado,
@@ -108,6 +109,12 @@ interface ActualizarPerfilApi {
   idProvincia: number;
 }
 
+/** Lo que devuelve `POST /api/Usuarios/foto-perfil` en un 200: la ruta relativa de la foto. */
+interface RespuestaFotoApi {
+  message?: string;
+  url?: string | null;
+}
+
 /** Cada fila de `GET /api/Ubicaciones/paises` (`UbicacionController.cs`). */
 interface PaisApi {
   idPais: number;
@@ -196,6 +203,32 @@ export class UsuariosHttpService extends UsuariosService {
       catchError((error: HttpErrorResponse) =>
         throwError(() => new Error(mensajeAlActualizarMisDatos(error))),
       ),
+    );
+  }
+
+  subirFotoPerfil(archivo: File): Observable<string> {
+    // El nombre del campo es el de la propiedad de `SubirFotoDto`.
+    const cuerpo = new FormData();
+    cuerpo.append('Foto', archivo);
+
+    return this.http.post<RespuestaFotoApi>(RUTAS_API.fotoPerfil, cuerpo).pipe(
+      map((respuesta) => {
+        const url = urlArchivoSubido(respuesta?.url ?? null);
+        if (url === null) {
+          throw new Error('La respuesta no trae la URL de la foto.');
+        }
+        return url;
+      }),
+      catchError((error: unknown) => {
+        const delServidor =
+          error instanceof HttpErrorResponse && error.status === 400
+            ? mensajeDelServidor(error)
+            : null;
+        if (delServidor === null) {
+          console.error('Error al subir la foto de perfil:', error);
+        }
+        return throwError(() => new Error(delServidor ?? MENSAJE_ERROR_SUBIR_FOTO));
+      }),
     );
   }
 

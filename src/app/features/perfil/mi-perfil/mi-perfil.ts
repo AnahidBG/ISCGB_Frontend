@@ -36,6 +36,7 @@ import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 import { DatosDeIdentidad } from './partes/datos-de-identidad/datos-de-identidad';
 import { FormularioMisDatos } from './partes/formulario-mis-datos/formulario-mis-datos';
+import { FotoPerfil } from './partes/foto-perfil/foto-perfil';
 
 /** El pedido de la persona y de las provincias, con su fase (mismo criterio que `LimiteParciales`). */
 type CargaPerfil =
@@ -51,6 +52,9 @@ const SUBTITULO = 'Actualizá tus datos de contacto.';
 /** Lo que se avisa cuando el guardado sale bien. */
 const MENSAJE_GUARDADO = 'Tus datos se actualizaron.';
 
+/** Lo que se avisa cuando la foto se subió bien. */
+const MENSAJE_FOTO_SUBIDA = 'Tu foto se actualizó.';
+
 /**
  * Mi perfil: cualquier persona con sesión, de cualquier rol, edita sus propios datos
  * de contacto (correo, teléfonos, contacto de emergencia, dirección y lugar de
@@ -61,12 +65,15 @@ const MENSAJE_GUARDADO = 'Tus datos se actualizaron.';
  * correo cambia, además se actualiza la sesión (`AuthService.actualizarCorreo`) para
  * que el encabezado lo muestre sin volver a iniciar sesión.
  *
+ * También cambia la foto de perfil (`UsuariosService.subirFotoPerfil`, `POST
+ * /api/Usuarios/foto-perfil`) y la deja en la sesión (`AuthService.actualizarFoto`).
+ *
  * Contenedor: es el único que conoce los servicios. Los presentacionales viven en
- * `partes/`: `datos-de-identidad` y `formulario-mis-datos`.
+ * `partes/`: `foto-perfil`, `datos-de-identidad` y `formulario-mis-datos`.
  */
 @Component({
   selector: 'app-mi-perfil',
-  imports: [EstructuraPanel, PantallaCarga, DatosDeIdentidad, FormularioMisDatos],
+  imports: [EstructuraPanel, PantallaCarga, FotoPerfil, DatosDeIdentidad, FormularioMisDatos],
   templateUrl: './mi-perfil.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -143,6 +150,10 @@ export class MiPerfil {
   protected readonly errorGuardado = signal<string | null>(null);
   protected readonly confirmacion = signal<string | null>(null);
 
+  protected readonly subiendoFoto = signal(false);
+  protected readonly errorFoto = signal<string | null>(null);
+  protected readonly confirmacionFoto = signal<string | null>(null);
+
   constructor() {
     this.campana.refrescar();
   }
@@ -181,6 +192,31 @@ export class MiPerfil {
         error: (fallo: Error) => {
           this.errorGuardado.set(fallo.message);
           this.guardando.set(false);
+        },
+      });
+  }
+
+  protected subirFoto(archivo: File): void {
+    if (this.subiendoFoto()) {
+      return;
+    }
+    this.subiendoFoto.set(true);
+    this.errorFoto.set(null);
+    this.confirmacionFoto.set(null);
+
+    this.usuarios
+      .subirFotoPerfil(archivo)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (fotoUrl) => {
+          // La sesión es de donde la leen el encabezado y esta misma pantalla.
+          this.auth.actualizarFoto(fotoUrl);
+          this.confirmacionFoto.set(MENSAJE_FOTO_SUBIDA);
+          this.subiendoFoto.set(false);
+        },
+        error: (fallo: Error) => {
+          this.errorFoto.set(fallo.message);
+          this.subiendoFoto.set(false);
         },
       });
   }

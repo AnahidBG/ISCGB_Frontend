@@ -300,7 +300,7 @@ describe('EstructuraPanel', () => {
       expect(menuPerfil()).not.toBeNull();
     });
 
-    it('"Editar perfil" lleva a /perfil y cierra el menú; "Cambiar foto" sigue apagado', async () => {
+    it('"Editar perfil" y "Cambiar foto" llevan a /perfil y cierran el menú', async () => {
       botonPersona().click();
       await fixture.whenStable();
       fixture.detectChanges();
@@ -309,7 +309,8 @@ describe('EstructuraPanel', () => {
       const editar = opciones.find((o) => o.textContent?.trim() === 'Editar perfil');
       const foto = opciones.find((o) => o.textContent?.trim() === 'Cambiar foto');
       expect(editar?.getAttribute('href')).toBe('/perfil');
-      expect((foto as HTMLButtonElement).disabled).toBe(true);
+      // Desde que el login devuelve la foto (17/10/2026), cambiarla tiene sentido.
+      expect(foto?.getAttribute('href')).toBe('/perfil');
 
       editar!.click();
       await fixture.whenStable();
