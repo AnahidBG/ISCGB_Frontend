@@ -1,0 +1,146 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Configuración"
+  [volverUrl]="rutaPanel()"
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
+  (cerrarSesion)="cerrarSesion()"
+>
+ 
+  <div class="flex w-full justify-center items-center py-2">
+    
+    @if (!exito()) {
+      <!-- Formulario de Cambio de Contraseña Centrado -->
+      <div class="w-full max-w-2xl rounded-tarjeta bg-superficie p-8 shadow-marca-md border border-borde">
+        
+        <h2 class="text-2xl font-bold text-texto">Cambiar contraseña</h2>
+        <p class="mt-1 text-sm text-texto-suave">
+          Ingresá tu contraseña actual y elegí una nueva.
+        </p>
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="mt-6 flex flex-col gap-5">
+          
+          <!-- Contraseña actual -->
+          <div class="flex flex-col gap-1.5">
+            <label for="passwordActual" class="text-xs font-semibold text-[#46695F]">
+              Contraseña actual *
+            </label>
+            <input
+              id="passwordActual"
+              type="password"
+              formControlName="passwordActual"
+              placeholder="••••••••"
+              class="w-full rounded-control border border-borde bg-superficie px-4 py-2.5 text-sm text-texto outline-none transition-colors focus:border-[#46695F] focus:ring-1 focus:ring-[#46695F]"
+            />
+            @if (form.get('passwordActual')?.touched && form.get('passwordActual')?.invalid) {
+              <p class="text-xs text-rechazado font-medium px-1 mt-0.5">
+                Ingresá tu contraseña actual.
+              </p>
+            }
+          </div>
+
+          <hr class="border-borde my-1" />
+
+          <!-- Contraseña nueva -->
+          <div class="flex flex-col gap-1.5">
+            <label for="nuevaPassword" class="text-xs font-semibold text-[#46695F]">
+              Contraseña nueva *
+            </label>
+            <input
+              id="nuevaPassword"
+              type="password"
+              formControlName="nuevaPassword"
+              placeholder="••••••••"
+              class="w-full rounded-control border border-borde bg-superficie px-4 py-2.5 text-sm text-texto outline-none transition-colors focus:border-[#46695F] focus:ring-1 focus:ring-[#46695F]"
+            />
+            @if (form.get('nuevaPassword')?.touched && form.get('nuevaPassword')?.invalid) {
+              <p class="text-xs text-rechazado font-medium px-1 mt-0.5">
+                La contraseña todavía no cumple todos los requisitos.
+              </p>
+            }
+          </div>
+
+          <!-- Requisitos de la contraseña -->
+          <app-requisitos-password 
+            [password]="form.get('nuevaPassword')?.value || ''"
+            [dni]="dniUsuario()"
+          ></app-requisitos-password>
+
+          <!-- Repetir contraseña nueva -->
+          <div class="flex flex-col gap-1.5">
+            <label for="confirmPassword" class="text-xs font-semibold text-[#46695F]">
+              Repetir contraseña nueva *
+            </label>
+            <input
+              id="confirmPassword"
+              type="password"
+              formControlName="confirmPassword"
+              placeholder="••••••••"
+              class="w-full rounded-control border border-borde bg-superficie px-4 py-2.5 text-sm text-texto outline-none transition-colors focus:border-[#46695F] focus:ring-1 focus:ring-[#46695F]"
+            />
+            @if (form.get('confirmPassword')?.touched && (form.errors?.['noCoinciden'] || form.get('confirmPassword')?.invalid)) {
+              <p class="text-xs text-rechazado font-medium px-1 mt-0.5">
+                Las contraseñas no coinciden.
+              </p>
+            }
+          </div>
+
+          <!-- Botones de Acción -->
+          <div class="flex items-center justify-end gap-3 mt-4">
+            <button
+              type="button"
+              (click)="cancelar()"
+              class="rounded-control border border-borde bg-superficie px-5 py-2.5 text-sm font-semibold text-texto hover:bg-fondo transition-colors"
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="submit"
+              [disabled]="form.invalid || cargando()"
+              class="rounded-control bg-[#46695F] px-6 py-2.5 text-sm font-semibold text-superficie hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-marca-sm"
+            >
+              @if (cargando()) {
+                Guardando...
+              } @else {
+                Guardar contraseña
+              }
+            </button>
+          </div>
+
+        </form>
+      </div>
+    } @else {
+      <!-- TarjetaResultado de Éxito con color #2F8F5B -->
+      <div class="w-full max-w-2xl rounded-2xl border border-borde bg-superficie px-8 py-12 text-center shadow-marca-md flex flex-col items-center">
+        
+        <!-- Círculo Verde con color exacto #2F8F5B -->
+        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#2F8F5B] text-superficie mb-4">
+          <svg viewBox="0 0 16 16" class="h-6 w-6" aria-hidden="true">
+            <path d="m3.5 8.5 3 3 6-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <h3 class="text-xl font-bold text-texto">Contraseña actualizada</h3>
+        <p class="mt-1.5 text-sm text-texto-suave max-w-md">
+          La próxima vez que inicies sesión, usá tu contraseña nueva.
+        </p>
+
+        <button 
+          type="button"
+          (click)="cancelar()" 
+          class="mt-6 rounded-control bg-[#46695F] px-6 py-2.5 text-sm font-semibold text-superficie hover:opacity-90 transition-colors shadow-marca-sm"
+        >
+          Volver al panel
+        </button>
+
+      </div>
+    }
+
+  </div>
+</app-estructura-panel>
