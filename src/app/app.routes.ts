@@ -330,19 +330,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/perfil/mi-perfil/mi-perfil').then((m) => m.MiPerfil),
   },
   {
-    // "Próximamente": cambio de contraseña y preferencias de cuenta
-    // (Sprint 3 del roadmap). Ver features/proximamente/proximamente.ts.
     path: 'configuracion',
     title: 'Configuración · ISCGB',
     canActivate: [authGuard],
-    data: {
-      titulo: 'Configuración',
-      descripcion: 'Cambio de contraseña y preferencias de tu cuenta en el sistema.',
-      disponibleDesde: 'Sprint 3 · octubre de 2026',
-      icono: 'configuracion',
-    },
     loadComponent: () =>
-      import('./features/proximamente/proximamente').then((m) => m.Proximamente),
+      import('./features/configuracion/configuracion').then((m) => m.Configuracion),
   },
   {
     // Herramienta interna: el muestrario de componentes y tokens.
