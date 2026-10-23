@@ -143,7 +143,9 @@ Dirección. El front los mantiene separados (`RUTAS_API.establecerPassword` y
 ### Pendientes del backend
 
 - Validar la política de contraseñas (8 caracteres, mayúscula, minúscula y número):
-  hoy solo exige que no venga vacía. El front la valida, pero es UX (SCRUM-225).
+  hoy solo exige que no venga vacía. El front la valida, pero es UX (SCRUM-225). La
+  regla de que no incluya el DNI solo la puede controlar el back: `/restablecer-password`
+  no conoce el DNI.
 - No existe el cambio con la contraseña actual. Por eso "Configuración" manda el mismo
   enlace de recupero al correo de la sesión.
 - El mail de recupero reusa la plantilla del alta: el asunto dice "Configura tu

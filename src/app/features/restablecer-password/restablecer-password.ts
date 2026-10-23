@@ -28,7 +28,11 @@ export const ESPERA_REDIRECCION_MS = 3000;
  *
  * Igual que en `crear-password`: acá solo hay un token, no el DNI, y la regla
  * `sin-dni` daría "cumple" siempre. Mostrarla tildada sería mentirle a la
- * persona. La regla la sigue controlando "Configuración", que sí tiene el DNI.
+ * persona.
+ *
+ * ⚠️ Como la contraseña nueva se elige siempre acá (también cuando se pide desde
+ * "Configuración"), en el recupero nadie controla que no incluya el DNI. Queda
+ * para cuando el backend valide la política (SCRUM-225).
  */
 const REQUISITOS_OMITIDOS: readonly string[] = ['sin-dni'];
 
