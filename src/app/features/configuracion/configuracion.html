@@ -2,6 +2,7 @@
   [enlaces]="enlaces()"
   encabezado="titulo"
   tituloPagina="Configuración"
+  [subtitulo]="subtitulo"
   [volverUrl]="rutaPanel()"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [fotoUsuario]="sesion()?.fotoUrl ?? null"
@@ -11,136 +12,92 @@
   [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
- 
-  <div class="flex w-full justify-center items-center py-2">
-    
-    @if (!exito()) {
-      <!-- Formulario de Cambio de Contraseña Centrado -->
-      <div class="w-full max-w-2xl rounded-tarjeta bg-superficie p-8 shadow-marca-md border border-borde">
-        
-        <h2 class="text-2xl font-bold text-texto">Cambiar contraseña</h2>
+  <div class="flex w-full justify-center py-2">
+    <section
+      aria-labelledby="titulo-cambiar-contrasena"
+      class="w-full max-w-2xl rounded-tarjeta border border-borde bg-superficie p-8 shadow-marca-md"
+    >
+      @if (!enviado()) {
+        <h2 id="titulo-cambiar-contrasena" class="text-2xl font-bold text-texto">
+          Cambiar contraseña
+        </h2>
         <p class="mt-1 text-sm text-texto-suave">
-          Ingresá tu contraseña actual y elegí una nueva.
+          Por seguridad, la contraseña se cambia con un enlace que te mandamos por correo. Lo abrís,
+          elegís la contraseña nueva y listo.
         </p>
 
-        <form [formGroup]="form" (ngSubmit)="onSubmit()" class="mt-6 flex flex-col gap-5">
-          
-          <!-- Contraseña actual -->
-          <div class="flex flex-col gap-1.5">
-            <label for="passwordActual" class="text-xs font-semibold text-[#46695F]">
-              Contraseña actual *
-            </label>
-            <input
-              id="passwordActual"
-              type="password"
-              formControlName="passwordActual"
-              placeholder="••••••••"
-              class="w-full rounded-control border border-borde bg-superficie px-4 py-2.5 text-sm text-texto outline-none transition-colors focus:border-[#46695F] focus:ring-1 focus:ring-[#46695F]"
-            />
-            @if (form.get('passwordActual')?.touched && form.get('passwordActual')?.invalid) {
-              <p class="text-xs text-rechazado font-medium px-1 mt-0.5">
-                Ingresá tu contraseña actual.
-              </p>
-            }
-          </div>
+        <p class="mt-5 rounded-xl bg-fondo-panel px-4 py-3 text-sm text-texto">
+          @if (correo(); as email) {
+            Lo vamos a enviar a <strong class="font-semibold">{{ email }}</strong> y vence en 1
+            hora.
+          } @else {
+            Lo vamos a enviar al correo que tenés registrado en el instituto, y vence en 1 hora.
+          }
+        </p>
 
-          <hr class="border-borde my-1" />
+        <!-- `role="alert"`: el lector de pantalla lo anuncia apenas aparece. -->
+        @if (errorEnvio(); as mensaje) {
+          <p
+            role="alert"
+            class="mt-5 rounded-lg border border-rechazado/25 bg-rechazado/8 px-4 py-3 text-sm text-rechazado"
+          >
+            {{ mensaje }}
+          </p>
+        }
 
-          <!-- Contraseña nueva -->
-          <div class="flex flex-col gap-1.5">
-            <label for="nuevaPassword" class="text-xs font-semibold text-[#46695F]">
-              Contraseña nueva *
-            </label>
-            <input
-              id="nuevaPassword"
-              type="password"
-              formControlName="nuevaPassword"
-              placeholder="••••••••"
-              class="w-full rounded-control border border-borde bg-superficie px-4 py-2.5 text-sm text-texto outline-none transition-colors focus:border-[#46695F] focus:ring-1 focus:ring-[#46695F]"
-            />
-            @if (form.get('nuevaPassword')?.touched && form.get('nuevaPassword')?.invalid) {
-              <p class="text-xs text-rechazado font-medium px-1 mt-0.5">
-                La contraseña todavía no cumple todos los requisitos.
-              </p>
-            }
-          </div>
-
-          <!-- Requisitos de la contraseña -->
-          <app-requisitos-password 
-            [password]="form.get('nuevaPassword')?.value || ''"
-            [dni]="dniUsuario()"
-          ></app-requisitos-password>
-
-          <!-- Repetir contraseña nueva -->
-          <div class="flex flex-col gap-1.5">
-            <label for="confirmPassword" class="text-xs font-semibold text-[#46695F]">
-              Repetir contraseña nueva *
-            </label>
-            <input
-              id="confirmPassword"
-              type="password"
-              formControlName="confirmPassword"
-              placeholder="••••••••"
-              class="w-full rounded-control border border-borde bg-superficie px-4 py-2.5 text-sm text-texto outline-none transition-colors focus:border-[#46695F] focus:ring-1 focus:ring-[#46695F]"
-            />
-            @if (form.get('confirmPassword')?.touched && (form.errors?.['noCoinciden'] || form.get('confirmPassword')?.invalid)) {
-              <p class="text-xs text-rechazado font-medium px-1 mt-0.5">
-                Las contraseñas no coinciden.
-              </p>
-            }
-          </div>
-
-          <!-- Botones de Acción -->
-          <div class="flex items-center justify-end gap-3 mt-4">
-            <button
-              type="button"
-              (click)="cancelar()"
-              class="rounded-control border border-borde bg-superficie px-5 py-2.5 text-sm font-semibold text-texto hover:bg-fondo transition-colors"
-            >
-              Cancelar
-            </button>
-
-            <button
-              type="submit"
-              [disabled]="form.invalid || cargando()"
-              class="rounded-control bg-[#46695F] px-6 py-2.5 text-sm font-semibold text-superficie hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-marca-sm"
-            >
-              @if (cargando()) {
-                Guardando...
-              } @else {
-                Guardar contraseña
-              }
-            </button>
-          </div>
-
-        </form>
-      </div>
-    } @else {
-      <!-- TarjetaResultado de Éxito con color #2F8F5B -->
-      <div class="w-full max-w-2xl rounded-2xl border border-borde bg-superficie px-8 py-12 text-center shadow-marca-md flex flex-col items-center">
-        
-        <!-- Círculo Verde con color exacto #2F8F5B -->
-        <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[#2F8F5B] text-superficie mb-4">
-          <svg viewBox="0 0 16 16" class="h-6 w-6" aria-hidden="true">
-            <path d="m3.5 8.5 3 3 6-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+        <div class="mt-6 flex flex-wrap items-center justify-end gap-3">
+          <app-boton nivel="terciario" [href]="rutaPanel()" [conFlecha]="false">
+            Cancelar
+          </app-boton>
+          <app-boton
+            nivel="secundario"
+            [cargando]="enviando()"
+            textoCargando="Enviando…"
+            [conFlecha]="false"
+            (click)="enviarEnlace()"
+          >
+            Enviarme el enlace
+          </app-boton>
         </div>
+      } @else {
+        <div class="flex flex-col items-center px-4 py-6 text-center">
+          <div
+            class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-aprobado text-superficie"
+          >
+            <svg viewBox="0 0 16 16" class="h-6 w-6" aria-hidden="true">
+              <path
+                d="m3.5 8.5 3 3 6-7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
 
-        <h3 class="text-xl font-bold text-texto">Contraseña actualizada</h3>
-        <p class="mt-1.5 text-sm text-texto-suave max-w-md">
-          La próxima vez que inicies sesión, usá tu contraseña nueva.
-        </p>
+          <h2 id="titulo-cambiar-contrasena" class="text-xl font-bold text-texto">
+            Te enviamos el enlace
+          </h2>
+          <p role="status" class="mt-1.5 max-w-md text-sm text-texto-suave">
+            @if (correo(); as email) {
+              Revisá {{ email }}.
+            } @else {
+              Revisá tu correo.
+            }
+            El enlace vence en 1 hora. Si no lo ves, buscalo en la carpeta de spam.
+          </p>
 
-        <button 
-          type="button"
-          (click)="cancelar()" 
-          class="mt-6 rounded-control bg-[#46695F] px-6 py-2.5 text-sm font-semibold text-superficie hover:opacity-90 transition-colors shadow-marca-sm"
-        >
-          Volver al panel
-        </button>
-
-      </div>
-    }
-
+          <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <app-boton nivel="terciario" [conFlecha]="false" (click)="volverAEnviar()">
+              ¿No te llegó? Enviar de nuevo
+            </app-boton>
+            <app-boton nivel="secundario" [href]="rutaPanel()" [conFlecha]="false">
+              Volver al panel
+            </app-boton>
+          </div>
+        </div>
+      }
+    </section>
   </div>
 </app-estructura-panel>

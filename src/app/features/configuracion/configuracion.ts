@@ -1,97 +1,106 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
+import { destinoSegunRoles } from '../../core/auth/destino-por-rol';
+import { normalizarDni } from '../../core/auth/dni';
 import { rolPrincipalDe } from '../../core/auth/rol-principal';
 import { CampanaService } from '../../core/notificaciones/campana.service';
-import { destinoSegunRoles } from '../../core/auth/destino-por-rol';
+import { Boton } from '../../shared/ui/boton/boton';
 import { enlacesPorSesion } from '../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../shared/ui/estructura-panel/estructura-panel';
-import { RequisitosPassword } from '../../shared/ui/requisitos-password/requisitos-password';
-import { passwordCumpleTodo } from '../../core/auth/password';
-import { of } from 'rxjs';
-import { delay } from 'rxjs/operators';
 
+/** Lo que muestra el encabezado debajo del título. */
+const SUBTITULO = 'Seguridad de tu cuenta.';
+
+/**
+ * Configuración: cambio de contraseña desde la cuenta (SCRUM-28).
+ *
+ * El backend no tiene un endpoint para cambiar la contraseña con la actual
+ * (al 19/10/2026 solo existe el recupero por mail). Por eso, en vez de pedir
+ * la contraseña actual y la nueva, esta pantalla manda el enlace de recupero
+ * al correo de la sesión, con el DNI de la sesión
+ * (`AuthService.solicitarRecuperacion` → `POST /api/Auth/recuperar-contrasena`).
+ * La contraseña nueva se elige en `/restablecer-password`, como en el recupero.
+ *
+ * Cuando backend agregue el cambio con la contraseña actual, esta pantalla
+ * vuelve al formulario que había diseñado Gonza (rama
+ * `feature/cambio-contrasenia-mi-cuenta`).
+ *
+ * Contenedor: es el único que conoce los servicios.
+ */
 @Component({
   selector: 'app-configuracion',
-  standalone: true,
-  imports: [ReactiveFormsModule, EstructuraPanel, RequisitosPassword],
+  imports: [EstructuraPanel, Boton],
   templateUrl: './configuracion.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Configuracion {
-  private readonly fb = inject(FormBuilder);
   private readonly auth = inject(AuthService);
   private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
+  private readonly destruccion = inject(DestroyRef);
 
-  protected readonly cargando = signal<boolean>(false);
-  protected readonly exito = signal<boolean>(false);
-
+  protected readonly subtitulo = SUBTITULO;
   protected readonly sesion = this.auth.sesion;
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
-  protected readonly notificaciones = this.campana.total;
-  protected readonly notificacionesDetalle = this.campana.detalle;
   protected readonly rutaPanel = computed(() => destinoSegunRoles(this.sesion()));
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
-  // Obtenemos el DNI del usuario logueado para que valide la regla 'sin-dni'
-  protected readonly dniUsuario = computed(() => this.sesion()?.dni || '');
+  /** La campana del encabezado, igual en todas las pantallas (`CampanaService`). */
+  protected readonly notificaciones = this.campana.total;
+  protected readonly notificacionesDetalle = this.campana.detalle;
+
+  /** El correo al que llega el enlace, o `null` si la sesión no lo trae. */
+  protected readonly correo = computed(() => {
+    const email = this.sesion()?.email?.trim() ?? '';
+    return email === '' ? null : email;
+  });
+
+  protected readonly enviando = signal(false);
+  protected readonly enviado = signal(false);
+
+  /** Falla de conexión o del servidor del último envío. */
+  protected readonly errorEnvio = signal<string | null>(null);
 
   constructor() {
     this.campana.refrescar();
   }
 
-  // Validador custom para ver si cumple todos los requisitos (incluyendo el DNI)
-  private validarNuevaPassword(control: AbstractControl) {
-    const val = control.value || '';
-    if (!val) return null;
-    return passwordCumpleTodo(val, this.dniUsuario()) ? null : { requisitos: true };
-  }
-
-  protected readonly form = this.fb.group({
-    passwordActual: ['', [Validators.required]],
-    nuevaPassword: ['', [Validators.required, (c: AbstractControl) => this.validarNuevaPassword(c)]],
-    confirmPassword: ['', [Validators.required]],
-  }, {
-    validators: (group) => {
-      const pass = group.get('nuevaPassword')?.value;
-      const confirm = group.get('confirmPassword')?.value;
-      if (!pass || !confirm) return null;
-      return pass === confirm ? null : { noCoinciden: true };
-    }
-  });
-
-  // Simulación local mientras no esté el endpoint en el backend
-  private simularCambioPassword() {
-    return of(true).pipe(delay(800));
-  }
-
-  protected onSubmit(): void {
-    if (this.form.invalid) {
-      this.form.markAllAsTouched();
+  protected enviarEnlace(): void {
+    const dni = normalizarDni(this.sesion()?.dni ?? '');
+    if (this.enviando() || dni === '') {
       return;
     }
 
-    this.cargando.set(true);
+    this.enviando.set(true);
+    this.errorEnvio.set(null);
 
-    this.simularCambioPassword().subscribe({
-      next: () => {
-        this.cargando.set(false);
-        this.exito.set(true);
-      }
-    });
+    this.auth
+      .solicitarRecuperacion(dni)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: () => {
+          this.enviando.set(false);
+          this.enviado.set(true);
+        },
+        error: (fallo: Error) => {
+          this.enviando.set(false);
+          this.errorEnvio.set(fallo.message);
+        },
+      });
   }
 
-  protected cancelar(): void {
-    // Resetea el formulario y te devuelve al panel principal del rol del usuario
-    this.form.reset();
-    this.router.navigate([this.rutaPanel()]);
-  }
-
-  protected resetearFormulario(): void {
-    this.exito.set(false);
-    this.form.reset();
+  /** "¿No te llegó?": vuelve a mostrar el botón de envío. */
+  protected volverAEnviar(): void {
+    this.enviado.set(false);
   }
 
   protected cerrarSesion(): void {
