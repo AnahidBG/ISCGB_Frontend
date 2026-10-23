@@ -32,6 +32,14 @@ class AuthDePrueba extends AuthService {
     return of(undefined);
   }
 
+  solicitarRecuperacion(): Observable<void> {
+    return of(undefined);
+  }
+
+  restablecerPassword(): Observable<void> {
+    return of(undefined);
+  }
+
   actualizarCorreo(): void {}
 
   actualizarFoto(): void {}
