@@ -45,10 +45,11 @@ Para probarlo está el usuario simulado `55555555`, "Dora Directora y Docente".
 
 ## Recuperar contraseña
 
-`features/recuperar-contrasena/` es una pantalla pública, sin `authGuard`, que
-simula el envío con un `setTimeout` y no manda ningún correo. Se lo dice a
-quien la usa. El enlace del login pasó de un botón deshabilitado a un enlace a
-`/recuperar-contrasena`.
+`features/recuperar-contrasena/` es una pantalla pública, sin `authGuard`. Desde
+el 23/10/2026 manda el mail de verdad (`POST /api/Auth/recuperar-contrasena`), y
+el enlace del mail abre `features/restablecer-password/`. El enlace del login
+pasó de un botón deshabilitado a un enlace a `/recuperar-contrasena`. Detalle en
+`contrato-api.md`, "Recupero y cambio de contraseña".
 
 ## Lo que hay que saber
 
