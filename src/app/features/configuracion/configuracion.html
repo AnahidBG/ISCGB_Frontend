@@ -1,0 +1,103 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Configuración"
+  [subtitulo]="subtitulo"
+  [volverUrl]="rutaPanel()"
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <div class="flex w-full justify-center py-2">
+    <section
+      aria-labelledby="titulo-cambiar-contrasena"
+      class="w-full max-w-2xl rounded-tarjeta border border-borde bg-superficie p-8 shadow-marca-md"
+    >
+      @if (!enviado()) {
+        <h2 id="titulo-cambiar-contrasena" class="text-2xl font-bold text-texto">
+          Cambiar contraseña
+        </h2>
+        <p class="mt-1 text-sm text-texto-suave">
+          Por seguridad, la contraseña se cambia con un enlace que te mandamos por correo. Lo abrís,
+          elegís la contraseña nueva y listo.
+        </p>
+
+        <p class="mt-5 rounded-xl bg-fondo-panel px-4 py-3 text-sm text-texto">
+          @if (correo(); as email) {
+            Lo vamos a enviar a <strong class="font-semibold">{{ email }}</strong> y vence en 1
+            hora.
+          } @else {
+            Lo vamos a enviar al correo que tenés registrado en el instituto, y vence en 1 hora.
+          }
+        </p>
+
+        <!-- `role="alert"`: el lector de pantalla lo anuncia apenas aparece. -->
+        @if (errorEnvio(); as mensaje) {
+          <p
+            role="alert"
+            class="mt-5 rounded-lg border border-rechazado/25 bg-rechazado/8 px-4 py-3 text-sm text-rechazado"
+          >
+            {{ mensaje }}
+          </p>
+        }
+
+        <div class="mt-6 flex flex-wrap items-center justify-end gap-3">
+          <app-boton nivel="terciario" [href]="rutaPanel()" [conFlecha]="false">
+            Cancelar
+          </app-boton>
+          <app-boton
+            nivel="secundario"
+            [cargando]="enviando()"
+            textoCargando="Enviando…"
+            [conFlecha]="false"
+            (click)="enviarEnlace()"
+          >
+            Enviarme el enlace
+          </app-boton>
+        </div>
+      } @else {
+        <div class="flex flex-col items-center px-4 py-6 text-center">
+          <div
+            class="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-aprobado text-superficie"
+          >
+            <svg viewBox="0 0 16 16" class="h-6 w-6" aria-hidden="true">
+              <path
+                d="m3.5 8.5 3 3 6-7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </div>
+
+          <h2 id="titulo-cambiar-contrasena" class="text-xl font-bold text-texto">
+            Te enviamos el enlace
+          </h2>
+          <p role="status" class="mt-1.5 max-w-md text-sm text-texto-suave">
+            @if (correo(); as email) {
+              Revisá {{ email }}.
+            } @else {
+              Revisá tu correo.
+            }
+            El enlace vence en 1 hora. Si no lo ves, buscalo en la carpeta de spam.
+          </p>
+
+          <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+            <app-boton nivel="terciario" [conFlecha]="false" (click)="volverAEnviar()">
+              ¿No te llegó? Enviar de nuevo
+            </app-boton>
+            <app-boton nivel="secundario" [href]="rutaPanel()" [conFlecha]="false">
+              Volver al panel
+            </app-boton>
+          </div>
+        </div>
+      }
+    </section>
+  </div>
+</app-estructura-panel>

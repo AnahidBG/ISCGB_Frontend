@@ -7,6 +7,25 @@ export const RUTAS_API = {
    * Vive en `UsuariosAdmin` pero la consume `AuthService` — ver su contrato.
    */
   establecerPassword: `${URL_BASE_API}/api/UsuariosAdmin/establecer-password`,
+
+  // --- Recupero de contraseña (ISCGB_Backend/Controllers/AuthController.cs) ---
+  // Confirmado leyendo el código del backend del 19/10/2026 (PR #40). Los dos
+  // son públicos (`[AllowAnonymous]`) y los consume `AuthService`.
+
+  /**
+   * Paso 1: pide el mail con el enlace. Body `{ dni }`. Responde 200 exista o
+   * no el DNI, para no revelar quién está registrado. El mail trae
+   * `/restablecer-password?token=...` y el token vence en 1 hora.
+   */
+  recuperarContrasena: `${URL_BASE_API}/api/Auth/recuperar-contrasena`,
+
+  /**
+   * Paso 2: guarda la contraseña nueva con el token del mail. Body
+   * `{ token, nuevaPassword }`. No es el mismo endpoint que `establecerPassword`
+   * (el del alta), aunque los dos buscan el token en la misma columna.
+   */
+  restablecerPassword: `${URL_BASE_API}/api/Auth/establecer-password`,
+
   programasMateria: `${URL_BASE_API}/api/ProgramasMateria`,
   /** GET/PUT de la frecuencia del envío automático de avisos de faltantes. */
   frecuenciaNotificaciones: `${URL_BASE_API}/api/Configuracion/frecuencia-notificaciones`,

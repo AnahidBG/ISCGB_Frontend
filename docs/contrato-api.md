@@ -1,7 +1,8 @@
 # Contrato de la API
 
 Relevado el **06/10/2026** contra el código de `ISCGB_Backend` (`main` en
-`f856989`, PR #29) y lo que consume el frontend. El backend está a cargo de
+`f856989`, PR #29) y lo que consume el frontend. El recupero de contraseña se
+relevó el 23/10/2026 (PR #40). El backend está a cargo de
 Angel Silva.
 
 La dirección base en desarrollo es `http://localhost:5231`.
@@ -93,6 +94,66 @@ sus ids de `roles`, en el cuerpo, y los guarda en `Sesion.rolesConId`.
 Crea un usuario con rol Director, sin nombre ni apellido, y devuelve
 `{ "message": "Usuario de prueba creado con éxito." }`. No pide autenticación.
 **No puede llegar a producción.**
+
+## Recupero y cambio de contraseña (SCRUM-28)
+
+Relevado el **23/10/2026** contra `main` del backend en `1d68430` (PR #40, de
+Anahid). Son dos endpoints públicos (`[AllowAnonymous]`) en `AuthController`. Los
+consume `AuthService` (`solicitarRecuperacion` y `restablecerPassword`).
+
+### `POST /api/Auth/recuperar-contrasena`
+
+```json
+{ "dni": "12345678" }
+```
+
+Si el DNI corresponde a una cuenta activa, guarda un token nuevo en
+`Usuarios.token_recuperacion`, con `expiracion_token` a **1 hora**, y manda un mail
+con el enlace `http://localhost:4200/restablecer-password?token=...`. Responde `200`
+con el mismo mensaje exista o no el DNI:
+
+```json
+{ "message": "Si el DNI existe en el sistema, se enviará un correo con instrucciones." }
+```
+
+- `400` `{ message }` si el DNI viene vacío. El front valida antes (7 u 8 números).
+- `500` `{ message, error }` si falla el envío del mail. `error` trae el detalle del
+  SMTP y el front no lo muestra.
+
+Lo usan dos pantallas: `/recuperar-contrasena` (sin sesión, con el DNI que escribe la
+persona) y `/configuracion` (con el DNI de la sesión).
+
+### `POST /api/Auth/establecer-password`
+
+```json
+{ "token": "3f2a...", "nuevaPassword": "Clave1234" }
+```
+
+Busca la cuenta por `token_recuperacion`, guarda el hash con BCrypt y borra el token
+(es de un solo uso). Responde `200` `{ message }`, o `400` `{ message }` si el token no
+existe, ya se usó o venció. El front trata cualquier `400` como "enlace no válido" y
+ofrece pedir otro. Lo consume `/restablecer-password`.
+
+No es el mismo endpoint que `POST /api/UsuariosAdmin/establecer-password`, el del mail
+de alta (`/crear-password`): los dos buscan el token en la misma columna, pero el de
+alta devuelve el `400` como texto suelto y su remedio es pedirle otro enlace a
+Dirección. El front los mantiene separados (`RUTAS_API.establecerPassword` y
+`RUTAS_API.restablecerPassword`).
+
+### Pendientes del backend
+
+- Validar la política de contraseñas (8 caracteres, mayúscula, minúscula y número):
+  hoy solo exige que no venga vacía. El front la valida, pero es UX (SCRUM-225). La
+  regla de que no incluya el DNI solo la puede controlar el back: `/restablecer-password`
+  no conoce el DNI.
+- No existe el cambio con la contraseña actual. Por eso "Configuración" manda el mismo
+  enlace de recupero al correo de la sesión.
+- El mail de recupero reusa la plantilla del alta: el asunto dice "Configura tu
+  contraseña" y el texto, "crear tu contraseña".
+- El enlace del mail está fijo en `http://localhost:4200`. Para el despliegue tiene que
+  salir de la configuración.
+- Si falla el SMTP responde `500`, y eso deja ver que el DNI existe (con un DNI
+  inexistente responde `200`).
 
 ## Gestión de usuarios
 

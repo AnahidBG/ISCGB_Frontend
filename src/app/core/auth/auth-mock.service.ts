@@ -4,6 +4,7 @@ import {
   AuthService,
   MENSAJE_CREDENCIALES_INVALIDAS,
   MENSAJE_ENLACE_INVALIDO,
+  MENSAJE_ENLACE_RECUPERACION_INVALIDO,
 } from './auth.service';
 import { CredencialesLogin } from './modelos/credenciales-login';
 import { Sesion } from './modelos/sesion';
@@ -74,6 +75,22 @@ export class AuthMockService extends AuthService {
   establecerPassword(token: string, _nuevaPassword: string): Observable<void> {
     if (token.trim() === '' || token === TOKEN_MOCK_INVALIDO) {
       return throwError(() => new Error(MENSAJE_ENLACE_INVALIDO)).pipe(delay(DEMORA_SIMULADA_MS));
+    }
+    return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  /** Completa siempre, como el backend: nunca revela si el DNI existe. */
+  solicitarRecuperacion(_dni: string): Observable<void> {
+    return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
+  /**
+   * Mismo criterio que `establecerPassword`: el token `invalido` simula un
+   * enlace vencido (`/restablecer-password?token=invalido`).
+   */
+  restablecerPassword(token: string, _nuevaPassword: string): Observable<void> {
+    if (token.trim() === '' || token === TOKEN_MOCK_INVALIDO) {
+      return throwError(() => new Error(MENSAJE_ENLACE_RECUPERACION_INVALIDO));
     }
     return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
   }

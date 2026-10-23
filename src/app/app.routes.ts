@@ -26,9 +26,8 @@ export const routes: Routes = [
   },
   {
     // Pantalla pública, sin `authGuard`: a esta se llega SIN sesión (es lo
-    // que resuelve "¿Olvidaste tu contraseña?" en el login). Provisoria y
-    // con datos falsos — ver docs/alcance-login.md y el comentario en el
-    // propio componente.
+    // que resuelve "¿Olvidaste tu contraseña?" en el login). Paso 1 del
+    // recupero: pide el mail con `POST /api/Auth/recuperar-contrasena`.
     path: 'recuperar-contrasena',
     title: 'Recuperar contraseña · ISCGB',
     loadComponent: () =>
@@ -46,6 +45,19 @@ export const routes: Routes = [
     title: 'Crear contraseña · ISCGB',
     loadComponent: () =>
       import('./features/crear-password/crear-password').then((m) => m.CrearPassword),
+  },
+  {
+    // Pantalla pública, sin `authGuard` ni `roleGuard`: paso 2 del recupero.
+    // La persona llega desde el link del mail de "¿Olvidaste tu contraseña?"
+    // SIN sesión. Se llama `restablecer-password` porque el link que arma el
+    // backend es el contrato (`AuthController.SolicitarRecuperacion`):
+    // `/restablecer-password?token=...`. Ver features/restablecer-password/.
+    path: 'restablecer-password',
+    title: 'Nueva contraseña · ISCGB',
+    loadComponent: () =>
+      import('./features/restablecer-password/restablecer-password').then(
+        (m) => m.RestablecerPassword,
+      ),
   },
   {
     // Destino después de iniciar sesión para quien no tiene NINGÚN rol
@@ -330,19 +342,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/perfil/mi-perfil/mi-perfil').then((m) => m.MiPerfil),
   },
   {
-    // "Próximamente": cambio de contraseña y preferencias de cuenta
-    // (Sprint 3 del roadmap). Ver features/proximamente/proximamente.ts.
+    // Cambio de contraseña desde la cuenta (SCRUM-28): manda el enlace de
+    // recupero al correo de la sesión. Cualquier rol, solo con sesión.
+    // Ver features/configuracion/configuracion.ts.
     path: 'configuracion',
     title: 'Configuración · ISCGB',
     canActivate: [authGuard],
-    data: {
-      titulo: 'Configuración',
-      descripcion: 'Cambio de contraseña y preferencias de tu cuenta en el sistema.',
-      disponibleDesde: 'Sprint 3 · octubre de 2026',
-      icono: 'configuracion',
-    },
     loadComponent: () =>
-      import('./features/proximamente/proximamente').then((m) => m.Proximamente),
+      import('./features/configuracion/configuracion').then((m) => m.Configuracion),
   },
   {
     // Herramienta interna: el muestrario de componentes y tokens.

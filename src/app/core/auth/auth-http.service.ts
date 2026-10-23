@@ -6,7 +6,9 @@ import {
   AuthService,
   MENSAJE_CREDENCIALES_INVALIDAS,
   MENSAJE_ENLACE_INVALIDO,
+  MENSAJE_ENLACE_RECUPERACION_INVALIDO,
   MENSAJE_ERROR_CREAR_PASSWORD,
+  MENSAJE_ERROR_RECUPERACION,
   MENSAJE_SIN_CONEXION,
 } from './auth.service';
 import { fechaDeVencimiento, leerPayloadJwt } from './jwt';
@@ -67,6 +69,36 @@ export class AuthHttpService extends AuthService {
           return throwError(() => new Error(mensaje));
         }),
       );
+  }
+
+  solicitarRecuperacion(dni: string): Observable<void> {
+    return this.http.post(RUTAS_API.recuperarContrasena, { dni }).pipe(
+      map(() => undefined),
+      catchError((error: HttpErrorResponse) => {
+        // El 500 trae `error` con el detalle del servidor de correo: no se lee.
+        // Un 400 (DNI vacío) no debería llegar nunca, porque la pantalla valida
+        // antes; si llega, es una falla más.
+        const mensaje = error.status === 0 ? MENSAJE_SIN_CONEXION : MENSAJE_ERROR_RECUPERACION;
+        return throwError(() => new Error(mensaje));
+      }),
+    );
+  }
+
+  restablecerPassword(token: string, nuevaPassword: string): Observable<void> {
+    return this.http.post(RUTAS_API.restablecerPassword, { token, nuevaPassword }).pipe(
+      map(() => undefined),
+      catchError((error: HttpErrorResponse) => {
+        // Mismo criterio que `establecerPassword`: cualquier 400 es "el enlace
+        // no sirve" (inexistente, usado o vencido) y el body no se muestra.
+        const mensaje =
+          error.status === 0
+            ? MENSAJE_SIN_CONEXION
+            : error.status === 400
+              ? MENSAJE_ENLACE_RECUPERACION_INVALIDO
+              : MENSAJE_ERROR_CREAR_PASSWORD;
+        return throwError(() => new Error(mensaje));
+      }),
+    );
   }
 
   actualizarCorreo(correo: string): void {

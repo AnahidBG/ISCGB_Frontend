@@ -34,6 +34,23 @@ export const MENSAJE_ERROR_CREAR_PASSWORD =
   'No pudimos guardar tu contraseña. Intentá de nuevo en un momento.';
 
 /**
+ * El enlace de recuperación no sirve: no existe, ya se usó o pasó la hora que
+ * dura.
+ *
+ * Es otro mensaje que el del alta porque el remedio es otro: acá la persona
+ * puede pedir un enlace nuevo sola, sin pasar por la Dirección.
+ */
+export const MENSAJE_ENLACE_RECUPERACION_INVALIDO =
+  'Este enlace no es válido o ya venció. Pedí uno nuevo desde "¿Olvidaste tu contraseña?".';
+
+/**
+ * Falla al pedir el mail de recuperación: un 5xx, por ejemplo porque el
+ * servidor de correo no respondió.
+ */
+export const MENSAJE_ERROR_RECUPERACION =
+  'No pudimos enviar el correo. Intentá de nuevo en un momento.';
+
+/**
  * Contrato de autenticación.
  *
  * Esto es una clase ABSTRACTA a propósito: define QUÉ se puede hacer,
@@ -80,6 +97,29 @@ export abstract class AuthService {
    * `Error(MENSAJE_ERROR_CREAR_PASSWORD)` ante cualquier otra falla.
    */
   abstract establecerPassword(token: string, nuevaPassword: string): Observable<void>;
+
+  /**
+   * Pide el mail con el enlace para elegir una contraseña nueva. No requiere
+   * sesión. Lo usan "¿Olvidaste tu contraseña?" y "Configuración".
+   *
+   * Recibe el DNI ya limpio (`normalizarDni`). Completa igual exista o no ese
+   * DNI: el backend contesta lo mismo en los dos casos para no revelar quién
+   * está registrado, y las pantallas tienen que hacer lo mismo.
+   *
+   * Falla con `Error(MENSAJE_SIN_CONEXION)` si el servidor no contesta, o
+   * `Error(MENSAJE_ERROR_RECUPERACION)` ante cualquier otra falla.
+   */
+  abstract solicitarRecuperacion(dni: string): Observable<void>;
+
+  /**
+   * Guarda la contraseña nueva con el token del enlace de recuperación. No
+   * requiere sesión.
+   *
+   * Falla con `Error(MENSAJE_ENLACE_RECUPERACION_INVALIDO)` si el token no
+   * sirve, `Error(MENSAJE_SIN_CONEXION)` si el servidor no contesta, o
+   * `Error(MENSAJE_ERROR_CREAR_PASSWORD)` ante cualquier otra falla.
+   */
+  abstract restablecerPassword(token: string, nuevaPassword: string): Observable<void>;
 
   /**
    * Cambia el correo de la sesión abierta, para que el encabezado lo muestre sin

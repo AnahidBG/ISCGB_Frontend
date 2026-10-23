@@ -3,24 +3,54 @@
     @if (!enviado()) {
       <h1 class="text-2xl font-bold text-texto">¿Olvidaste tu contraseña?</h1>
       <p class="mt-2 text-sm text-texto-suave">
-        Ingresá tu DNI y te vamos a enviar instrucciones para recuperarla.
+        Ingresá tu DNI y te vamos a enviar un correo con un enlace para elegir una contraseña nueva.
       </p>
 
-      <form class="mt-8 flex flex-col gap-5" (submit)="$event.preventDefault(); enviar()">
-        <app-campo-formulario etiqueta="DNI" idCampo="dni-recuperacion">
+      <form
+        class="mt-8 flex flex-col gap-5"
+        novalidate
+        (submit)="$event.preventDefault(); enviar()"
+      >
+        <!-- `role="alert"`: el lector de pantalla lo anuncia apenas aparece. -->
+        @if (errorEnvio(); as mensaje) {
+          <p
+            role="alert"
+            class="rounded-lg border border-rechazado/25 bg-rechazado/8 px-4 py-3 text-sm text-rechazado"
+          >
+            {{ mensaje }}
+          </p>
+        }
+
+        <app-campo-formulario
+          etiqueta="DNI"
+          idCampo="dni-recuperacion"
+          [requerido]="true"
+          [error]="errorDni()"
+        >
           <input
             id="dni-recuperacion"
             type="text"
             inputmode="numeric"
-            autocomplete="off"
-            class="w-full rounded-lg border border-borde px-4 py-2.5 text-texto"
+            autocomplete="username"
+            [attr.aria-invalid]="errorDni() !== null"
+            [attr.aria-describedby]="errorDni() ? 'dni-recuperacion-error' : null"
+            [class.border-rechazado]="errorDni() !== null"
+            [class.border-borde]="errorDni() === null"
+            class="w-full rounded-lg border bg-superficie px-4 py-2.5 text-texto hover:border-acento-verde focus:border-principal focus:ring-2 focus:ring-principal/20 focus:outline-none"
             [value]="dni()"
             (input)="actualizarDni($any($event.target).value)"
           />
         </app-campo-formulario>
 
-        <app-boton nivel="primario" tipo="submit" [cargando]="enviando()" [conFlecha]="false">
-          Enviar instrucciones
+        <app-boton
+          nivel="primario"
+          tipo="submit"
+          [cargando]="enviando()"
+          textoCargando="Enviando…"
+          [conFlecha]="false"
+          [anchoCompleto]="true"
+        >
+          Enviar enlace
         </app-boton>
 
         <app-boton nivel="terciario" href="/login" [conFlecha]="false">
@@ -29,18 +59,17 @@
       </form>
     } @else {
       <h1 class="text-2xl font-bold text-texto">Revisá tu correo</h1>
-      <p class="mt-2 text-sm text-texto-suave">
-        Si el DNI existe en el sistema, vas a recibir un correo con instrucciones para
-        recuperar tu contraseña.
-      </p>
-
-      <p class="mt-6 rounded-lg bg-menta/40 px-4 py-3 text-sm text-texto">
-        <strong>Pantalla provisoria.</strong> Todavía no enviamos ningún correo real — lo vamos a
-        habilitar pronto.
+      <p role="status" class="mt-2 text-sm text-texto-suave">
+        Si el DNI está registrado, te enviamos un correo con un enlace para elegir una contraseña
+        nueva. El enlace vence en 1 hora. Si no lo ves, buscalo en la carpeta de spam.
       </p>
 
       <app-boton nivel="secundario" href="/login" [conFlecha]="false" class="mt-8 block">
         Volver a iniciar sesión
+      </app-boton>
+
+      <app-boton nivel="terciario" [conFlecha]="false" class="mt-3 block" (click)="volverAEnviar()">
+        ¿No te llegó? Enviar de nuevo
       </app-boton>
     }
   </div>

@@ -51,8 +51,8 @@ export class Proximamente {
   protected readonly sesion = this.auth.sesion;
 
   /**
-   * `snapshot` y no el `data` observable: cada ruta (`/configuracion`, la
-   * que se agregue después) es una entrada DISTINTA en
+   * `snapshot` y no el `data` observable: cada ruta que la use (hoy
+   * ninguna; `/configuracion` la usó hasta el Sprint 3) es una entrada DISTINTA en
    * `app.routes.ts`, así que Angular crea una instancia nueva de este
    * componente al navegar de una a otra — no hace falta reaccionar a
    * cambios, el snapshot del momento en que se construyó ya es el correcto.

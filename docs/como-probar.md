@@ -1,10 +1,11 @@
 # Cómo probar el sistema, paso a paso
 
-Actualizado el **11/10/2026**.
+Actualizado el **23/10/2026**.
 
 Guía para levantar la base, el backend y el frontend, y comprobar que lo
 construido funciona. El orden importa: cada paso da por hecho que el anterior
-salió bien. Al final está qué mirar si algo falla.
+salió bien. La sección 5 explica las pruebas automáticas (Vitest, con la
+sintaxis de Jest). Al final está qué mirar si algo falla.
 
 ## 1. La base de datos
 
@@ -198,6 +199,38 @@ persona con otro correo.
       scroll horizontal y los campos quedan en una sola columna.
 - [ ] Una cuenta sin roles (que existe en el sistema pero no tiene permisos) también
       abre la pantalla y dice "Sin rol asignado".
+
+### Recuperar y cambiar la contraseña
+
+Desde el 23/10/2026, con el backend del 17/10 o posterior (PR #40). Hace falta una
+persona activa con un correo al que tengas acceso. El mail sale de
+`notificacionesiscgb@gmail.com` y puede caer en spam.
+
+- [ ] En el login, "¿Olvidaste tu contraseña?" abre `/recuperar-contrasena`.
+- [ ] Enviar sin DNI, con 5 números o con letras marca "Ingresá un DNI de 7 u 8
+      números." y no manda nada (mirá Network).
+- [ ] Con un DNI válido, con o sin puntos, el botón pasa a "Enviando…" y aparece
+      "Revisá tu correo". En Network, el `POST /api/Auth/recuperar-contrasena` lleva
+      `{ "dni": "12345678" }`, sin puntos.
+- [ ] Con un DNI que no existe aparece lo mismo: la pantalla no dice si el DNI está
+      registrado. "¿No te llegó? Enviar de nuevo" vuelve al formulario con el DNI.
+- [ ] El mail trae un enlace a `/restablecer-password?token=...`. Abre "Nueva
+      contraseña" sin sesión.
+- [ ] La lista de requisitos marca 0/4 y se tilda mientras escribís. "Restablecer
+      contraseña" con los campos vacíos, con una contraseña que no cumple o con dos
+      distintas marca el error en su campo y no manda nada.
+- [ ] Con una contraseña válida aparece "¡Contraseña restablecida!" y a los 3
+      segundos lleva al login. Ahí entra con la contraseña nueva y no con la vieja.
+- [ ] Abrir el mismo enlace otra vez muestra "Enlace no válido" con "Pedir un enlace
+      nuevo" (el token es de un solo uso). Lo mismo pasa una hora después de pedirlo,
+      y con `/restablecer-password` sin `?token=`.
+- [ ] Con sesión, "Configuración" del menú dice a qué correo llega el enlace.
+      "Enviarme el enlace" manda el `POST` con el DNI de la sesión y confirma "Te
+      enviamos el enlace". "Cancelar" y "Volver al panel" llevan al panel del rol.
+- [ ] Con el backend apagado, las tres pantallas muestran "No pudimos conectarnos con
+      el servidor…" y conservan lo escrito.
+- [ ] Sin conexión al correo (el SMTP falla), `/recuperar-contrasena` muestra "No
+      pudimos enviar el correo. Intentá de nuevo en un momento."
 
 ### Subir Documento
 
@@ -473,6 +506,77 @@ En "Mis mesas de examen" del menú lateral (`/docente/mesas`), y desde la campan
 - [ ] Si el Director además es Docente, el menú tiene "Entregar programa de
       materia".
 
+## 5. Las pruebas automáticas (Vitest, con la sintaxis de Jest)
+
+Las pruebas unitarias del front corren con **Vitest**, que es lo que trae Angular
+21 en `ng test` (`@angular/build:unit-test`, en `angular.json`). No hay Jest
+instalado, y no hace falta: Vitest usa la misma API que Jest, así que una prueba
+escrita "estilo Jest" corre tal cual cambiando `jest.` por `vi.`.
+
+### Cómo correrlas
+
+```bash
+cd ISCGB_Frontend
+npm test                          # todas, y se quedan mirando cambios
+npx ng test --watch=false         # todas, una sola vez (lo que usa el .bat)
+npx ng test --watch=false --include src/app/features/restablecer-password/restablecer-password.spec.ts
+```
+
+Cada prueba vive al lado de lo que prueba, con el mismo nombre y `.spec.ts`:
+`restablecer-password.ts` → `restablecer-password.spec.ts`.
+
+### De Jest a Vitest
+
+| En Jest | En Vitest | Para qué |
+| --- | --- | --- |
+| `describe`, `it` / `test`, `expect` | igual | Agrupar, definir y comprobar |
+| `beforeEach`, `afterEach` | igual | Preparar y limpiar cada prueba |
+| `it.each([...])` | igual | La misma prueba con varios datos |
+| `jest.fn()` | `vi.fn()` | Un doble que registra cómo lo llamaron |
+| `jest.spyOn(objeto, 'metodo')` | `vi.spyOn(objeto, 'metodo')` | Espiar un método real |
+| `jest.useFakeTimers()` | `vi.useFakeTimers()` | Controlar `setTimeout` |
+| `jest.advanceTimersByTime(ms)` | `vi.advanceTimersByTime(ms)` | Adelantar el reloj |
+| `.mockReturnValue`, `.mockReturnValueOnce`, `.mockResolvedValue` | igual | Qué devuelve el doble |
+| `toBe`, `toEqual`, `toContain`, `toBeNull` | igual | Comparar valores |
+| `toHaveBeenCalledWith`, `toHaveBeenCalledTimes` | igual | Comprobar llamadas |
+
+Los globales (`describe`, `it`, `expect`, `vi`) no se importan: los habilita
+`"types": ["vitest/globals"]` en `tsconfig.spec.json`.
+
+### Cómo se arma una prueba en este proyecto
+
+Se sigue el esquema preparar → actuar → comprobar, y se prueba contra el
+**servicio abstracto**, nunca contra la API real:
+
+- **Pantallas:** se reemplaza el servicio por un doble con `vi.fn()` y se
+  interactúa con el DOM como lo haría la persona (escribir en el input, mandar
+  el formulario). Ejemplo: `features/restablecer-password/restablecer-password.spec.ts`.
+- **Servicios HTTP:** `HttpTestingController` intercepta el pedido para comprobar
+  la URL y el body, y responder con el status que haga falta (`200`, `400`, `500`
+  o sin conexión). Ejemplo: `core/auth/auth-http.service.spec.ts`.
+- **Mocks:** se comprueba que el `*-mock.service` se porta como el backend en lo
+  que la pantalla puede ver. Ejemplo: `core/auth/auth-mock.service.spec.ts`.
+
+```ts
+it('datos válidos llaman a restablecerPassword(token, password) una sola vez', async () => {
+  await completar('Clave1234');   // preparar: escribir en los dos campos
+  await enviar();                 // actuar: mandar el formulario
+
+  expect(restablecerPassword).toHaveBeenCalledTimes(1);
+  expect(restablecerPassword).toHaveBeenCalledWith('tok-abc', 'Clave1234');
+});
+```
+
+### Qué cubren las del recupero de contraseña (SCRUM-28)
+
+| Archivo | Qué comprueba |
+| --- | --- |
+| `core/auth/auth-http.service.spec.ts` | URL y body de `recuperar-contrasena` y `establecer-password`; cómo se traduce cada status (`200`, `400`, `500`, sin conexión) sin mostrar el body crudo |
+| `core/auth/auth-mock.service.spec.ts` | El mock responde igual con cualquier DNI y simula el enlace vencido con el token `invalido` |
+| `features/recuperar-contrasena/recuperar-contrasena.spec.ts` | Valida el DNI, lo manda limpio, no revela si existe, evita el doble envío y muestra los errores |
+| `features/restablecer-password/restablecer-password.spec.ts` | Sin token o con token rechazado muestra "Enlace no válido"; valida la política y la repetición; un solo envío; éxito y redirección al login; la ruta es pública y diferida |
+| `features/configuracion/configuracion.spec.ts` | Pide el enlace con el DNI de la sesión, confirma el correo, permite reenviar, muestra errores y no usa colores escritos a mano |
+
 ## Si algo falla
 
 Abrí siempre F12, pestaña Network, mientras probás. Ahí se ve cada llamada, su
@@ -502,6 +606,11 @@ mirando si la llamada salió y qué contestó.
   la base: solo lista las que no tienen docente asignado (`id_docente` en NULL).
 - `npm start` no compila: suele ser un import mal escrito después de mover
   archivos. El mensaje dice el archivo y la línea.
+- El mail de recupero no llega: mirá la consola del backend y la carpeta de spam.
+  Si `recuperar-contrasena` responde 500, falló el SMTP. El enlace dura 1 hora.
+- `/recuperar-contrasena` dice "No pudimos enviar el correo" y en Network el
+  `POST` da 404: el backend que corre es anterior al 17/10/2026 y no tiene el
+  recupero. Actualizalo.
 
 ## Lo que todavía no se puede probar
 
@@ -511,8 +620,8 @@ No está roto: no existe.
 - Editar en "Mi perfil" el género y la afiliación de emergencia: el backend los
   acepta, pero `GET /api/Usuarios/{id}` no los devuelve, y la pantalla no los
   ofrece. El nombre, el apellido, el DNI y los roles los cambia Dirección.
-- Recuperar la contraseña: la pantalla existe, pero simula el envío y no manda
-  ningún correo.
+- Cambiar la contraseña escribiendo la actual: el backend no tiene ese endpoint.
+  "Configuración" manda el enlace de recupero al correo de la sesión.
 - El mail al rechazar un documento o un justificativo.
 - Del calendario de parciales, con el backend real, abrir, reprogramar, eliminar o
   arrastrar un parcial ya cargado: las pantallas están, pero el backend no tiene un
@@ -521,4 +630,3 @@ No está roto: no existe.
   arrastrar un parcial").
 - Aceptar o rechazar una mesa de examen, y darla de alta. La campana del Docente
   avisa las mesas asignadas, pero el backend no tiene endpoints para responderlas.
-- La configuración de la cuenta, que es del Sprint 3.

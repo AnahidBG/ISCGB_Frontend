@@ -29,11 +29,13 @@ Tres elementos del diseño quedaron distintos.
 No hay endpoint ni tabla de solicitudes, y no figura en ningún sprint. En el
 MVP los usuarios los da de alta Dirección. El diseño queda archivado en Figma.
 
-### ¿Olvidaste tu contraseña?: pantalla provisoria
+### ¿Olvidaste tu contraseña?: conectado desde el 23/10/2026
 
-La base ya tiene `Usuarios.token_recuperacion` y `expiracion_token`, pero falta
-el endpoint, y el cambio de contraseña está en el Sprint 3. El enlace lleva a
-`/recuperar-contrasena`, una pantalla provisoria que no manda ningún correo.
+Era una pantalla provisoria hasta que el backend sumó el recupero (PR #40, Sprint
+3, SCRUM-28). Ahora el enlace lleva a `/recuperar-contrasena`, que pide el DNI y
+manda el mail con `POST /api/Auth/recuperar-contrasena`. El enlace del mail abre
+`/restablecer-password`, donde se elige la contraseña nueva. Detalle en
+`contrato-api.md`, "Recupero y cambio de contraseña".
 
 ### Selector de perfil: pendiente de decisión
 
