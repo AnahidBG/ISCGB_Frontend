@@ -5,7 +5,11 @@ implementado en `src/styles.scss` y en `src/app/shared/ui/`.
 
 El muestrario en vivo está en `/sistema-diseno`: dibuja los componentes reales
 con los tokens reales. Si cambia un color en `styles.scss`, esa página cambia
-sola.
+sola. Tiene el selector de tema, para ver cómo queda todo en claro y en oscuro.
+
+Hay dos temas, claro y oscuro. Los colores de las tablas de abajo son los del
+tema claro; cuáles cambian en el oscuro y a qué valor está en
+[Tema oscuro](#tema-oscuro).
 
 ## Colores
 
@@ -48,12 +52,17 @@ estados.
 
 | Token | Hex | Para qué |
 | --- | --- | --- |
-| `principal-oscuro` | `#35504A` | Hover y press del botón secundario |
+| `principal-oscuro` | `#35504A` | Final del degradé del login |
+| `principal-solido-hover` | `#35504A` | Hover y press del botón secundario (cambia en el oscuro) |
 | `acento-verde-claro` | `#B8DDB4` | Botón primario en reposo |
 | `acento-verde-press` | `#7AAB80` | Botón primario presionado |
 | `texto-suave` | `#666E6B` | Texto secundario accesible |
 | `texto` | `#2D2D2D` | Texto principal |
 | `borde` | `#E2E8E4` | Bordes de campos y divisores |
+
+`principal-oscuro` era también el hover del botón. Al llegar el tema oscuro ese
+trabajo pasó a `principal-solido-hover`, que tiene un valor propio en cada tema;
+`principal-oscuro` quedó fijo y solo lo usa el degradé del login.
 
 ### Colores de estado
 
@@ -67,6 +76,205 @@ dan 4,04:1 y 3,63:1 sobre blanco, y menos sobre su propio fondo al 10 %
 En los componentes nuevos el color de estado va en el ícono y el borde, donde
 alcanza con 3:1, y el texto va en `texto`. `insignia-estado` todavía usa el
 color como texto.
+
+Cuando el verde tiene que ir como texto hay un token aparte, `aprobado-texto`
+(`#1F6B43`, agregado el 25/10/2026): da 6,48:1 sobre blanco y 6,15:1 sobre el
+fondo de panel. Lo usan `requisitos-password` y el aviso "Las contraseñas
+coinciden". `aprobado` sigue para íconos, bordes y barras. El rojo no necesita
+uno aparte: `rechazado` da 5,44:1 sobre blanco y 5,16:1 sobre el fondo de panel.
+
+Un botón "Aprobar" o "Rechazar" es otra cosa: un relleno con texto blanco
+encima. Para eso están `aprobado-solido` y `rechazado-solido`, que valen lo
+mismo que `aprobado` y `rechazado` en el tema claro y **no cambian** en el
+oscuro (ver [Tema oscuro](#tema-oscuro)). Blanco sobre `aprobado-solido` da
+4,04:1, igual que antes con `bg-aprobado`: no llega a 4,5:1 para texto chico.
+
+## Tema oscuro
+
+La persona elige entre **Claro**, **Oscuro** y **Automático**. Automático sigue
+la configuración del dispositivo y es lo que queda si nunca eligió. La elección
+se guarda en el navegador (`localStorage`, clave `iscgb.tema`) y se recuerda
+entre visitas.
+
+### Dónde se cambia
+
+Siempre es el mismo componente, `<app-selector-tema>`:
+
+- En el menú de la persona, arriba a la derecha del panel, bajo "Apariencia".
+- En el cajón del celular, antes de "Cerrar Sesión".
+- En Configuración, en la tarjeta "Apariencia".
+- En el login, que no tiene menú: un botón redondo en la esquina superior
+  derecha, de un solo toque (`variante="boton"`).
+
+### Cómo funciona
+
+Tailwind genera cada utilidad de color apuntando a una variable
+(`bg-superficie` → `var(--color-superficie)`), también las que llevan
+transparencia (`bg-rechazado/10`). Entonces alcanza con volver a definir las
+variables cuando `<html>` tiene `data-tema="oscuro"`, y todas las pantallas
+cambian sin que ningún componente sepa que existe un tema. Los valores oscuros
+están en el bloque `:root[data-tema='oscuro']` de `src/styles.scss`.
+
+Las piezas:
+
+- `core/tema/tema.ts`: la lógica pura (qué se guardó, qué tema corresponde).
+  Tiene su spec.
+- `core/tema/tema.service.ts`: `TemaService` guarda la elección, escucha al
+  dispositivo y pone `data-tema` en `<html>`. Lo arranca `App`.
+- `shared/ui/selector-tema/`: el selector.
+- Un script en el `<head>` de `index.html` que pone `data-tema` **antes del
+  primer pintado**. Sin él, quien usa el tema oscuro vería un destello claro en
+  cada recarga, mientras baja la aplicación. Repite a propósito las reglas de
+  `tema.ts` (misma clave, mismo atributo, misma decisión): si cambia una, se
+  cambia la otra. Si algún día se agrega una política de seguridad de contenido
+  que no admita scripts en línea, necesita un nonce o pasar a un archivo aparte.
+- `<meta name="theme-color">`: el color de la barra del navegador en el
+  celular. Lo deja bien el script y lo mantiene `TemaService`.
+
+### Reglas para una pantalla nueva
+
+1. **No se escribe `dark:` ni un color a mano.** Se usan los tokens de siempre
+   y el tema oscuro llega solo.
+2. **Un relleno con texto blanco es `-solido`.** Un botón verde es
+   `bg-principal-solido text-white` y su hover `hover:bg-principal-solido-hover`;
+   los de aprobar y rechazar, `bg-aprobado-solido` y `bg-rechazado-solido`.
+   `bg-principal text-white` se ve bien en claro y **no se lee en oscuro**:
+   ahí `principal` es el verde claro.
+3. **Un verde que se dibuja sobre la superficie es `principal`.** Enlaces,
+   bordes, anillos de foco, texto de la opción elegida: `text-principal`,
+   `border-principal`, `ring-principal`.
+4. **`text-white` va solo sobre un relleno fijo** (`-solido` o el degradé del
+   login). `text-superficie` sobre un relleno deja de servir: en oscuro la
+   superficie es oscura.
+5. **Texto sobre el verde claro de los botones primarios:**
+   `text-texto-sobre-claro`, no `text-texto` (que en oscuro es casi blanco).
+6. **Una imagen con versión por tema** se dibuja dos veces con las clases
+   `solo-claro` y `solo-oscuro`; el tema muestra una. Hoy es el logo (verde
+   sobre claro, blanco hueso sobre oscuro).
+7. **Las sombras de la marca** son `shadow-marca-sm|md|lg`. Su color sale de
+   las variables `--sombra-marca-*` y se vuelve negro en el tema oscuro. Las de
+   Tailwind (`shadow-sm`, `shadow-lg`, `shadow-xl`) son negras al 10 % y sobre
+   un fondo oscuro casi no se ven: no rompen nada, pero no ayudan.
+8. **Si falta un color,** se agrega un token en `@theme` con su valor claro y
+   se le da el oscuro en el bloque `data-tema='oscuro'`. Y se anota acá.
+
+### Qué cambia con el tema
+
+| Token | Claro | Oscuro | Para qué |
+| --- | --- | --- | --- |
+| `fondo` | `#F5F5F5` | `#121614` | Fondo de la página |
+| `fondo-panel` | `#FAF9F5` | `#121614` | Fondo de las pantallas internas |
+| `superficie` | `#FFFFFF` | `#1A201E` | Tarjetas, menús, diálogos |
+| `humo` | `#F5F5F5` | `#232B28` | Lo elevado o apagado dentro de una tarjeta |
+| `borde` | `#E2E8E4` | `#2E3935` | Separadores y bordes |
+| `texto` | `#2D2D2D` | `#E6ECE9` | Texto principal |
+| `texto-suave` | `#666E6B` | `#A2AFAA` | Texto secundario |
+| `principal` | `#46695F` | `#90C997` | El verde "sobre la superficie" |
+| `principal-suave` | `#EAF0EE` | `#223530` | Fondo tenue del verde |
+| `principal-enfasis` | `#35504A` | `#B8DDB4` | Un enlace verde al pasar el mouse |
+| `principal-solido-hover` | `#35504A` | `#4F7A6D` | Hover del relleno verde |
+| `aprobado` | `#2F8F5B` | `#4FBF84` | Estado, como ícono, borde o tinte |
+| `aprobado-texto` | `#1F6B43` | `#6CD39B` | El verde de "cumplido" como texto |
+| `pendiente` | `#B07D0A` | `#E2B04A` | Estado |
+| `rechazado` | `#C0392B` | `#F2877E` | Estado |
+| `info` | `#4A6FA5` | `#7FA6DB` | La tarjeta de totales |
+| `menta` | `#CBFFD1` | `#325E45` | Tinte de éxito |
+| `pista` | `#CCD3D1` | `#3A4642` | La parte vacía de una barra de avance |
+| `inactivo` | `#919D99` | `#3A4642` | Relleno de un botón verde deshabilitado |
+| `velo` | `#2D2D2D` | `#000000` | Lo que tapa la pantalla detrás de un diálogo |
+| `--sombra-marca-*` | verde oscuro al 8-12 % | negro al 35-50 % | Sombras de la marca |
+
+### Qué no cambia
+
+| Token | Hex | Por qué |
+| --- | --- | --- |
+| `principal-solido` | `#46695F` | Relleno con texto blanco: botones, la marca |
+| `aprobado-solido` | `#2F8F5B` | Relleno con texto blanco |
+| `rechazado-solido` | `#C0392B` | Relleno con texto blanco |
+| `texto-sobre-claro` | `#2D2D2D` | Texto sobre los verdes claros, que siguen claros |
+| `acento-verde`, `acento-verde-claro`, `acento-verde-press` | los de siempre | Botón primario |
+| `principal-oscuro` | `#35504A` | Final del degradé del login |
+| `gris-marca` | `#919D99` | Decorativo; sobre superficie oscura da 5,90:1 |
+| `acento-lima` y las escalas `-50` a `-900` | los de siempre | Colores de marca |
+
+Hay dos tokens con doble función, y por eso hay pares. `principal` es a la vez
+el verde del botón (un relleno con texto blanco encima) y el de un enlace o un
+borde (algo que se dibuja sobre la superficie). En el tema claro son el mismo
+color; en el oscuro no pueden serlo: el relleno tiene que seguir oscuro para
+sostener el texto blanco y el enlace tiene que aclararse para leerse sobre
+fondo oscuro. Lo mismo pasa con `aprobado` y `rechazado`.
+
+### Contraste medido
+
+Calculado con la fórmula de WCAG 2.1 sobre los valores de arriba. El texto
+normal pide 4,5:1; los íconos, bordes y anillos de foco, 3:1.
+
+| Combinación en el tema oscuro | Relación |
+| --- | --- |
+| `texto` sobre `superficie` | 13,82:1 |
+| `texto` sobre `fondo-panel` | 15,24:1 |
+| `texto-suave` sobre `superficie` | 7,29:1 |
+| `texto-suave` sobre `humo` | 6,39:1 |
+| `principal` como texto sobre `superficie` | 8,66:1 |
+| `aprobado-texto` sobre `superficie` | 9,00:1 |
+| `aprobado` como texto sobre `superficie` | 7,18:1 |
+| `pendiente` como texto sobre `superficie` | 8,31:1 |
+| `rechazado` como texto sobre `superficie` | 6,73:1 |
+| `info` como texto sobre `superficie` | 6,60:1 |
+| `texto` sobre `menta` al 40 % | 10,32:1 |
+| Anillo de foco (`principal`) sobre `superficie` | 8,66:1 |
+| Placeholder (`gris-marca`) sobre `superficie` | 5,90:1 |
+| Blanco sobre `principal-solido` | 6,09:1 |
+| Blanco sobre `rechazado-solido` | 5,44:1 |
+| Blanco sobre `aprobado-solido` | 4,04:1 |
+| `texto-sobre-claro` sobre `acento-verde-claro` | 9,21:1 |
+
+En el tema oscuro todo el texto llega a 4,5:1. En el claro hay siete
+combinaciones que no llegan (el placeholder en `gris-marca` y `aprobado` y
+`pendiente` como texto, sobre superficie, panel y su tinte); el oscuro las
+resuelve porque aclara esos colores. Son anteriores al tema oscuro y siguen
+pendientes (ver el punto 4 de Pendientes).
+
+### Decisiones y límites
+
+- **Equilibrio, no negro puro.** Las superficies son verdes muy apagados, del
+  matiz del verde institucional, y suben de a poco: fondo, tarjeta, elemento
+  elevado. El brillo queda para el texto y las señales (estado, foco,
+  acciones).
+- **El relleno del botón verde contra una superficie oscura da 2,72:1.** WCAG
+  pide 3:1 para el borde de un control cuando es lo único que lo identifica.
+  Acá el botón lleva texto, y es el texto el que lo identifica (6,09:1), así que
+  no es una falla; pero el contorno es más tenue que en el tema claro (6,09:1).
+  Al pasar el mouse, en cambio, el botón se aclara a `#4F7A6D` y sí supera los
+  3:1 contra la superficie (3,42:1), con 4,84:1 contra el texto blanco. No se
+  puede aclarar mucho más: pasando `#55806F` el texto blanco baja de 4,5:1.
+  Subir el relleno en reposo para igualar el contorno es una decisión de
+  diseño, porque deja de ser el verde de la marca.
+- **Imprimir vuelve al tema claro.** Todo el bloque oscuro está dentro de
+  `@media screen`. Con el oscuro, el texto saldría casi blanco sobre papel
+  blanco. Vale para cualquier impresión que se haga desde el navegador.
+- **El logo tiene dos archivos.** `logo-iscgb-verde.svg` sobre claro y
+  `logo-iscgb.svg` (blanco hueso) sobre oscuro. Ver `public/imagenes/LEEME.md`.
+- **Los controles del navegador** (barras de scroll, calendario del selector de
+  fecha, listas desplegables) se dibujan oscuros por `color-scheme: dark`.
+- **El autocompletado de Chrome** pinta los campos de celeste o amarillo con
+  texto oscuro. Una regla `:-webkit-autofill` lo devuelve al tema.
+- **El halo del foco** (`ring-offset`) se pinta del color de la superficie y
+  no de blanco, para que no quede un marco blanco alrededor del botón.
+- **La pantalla de arranque** de `index.html`, que se ve antes de que cargue
+  Angular, tiene sus propios colores y también sigue el tema.
+
+### Cómo probarlo
+
+1. `npm test` y `npm run build`.
+2. En el navegador, con las herramientas de desarrollo: elegir "Oscuro" en el
+   selector, o emular `prefers-color-scheme: dark` con "Automático". Para
+   probar como si fuera la primera visita, borrar la clave `iscgb.tema` del
+   almacenamiento local.
+3. Recorrer, en los dos temas: login, el panel de cada rol, Mis documentos
+   (los tres estados), Configuración, un diálogo de confirmación, el
+   calendario de exámenes y `/sistema-diseno`.
+4. Recargar con el tema oscuro y mirar que no haya un destello claro.
 
 ## Tipografía
 
@@ -190,7 +398,8 @@ Lo que se sumó:
   reemplazan a los que ya existían.
 - `radius-tarjeta`, de 20 px, y `radius-control`, la pastilla. Tienen nombre
   propio y no pisan la escala de Tailwind.
-- `shadow-marca-sm`, `md` y `lg`: sombras con tinte verde en vez de negro.
+- `shadow-marca-sm`, `md` y `lg`: sombras con tinte verde en vez de negro. El
+  color de cada una sale de `--sombra-marca-sm|md|lg`, que cambia con el tema.
 
 Lo que no se tocó:
 
@@ -213,10 +422,20 @@ Lo que no se tocó:
    decorativo.
 4. Oscurecer `aprobado` y `pendiente` para que lleguen a AA como texto, o
    definir que solo se usan en íconos y bordes. Cambia todas las pantallas, así
-   que es una decisión de diseño.
+   que es una decisión de diseño. Para el verde ya existe `aprobado-texto`;
+   falta resolver `pendiente`. En el tema oscuro los dos ya llegan a AA (7,18:1
+   y 8,31:1) porque se aclaran; el problema queda solo en el claro.
 5. La iconografía. El Design System define íconos para dropdowns, cards,
    requisitos y roles que todavía no están en código.
 6. Si el instituto confirma la tipografía real del logo, es un cambio de una
    línea en `--font-titulo` y `--font-cuerpo`.
 7. Decidir si los derivados sueltos (`principal-oscuro`, `acento-verde-claro`)
    se migran a la escala nueva (`principal-600` y demás).
+8. Blanco sobre `aprobado-solido` da 4,04:1, por debajo de los 4,5:1 que pide
+   AA para texto chico. Ya era así con `bg-aprobado`. Oscurecerlo un poco lo
+   arregla, pero cambia el verde del botón "Aprobar" respecto del Figma.
+9. Pasar `shadow-sm`, `shadow-lg` y `shadow-xl` (diálogo de confirmación, login,
+   crear y recuperar contraseña) a `shadow-marca-*`, para que acompañen al tema
+   oscuro. Cambia apenas el tinte de la sombra en el claro.
+10. El Figma no tiene versión oscura. Conviene dibujarla a partir de la tabla de
+    [Tema oscuro](#tema-oscuro) para que diseño y código no se separen.

@@ -11,41 +11,58 @@
   <section class="mt-14">
     <h2 class="text-2xl text-texto">Colores</h2>
 
-    <h3 class="mt-6 font-cuerpo text-sm font-semibold tracking-wide text-texto-suave uppercase">
-      Oficiales del manual de identidad
-    </h3>
-    <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      @for (color of oficiales; track color.variable) {
-        <li class="overflow-hidden rounded-xl border border-borde bg-superficie">
-          <span class="block h-20" [style.background-color]="color.hex"></span>
-          <span class="block p-4">
-            <span class="block font-medium text-texto">{{ color.nombre }}</span>
-            <code class="mt-0.5 block font-mono text-xs text-texto-suave">{{ color.hex }}</code>
-            @if (color.nota) {
-              <span class="mt-2 block text-xs text-rechazado">{{ color.nota }}</span>
-            }
-          </span>
-        </li>
-      }
-    </ul>
+    <!-- El tema se puede cambiar acá mismo para ver cómo se mueve toda la página. -->
+    <div
+      class="mt-6 flex flex-col gap-5 rounded-xl border border-borde bg-superficie p-6 sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div class="max-w-xl">
+        <h3 class="font-cuerpo text-base font-semibold text-texto">Tema claro y oscuro</h3>
+        <p class="mt-1 text-sm text-texto-suave">
+          Probalo: toda la página cambia con él. Los colores que cambian muestran su valor en los
+          dos temas. Los rellenos fijos no, porque llevan texto encima y tienen que seguir iguales.
+        </p>
+      </div>
+      <div class="w-full sm:w-72 sm:shrink-0">
+        <app-selector-tema />
+      </div>
+    </div>
 
-    <h3 class="mt-10 font-cuerpo text-sm font-semibold tracking-wide text-texto-suave uppercase">
-      Derivados — no están en el manual
-    </h3>
-    <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-      @for (color of derivados; track color.variable) {
-        <li class="overflow-hidden rounded-xl border border-borde bg-superficie">
-          <span class="block h-20" [style.background-color]="color.hex"></span>
-          <span class="block p-4">
-            <span class="block font-medium text-texto">{{ color.nombre }}</span>
-            <code class="mt-0.5 block font-mono text-xs text-texto-suave">{{ color.hex }}</code>
-            @if (color.nota) {
-              <span class="mt-2 block text-xs text-texto-suave">{{ color.nota }}</span>
-            }
-          </span>
-        </li>
+    @for (grupo of grupos; track grupo.titulo) {
+      <h3 class="mt-10 font-cuerpo text-sm font-semibold tracking-wide text-texto-suave uppercase">
+        {{ grupo.titulo }}
+      </h3>
+      @if (grupo.descripcion) {
+        <p class="mt-1 max-w-3xl text-sm text-texto-suave">{{ grupo.descripcion }}</p>
       }
-    </ul>
+      <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        @for (color of grupo.colores; track color.variable + color.nombre) {
+          <li class="overflow-hidden rounded-xl border border-borde bg-superficie">
+            <span
+              class="block h-20 border-b border-borde"
+              [style.background-color]="valor(color)"
+            ></span>
+            <span class="block p-4">
+              <span class="block font-medium text-texto">{{ color.nombre }}</span>
+              <code class="mt-0.5 block font-mono text-xs text-texto-suave">{{
+                valor(color)
+              }}</code>
+              @if (color.hexOscuro) {
+                <span class="mt-2 block text-xs text-texto-suave">
+                  Claro {{ color.hex }} · Oscuro {{ color.hexOscuro }}
+                </span>
+              }
+              @if (color.nota) {
+                <span
+                  class="mt-2 block text-xs"
+                  [class]="color.alerta ? 'text-rechazado' : 'text-texto-suave'"
+                  >{{ color.nota }}</span
+                >
+              }
+            </span>
+          </li>
+        }
+      </ul>
+    }
 
     <h3 class="mt-10 font-cuerpo text-sm font-semibold tracking-wide text-texto-suave uppercase">
       Estados de documento
@@ -55,9 +72,9 @@
         <li
           class="flex items-center gap-2 rounded-full border border-borde bg-superficie py-2 pr-4 pl-2"
         >
-          <span class="h-6 w-6 rounded-full" [style.background-color]="color.hex"></span>
+          <span class="h-6 w-6 rounded-full" [style.background-color]="valor(color)"></span>
           <span class="text-sm text-texto">{{ color.nombre }}</span>
-          <code class="font-mono text-xs text-texto-suave">{{ color.hex }}</code>
+          <code class="font-mono text-xs text-texto-suave">{{ valor(color) }}</code>
         </li>
       }
     </ul>

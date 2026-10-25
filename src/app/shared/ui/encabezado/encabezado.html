@@ -10,12 +10,25 @@
       href="https://icgb.com.ar/"
       class="flex shrink-0 items-center gap-2.5 focus-visible:ring-2 focus-visible:ring-principal focus-visible:outline-none"
     >
+      <!--
+        El logo existe en dos colores: verde sobre fondo claro y blanco hueso sobre
+        fondo oscuro. Se dibujan los dos y el tema deja visible solo uno (ver
+        `solo-claro` y `solo-oscuro` en styles.scss). `alt` vacío en ambos: es
+        decoración, el nombre va escrito al lado.
+      -->
       <img
         src="imagenes/logo-iscgb-verde.svg"
         alt=""
         width="36"
         height="34"
-        class="h-8 w-auto lg:h-9"
+        class="solo-claro h-8 w-auto lg:h-9"
+      />
+      <img
+        src="imagenes/logo-iscgb.svg"
+        alt=""
+        width="36"
+        height="34"
+        class="solo-oscuro h-8 w-auto lg:h-9"
       />
       <!--
         El nombre va como TEXTO, no como imagen. Así se puede seleccionar,

@@ -76,16 +76,16 @@ export class Boton {
 
     const porNivel: Record<NivelBoton, string> = {
       primario:
-        'rounded-full bg-acento-verde-claro px-6 py-3 text-sm text-texto ' +
+        'rounded-full bg-acento-verde-claro px-6 py-3 text-sm text-texto-sobre-claro ' +
         'hover:bg-acento-verde active:bg-acento-verde-press ' +
         'focus-visible:ring-acento-verde-press ' +
         'disabled:bg-acento-verde-claro/35 disabled:text-texto-suave ' +
         'sm:px-8 sm:py-3.5 sm:text-base',
       secundario:
-        'rounded-full bg-principal px-6 py-3 text-sm text-white ' +
-        'hover:bg-principal-oscuro active:bg-principal-oscuro ' +
+        'rounded-full bg-principal-solido px-6 py-3 text-sm text-white ' +
+        'hover:bg-principal-solido-hover active:bg-principal-solido-hover ' +
         'focus-visible:ring-principal ' +
-        'disabled:bg-gris-marca disabled:text-white/70 ' +
+        'disabled:bg-inactivo disabled:text-white/70 ' +
         'sm:px-8 sm:py-3.5 sm:text-base',
       terciario:
         'rounded-md px-1 py-1 text-sm text-texto-suave ' +

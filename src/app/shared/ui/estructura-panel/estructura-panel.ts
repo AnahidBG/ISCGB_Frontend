@@ -20,6 +20,7 @@ import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { FilaNotificacion } from '../fila-notificacion/fila-notificacion';
 import { Icono, NombreIcono } from '../icono/icono';
 import { PanelNotificaciones } from '../panel-notificaciones/panel-notificaciones';
+import { SelectorTema } from '../selector-tema/selector-tema';
 
 /** Un enlace del menú lateral de un panel. */
 export interface EnlacePanel {
@@ -81,7 +82,14 @@ const MAXIMO_NOTIFICACIONES_EN_DESPLEGABLE = 5;
  */
 @Component({
   selector: 'app-estructura-panel',
-  imports: [RouterLink, RouterLinkActive, Icono, FilaNotificacion, PanelNotificaciones],
+  imports: [
+    RouterLink,
+    RouterLinkActive,
+    Icono,
+    FilaNotificacion,
+    PanelNotificaciones,
+    SelectorTema,
+  ],
   templateUrl: './estructura-panel.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {

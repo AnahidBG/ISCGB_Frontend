@@ -83,7 +83,7 @@
         class="rounded-full border px-4 py-1.5 text-sm transition-colors"
         [class]="
           filtro() === opcion.valor
-            ? 'border-principal bg-principal text-white'
+            ? 'border-principal-solido bg-principal-solido text-white'
             : 'border-borde text-texto-suave hover:bg-fondo-panel'
         "
         (click)="cambiarFiltro(opcion.valor)"
@@ -217,7 +217,9 @@
                 <button
                   type="button"
                   class="inline-flex items-center gap-1.5 rounded-full border-2 border-aprobado px-3.5 py-1.5 text-xs font-semibold text-aprobado transition-colors duration-150 hover:bg-aprobado/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-aprobado focus-visible:ring-offset-2 disabled:cursor-not-allowed sm:text-sm"
-                  [class.bg-aprobado]="estaGuardando(fila.idLegajo) || fila.estado === 'Aprobado'"
+                  [class.bg-aprobado-solido]="
+                    estaGuardando(fila.idLegajo) || fila.estado === 'Aprobado'
+                  "
                   [class.text-white]="estaGuardando(fila.idLegajo) || fila.estado === 'Aprobado'"
                   [disabled]="estaGuardando(fila.idLegajo) || fila.estado === 'Aprobado'"
                   [attr.aria-pressed]="fila.estado === 'Aprobado'"
@@ -233,7 +235,9 @@
                 <button
                   type="button"
                   class="inline-flex items-center gap-1.5 rounded-full border-2 border-rechazado px-3.5 py-1.5 text-xs font-semibold text-rechazado transition-colors duration-150 hover:bg-rechazado/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rechazado focus-visible:ring-offset-2 disabled:cursor-not-allowed sm:text-sm"
-                  [class.bg-rechazado]="estaGuardando(fila.idLegajo) || fila.estado === 'Rechazado'"
+                  [class.bg-rechazado-solido]="
+                    estaGuardando(fila.idLegajo) || fila.estado === 'Rechazado'
+                  "
                   [class.text-white]="estaGuardando(fila.idLegajo) || fila.estado === 'Rechazado'"
                   [disabled]="estaGuardando(fila.idLegajo) || fila.estado === 'Rechazado'"
                   [attr.aria-pressed]="fila.estado === 'Rechazado'"
@@ -263,7 +267,7 @@
                     </button>
                     <button
                       type="button"
-                      class="rounded-full bg-aprobado px-3 py-1 text-xs font-semibold text-white hover:brightness-90"
+                      class="rounded-full bg-aprobado-solido px-3 py-1 text-xs font-semibold text-white hover:brightness-90"
                       (click)="confirmarAprobacion()"
                     >
                       Sí, aprobar

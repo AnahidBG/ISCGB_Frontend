@@ -12,7 +12,7 @@
   [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
-  <div class="flex w-full justify-center py-2">
+  <div class="flex w-full flex-col items-center gap-6 py-2">
     <section
       aria-labelledby="titulo-cambiar-contrasena"
       class="w-full max-w-2xl rounded-tarjeta border border-borde bg-superficie p-8 shadow-marca-md"
@@ -98,6 +98,25 @@
           </div>
         </div>
       }
+    </section>
+
+    <!--
+      La apariencia. También se cambia desde el menú de la persona, arriba a la
+      derecha; acá está con la explicación, para quien la busque en Configuración.
+    -->
+    <section
+      aria-labelledby="titulo-apariencia"
+      class="w-full max-w-2xl rounded-tarjeta border border-borde bg-superficie p-8 shadow-marca-md"
+    >
+      <h2 id="titulo-apariencia" class="text-2xl font-bold text-texto">Apariencia</h2>
+      <p class="mt-1 text-sm text-texto-suave">
+        Elegí cómo querés ver el sistema. «Automático» usa la configuración de tu dispositivo y
+        cambia solo cuando el dispositivo lo hace. Tu elección se recuerda en este navegador.
+      </p>
+
+      <div class="mt-5 max-w-md">
+        <app-selector-tema />
+      </div>
     </section>
   </div>
 </app-estructura-panel>

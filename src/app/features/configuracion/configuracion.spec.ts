@@ -131,6 +131,16 @@ describe('Configuracion', () => {
     },
   );
 
+  it('ofrece elegir la apariencia, con las tres opciones y una explicación', async () => {
+    await montar();
+    const tarjeta = el.querySelector('section[aria-labelledby="titulo-apariencia"]')!;
+
+    expect(tarjeta.querySelector('h2')?.textContent).toContain('Apariencia');
+    expect(tarjeta.textContent).toContain('Automático');
+    expect(tarjeta.querySelectorAll('app-selector-tema button').length).toBe(3);
+    expect(tarjeta.textContent).toContain('configuración de tu dispositivo');
+  });
+
   it('usa los colores del tema, sin hexadecimales escritos a mano en las clases', async () => {
     await montar();
     const tarjeta = el.querySelector('section[aria-labelledby="titulo-cambiar-contrasena"]')!;

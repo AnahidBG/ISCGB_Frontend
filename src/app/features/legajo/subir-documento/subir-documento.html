@@ -34,7 +34,7 @@
           class="mx-auto mt-5 flex max-w-md items-start gap-3 rounded-xl border-2 border-rechazado bg-rechazado/10 px-4 py-3.5 text-left"
         >
           <span
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rechazado text-white"
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rechazado-solido text-white"
           >
             <app-icono nombre="alerta" class="h-5 w-5" />
           </span>
@@ -49,7 +49,7 @@
         <div class="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
           <button
             type="button"
-            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro"
+            class="rounded-full bg-principal-solido px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-solido-hover"
             (click)="volverAlPanel()"
           >
             Volver al panel
@@ -167,7 +167,7 @@ class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
           class="mt-6 flex items-start gap-3 rounded-xl border-2 border-rechazado bg-rechazado/10 px-4 py-3.5"
         >
           <span
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rechazado text-white"
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-rechazado-solido text-white"
           >
             <app-icono nombre="alerta" class="h-5 w-5" />
           </span>
@@ -191,7 +191,7 @@ class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
           <button
             type="submit"
             [disabled]="!puedeEnviar()"
-            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro disabled:cursor-not-allowed disabled:opacity-40"
+            class="rounded-full bg-principal-solido px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-solido-hover disabled:cursor-not-allowed disabled:opacity-40"
           >
             @if (enviando()) {
               Subiendo…

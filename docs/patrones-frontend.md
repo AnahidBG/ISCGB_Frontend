@@ -1,6 +1,6 @@
 # Patrones de diseño en el frontend
 
-Revisado contra el código el **06/10/2026**; la sección del calendario de parciales, el **12/10/2026**. El proyecto está en desarrollo: si este documento y el código no coinciden, manda el código. Actualizalo en el mismo cambio que agregue, quite o modifique un patrón.
+Revisado contra el código el **06/10/2026**; la sección del calendario de parciales, el **12/10/2026**; el tema oscuro, el **25/10/2026**. El proyecto está en desarrollo: si este documento y el código no coinciden, manda el código. Actualizalo en el mismo cambio que agregue, quite o modifique un patrón.
 
 La base teórica es *Sumérgete en los Patrones de Diseño*, de Alexander Shvets (Refactoring.Guru), que cubre los 22 patrones clásicos, los principios de diseño y SOLID. El libro tiene licencia de uso personal, así que no se sube al repo ni al Project. Esto es nuestra aplicación de esos conceptos a ISCGB; la teoría de cada patrón está en el libro o en refactoring.guru.
 
@@ -132,6 +132,16 @@ Tres de ellas son la única definición de algo, para que la campana y los panel
 
 Es para un enlace o un bloque dentro de una pantalla que ya pasó por `roleGuard`. No es seguridad: la protección va en el backend. El calendario la usa para "Cambiar el límite", que solo ven Secretaría y Dirección.
 
+### 2.13 Preferencia guardada que se traduce a un atributo: el tema
+
+`TemaService`, en `core/tema/`, guarda si la persona eligió el tema claro, el oscuro o "automático", y lo deja puesto como `data-tema` en `<html>`. Ese atributo es lo único que miran los estilos; el detalle está en "Tema oscuro", en `docs/design-system.md`.
+
+Es un Singleton con signals. `preferencia` es lo que se eligió y `tema` es un `computed` que lo resuelve con `resolverTema(...)`, una función pura de `tema.ts` con su spec, sumándole lo que dice el dispositivo (`matchMedia`). El único efecto secundario va en un `effect` que escribe el atributo. Leer y escribir `localStorage` van dentro de un `try/catch`, porque el navegador puede negarlo, y el listener de `matchMedia` se saca con `DestroyRef`.
+
+Ningún componente toca el DOM ni `localStorage`: `SelectorTema` solo llama a `establecer(...)` o `alternar()`, y sus tres opciones son una tabla (`OPCIONES`) con el ícono, la etiqueta y la ayuda de cada una.
+
+Ojo con una cosa: `index.html` tiene un script que repite la decisión de `tema.ts` para pintar el tema antes de que cargue Angular. Si cambia una, se cambia la otra. Una pantalla nueva casi nunca necesita saber qué tema hay: usa los tokens y listo. Si de verdad hace falta (un gráfico en un `canvas`, por ejemplo), lee `TemaService.esOscuro()` y no el atributo.
+
 ## 3. Patrones para lo que viene
 
 **Calendario de exámenes parciales.** Hecho el 10/10/2026 (SCRUM-183): la pantalla muestra un mes con el estado de cada día y deja pasar de mes. Lo ven el Docente, el Secretario y el Director; el Alumno no. El Docente además registra parciales (SCRUM-186), explica por qué un día completo está bloqueado (SCRUM-185) y reprograma, elimina o arrastra un parcial ya cargado (SCRUM-184); contra la API real, esto último solo en el mes en curso, que es el único que lista el backend (`del-mes`, desde el 17/10/2026).
@@ -197,6 +207,7 @@ No se refactoriza de paso: cada punto va en su propio commit `refactor:`, con su
 - [ ] Contenedor y presentacional separados, con `input()` y `output()`.
 - [ ] Estado con signals, sin suscripciones que queden vivas.
 - [ ] La lógica de negocio está en funciones puras en `core/`, con su spec.
+- [ ] Los colores salen de los tokens: sin `dark:` y sin hexadecimales. Un relleno con texto blanco usa `bg-principal-solido` (o `-solido` de aprobado y rechazado), no `bg-principal`, y `text-white` va solo sobre uno de esos.
 - [ ] Sin `extends` entre componentes y sin copiar HTML que ya está en `shared/ui/`.
 - [ ] Si se aplicó un patrón nuevo o se cambió uno, se actualizó este documento.
 

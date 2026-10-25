@@ -1,0 +1,41 @@
+@if (variante() === 'boton') {
+  <!--
+    El ícono muestra a dónde se va (la luna si ahora está claro, el sol si está
+    oscuro) y la etiqueta lo dice con palabras. 40px de lado: cómodo de tocar.
+  -->
+  <button
+    type="button"
+    class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-borde bg-superficie text-texto-suave shadow-marca-sm transition-colors hover:text-texto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+    [attr.aria-label]="etiquetaBoton()"
+    [attr.title]="etiquetaBoton()"
+    (click)="alternar()"
+  >
+    <app-icono [nombre]="esOscuro() ? 'sol' : 'luna'" class="h-5 w-5" />
+  </button>
+} @else {
+  <!--
+    Cada opción apila el ícono sobre el texto: en el menú de la persona (288px)
+    tres opciones con el ícono al costado no entran, y "Automático" es la más
+    larga.
+  -->
+  <div
+    class="flex w-full gap-1 rounded-2xl border border-borde bg-fondo-panel p-1"
+    [attr.role]="rolGrupo()"
+    aria-label="Apariencia"
+  >
+    @for (opcion of opciones(); track opcion.valor) {
+      <button
+        type="button"
+        class="flex flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-principal"
+        [class]="opcion.clases"
+        [attr.role]="rolOpcion()"
+        [attr.aria-checked]="opcion.elegida"
+        [attr.title]="opcion.ayuda"
+        (click)="elegir(opcion.valor)"
+      >
+        <app-icono [nombre]="opcion.icono" class="h-5 w-5 shrink-0" />
+        {{ opcion.etiqueta }}
+      </button>
+    }
+  </div>
+}

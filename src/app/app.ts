@@ -2,6 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CargaService } from './core/carga/carga.service';
 import { CargadorGlobal } from './core/carga/cargador-global';
+import { TemaService } from './core/tema/tema.service';
 
 /**
  * Cuánto se reserva el loader global apenas arranca la app.
@@ -24,6 +25,12 @@ export class App {
   protected readonly title = signal('iscgb-frontend');
 
   constructor() {
+    // El tema se instancia acá, en la raíz, y no recién cuando alguien abre un
+    // selector: así acompaña al dispositivo (si anochece y pasa a oscuro) y
+    // mantiene el color de la barra del navegador desde el primer momento,
+    // sea cual sea la pantalla en la que se aterrice. Ver core/tema/.
+    inject(TemaService);
+
     // Mismo mecanismo que usa `cargaInterceptor`: sumar una espera y
     // restarla. `CargaService` ya se encarga de la demora de aparición y del
     // mínimo visible (ver carga.service.ts), así que acá alcanza con marcar

@@ -39,7 +39,7 @@
         <div class="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
           <button
             type="button"
-            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro"
+            class="rounded-full bg-principal-solido px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-solido-hover"
             (click)="volverAlPanel()"
           >
             Volver al panel
@@ -207,7 +207,7 @@
             <button
               type="submit"
               [disabled]="!puedeEnviar()"
-              class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro disabled:cursor-not-allowed disabled:opacity-40"
+              class="rounded-full bg-principal-solido px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-solido-hover disabled:cursor-not-allowed disabled:opacity-40"
             >
               @if (enviando()) {
                 Enviando…
