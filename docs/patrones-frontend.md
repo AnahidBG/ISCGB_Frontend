@@ -94,7 +94,7 @@ El estado global vive solo en servicios de `core/`. Nada de variables mutables a
 
 ### 2.8 Tabla de estrategias por clave
 
-Es un Strategy liviano, que reemplaza condicionales. El ejemplo es `APARIENCIA_POR_ESTADO: Record<EstadoDocumento, AparienciaEstado>` en `insignia-estado.ts`, con `APARIENCIA_DESCONOCIDA` como valor por defecto para un `estado` nulo o inesperado. También lo son `enlacesPorSesion` para el menú, `destinoSegunRoles`, `rolPrincipalDe` y `APARIENCIA_POR_DIA`, que le da a cada estado del calendario su fondo, su barrita y su candado.
+Es un Strategy liviano, que reemplaza condicionales. El ejemplo es `APARIENCIA_POR_ESTADO: Record<EstadoDocumento, AparienciaEstado>` en `insignia-estado.ts`, con `APARIENCIA_DESCONOCIDA` como valor por defecto para un `estado` nulo o inesperado. También lo son `enlacesPorSesion` para el menú, `destinoSegunRoles`, `rolPrincipalDe` y `APARIENCIA_POR_DIA`, que le da a cada estado del calendario su fondo, su barrita y su candado. Lo mismo hacen `APARIENCIA_POR_ESTADO` y `RELLENO_POR_NIVEL` en `requisitos-password.ts`, y `CLASES_POR_VARIANTE` en `campo-contrasena.ts`.
 
 Todo lo que cambia según el estado, el rol o el tipo se resuelve con una tabla en un solo lugar, nunca con `if` repetidos en cada pantalla. Siempre hay un caso por defecto, porque `estado` es `varchar NULL` en la base.
 
@@ -179,7 +179,7 @@ La grilla ya sabe listar parciales en su día, y modificarlos, eliminarlos y arr
 
 **Cambios sin guardar.** Memento liviano más un guard: se guarda una foto del valor inicial del formulario, se compara con la actual, y un `canDeactivate` reutilizable pregunta antes de salir. Ya lo usa la entrega del programa de materia, con `confirmarSalidaGuard`.
 
-**Requisitos de la contraseña nueva**, para el cambio de contraseña (CP35 y CP36). Strategy por regla: cada requisito es un objeto `{ texto, cumple(valor) }` en una lista, `requisitos-password` la dibuja y el botón se habilita cuando se cumplen todos. Si `core/auth/password.ts` ya lo resuelve así, se reusa.
+**Requisitos de la contraseña nueva**, para el cambio de contraseña (CP35 y CP36). Hecho el 25/10/2026 y ya lo usan crear y restablecer contraseña. Strategy por regla: `core/auth/password.ts` tiene la lista `REQUISITOS_PASSWORD` (cada una con `{ clave, texto, cumple }`) y dos funciones puras con test, `estadoDelRequisito` (cumplido, falta o pendiente) y `nivelDeProgreso` (para la barra). `requisitos-password` dibuja la lista con una tabla por clave, `APARIENCIA_POR_ESTADO`, y cada estado lleva su ícono además del color. `campo-contrasena` es un `ControlValueAccessor` con el ojito, y se usa con `formControlName` o con `[valor]` y `(valorChange)`. **Falta:** usarlos en la pantalla de cambio de contraseña desde Configuración, que todavía está en la rama de Gonza con sus `<input>` a mano.
 
 **Listados de Director y Secretario.** El filtrado por estado de la cuenta y la búsqueda por nombre o DNI van en una función pura con test; el servicio expone los datos y el componente solo une signals. El de Secretaría ya está, con `core/usuarios/filtrar-usuarios.ts`.
 

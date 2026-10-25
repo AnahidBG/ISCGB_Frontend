@@ -18,6 +18,8 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { map } from 'rxjs';
 import { AuthService, MENSAJE_ENLACE_RECUPERACION_INVALIDO } from '../../core/auth/auth.service';
 import { passwordCumpleTodo } from '../../core/auth/password';
+import { CampoContrasena } from '../../shared/ui/campo-contrasena/campo-contrasena';
+import { Icono } from '../../shared/ui/icono/icono';
 import { RequisitosPassword } from '../../shared/ui/requisitos-password/requisitos-password';
 
 /** Cuánto se muestra el aviso de éxito antes de llevar a la persona al login. */
@@ -66,7 +68,7 @@ function contrasenasCoinciden(grupo: AbstractControl): ValidationErrors | null {
  */
 @Component({
   selector: 'app-restablecer-password',
-  imports: [ReactiveFormsModule, RouterLink, RequisitosPassword],
+  imports: [ReactiveFormsModule, RouterLink, CampoContrasena, Icono, RequisitosPassword],
   templateUrl: './restablecer-password.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -98,6 +100,15 @@ export class RestablecerPassword {
   protected readonly password = toSignal(this.form.controls.password.valueChanges, {
     initialValue: '',
   });
+
+  /** La repetida como signal, para confirmar con una tilde verde cuando coincide. */
+  private readonly repetida = toSignal(this.form.controls.confirmPassword.valueChanges, {
+    initialValue: '',
+  });
+
+  protected readonly coinciden = computed(
+    () => this.repetida() !== '' && this.repetida() === this.password(),
+  );
 
   protected readonly cargando = signal(false);
   protected readonly exito = signal(false);

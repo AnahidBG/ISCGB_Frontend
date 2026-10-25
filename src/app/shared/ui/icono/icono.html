@@ -175,6 +175,17 @@
       <path d="M12 11.2v5" />
       <path d="M12 7.9h.01" />
     }
+    @case ('ojo') {
+      <!-- Ojo abierto: "mostrar" (la contraseña, un dato oculto). -->
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    }
+    @case ('ojo-tachado') {
+      <!-- Ojo con una barra: "ocultar" lo que ahora se está viendo. -->
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="m4 20 16-16" />
+    }
     @case ('sol') {
       <!-- Sol con ocho rayos: el tema claro. -->
       <circle cx="12" cy="12" r="4" />

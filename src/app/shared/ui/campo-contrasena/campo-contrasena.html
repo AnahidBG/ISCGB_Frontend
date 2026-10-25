@@ -1,0 +1,61 @@
+<span class="relative flex items-center">
+  @if (conCandado()) {
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      fill="none"
+      class="pointer-events-none absolute left-3.5 h-5 w-5 text-texto-suave"
+    >
+      <rect
+        x="4"
+        y="10.5"
+        width="16"
+        height="10"
+        rx="2.5"
+        stroke="currentColor"
+        stroke-width="1.6"
+      />
+      <path
+        d="M8 10.5V7.5a4 4 0 1 1 8 0v3"
+        stroke="currentColor"
+        stroke-width="1.6"
+        stroke-linecap="round"
+      />
+    </svg>
+  }
+
+  <input
+    [id]="idCampo()"
+    [type]="visible() ? 'text' : 'password'"
+    [value]="valor()"
+    [disabled]="deshabilitado()"
+    [attr.autocomplete]="autocomplete()"
+    [attr.placeholder]="placeholder() === '' ? null : placeholder()"
+    [attr.aria-invalid]="invalido()"
+    [attr.aria-describedby]="invalido() ? idDelError() : null"
+    autocapitalize="off"
+    autocorrect="off"
+    spellcheck="false"
+    [class]="clasesDelInput()"
+    (input)="alEscribir($event)"
+    (blur)="alSalir()"
+  />
+
+  <!--
+    El ícono muestra la ACCIÓN, igual que en el login de siempre: con la
+    contraseña oculta se ve el ojo abierto ("mostrar"); con la contraseña a la
+    vista, el ojo tachado ("ocultar").
+  -->
+  <button
+    type="button"
+    (mousedown)="$event.preventDefault()"
+    (click)="alternar()"
+    [disabled]="deshabilitado()"
+    [attr.aria-label]="visible() ? 'Ocultar la contraseña' : 'Mostrar la contraseña'"
+    [attr.aria-pressed]="visible()"
+    [attr.aria-controls]="idCampo()"
+    class="absolute right-3 rounded-md p-1.5 text-texto-suave transition-colors hover:text-principal focus-visible:ring-2 focus-visible:ring-principal focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    <app-icono [nombre]="visible() ? 'ojo-tachado' : 'ojo'" class="h-5 w-5" />
+  </button>
+</span>

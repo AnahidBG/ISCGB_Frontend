@@ -26,6 +26,20 @@ describe('Icono', () => {
     expect(fixture.nativeElement.querySelectorAll('svg').length).toBe(1);
   });
 
+  // El ojito de las contraseñas: el ojo abierto invita a "mostrar" y el
+  // tachado a "ocultar". Si los dos se dibujaran igual, el botón no cambiaría.
+  describe('ojo', () => {
+    it.each<[string, number]>([
+      ['ojo', 2],
+      ['ojo-tachado', 3],
+    ])('"%s" dibuja %i trazos', async (nombre, trazos) => {
+      fixture.componentRef.setInput('nombre', nombre);
+      await fixture.whenStable();
+
+      expect(fixture.nativeElement.querySelectorAll('svg > *').length).toBe(trazos);
+    });
+  });
+
   // El selector de apariencia: un ícono distinto para cada una de las tres
   // opciones. Si alguno cayera en el `@switch` sin `@case`, el SVG saldría
   // vacío y el botón quedaría sin dibujo.

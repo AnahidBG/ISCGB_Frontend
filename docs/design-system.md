@@ -381,6 +381,16 @@ sitio y este lleva a entrar a un sistema.
 `<app-campo-formulario>`, `<app-pantalla-carga>` y el resto de `shared/ui/` se
 ven en el muestrario, en `/sistema-diseno`.
 
+Toda contraseña se pide con `<app-campo-contrasena>`, no con un
+`<input type="password">` suelto: trae el ojito para verla u ocultarla (con
+`aria-label` y `aria-pressed`) y funciona tanto con `formControlName` como con
+`[valor]` y `(valorChange)`. Cuando la persona está eligiendo una contraseña
+nueva va acompañada de `<app-requisitos-password>`, que muestra cada regla en
+gris (todavía no se escribió), rojo con ✕ (falta) o verde con ✓ (cumplida) y una
+barra de avance. El estado no depende solo del color: cada uno tiene su ícono y
+un texto para el lector de pantalla. La barra mide cuánto de la política se
+cumple, no qué tan segura es la contraseña.
+
 ## Brochero Design System
 
 El 27/08/2026 se incorporó a `styles.scss` un segundo sistema de diseño de la

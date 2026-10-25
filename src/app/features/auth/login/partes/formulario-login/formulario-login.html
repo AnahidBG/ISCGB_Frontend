@@ -109,70 +109,18 @@
       ¿Olvidaste tu contraseña?
     </a>
 
-    <span class="relative flex items-center">
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
-        fill="none"
-        class="pointer-events-none absolute left-3.5 h-5 w-5 text-texto-suave"
-      >
-        <rect
-          x="4"
-          y="10.5"
-          width="16"
-          height="10"
-          rx="2.5"
-          stroke="currentColor"
-          stroke-width="1.6"
-        />
-        <path
-          d="M8 10.5V7.5a4 4 0 1 1 8 0v3"
-          stroke="currentColor"
-          stroke-width="1.6"
-          stroke-linecap="round"
-        />
-      </svg>
-
-      <input
-        id="password"
-        [type]="passwordVisible() ? 'text' : 'password'"
-        formControlName="password"
-        autocomplete="current-password"
-        placeholder="••••••••••"
-        [attr.aria-invalid]="errorPassword !== null"
-        [attr.aria-describedby]="errorPassword ? 'password-error' : null"
-        [class.border-rechazado]="errorPassword !== null"
-        [class.border-borde]="errorPassword === null"
-        class="w-full rounded-lg border bg-superficie py-3.5 pr-12 pl-11 text-texto placeholder:text-texto-suave hover:border-acento-verde focus:border-principal focus:ring-2 focus:ring-principal/20 focus:outline-none"
-      />
-
-      <button
-        type="button"
-        (click)="alternarPassword()"
-        [attr.aria-label]="
-          passwordVisible() ? 'Ocultar la contraseña' : 'Mostrar la contraseña'
-        "
-        [attr.aria-pressed]="passwordVisible()"
-        class="absolute right-3 rounded-md p-1.5 text-texto-suave transition-colors hover:text-principal focus-visible:ring-2 focus-visible:ring-principal focus-visible:outline-none"
-      >
-        <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" class="h-5 w-5">
-          <path
-            d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"
-            stroke="currentColor"
-            stroke-width="1.6"
-          />
-          <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6" />
-          @if (passwordVisible()) {
-            <path
-              d="m4 20 16-16"
-              stroke="currentColor"
-              stroke-width="1.6"
-              stroke-linecap="round"
-            />
-          }
-        </svg>
-      </button>
-    </span>
+    <!--
+      El candado, el ojito y los bordes viven en `app-campo-contrasena`: es el
+      mismo campo que usan crear y restablecer contraseña.
+    -->
+    <app-campo-contrasena
+      idCampo="password"
+      autocomplete="current-password"
+      placeholder="••••••••••"
+      [conCandado]="true"
+      formControlName="password"
+      [invalido]="errorPassword !== null"
+    />
   </app-campo-formulario>
 
   <!--
