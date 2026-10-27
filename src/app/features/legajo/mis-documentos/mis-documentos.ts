@@ -271,12 +271,15 @@ export class MisDocumentos {
     calcularProgresoLegajo(this.documentosConOverrides(), this.requeridos()),
   );
 
-  /** Los obligatorios que todavía no subió. Es el "Sin cargar" del diseño. */
+  /**
+   * Lo que el instituto le pide al rol y todavía no subió, obligatorio o no.
+   * Es el "Sin cargar" del diseño. Antes eran solo los obligatorios, y un
+   * opcional sin subir no aparecía en ningún lado: no tenía fila ni botón
+   * "Cargar", así que no había cómo presentarlo. El progreso sigue contando
+   * solo los obligatorios (ver `calcularProgresoLegajo`).
+   */
   protected readonly faltantes = computed(() =>
-    documentosSinCargar(
-      this.documentosConOverrides(),
-      this.requeridos().filter((requerido) => requerido.obligatorio),
-    ),
+    documentosSinCargar(this.documentosConOverrides(), this.requeridos()),
   );
 
   /**
@@ -376,7 +379,7 @@ export class MisDocumentos {
       clave: `falta-${requerido.idTipoDoc}`,
       nombre: requerido.nombreDocumento,
       estado: null,
-      obligatorio: true,
+      obligatorio: requerido.obligatorio,
       fechaSubida: null,
       fechaVencimiento: null,
       comentario: null,
@@ -646,7 +649,8 @@ export class MisDocumentos {
 }
 
 /**
- * Primero lo que hay que resolver, después lo que ya está.
+ * Primero lo que hay que resolver, después lo que ya está. De lo que falta
+ * subir, lo obligatorio va antes que lo opcional.
  *
  * Ordena por `estadoParaOrden` (el estado con el que se cargó la pantalla) y
  * no por `estado` (que ya puede tener encima un veredicto de hace dos
@@ -654,8 +658,8 @@ export class MisDocumentos {
  */
 function prioridad(fila: FilaDocumento): number {
   if (fila.estadoParaOrden === 'Rechazado') return 0;
-  if (fila.faltante) return 1;
-  if (fila.estadoParaOrden === 'Pendiente') return 2;
-  if (fila.estadoParaOrden === 'Aprobado') return 4;
-  return 3;
+  if (fila.faltante) return fila.obligatorio ? 1 : 2;
+  if (fila.estadoParaOrden === 'Pendiente') return 3;
+  if (fila.estadoParaOrden === 'Aprobado') return 5;
+  return 4;
 }
