@@ -1,34 +1,19 @@
-import {
-  TIPOS_INASISTENCIA,
-  TIPO_NOTA_OBLIGATORIA,
-  TIPO_SIN_COMPROBANTE,
-  exigeComprobante,
-  exigeNota,
-} from './tipo-inasistencia';
+import { TIPOS_INASISTENCIA, exigeComprobante } from './tipo-inasistencia';
 
 describe('tipo-inasistencia', () => {
-  it('"Otros" es un motivo del desplegable, al final de la lista', () => {
-    const valores = TIPOS_INASISTENCIA.map((t) => t.valor);
-    expect(TIPO_NOTA_OBLIGATORIA).toBe('Otros');
-    expect(valores).toContain('Otros');
-    expect(valores[valores.length - 1]).toBe('Otros');
+  it('ofrece los cuatro motivos que pidió la institución, en ese orden', () => {
+    expect(TIPOS_INASISTENCIA.map((t) => t.etiqueta)).toEqual([
+      'Por causas médicas',
+      'Por causas académicas',
+      'Por otros compromisos laborales',
+      'Por causas personales',
+    ]);
   });
 
-  it('"Otros" exige la nota aclaratoria', () => {
-    expect(exigeNota('Otros')).toBe(true);
-  });
+  it('solo "Por causas personales" no exige comprobante, con el literal que compara el backend', () => {
+    const personales = TIPOS_INASISTENCIA.find((t) => t.etiqueta === 'Por causas personales');
 
-  it('los demás motivos y el vacío no exigen nota', () => {
-    const otros = TIPOS_INASISTENCIA.filter((t) => t.valor !== 'Otros');
-    expect(otros.length).toBeGreaterThan(0);
-    for (const tipo of otros) {
-      expect(exigeNota(tipo.valor)).toBe(false);
-    }
-    expect(exigeNota('')).toBe(false);
-  });
-
-  it('"Otros" sigue exigiendo el comprobante, como el backend', () => {
-    expect(exigeComprobante('Otros')).toBe(true);
-    expect(exigeComprobante(TIPO_SIN_COMPROBANTE)).toBe(false);
+    expect(personales?.valor).toBe('Causas Personales');
+    expect(TIPOS_INASISTENCIA.filter((t) => !exigeComprobante(t.valor))).toEqual([personales]);
   });
 });
