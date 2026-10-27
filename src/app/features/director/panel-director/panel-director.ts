@@ -1,17 +1,20 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { catchError, forkJoin, map, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ROLES } from '../../../core/auth/modelos/rol';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { LegajoResumenUsuario } from '../../../core/legajos/modelos/legajo-resumen';
 import { estadoGeneralDelLegajo } from '../../../core/legajos/resumen-legajo';
+import { filtrarUsuarios, FiltroRolUsuario } from '../../../core/usuarios/filtrar-usuarios';
 import { UsuarioInstitucional } from '../../../core/usuarios/modelos/usuario-institucional';
 import { UsuariosService } from '../../../core/usuarios/usuarios.service';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
+import { FiltroSegmentado, OpcionFiltro } from '../../../shared/ui/filtro-segmentado/filtro-segmentado';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 
@@ -25,6 +28,13 @@ const ACCION_DIRECTOR: AccionPanel = {
   url: '/director/usuarios/nuevo',
   icono: 'usuarios',
 };
+
+const FILTROS_DE_ROL: readonly OpcionFiltro<FiltroRolUsuario>[] = [
+  { valor: 'todos', etiqueta: 'Todos' },
+  { valor: ROLES.alumno, etiqueta: 'Alumnos' },
+  { valor: ROLES.docente, etiqueta: 'Docentes' },
+  { valor: ROLES.secretario, etiqueta: 'Secretarios' },
+];
 
 /**
  * Panel del Director.
@@ -46,10 +56,14 @@ const ACCION_DIRECTOR: AccionPanel = {
  * Multi-rol: si la sesión tiene ADEMÁS el rol Docente (un director que
  * también dicta una materia), el menú suma "Entregar programa de materia" —
  * lo resuelve `enlacesPorSesion`, no este componente.
+ *
+ * Filtro por rol: los mismos chips que Control de Legajos
+ * (`filtro-segmentado`). Filtra solo la tabla; las tarjetas de arriba siguen
+ * contando todo el instituto. Alguien con dos roles aparece en los dos filtros.
  */
 @Component({
   selector: 'app-panel-director',
-  imports: [EstructuraPanel, InsigniaEstado, PantallaCarga, RouterLink],
+  imports: [EstructuraPanel, FiltroSegmentado, InsigniaEstado, PantallaCarga, RouterLink],
   templateUrl: './panel-director.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -93,6 +107,24 @@ export class PanelDirector {
   protected readonly legajoDisponible = computed(() => this.datos()?.legajoDisponible ?? true);
 
   protected readonly listadoUsuarios = computed(() => this.datos()?.usuarios ?? []);
+
+  protected readonly filtrosDeRol = FILTROS_DE_ROL;
+  protected readonly filtroRol = signal<FiltroRolUsuario>('todos');
+
+  protected readonly usuariosFiltrados = computed(() =>
+    filtrarUsuarios(this.listadoUsuarios(), {
+      texto: '',
+      rol: this.filtroRol(),
+      estado: 'todos',
+    }),
+  );
+
+  /** "alumnos", "secretarios"…: para el mensaje de la tabla vacía. */
+  protected readonly nombreDelFiltro = computed(
+    () =>
+      FILTROS_DE_ROL.find((opcion) => opcion.valor === this.filtroRol())?.etiqueta.toLocaleLowerCase() ??
+      '',
+  );
 
   protected readonly accion = ACCION_DIRECTOR;
 

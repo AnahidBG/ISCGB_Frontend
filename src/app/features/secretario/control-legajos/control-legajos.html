@@ -79,21 +79,12 @@
 
     <div class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
       @if (rolesDisponibles()) {
-        <div class="flex gap-1 rounded-full border border-borde bg-superficie p-1" role="group" aria-label="Filtrar por rol">
-          @for (opcion of filtrosDeRol; track opcion.valor) {
-            <button
-              type="button"
-              class="rounded-full px-3 py-1 text-xs font-semibold transition-colors"
-              [class.bg-principal-solido]="filtroRol() === opcion.valor"
-              [class.text-white]="filtroRol() === opcion.valor"
-              [class.text-texto-suave]="filtroRol() !== opcion.valor"
-              [attr.aria-pressed]="filtroRol() === opcion.valor"
-              (click)="elegirFiltroRol(opcion.valor)"
-            >
-              {{ opcion.etiqueta }}
-            </button>
-          }
-        </div>
+        <app-filtro-segmentado
+          etiqueta="Filtrar por rol"
+          [opciones]="filtrosDeRol"
+          [valor]="filtroRol()"
+          (elegida)="elegirFiltroRol($event)"
+        />
       }
 
       <label class="flex cursor-pointer items-center gap-2 text-sm text-texto">

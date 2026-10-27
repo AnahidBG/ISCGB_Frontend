@@ -12,6 +12,7 @@ import { UsuariosService } from '../../../core/usuarios/usuarios.service';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
+import { FiltroSegmentado, OpcionFiltro } from '../../../shared/ui/filtro-segmentado/filtro-segmentado';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 
@@ -55,7 +56,7 @@ import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga'
  */
 @Component({
   selector: 'app-control-legajos',
-  imports: [EstructuraPanel, PantallaCarga, RouterLink, Icono],
+  imports: [EstructuraPanel, FiltroSegmentado, PantallaCarga, RouterLink, Icono],
   templateUrl: './control-legajos.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
   host: {
@@ -228,7 +229,7 @@ export interface PersonaConLegajo extends ResumenUsuarioLegajo {
 
 type FiltroRol = 'todos' | typeof ROLES.docente | typeof ROLES.alumno;
 
-const FILTROS_DE_ROL: readonly { valor: FiltroRol; etiqueta: string }[] = [
+const FILTROS_DE_ROL: readonly OpcionFiltro<FiltroRol>[] = [
   { valor: 'todos', etiqueta: 'Todos' },
   { valor: ROLES.docente, etiqueta: 'Docentes' },
   { valor: ROLES.alumno, etiqueta: 'Alumnos' },
