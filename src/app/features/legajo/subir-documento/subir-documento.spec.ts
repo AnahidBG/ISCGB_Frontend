@@ -127,6 +127,7 @@ describe('SubirDocumento: abre con el tipo que pide el enlace (?tipo=)', () => {
   const TIPOS_DOCENTE: DocumentoRequerido[] = [
     { idTipoDoc: 7, nombreDocumento: 'DNI', obligatorio: true, anual: false },
     { idTipoDoc: 12, nombreDocumento: 'Apto médico', obligatorio: true, anual: true },
+    { idTipoDoc: 3, nombreDocumento: 'Curriculum Vitae', obligatorio: false, anual: false },
   ];
 
   /** La URL de la pantalla. Se puede cambiar estando adentro, como hace la campana. */
@@ -169,6 +170,14 @@ describe('SubirDocumento: abre con el tipo que pide el enlace (?tipo=)', () => {
   function selector(fixture: ComponentFixture<SubirDocumento>): HTMLSelectElement {
     return (fixture.nativeElement as HTMLElement).querySelector<HTMLSelectElement>('#tipo')!;
   }
+
+  it('cada opción muestra solo el nombre del documento, sin "(opcional)"', async () => {
+    const fixture = await montar({});
+    const opciones = Array.from(selector(fixture).options).map((opcion) => opcion.textContent?.trim());
+
+    expect(opciones).toContain('Curriculum Vitae');
+    expect(opciones.join(' ')).not.toContain('(opcional)');
+  });
 
   it('con un tipo de su rol, el formulario abre con ese tipo elegido', async () => {
     const fixture = await montar(consultaConTipo(12));

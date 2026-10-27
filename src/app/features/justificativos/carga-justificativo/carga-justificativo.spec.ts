@@ -86,51 +86,21 @@ describe('CargaJustificativo', () => {
     return { fixture, el, elegirMotivo, escribirNota, elegirFecha, adjuntarPdf, enviar };
   }
 
-  it('el desplegable ofrece "Otros"', async () => {
-    const { el } = await crear();
-    const opciones = Array.from(el.querySelectorAll('#motivo option')).map((o) =>
-      (o as HTMLOptionElement).value,
-    );
-    expect(opciones).toContain('Otros');
-  });
-
-  it('con "Otros" y la nota vacía no envía y avisa que falta la nota', async () => {
+  it('con fecha, PDF y nota envía una vez con el valor del motivo y la nota recortada', async () => {
     const t = await crear();
-    await t.elegirMotivo('Otros');
+    await t.elegirMotivo('Causas Médicas');
     await t.elegirFecha();
     await t.adjuntarPdf();
-    await t.enviar();
-
-    expect(enviados).toHaveLength(0);
-    expect(t.el.textContent).toContain('Con el motivo "Otros" tenés que escribir la nota aclaratoria.');
-  });
-
-  it('con "Otros" y una nota de solo espacios tampoco envía', async () => {
-    const t = await crear();
-    await t.elegirMotivo('Otros');
-    await t.elegirFecha();
-    await t.adjuntarPdf();
-    await t.escribirNota('   \n  ');
-    await t.enviar();
-
-    expect(enviados).toHaveLength(0);
-  });
-
-  it('con "Otros", fecha, PDF y nota envía una vez con la nota recortada', async () => {
-    const t = await crear();
-    await t.elegirMotivo('Otros');
-    await t.elegirFecha();
-    await t.adjuntarPdf();
-    await t.escribirNota('  Trámite en el registro civil  ');
+    await t.escribirNota('  Turno con el especialista  ');
     await t.enviar();
 
     expect(enviados).toHaveLength(1);
-    expect(enviados[0].tipoInasistencia).toBe('Otros');
-    expect(enviados[0].notaAdicional).toBe('Trámite en el registro civil');
+    expect(enviados[0].tipoInasistencia).toBe('Causas Médicas');
+    expect(enviados[0].notaAdicional).toBe('Turno con el especialista');
     expect(enviados[0].documentoPdf).toBe(PDF);
   });
 
-  it('con otro motivo la nota sigue siendo opcional y viaja null', async () => {
+  it('la nota es opcional: sin escribirla viaja null', async () => {
     const t = await crear();
     await t.elegirMotivo('Causas Personales');
     await t.elegirFecha();
@@ -141,28 +111,11 @@ describe('CargaJustificativo', () => {
     expect(enviados[0].notaAdicional).toBeNull();
   });
 
-  it('marca la nota como obligatoria solo con "Otros"', async () => {
-    const t = await crear();
-    const area = () => t.el.querySelector('#nota')!;
-    const etiqueta = () => t.el.querySelector('label[for="nota"]')!.textContent;
-
-    expect(area().getAttribute('aria-required')).not.toBe('true');
-    expect(etiqueta()).not.toContain('*');
-
-    await t.elegirMotivo('Otros');
-    expect(area().getAttribute('aria-required')).toBe('true');
-    expect(etiqueta()).toContain('*');
-
-    await t.elegirMotivo('Enfermedad');
-    expect(area().getAttribute('aria-required')).not.toBe('true');
-    expect(etiqueta()).not.toContain('*');
-  });
-
   it('al cambiar de motivo no se borra la nota escrita', async () => {
     const t = await crear();
-    await t.elegirMotivo('Otros');
+    await t.elegirMotivo('Causas Médicas');
     await t.escribirNota('algo');
-    await t.elegirMotivo('Enfermedad');
+    await t.elegirMotivo('Causas Académicas');
 
     expect(t.el.querySelector<HTMLTextAreaElement>('#nota')!.value).toBe('algo');
   });

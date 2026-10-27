@@ -89,12 +89,14 @@ let auditorias: unknown[][];
  * `idUsuarioEnUrl`: con id es `legajo/usuario/:idUsuario` (revisión de
  * Secretaría o Dirección); sin id es `legajo/mis-documentos` (el propio).
  * `respuestaAuditoria`: qué contesta el backend a cada `auditar`.
+ * `requeridos`: qué documentos le pide el instituto al rol.
  */
 async function montar(
   sesion: Sesion,
   idUsuarioEnUrl: number | null,
   legajo: DocumentoLegajo[] = LEGAJO,
   respuestaAuditoria: () => Observable<void> = () => of(undefined),
+  requeridos: DocumentoRequerido[] = REQUERIDOS,
 ): Promise<ComponentFixture<MisDocumentos>> {
   const parametros: Record<string, string> =
     idUsuarioEnUrl === null ? {} : { idUsuario: String(idUsuarioEnUrl) };
@@ -125,7 +127,7 @@ async function montar(
         useValue: {
           obtenerLegajoPropio: (): Observable<DocumentoLegajo[]> => of(legajo),
           obtenerLegajoDeUsuario: (): Observable<DocumentoLegajo[]> => of(legajo),
-          documentosRequeridos: (): Observable<DocumentoRequerido[]> => of(REQUERIDOS),
+          documentosRequeridos: (): Observable<DocumentoRequerido[]> => of(requeridos),
           auditar: (...argumentos: unknown[]): Observable<void> => {
             auditorias.push(argumentos);
             return respuestaAuditoria();
@@ -172,6 +174,32 @@ describe('MisDocumentos: volver a subir (SCRUM-152)', () => {
     expect(destinos).toContainEqual(['Resubir', '/legajo/subir-documento?tipo=1']);
     expect(destinos).toContainEqual(['Cargar', '/legajo/subir-documento?tipo=3']);
     expect(destinos).toHaveLength(2);
+  });
+});
+
+describe('MisDocumentos: lo que falta presentar', () => {
+  const CON_OPCIONAL: DocumentoRequerido[] = [
+    ...REQUERIDOS,
+    { idTipoDoc: 7, nombreDocumento: 'Antecedentes Penales', obligatorio: false, anual: false },
+  ];
+
+  it('un opcional sin subir también aparece, con "Cargar" y sin la etiqueta "Obligatorio"', async () => {
+    const fixture = await montar(DOCENTE, null, LEGAJO, undefined, CON_OPCIONAL);
+    const antecedentes = filaDe(fixture, 'Antecedentes Penales');
+
+    expect(antecedentes.textContent).not.toContain('Obligatorio');
+    expect(
+      antecedentes.querySelector('a[href="/legajo/subir-documento?tipo=7"]')?.textContent?.trim(),
+    ).toBe('Cargar');
+  });
+
+  it('lo obligatorio que falta va antes que lo opcional', async () => {
+    const fixture = await montar(DOCENTE, null, LEGAJO, undefined, CON_OPCIONAL);
+    const filas: HTMLElement[] = Array.from(raiz(fixture).querySelectorAll('li'));
+
+    expect(filas.indexOf(filaDe(fixture, 'Apto médico'))).toBeLessThan(
+      filas.indexOf(filaDe(fixture, 'Antecedentes Penales')),
+    );
   });
 });
 

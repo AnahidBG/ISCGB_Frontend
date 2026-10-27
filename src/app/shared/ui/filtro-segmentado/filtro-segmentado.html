@@ -1,0 +1,19 @@
+<div
+  class="flex gap-1 rounded-full border border-borde bg-superficie p-1"
+  role="group"
+  [attr.aria-label]="etiqueta()"
+>
+  @for (opcion of opciones(); track opcion.valor) {
+    <button
+      type="button"
+      class="rounded-full px-3 py-1 text-xs font-semibold transition-colors"
+      [class.bg-principal-solido]="valor() === opcion.valor"
+      [class.text-white]="valor() === opcion.valor"
+      [class.text-texto-suave]="valor() !== opcion.valor"
+      [attr.aria-pressed]="valor() === opcion.valor"
+      (click)="elegida.emit(opcion.valor)"
+    >
+      {{ opcion.etiqueta }}
+    </button>
+  }
+</div>

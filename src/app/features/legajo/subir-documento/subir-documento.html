@@ -100,7 +100,7 @@ class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
                 <option value="">Elegí un tipo…</option>
                 @for (tipo of tiposDisponibles(); track tipo.idTipoDoc) {
                   <option [value]="tipo.idTipoDoc" [selected]="tipo.idTipoDoc === idTipoElegido()">
-                    {{ tipo.nombreDocumento }}@if (!tipo.obligatorio) { (opcional) }
+                    {{ tipo.nombreDocumento }}
                   </option>
                 }
                 @empty {

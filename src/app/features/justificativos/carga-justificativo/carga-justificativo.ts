@@ -8,7 +8,6 @@ import { JustificativosService } from '../../../core/justificativos/justificativ
 import {
   TIPOS_INASISTENCIA,
   exigeComprobante,
-  exigeNota,
 } from '../../../core/justificativos/modelos/tipo-inasistencia';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
@@ -79,9 +78,6 @@ export class CargaJustificativo {
     () => this.tipoElegido() !== '' && exigeComprobante(this.tipoElegido()),
   );
 
-  /** `true` cuando el motivo elegido obliga a escribir la nota (solo lo valida el front). */
-  protected readonly pideNota = computed(() => exigeNota(this.tipoElegido()));
-
   /** La ayuda del motivo elegido, para mostrarla debajo del desplegable. */
   protected readonly ayudaDelTipo = computed(
     () => this.tipos.find((t) => t.valor === this.tipoElegido())?.ayuda ?? null,
@@ -99,10 +95,6 @@ export class CargaJustificativo {
     }
     if (this.fechaFin() !== '' && this.fechaFin() < this.fechaInicio()) {
       return 'La fecha de fin no puede ser anterior a la de inicio.';
-    }
-    // La nota va antes que el comprobante porque en la pantalla está arriba.
-    if (this.pideNota() && this.nota().trim() === '') {
-      return 'Con el motivo "Otros" tenés que escribir la nota aclaratoria.';
     }
     if (this.pideComprobante() && this.archivo() === null) {
       return 'Este motivo necesita que adjuntes el comprobante en PDF.';
