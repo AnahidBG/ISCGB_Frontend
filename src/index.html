@@ -12,6 +12,50 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
 
     <!--
+      Color de la barra del navegador en el celular. `TemaService` lo mantiene
+      al día cuando se cambia el tema; el script de abajo lo deja bien desde el
+      primer instante.
+    -->
+    <meta name="theme-color" content="#f5f5f5" />
+
+    <!--
+      Tema claro u oscuro, ANTES del primer pintado.
+
+      Tiene que correr acá, en el <head> y sin esperar a Angular. Si esperara,
+      alguien con el tema oscuro vería un destello claro en cada recarga,
+      justo mientras baja la aplicación. Es chico y no depende de nada.
+
+      Repite a propósito las reglas de core/tema/tema.ts: la misma clave
+      ('iscgb.tema'), el mismo atributo (data-tema) y la misma decisión
+      (`claro` y `oscuro` mandan; cualquier otra cosa sigue al dispositivo).
+      Si cambia una, se cambia la otra.
+
+      Si algún día se agrega una política de seguridad de contenido (CSP) que
+      no admita scripts en línea, este bloque necesita un nonce o pasar a un
+      archivo aparte.
+    -->
+    <script>
+      (function () {
+        var elegido = null;
+        try {
+          elegido = localStorage.getItem('iscgb.tema');
+        } catch (e) {
+          /* sin almacenamiento: se usa el dispositivo */
+        }
+        var oscuro =
+          elegido === 'oscuro' ||
+          (elegido !== 'claro' &&
+            !!window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-tema', oscuro ? 'oscuro' : 'claro');
+        var barra = document.querySelector('meta[name="theme-color"]');
+        if (barra) {
+          barra.setAttribute('content', oscuro ? '#121614' : '#f5f5f5');
+        }
+      })();
+    </script>
+
+    <!--
       Tipografías institucionales.
       Gasoek One → títulos · Geist → contenido · Geist Mono → piezas digitales.
 
@@ -40,15 +84,40 @@
       así que este bloque desaparece solo. No hay que borrarlo por código.
     -->
     <style>
+      /* Los colores de esta pantalla van en variables para que el tema oscuro
+         cambie solo tres valores. Son los mismos del sistema de diseño
+         (fondo, principal y texto-suave de cada tema): acá no existe
+         Tailwind, así que se repiten a mano. */
+      html {
+        background: #f5f5f5;
+      }
+
+      /* Solo en pantalla: al imprimir vuelve el tema claro (ver styles.scss). */
+      @media screen {
+        html[data-tema='oscuro'] {
+          background: #121614;
+          color-scheme: dark;
+        }
+      }
+
       .arranque {
+        --arranque-fondo: #f5f5f5;
+        --arranque-marca: #46695f;
+        --arranque-texto: #666e6b;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
         gap: 1.5rem;
         height: 100dvh;
-        background: #f5f5f5;
+        background: var(--arranque-fondo);
         font-family: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      }
+
+      html[data-tema='oscuro'] .arranque {
+        --arranque-fondo: #121614;
+        --arranque-marca: #90c997;
+        --arranque-texto: #a2afaa;
       }
 
       .arranque svg {
@@ -57,8 +126,8 @@
       }
 
       .arranque path {
-        fill: #46695f;
-        stroke: #46695f;
+        fill: var(--arranque-marca);
+        stroke: var(--arranque-marca);
         stroke-width: 1.5;
         stroke-dasharray: 537;
         animation: arranque-dibujar 2.6s ease-in-out infinite;
@@ -68,7 +137,7 @@
         margin: 0;
         font-size: 0.875rem;
         letter-spacing: 0.04em;
-        color: #666e6b;
+        color: var(--arranque-texto);
       }
 
       @keyframes arranque-dibujar {

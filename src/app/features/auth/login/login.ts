@@ -8,6 +8,7 @@ import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { CredencialesLogin } from '../../../core/auth/modelos/credenciales-login';
 import { FormularioLogin } from './partes/formulario-login/formulario-login';
 import { PanelBienvenida } from './partes/panel-bienvenida/panel-bienvenida';
+import { SelectorTema } from '../../../shared/ui/selector-tema/selector-tema';
 
 /**
  * Pantalla de inicio de sesión.
@@ -29,7 +30,7 @@ import { PanelBienvenida } from './partes/panel-bienvenida/panel-bienvenida';
  */
 @Component({
   selector: 'app-login',
-  imports: [PanelBienvenida, FormularioLogin],
+  imports: [PanelBienvenida, FormularioLogin, SelectorTema],
   templateUrl: './login.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

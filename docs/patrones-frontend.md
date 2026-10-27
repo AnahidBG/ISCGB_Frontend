@@ -1,6 +1,6 @@
 # Patrones de diseño en el frontend
 
-Revisado contra el código el **06/10/2026**; la sección del calendario de parciales, el **12/10/2026**. El proyecto está en desarrollo: si este documento y el código no coinciden, manda el código. Actualizalo en el mismo cambio que agregue, quite o modifique un patrón.
+Revisado contra el código el **06/10/2026**; la sección del calendario de parciales, el **12/10/2026**; el tema oscuro, el **25/10/2026**. El proyecto está en desarrollo: si este documento y el código no coinciden, manda el código. Actualizalo en el mismo cambio que agregue, quite o modifique un patrón.
 
 La base teórica es *Sumérgete en los Patrones de Diseño*, de Alexander Shvets (Refactoring.Guru), que cubre los 22 patrones clásicos, los principios de diseño y SOLID. El libro tiene licencia de uso personal, así que no se sube al repo ni al Project. Esto es nuestra aplicación de esos conceptos a ISCGB; la teoría de cada patrón está en el libro o en refactoring.guru.
 
@@ -94,7 +94,7 @@ El estado global vive solo en servicios de `core/`. Nada de variables mutables a
 
 ### 2.8 Tabla de estrategias por clave
 
-Es un Strategy liviano, que reemplaza condicionales. El ejemplo es `APARIENCIA_POR_ESTADO: Record<EstadoDocumento, AparienciaEstado>` en `insignia-estado.ts`, con `APARIENCIA_DESCONOCIDA` como valor por defecto para un `estado` nulo o inesperado. También lo son `enlacesPorSesion` para el menú, `destinoSegunRoles`, `rolPrincipalDe` y `APARIENCIA_POR_DIA`, que le da a cada estado del calendario su fondo, su barrita y su candado.
+Es un Strategy liviano, que reemplaza condicionales. El ejemplo es `APARIENCIA_POR_ESTADO: Record<EstadoDocumento, AparienciaEstado>` en `insignia-estado.ts`, con `APARIENCIA_DESCONOCIDA` como valor por defecto para un `estado` nulo o inesperado. También lo son `enlacesPorSesion` para el menú, `destinoSegunRoles`, `rolPrincipalDe` y `APARIENCIA_POR_DIA`, que le da a cada estado del calendario su fondo, su barrita y su candado. Lo mismo hacen `APARIENCIA_POR_ESTADO` y `RELLENO_POR_NIVEL` en `requisitos-password.ts`, y `CLASES_POR_VARIANTE` en `campo-contrasena.ts`.
 
 Todo lo que cambia según el estado, el rol o el tipo se resuelve con una tabla en un solo lugar, nunca con `if` repetidos en cada pantalla. Siempre hay un caso por defecto, porque `estado` es `varchar NULL` en la base.
 
@@ -131,6 +131,16 @@ Tres de ellas son la única definición de algo, para que la campana y los panel
 `*siRol`, en `shared/directivas/si-rol/`, muestra u oculta un bloque según el rol de la sesión actual (`AuthService.sesion`). Acepta un rol o varios, `*siRol="'Docente'"` o `*siRol="rolesDelLimite"` con una lista, y alcanza con tener uno. Reusa `tieneAlgunRol(...)`, la misma regla que `roleGuard`, y reacciona si cambia la sesión. Los nombres de rol salen de `ROLES`, nunca escritos en el template.
 
 Es para un enlace o un bloque dentro de una pantalla que ya pasó por `roleGuard`. No es seguridad: la protección va en el backend. El calendario la usa para "Cambiar el límite", que solo ven Secretaría y Dirección.
+
+### 2.13 Preferencia guardada que se traduce a un atributo: el tema
+
+`TemaService`, en `core/tema/`, guarda si la persona eligió el tema claro, el oscuro o "automático", y lo deja puesto como `data-tema` en `<html>`. Ese atributo es lo único que miran los estilos; el detalle está en "Tema oscuro", en `docs/design-system.md`.
+
+Es un Singleton con signals. `preferencia` es lo que se eligió y `tema` es un `computed` que lo resuelve con `resolverTema(...)`, una función pura de `tema.ts` con su spec, sumándole lo que dice el dispositivo (`matchMedia`). El único efecto secundario va en un `effect` que escribe el atributo. Leer y escribir `localStorage` van dentro de un `try/catch`, porque el navegador puede negarlo, y el listener de `matchMedia` se saca con `DestroyRef`.
+
+Ningún componente toca el DOM ni `localStorage`: `SelectorTema` solo llama a `establecer(...)` o `alternar()`, y sus tres opciones son una tabla (`OPCIONES`) con el ícono, la etiqueta y la ayuda de cada una.
+
+Ojo con una cosa: `index.html` tiene un script que repite la decisión de `tema.ts` para pintar el tema antes de que cargue Angular. Si cambia una, se cambia la otra. Una pantalla nueva casi nunca necesita saber qué tema hay: usa los tokens y listo. Si de verdad hace falta (un gráfico en un `canvas`, por ejemplo), lee `TemaService.esOscuro()` y no el atributo.
 
 ## 3. Patrones para lo que viene
 
@@ -169,7 +179,7 @@ La grilla ya sabe listar parciales en su día, y modificarlos, eliminarlos y arr
 
 **Cambios sin guardar.** Memento liviano más un guard: se guarda una foto del valor inicial del formulario, se compara con la actual, y un `canDeactivate` reutilizable pregunta antes de salir. Ya lo usa la entrega del programa de materia, con `confirmarSalidaGuard`.
 
-**Requisitos de la contraseña nueva**, para el cambio de contraseña (CP35 y CP36). Strategy por regla: cada requisito es un objeto `{ texto, cumple(valor) }` en una lista, `requisitos-password` la dibuja y el botón se habilita cuando se cumplen todos. Si `core/auth/password.ts` ya lo resuelve así, se reusa.
+**Requisitos de la contraseña nueva**, para el cambio de contraseña (CP35 y CP36). Hecho el 25/10/2026 y ya lo usan crear y restablecer contraseña. Strategy por regla: `core/auth/password.ts` tiene la lista `REQUISITOS_PASSWORD` (cada una con `{ clave, texto, cumple }`) y dos funciones puras con test, `estadoDelRequisito` (cumplido, falta o pendiente) y `nivelDeProgreso` (para la barra). `requisitos-password` dibuja la lista con una tabla por clave, `APARIENCIA_POR_ESTADO`, y cada estado lleva su ícono además del color. `campo-contrasena` es un `ControlValueAccessor` con el ojito, y se usa con `formControlName` o con `[valor]` y `(valorChange)`. **Falta:** usarlos en la pantalla de cambio de contraseña desde Configuración, que todavía está en la rama de Gonza con sus `<input>` a mano.
 
 **Listados de Director y Secretario.** El filtrado por estado de la cuenta y la búsqueda por nombre o DNI van en una función pura con test; el servicio expone los datos y el componente solo une signals. El de Secretaría ya está, con `core/usuarios/filtrar-usuarios.ts`.
 
@@ -197,6 +207,7 @@ No se refactoriza de paso: cada punto va en su propio commit `refactor:`, con su
 - [ ] Contenedor y presentacional separados, con `input()` y `output()`.
 - [ ] Estado con signals, sin suscripciones que queden vivas.
 - [ ] La lógica de negocio está en funciones puras en `core/`, con su spec.
+- [ ] Los colores salen de los tokens: sin `dark:` y sin hexadecimales. Un relleno con texto blanco usa `bg-principal-solido` (o `-solido` de aprobado y rechazado), no `bg-principal`, y `text-white` va solo sobre uno de esos.
 - [ ] Sin `extends` entre componentes y sin copiar HTML que ya está en `shared/ui/`.
 - [ ] Si se aplicó un patrón nuevo o se cambió uno, se actualizó este documento.
 

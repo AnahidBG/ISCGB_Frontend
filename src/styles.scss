@@ -66,6 +66,37 @@
   --color-pendiente: #b07d0a;
   --color-rechazado: #c0392b;
 
+  /* Verde para TEXTO de lo que está cumplido (la lista de requisitos de la
+     contraseña, el aviso de "las contraseñas coinciden"). `aprobado` como
+     texto da 3,8:1 sobre el fondo de panel y no llega a AA; este mantiene el
+     matiz y da 6,1:1. El rojo no necesita uno aparte: `rechazado` da 5,2:1. */
+  --color-aprobado-texto: #1f6b43;
+
+  /* Colores que NO cambian con el tema, y los que sí, que no existían.
+
+     Un mismo token a veces cumple dos trabajos. `principal` es el verde del
+     botón (un RELLENO con texto blanco encima) y también el de un enlace, un
+     borde o un anillo de foco (algo que se dibuja SOBRE la superficie). En el
+     tema claro son el mismo color; en el oscuro no pueden serlo: el relleno
+     tiene que seguir oscuro para sostener el texto blanco y el enlace tiene
+     que aclararse para leerse sobre fondo oscuro.
+
+     Por eso `principal`, `aprobado`, `pendiente` y `rechazado` son los colores
+     "sobre la superficie" y cambian con el tema, y estos son los rellenos que
+     se quedan fijos. Los que valen distinto en cada tema están en el bloque de
+     `data-tema='oscuro'`, más abajo. Ver docs/design-system.md, "Tema oscuro". */
+  --color-principal-solido: #46695f; /* Relleno verde con texto blanco: botones, la marca */
+  --color-principal-solido-hover: #35504a; /* Hover y press de ese relleno */
+  --color-aprobado-solido: #2f8f5b; /* Relleno "aprobado" con texto blanco */
+  --color-rechazado-solido: #c0392b; /* Relleno "rechazado" con texto blanco */
+  --color-texto-sobre-claro: #2d2d2d; /* Texto sobre los rellenos verde claro, que siguen claros */
+
+  /* Estos sí cambian: el valor de acá es el del tema claro. */
+  --color-principal-enfasis: #35504a; /* Un enlace verde al pasar el mouse */
+  --color-velo: #2d2d2d; /* El fondo que tapa la pantalla detrás de un diálogo */
+  --color-pista: #ccd3d1; /* La parte vacía de una barra de avance */
+  --color-inactivo: #919d99; /* El relleno de un botón verde deshabilitado */
+
   /* Escala completa de `principal`, `acento-lima` y `gris-marca`, sumada el
      27/08/2026 desde el Brochero Design System, cuyos tres colores de marca
      son estos mismos. Son tokens nuevos: lo que ya usaba el color base no
@@ -106,12 +137,18 @@
   /* Radio y sombra de marca, también del Brochero Design System. Tienen
      nombre propio (`rounded-tarjeta`, `rounded-control`, `shadow-marca-*`) y
      no pisan la escala de Tailwind. `rounded-control` equivale a
-     `rounded-full`, que es lo que usa `<app-boton>`. */
+     `rounded-full`, que es lo que usa `<app-boton>`.
+
+     El COLOR de cada sombra no está escrito acá sino en una variable
+     (`--sombra-marca-*`, más abajo, junto al tema oscuro). Tailwind copia el
+     valor de la sombra dentro de cada utilidad en lugar de apuntar a esta
+     variable: si el color estuviera a la vista, volver a definir
+     `--shadow-marca-*` en el tema oscuro no cambiaría nada. */
   --radius-tarjeta: 20px;
   --radius-control: 9999px;
-  --shadow-marca-sm: 0 2px 6px color-mix(in oklab, #16231f 8%, transparent);
-  --shadow-marca-md: 0 6px 18px color-mix(in oklab, #16231f 10%, transparent);
-  --shadow-marca-lg: 0 18px 44px color-mix(in oklab, #16231f 12%, transparent);
+  --shadow-marca-sm: 0 2px 6px var(--sombra-marca-sm);
+  --shadow-marca-md: 0 6px 18px var(--sombra-marca-md);
+  --shadow-marca-lg: 0 18px 44px var(--sombra-marca-lg);
 
   /* Tipografía. Gasoek One y Geist están confirmadas desde el Figma del
      Design System. El Brochero Design System propone Barlow, pero como
@@ -127,6 +164,115 @@
   --spacing-margen-desktop: 120px;
   --spacing-margen-mobile: 16px;
   --container-lienzo: 1440px;
+}
+
+/* ── Tema oscuro ────────────────────────────────────────────────────────────
+
+   Cómo funciona. Tailwind genera cada utilidad de color apuntando a una
+   variable (`bg-superficie` → `var(--color-superficie)`), y los colores con
+   transparencia (`bg-rechazado/10`) también. Entonces alcanza con volver a
+   definir las variables cuando `<html>` tiene `data-tema="oscuro"`: todas las
+   pantallas cambian sin que ningún componente sepa que existe un tema.
+   `TemaService` es quien pone ese atributo.
+
+   Por eso una pantalla nueva NO escribe `dark:` ni un color a mano. Usa los
+   mismos tokens de siempre y el tema oscuro le llega solo. Si necesita un
+   color que no existe, se agrega un token acá, en los dos temas.
+
+   Está dentro de `@media screen` a propósito: al IMPRIMIR vuelve el tema
+   claro. Con el oscuro el texto saldría casi blanco sobre un papel blanco.
+
+   Se eligió equilibrio y no un negro puro: las superficies son verdes muy
+   apagados, del mismo matiz que el verde institucional, y suben de a poco
+   (fondo, tarjeta, elemento elevado). El brillo está reservado para el texto
+   y para las señales (estado, foco, acciones). Los contrastes de cada par
+   están medidos y escritos en docs/design-system.md. */
+:root {
+  color-scheme: light;
+
+  /* El color de las sombras de marca. Tinte verde muy oscuro, apenas visible,
+     que en el tema claro acompaña a las tarjetas blancas. */
+  --sombra-marca-sm: color-mix(in oklab, #16231f 8%, transparent);
+  --sombra-marca-md: color-mix(in oklab, #16231f 10%, transparent);
+  --sombra-marca-lg: color-mix(in oklab, #16231f 12%, transparent);
+}
+
+@media screen {
+  :root[data-tema='oscuro'] {
+    /* Los controles del navegador (barras de scroll, calendario del selector
+       de fechas, listas desplegables) se dibujan oscuros. */
+    color-scheme: dark;
+
+    /* Superficies: fondo < tarjeta < elevado. */
+    --color-fondo: #121614;
+    --color-fondo-panel: #121614;
+    --color-superficie: #1a201e;
+    --color-humo: #232b28;
+    --color-borde: #2e3935;
+
+    /* Texto. */
+    --color-texto: #e6ece9;
+    --color-texto-suave: #a2afaa;
+
+    /* El verde institucional "sobre la superficie": enlaces, bordes, anillos
+       de foco, texto de la opción elegida. Es el verde claro del manual. El
+       relleno de los botones NO cambia: es `principal-solido`. */
+    --color-principal: #90c997;
+    --color-principal-suave: #223530;
+    --color-principal-enfasis: #b8ddb4;
+    --color-principal-solido-hover: #4f7a6d;
+
+    /* El semáforo, aclarado para leerse sobre fondo oscuro. Como texto,
+       borde, ícono y tinte. Los rellenos con texto blanco son los `-solido`. */
+    --color-aprobado: #4fbf84;
+    --color-aprobado-texto: #6cd39b;
+    --color-pendiente: #e2b04a;
+    --color-rechazado: #f2877e;
+    --color-info: #7fa6db;
+
+    --color-menta: #325e45;
+    --color-pista: #3a4642;
+    --color-inactivo: #3a4642;
+    --color-velo: #000000;
+
+    /* Sobre fondo oscuro una sombra con tinte verde no se ve: es negra, y más
+       fuerte, porque tiene que despegar la tarjeta de un fondo ya oscuro. */
+    --sombra-marca-sm: color-mix(in oklab, #000 35%, transparent);
+    --sombra-marca-md: color-mix(in oklab, #000 40%, transparent);
+    --sombra-marca-lg: color-mix(in oklab, #000 50%, transparent);
+  }
+
+  /* El autocompletado de Chrome pinta el campo de celeste o amarillo, con
+     texto oscuro. En el login, que es lo primero que se ve, desentona. */
+  :root[data-tema='oscuro'] :is(input, textarea, select):-webkit-autofill {
+    -webkit-text-fill-color: var(--color-texto);
+    caret-color: var(--color-texto);
+    box-shadow: 0 0 0 1000px var(--color-superficie) inset;
+  }
+
+  /* Piezas que tienen una versión por tema (hoy, el logo: verde sobre claro,
+     blanco hueso sobre oscuro). Se dibujan las dos y el tema muestra una. */
+  :root[data-tema='oscuro'] .solo-claro {
+    display: none;
+  }
+
+  :root[data-tema='oscuro'] .solo-oscuro {
+    display: block;
+  }
+}
+
+.solo-oscuro {
+  display: none;
+}
+
+/* Tailwind pinta el hueco de `ring-offset-*` de blanco. Sobre una superficie
+   oscura sería un marco blanco alrededor del botón enfocado. Se lo hace del
+   color de la superficie, que en el tema claro sigue siendo blanco. Va en la
+   capa `base` para que un `ring-offset-<color>` explícito lo siga pisando. */
+@layer base {
+  * {
+    --tw-ring-offset-color: var(--color-superficie);
+  }
 }
 
 /* Contenedor de página.

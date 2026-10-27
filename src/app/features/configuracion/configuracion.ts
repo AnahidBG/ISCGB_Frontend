@@ -16,9 +16,10 @@ import { CampanaService } from '../../core/notificaciones/campana.service';
 import { Boton } from '../../shared/ui/boton/boton';
 import { enlacesPorSesion } from '../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../shared/ui/estructura-panel/estructura-panel';
+import { SelectorTema } from '../../shared/ui/selector-tema/selector-tema';
 
 /** Lo que muestra el encabezado debajo del título. */
-const SUBTITULO = 'Seguridad de tu cuenta.';
+const SUBTITULO = 'Seguridad y apariencia de tu cuenta.';
 
 /**
  * Configuración: cambio de contraseña desde la cuenta (SCRUM-28).
@@ -34,11 +35,14 @@ const SUBTITULO = 'Seguridad de tu cuenta.';
  * vuelve al formulario que había diseñado Gonza (rama
  * `feature/cambio-contrasenia-mi-cuenta`).
  *
+ * También tiene la tarjeta de Apariencia (claro, oscuro o automático), que es el
+ * mismo selector del menú de la persona: ver `SelectorTema` y `TemaService`.
+ *
  * Contenedor: es el único que conoce los servicios.
  */
 @Component({
   selector: 'app-configuracion',
-  imports: [EstructuraPanel, Boton],
+  imports: [EstructuraPanel, Boton, SelectorTema],
   templateUrl: './configuracion.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

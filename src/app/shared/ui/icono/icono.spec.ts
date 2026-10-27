@@ -26,6 +26,36 @@ describe('Icono', () => {
     expect(fixture.nativeElement.querySelectorAll('svg').length).toBe(1);
   });
 
+  // El ojito de las contraseñas: el ojo abierto invita a "mostrar" y el
+  // tachado a "ocultar". Si los dos se dibujaran igual, el botón no cambiaría.
+  describe('ojo', () => {
+    it.each<[string, number]>([
+      ['ojo', 2],
+      ['ojo-tachado', 3],
+    ])('"%s" dibuja %i trazos', async (nombre, trazos) => {
+      fixture.componentRef.setInput('nombre', nombre);
+      await fixture.whenStable();
+
+      expect(fixture.nativeElement.querySelectorAll('svg > *').length).toBe(trazos);
+    });
+  });
+
+  // El selector de apariencia: un ícono distinto para cada una de las tres
+  // opciones. Si alguno cayera en el `@switch` sin `@case`, el SVG saldría
+  // vacío y el botón quedaría sin dibujo.
+  describe('apariencia', () => {
+    it.each<[string, number]>([
+      ['sol', 2],
+      ['luna', 1],
+      ['pantalla', 2],
+    ])('"%s" dibuja %i trazos', async (nombre, trazos) => {
+      fixture.componentRef.setInput('nombre', nombre);
+      await fixture.whenStable();
+
+      expect(fixture.nativeElement.querySelectorAll('svg > *').length).toBe(trazos);
+    });
+  });
+
   // Regresión: sin display propio el `:host` queda en `inline`, y ahí las
   // utilidades `h-5 w-5` de Tailwind no aplican — el SVG colapsa a 0x0 y el
   // ícono desaparece. Pasaba con la hamburguesa, la X del cajón mobile y la

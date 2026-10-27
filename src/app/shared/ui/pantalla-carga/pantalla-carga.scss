@@ -61,6 +61,9 @@
   Ninguno toca el SVG. El path usa `currentColor`, así que alcanza con cambiar
   `color` en el contenedor: el componente no sabe nada de temas y hereda el
   color de quien lo envuelva.
+
+  Con el tema oscuro, `claro` queda en verde claro sobre fondo oscuro (sale de
+  las variables, no de un valor escrito acá) y `verde` no cambia: es la marca.
 */
 .pantalla-carga--claro {
   color: var(--color-principal);
@@ -73,7 +76,7 @@
 
 .pantalla-carga--verde {
   color: #ffffff;
-  background-color: var(--carga-fondo, var(--color-principal));
+  background-color: var(--carga-fondo, var(--color-principal-solido));
 
   .pantalla-carga__mensaje {
     color: rgb(255 255 255 / 0.85);

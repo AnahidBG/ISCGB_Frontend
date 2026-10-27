@@ -110,6 +110,73 @@ describe('RestablecerPassword', () => {
       expect(requisitos().textContent).toContain('4/4');
     });
 
+    describe('requisitos de la contraseña', () => {
+      const filas = () => Array.from(el.querySelectorAll('app-requisitos-password li'));
+      const fila = (texto: string) => filas().find((li) => li.textContent?.includes(texto))!;
+
+      it('antes de escribir no reta: todo en gris, nada en rojo', () => {
+        expect(filas().every((li) => li.classList.contains('text-texto-suave'))).toBe(true);
+      });
+
+      it('al escribir, lo que falta va en rojo y lo cumplido en verde', async () => {
+        await escribir('password', 'abc');
+
+        expect(fila('Una minúscula').classList.contains('text-aprobado-texto')).toBe(true);
+        expect(fila('Un número').classList.contains('text-rechazado')).toBe(true);
+      });
+
+      it('enviar vacío marca en rojo toda la lista', async () => {
+        await enviar();
+
+        expect(filas().every((li) => li.classList.contains('text-rechazado'))).toBe(true);
+      });
+    });
+
+    describe('ojito para ver la contraseña', () => {
+      const ojitos = () => el.querySelectorAll<HTMLButtonElement>('app-campo-contrasena button');
+      const campo = (id: string) => el.querySelector<HTMLInputElement>(`#${id}`)!;
+
+      it('cada campo tiene el suyo y mostrar uno no destapa el otro', async () => {
+        expect(ojitos().length).toBe(2);
+
+        ojitos()[0].click();
+        await harness.fixture.whenStable();
+
+        expect(campo('password').type).toBe('text');
+        expect(campo('confirmPassword').type).toBe('password');
+      });
+
+      it('verla no la borra ni la cambia', async () => {
+        await escribir('password', PASSWORD_VALIDA);
+
+        ojitos()[0].click();
+        await harness.fixture.whenStable();
+
+        expect(campo('password').value).toBe(PASSWORD_VALIDA);
+        expect(campo('password').getAttribute('aria-describedby')).toBeNull();
+      });
+    });
+
+    it('confirma con una tilde cuando las dos contraseñas coinciden', async () => {
+      expect(el.textContent).not.toContain('Las contraseñas coinciden');
+
+      await completar(PASSWORD_VALIDA);
+      expect(el.textContent).toContain('Las contraseñas coinciden');
+
+      await escribir('confirmPassword', 'Otra12345');
+      expect(el.textContent).not.toContain('Las contraseñas coinciden');
+      expect(el.textContent).toContain('Las contraseñas no coinciden.');
+    });
+
+    it('un campo con error apunta a su mensaje con aria-describedby', async () => {
+      await enviar();
+
+      for (const id of ['password', 'confirmPassword']) {
+        expect(el.querySelector(`#${id}`)!.getAttribute('aria-describedby')).toBe(`${id}-error`);
+        expect(el.querySelector(`#${id}-error`)).not.toBeNull();
+      }
+    });
+
     it('enviar vacío no llama al servicio y marca los dos campos', async () => {
       await enviar();
 

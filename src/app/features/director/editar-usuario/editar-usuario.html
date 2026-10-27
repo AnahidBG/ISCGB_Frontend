@@ -45,7 +45,7 @@
         <div class="mt-7 flex flex-col items-stretch gap-3 sm:flex-row sm:justify-center">
           <button
             type="button"
-            class="rounded-full bg-principal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-oscuro"
+            class="rounded-full bg-principal-solido px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-principal-solido-hover"
             (click)="volverAlPanel()"
           >
             Volver al panel
@@ -121,7 +121,7 @@
                 <button
                   type="button"
                   [disabled]="dandoDeBaja()"
-                  class="rounded-full bg-rechazado px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  class="rounded-full bg-rechazado-solido px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                   (click)="confirmarBaja()"
                 >
                   @if (dandoDeBaja()) {
@@ -182,7 +182,7 @@
                 <button
                   type="button"
                   [disabled]="reactivando()"
-                  class="rounded-full bg-aprobado px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
+                  class="rounded-full bg-aprobado-solido px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40"
                   (click)="confirmarReactivacion()"
                 >
                   {{ reactivando() ? 'Reactivando…' : 'Sí, reactivar' }}

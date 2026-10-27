@@ -8,6 +8,17 @@
   texto para que no compita con la card — ver panel-bienvenida.html.
 -->
 <main class="relative min-h-dvh bg-fondo lg:grid lg:grid-cols-2">
+  <!--
+    El tema se elige acá, en la esquina: el login es lo primero que se ve, antes
+    de entrar a ningún menú, y quien prefiere el modo oscuro no tiene por qué
+    ingresar para poder activarlo. Es el botón de un solo toque; las tres
+    opciones (con "Automático") están en el menú de la persona y en Configuración.
+    `z-20` lo deja por encima de la tarjeta del formulario, que es `z-10`.
+  -->
+  <div class="absolute top-4 right-4 z-20 sm:top-6 sm:right-6">
+    <app-selector-tema variante="boton" />
+  </div>
+
   <div class="absolute inset-0 lg:relative lg:block">
     <app-panel-bienvenida />
   </div>

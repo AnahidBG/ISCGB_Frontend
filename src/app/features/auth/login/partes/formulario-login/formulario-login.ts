@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { esDniValido, normalizarDni } from '../../../../../core/auth/dni';
 import { CredencialesLogin } from '../../../../../core/auth/modelos/credenciales-login';
 import { Boton } from '../../../../../shared/ui/boton/boton';
+import { CampoContrasena } from '../../../../../shared/ui/campo-contrasena/campo-contrasena';
 import { CampoFormulario } from '../../../../../shared/ui/campo-formulario/campo-formulario';
 
 /**
@@ -25,7 +26,7 @@ import { CampoFormulario } from '../../../../../shared/ui/campo-formulario/campo
  */
 @Component({
   selector: 'app-formulario-login',
-  imports: [ReactiveFormsModule, CampoFormulario, Boton, RouterLink],
+  imports: [ReactiveFormsModule, CampoContrasena, CampoFormulario, Boton, RouterLink],
   templateUrl: './formulario-login.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -41,9 +42,6 @@ export class FormularioLogin {
   /** Se emite con las credenciales listas para enviar. */
   readonly enviar = output<CredencialesLogin>();
 
-  /** ¿La contraseña se está mostrando en texto plano? */
-  protected readonly passwordVisible = signal(false);
-
   /** Se pone en `true` al primer intento de envío, para no retar antes de tiempo. */
   protected readonly seIntentoEnviar = signal(false);
 
@@ -51,10 +49,6 @@ export class FormularioLogin {
     dni: ['', [Validators.required]],
     password: ['', [Validators.required]],
   });
-
-  protected alternarPassword(): void {
-    this.passwordVisible.update((visible) => !visible);
-  }
 
   protected alEnviar(): void {
     this.seIntentoEnviar.set(true);

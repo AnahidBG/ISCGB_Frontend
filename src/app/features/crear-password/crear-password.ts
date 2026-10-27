@@ -5,7 +5,9 @@ import { map } from 'rxjs';
 import { AuthService, MENSAJE_ENLACE_INVALIDO } from '../../core/auth/auth.service';
 import { passwordCumpleTodo } from '../../core/auth/password';
 import { Boton } from '../../shared/ui/boton/boton';
+import { CampoContrasena } from '../../shared/ui/campo-contrasena/campo-contrasena';
 import { CampoFormulario } from '../../shared/ui/campo-formulario/campo-formulario';
+import { Icono } from '../../shared/ui/icono/icono';
 import { RequisitosPassword } from '../../shared/ui/requisitos-password/requisitos-password';
 
 /**
@@ -37,7 +39,7 @@ const REQUISITOS_OMITIDOS: readonly string[] = ['sin-dni'];
  */
 @Component({
   selector: 'app-crear-password',
-  imports: [Boton, CampoFormulario, RequisitosPassword],
+  imports: [Boton, CampoContrasena, CampoFormulario, Icono, RequisitosPassword],
   templateUrl: './crear-password.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -86,6 +88,11 @@ export class CrearPassword {
     this.seIntentoEnviar() && this.password() !== this.repetida()
       ? 'Las contraseñas no coinciden.'
       : null,
+  );
+
+  /** La repetida ya se escribió y es igual a la nueva: se confirma con una tilde verde. */
+  protected readonly coinciden = computed(
+    () => this.repetida() !== '' && this.repetida() === this.password(),
   );
 
   protected actualizarPassword(valor: string): void {

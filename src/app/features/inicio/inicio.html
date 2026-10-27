@@ -1,12 +1,25 @@
 @if (sesion(); as datos) {
   <main class="contenedor flex min-h-dvh flex-col justify-center py-12 sm:py-16">
     <div class="mx-auto w-full max-w-2xl">
+      <!--
+        El logo existe en dos colores: verde sobre fondo claro y blanco hueso sobre
+        fondo oscuro. Se dibujan los dos y el tema deja visible solo uno (ver
+        `solo-claro` y `solo-oscuro` en styles.scss). `alt` vacío en ambos: es
+        decoración.
+      -->
       <img
         src="imagenes/logo-iscgb-verde.svg"
         alt=""
         width="56"
         height="52"
-        class="h-14 w-auto"
+        class="solo-claro h-14 w-auto"
+      />
+      <img
+        src="imagenes/logo-iscgb.svg"
+        alt=""
+        width="56"
+        height="52"
+        class="solo-oscuro h-14 w-auto"
       />
 
       <h1 class="mt-6 text-3xl text-principal sm:text-4xl">

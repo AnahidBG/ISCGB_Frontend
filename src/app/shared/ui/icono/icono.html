@@ -175,6 +175,33 @@
       <path d="M12 11.2v5" />
       <path d="M12 7.9h.01" />
     }
+    @case ('ojo') {
+      <!-- Ojo abierto: "mostrar" (la contraseña, un dato oculto). -->
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+    }
+    @case ('ojo-tachado') {
+      <!-- Ojo con una barra: "ocultar" lo que ahora se está viendo. -->
+      <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+      <circle cx="12" cy="12" r="3" />
+      <path d="m4 20 16-16" />
+    }
+    @case ('sol') {
+      <!-- Sol con ocho rayos: el tema claro. -->
+      <circle cx="12" cy="12" r="4" />
+      <path
+        d="M12 3v1.5M12 19.5V21M4.6 4.6l1.1 1.1M18.3 18.3l1.1 1.1M3 12h1.5M19.5 12H21M4.6 19.4l1.1-1.1M18.3 5.7l1.1-1.1"
+      />
+    }
+    @case ('luna') {
+      <!-- Luna creciente: el tema oscuro. -->
+      <path d="M20.5 14.3A8.5 8.5 0 0 1 9.7 3.5a8.5 8.5 0 1 0 10.8 10.8Z" />
+    }
+    @case ('pantalla') {
+      <!-- Monitor: "automático", lo que decida el dispositivo. -->
+      <rect x="3" y="4" width="18" height="12" rx="2" />
+      <path d="M8.5 20h7M12 16v4" />
+    }
     @case ('compacto') {
       <!--
         Lista densa: un punto + una línea de texto por fila (distinto del

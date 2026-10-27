@@ -59,7 +59,17 @@ export type NombreIcono =
   | 'anterior'
   | 'siguiente'
   | 'candado'
-  | 'informacion';
+  | 'informacion'
+  // Agregados para mostrar y ocultar una contraseña (`CampoContrasena`): el ojo
+  // abierto muestra el texto; el ojo tachado lo vuelve a ocultar.
+  | 'ojo'
+  | 'ojo-tachado'
+  // Agregados para elegir la apariencia (`SelectorTema`): el sol es el tema
+  // claro, la luna el oscuro y la pantalla es "automático", que acompaña la
+  // configuración del dispositivo.
+  | 'sol'
+  | 'luna'
+  | 'pantalla';
 
 /**
  * Un ícono del sistema, dibujado en SVG inline.
