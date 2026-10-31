@@ -78,6 +78,13 @@ describe('enlacesPorSesion', () => {
     }
   });
 
+  it('"Contratos de alumnos" es solo de Secretaría (SCRUM-227)', () => {
+    expect(urlsDe('Secretario')).toContain('/secretario/contratos');
+    for (const rol of ['Director', 'Docente', 'Alumno'] as const) {
+      expect(urlsDe(rol)).not.toContain('/secretario/contratos');
+    }
+  });
+
   it('un Director que además es Docente tiene los dos enlaces, cada uno una sola vez', () => {
     const urls = urlsDe('Director', 'Docente');
 

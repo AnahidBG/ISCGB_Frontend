@@ -1,0 +1,87 @@
+<form
+  [formGroup]="formulario"
+  (ngSubmit)="enviar()"
+  aria-label="Cargar contrato"
+  class="flex flex-col gap-4"
+  novalidate
+>
+  @if (error(); as mensaje) {
+    <p role="alert" class="rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+      {{ mensaje }}
+    </p>
+  } @else if (exito(); as mensaje) {
+    <p role="status" class="rounded-xl bg-aprobado/10 px-4 py-3 text-sm text-texto">
+      {{ mensaje }}
+    </p>
+  }
+
+  @let errorAlumno = errorDe('idUsuario');
+  <app-campo-formulario
+    etiqueta="Alumno"
+    idCampo="contrato-alumno"
+    [requerido]="true"
+    [error]="errorAlumno"
+  >
+    <select
+      id="contrato-alumno"
+      formControlName="idUsuario"
+      [attr.aria-invalid]="errorAlumno !== null"
+      [attr.aria-describedby]="descripcionDe('contrato-alumno', errorAlumno)"
+      [class]="clasesDe(errorAlumno)"
+    >
+      <option value="">Elegí un alumno</option>
+      @for (alumno of alumnos(); track alumno.idUsuario) {
+        <option [value]="alumno.idUsuario">
+          {{ alumno.nombreCompleto }} (DNI {{ alumno.dni }})
+        </option>
+      }
+    </select>
+  </app-campo-formulario>
+
+  @let errorNombre = errorDe('nombre');
+  <app-campo-formulario
+    etiqueta="Nombre del contrato"
+    idCampo="contrato-nombre"
+    [requerido]="true"
+    [error]="errorNombre"
+  >
+    <input
+      id="contrato-nombre"
+      type="text"
+      maxlength="100"
+      formControlName="nombre"
+      placeholder="Convenio Beca Fundación Encode"
+      [attr.aria-invalid]="errorNombre !== null"
+      [attr.aria-describedby]="descripcionDe('contrato-nombre', errorNombre)"
+      [class]="clasesDe(errorNombre)"
+    />
+  </app-campo-formulario>
+
+  <div>
+    <p class="text-sm font-medium text-texto">
+      Contrato firmado y sellado
+      <span aria-hidden="true" class="text-rechazado">*</span>
+      <span class="sr-only">(obligatorio)</span>
+    </p>
+    <app-zona-archivo
+      class="mt-2 block"
+      [archivo]="archivo()"
+      textoArrastrar="Arrastrá el contrato acá"
+      textoTocar="Adjuntar contrato"
+      (elegido)="elegirArchivo($event)"
+      (quitado)="quitarArchivo()"
+      (rechazado)="rechazarArchivo($event)"
+    />
+    @if (archivoRechazado(); as mensaje) {
+      <p role="alert" class="mt-2 text-sm text-rechazado">{{ mensaje }}</p>
+    } @else if (errorDe('archivo'); as mensaje) {
+      <p role="alert" class="mt-2 text-sm text-rechazado">{{ mensaje }}</p>
+    }
+  </div>
+
+  <div class="mt-2 flex justify-end">
+    <app-boton tipo="submit" [conFlecha]="false" [cargando]="enviando()" textoCargando="Cargando…">
+      Cargar contrato
+    </app-boton>
+  </div>
+</form>

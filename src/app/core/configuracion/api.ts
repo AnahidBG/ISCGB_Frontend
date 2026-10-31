@@ -331,6 +331,25 @@ export const RUTAS_API = {
    */
   suplenciaDocente: (idDocente: number) =>
     `${URL_BASE_API}/api/Docente/docentes/${idDocente}/suplencia`,
+
+  // --- Contratos de alumnos (SCRUM-227) ---
+  // PROPUESTA del frontend del 31/10/2026: el backend todavía no tiene estos
+  // endpoints. Hasta que los publique, `app.config.ts` provee
+  // `ContratosMockService`. El contrato completo está en docs/contrato-api.md.
+
+  /** Secretaría carga un contrato. multipart: `idUsuario`, `nombre`, `archivo` (PDF). */
+  cargarContratoAlumno: `${URL_BASE_API}/api/ContratosAlumno`,
+
+  /** Los contratos de un alumno, `[{ idContrato, nombre, fechaCarga }]`. Secretario y Director. */
+  contratosDeAlumno: (idUsuario: number) =>
+    `${URL_BASE_API}/api/ContratosAlumno/alumno/${idUsuario}`,
+
+  /** Los contratos del alumno de la sesión, con la misma forma. Solo Alumno. */
+  misContratos: `${URL_BASE_API}/api/ContratosAlumno/mis-contratos`,
+
+  /** El PDF de un contrato. Secretario, Director o el alumno dueño. */
+  pdfContratoAlumno: (idContrato: number) =>
+    `${URL_BASE_API}/api/ContratosAlumno/${idContrato}/pdf`,
 } as const;
 
 /**
