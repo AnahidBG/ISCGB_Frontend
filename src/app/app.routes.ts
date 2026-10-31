@@ -252,6 +252,15 @@ export const routes: Routes = [
       import('./features/docente/mesas-asignadas/mesas-asignadas').then((m) => m.MesasAsignadas),
   },
   {
+    // Libro de temas (SCRUM-232): el docente elige el año y se abre su carpeta
+    // en el Drive del instituto (`LIBROS_DE_TEMAS`). No pide nada al backend.
+    path: 'docente/libro-de-temas',
+    title: 'Libro de temas · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.docente)],
+    loadComponent: () =>
+      import('./features/docente/libro-de-temas/libro-de-temas').then((m) => m.LibroDeTemas),
+  },
+  {
     // Subir un documento al legajo propio. La comparten Docente y Alumno:
     // los dos presentan documentación, cambia solo QUÉ documentos les pide
     // el instituto — y eso lo resuelve el propio backend según el rol

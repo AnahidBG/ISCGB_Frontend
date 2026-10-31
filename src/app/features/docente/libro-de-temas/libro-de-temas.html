@@ -1,0 +1,40 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Libro de temas"
+  subtitulo="Elegí el año. Su libro de temas se abre en Google Drive, en otra pestaña."
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  <!--
+    `rel="noopener noreferrer"`: el sitio que se abre no recibe una referencia a
+    esta pestaña ni la dirección desde la que se llegó.
+  -->
+  <div data-seccion="libros" class="grid max-w-3xl gap-4 sm:grid-cols-2">
+    @for (libro of libros; track libro.enlace) {
+      <a
+        [href]="libro.enlace"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="flex items-center gap-3 rounded-2xl border border-borde bg-superficie p-5 transition-colors hover:bg-fondo-panel"
+      >
+        <span
+          class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-fondo-panel text-texto-suave"
+        >
+          <app-icono nombre="documento" class="h-5 w-5" />
+        </span>
+        <span class="min-w-0">
+          <span class="block text-sm font-semibold text-texto">{{ libro.anio }}</span>
+          <span class="mt-0.5 block text-xs text-texto-suave">
+            Abrir la carpeta en Google Drive
+          </span>
+        </span>
+      </a>
+    }
+  </div>
+</app-estructura-panel>
