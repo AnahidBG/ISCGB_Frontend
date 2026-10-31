@@ -68,6 +68,17 @@ describe('enlacesPorSesion', () => {
     }
   });
 
+  it('"Libro de temas" es solo del Docente, después de "Mis mesas de examen" (SCRUM-232)', () => {
+    const delDocente = urlsDe('Docente');
+
+    expect(delDocente.indexOf('/docente/libro-de-temas')).toBe(
+      delDocente.indexOf('/docente/mesas') + 1,
+    );
+    for (const rol of ['Alumno', 'Secretario', 'Director'] as const) {
+      expect(urlsDe(rol)).not.toContain('/docente/libro-de-temas');
+    }
+  });
+
   it('un Director que además es Docente tiene los dos enlaces, cada uno una sola vez', () => {
     const urls = urlsDe('Director', 'Docente');
 

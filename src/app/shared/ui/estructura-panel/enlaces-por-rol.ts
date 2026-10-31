@@ -149,6 +149,12 @@ export function enlacesPorSesion(
       url: '/docente/mesas',
       icono: 'revision',
     });
+    // Elegir el año y abrir su libro de temas en el Drive del instituto (SCRUM-232).
+    enlaces.push({
+      etiqueta: 'Libro de temas',
+      url: '/docente/libro-de-temas',
+      icono: 'documento',
+    });
   }
 
   enlaces.push(...ENLACES_COMUNES);

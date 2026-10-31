@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { Subject, startWith, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
@@ -66,6 +66,7 @@ interface ProximoPaso {
     AvisoLegajoCompleto,
     DocumentosRechazados,
     AccesoSiaade,
+    RouterLink,
   ],
   templateUrl: './panel-docente.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
