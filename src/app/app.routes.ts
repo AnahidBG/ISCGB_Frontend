@@ -147,6 +147,18 @@ export const routes: Routes = [
       ),
   },
   {
+    // Contratos firmados en el perfil de cada alumno (SCRUM-227). Solo
+    // Secretario: es quien los carga. El backend todavía no tiene los
+    // endpoints: anda con `ContratosMockService` (ver app.config.ts).
+    path: 'secretario/contratos',
+    title: 'Contratos de alumnos · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.secretario)],
+    loadComponent: () =>
+      import('./features/secretario/contratos-alumnos/contratos-alumnos').then(
+        (m) => m.ContratosAlumnos,
+      ),
+  },
+  {
     // Cada cuántos días el sistema le recuerda por mail a cada persona la
     // documentación que le falta (SCRUM-151). Solo Secretario: es quien la
     // configura. `GET`/`PUT /api/Configuracion/frecuencia-notificaciones`.
@@ -190,6 +202,18 @@ export const routes: Routes = [
     canActivate: [authGuard, roleGuard(ROLES.director, ROLES.secretario)],
     loadComponent: () =>
       import('./features/materias/asignaciones/asignaciones').then((m) => m.Asignaciones),
+  },
+  {
+    // Suplencias docentes: Dirección y Secretaría asignan un suplente y le dan
+    // de baja la suplencia. `PUT /api/Docente/docentes/{idDocente}/suplencia`,
+    // que pide los mismos dos roles.
+    path: 'suplencias',
+    title: 'Suplencias docentes · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.director, ROLES.secretario)],
+    loadComponent: () =>
+      import('./features/suplencias/suplencias-docentes/suplencias-docentes').then(
+        (m) => m.SuplenciasDocentes,
+      ),
   },
   {
     // Legajo propio del Docente + progreso. Datos de ejemplo.

@@ -1,0 +1,78 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Contratos de alumnos"
+  subtitulo="Cargá en el perfil de cada alumno sus contratos firmados y sellados. El alumno los ve en su panel."
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  @if (cargando()) {
+    <app-pantalla-carga tamano="md" mensaje="Cargando los alumnos…" />
+  } @else if (errorCarga(); as mensaje) {
+    <div role="alert" class="rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+      {{ mensaje }}
+      <button type="button" class="ml-2 underline" (click)="cargar()">Reintentar</button>
+    </div>
+  } @else {
+    <div class="grid gap-5 sm:gap-6 lg:grid-cols-2">
+      <section class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
+        <h2 class="mb-5 text-base font-semibold text-texto">Cargar contrato</h2>
+        <app-formulario-contrato
+          [alumnos]="alumnos()"
+          [enviando]="cargandoContrato()"
+          [error]="errorContrato()"
+          [exito]="exitoContrato()"
+          [reinicio]="reinicio()"
+          (alumnoElegido)="elegirAlumno($event)"
+          (guardar)="cargarContrato($event)"
+        />
+      </section>
+
+      <section
+        data-seccion="contratos"
+        class="self-start rounded-2xl border border-borde bg-superficie p-5 sm:p-6"
+      >
+        @if (alumno(); as elegido) {
+          <h2 class="mb-5 text-base font-semibold text-texto">
+            Contratos de {{ elegido.nombreCompleto }}
+          </h2>
+
+          @if (errorDescarga(); as mensaje) {
+            <p
+              role="alert"
+              class="mb-4 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado"
+            >
+              {{ mensaje }}
+            </p>
+          }
+
+          @if (cargandoLista()) {
+            <app-pantalla-carga tamano="md" mensaje="Cargando sus contratos…" />
+          } @else if (errorLista(); as mensaje) {
+            <div role="alert" class="rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+              {{ mensaje }}
+              <button type="button" class="ml-2 underline" (click)="cargarLista()">
+                Reintentar
+              </button>
+            </div>
+          } @else {
+            <app-lista-contratos
+              [contratos]="contratosDelAlumno()"
+              [descargando]="descargando()"
+              textoVacio="Todavía no tiene contratos cargados."
+              (descargar)="descargar($event)"
+            />
+          }
+        } @else {
+          <h2 class="text-base font-semibold text-texto">Contratos cargados</h2>
+          <p class="mt-1 text-sm text-texto-suave">Elegí un alumno para ver los que ya tiene.</p>
+        }
+      </section>
+    </div>
+  }
+</app-estructura-panel>

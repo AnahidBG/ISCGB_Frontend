@@ -148,6 +148,28 @@
     </div>
   }
 
+  @if (contratos().length > 0) {
+    <section
+      data-seccion="contratos"
+      class="mt-5 rounded-2xl border border-borde bg-superficie p-5 sm:mt-6 sm:p-6"
+    >
+      <h2 class="text-sm font-semibold text-texto">Mis contratos</h2>
+      <p class="mt-0.5 mb-4 text-xs text-texto-suave">
+        Los contratos firmados que cargó Secretaría.
+      </p>
+      @if (errorContrato(); as mensaje) {
+        <p role="alert" class="mb-4 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+          {{ mensaje }}
+        </p>
+      }
+      <app-lista-contratos
+        [contratos]="contratos()"
+        [descargando]="descargandoContrato()"
+        (descargar)="descargarContrato($event)"
+      />
+    </section>
+  }
+
   <div class="mt-5 grid gap-4 sm:mt-6 sm:grid-cols-2">
     <app-acceso-siaade perfil="alumno" class="block sm:col-span-2" />
     <a

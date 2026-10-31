@@ -14,6 +14,8 @@ import { BusquedaHttpService } from './core/busqueda/busqueda-http.service';
 import { cargaInterceptor } from './core/carga/carga.interceptor';
 import { CertificadosService } from './core/certificados/certificados.service';
 import { CertificadosHttpService } from './core/certificados/certificados-http.service';
+import { ContratosService } from './core/contratos/contratos.service';
+import { ContratosMockService } from './core/contratos/contratos-mock.service';
 import { CalendarioExamenesService } from './core/examenes/calendario-examenes.service';
 import { CalendarioExamenesHttpService } from './core/examenes/calendario-examenes-http.service';
 import { JustificativosService } from './core/justificativos/justificativos.service';
@@ -30,6 +32,8 @@ import { ProgramasMateriaService } from './core/programas-materia/programas-mate
 import { ReconocimientoSaberesService } from './core/reconocimiento-saberes/reconocimiento-saberes.service';
 import { ReconocimientoSaberesHttpService } from './core/reconocimiento-saberes/reconocimiento-saberes-http.service';
 import { ProgramasMateriaHttpService } from './core/programas-materia/programas-materia-http.service';
+import { SuplenciasService } from './core/suplencias/suplencias.service';
+import { SuplenciasHttpService } from './core/suplencias/suplencias-http.service';
 import { UsuariosService } from './core/usuarios/usuarios.service';
 import { UsuariosHttpService } from './core/usuarios/usuarios-http.service';
 
@@ -71,6 +75,7 @@ export const appConfig: ApplicationConfig = {
     { provide: FrecuenciaAvisosService, useClass: FrecuenciaAvisosHttpService },
     { provide: CalendarioExamenesService, useClass: CalendarioExamenesHttpService },
     { provide: MesasExamenService, useClass: MesasExamenHttpService },
+    { provide: SuplenciasService, useClass: SuplenciasHttpService },
 
     // UsuariosHttpService: GET /api/Usuarios (real) y gestión de usuarios
     // contra /api/UsuariosAdmin. Ver docs/contrato-api.md y
@@ -85,5 +90,11 @@ export const appConfig: ApplicationConfig = {
     // a `useClass: LegajoMockService` (importarlo de
     // `./core/legajos/legajo-mock.service`).
     { provide: LegajoService, useClass: LegajoHttpService },
+
+    // ── El único que todavía va con datos en memoria ──────────────────────
+    // Contratos de alumnos (SCRUM-227): el backend no tiene los endpoints.
+    // `ContratosHttpService` ya sigue el contrato propuesto
+    // (docs/contrato-api.md); cuando backend lo publique, se cambia esta línea.
+    { provide: ContratosService, useClass: ContratosMockService },
   ],
 };

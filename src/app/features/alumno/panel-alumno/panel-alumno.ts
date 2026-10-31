@@ -1,10 +1,21 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
-import { Subject, startWith, switchMap } from 'rxjs';
+import { Subject, catchError, of, startWith, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
+import { descargarArchivo } from '../../../core/comun/archivos';
+import { nombreDeDescarga } from '../../../core/contratos/contratos-alumno';
+import { ContratosService } from '../../../core/contratos/contratos.service';
+import { ContratoAlumno } from '../../../core/contratos/modelos/contrato-alumno';
 import {
   LEGAJO_CARGANDO,
   cargarLegajoPropio,
@@ -30,6 +41,7 @@ import { DocumentacionPorEntregar } from '../../../shared/ui/documentacion-por-e
 import { DocumentosRechazados } from '../../../shared/ui/documentos-rechazados/documentos-rechazados';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
+import { ListaContratos } from '../../../shared/ui/lista-contratos/lista-contratos';
 import { PasoTramite, ProgresoTramite } from '../../../shared/ui/progreso-tramite/progreso-tramite';
 
 const ACCION_ALUMNO: AccionPanel = {
@@ -45,7 +57,8 @@ const ACCION_ALUMNO: AccionPanel = {
  * ISCGB-PROJECT.md), y los accesos de autogestión estudiantil del Sprint 2:
  * certificado de alumno regular (con y sin horario), reconocimiento de
  * saberes y justificar inasistencia. También el acceso a SIAADE (SCRUM-15),
- * que abre el sistema académico en otra pestaña.
+ * que abre el sistema académico en otra pestaña, y los contratos que le cargó
+ * Secretaría, como el de la beca (SCRUM-227).
  *
  * El legajo es real: sale de `GET /api/Legajos/usuario/{id}`.
  */
@@ -62,6 +75,7 @@ const ACCION_ALUMNO: AccionPanel = {
     AvisoLegajoCompleto,
     DocumentosRechazados,
     AccesoSiaade,
+    ListaContratos,
   ],
   templateUrl: './panel-alumno.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -69,8 +83,10 @@ const ACCION_ALUMNO: AccionPanel = {
 export class PanelAlumno {
   private readonly auth = inject(AuthService);
   private readonly legajoService = inject(LegajoService);
+  private readonly contratosService = inject(ContratosService);
   private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
 
@@ -166,6 +182,41 @@ export class PanelAlumno {
 
   protected alternarCertificado(): void {
     this.certificadoDesplegado.update((valor) => !valor);
+  }
+
+  /**
+   * Los contratos que le cargó Secretaría (SCRUM-227). La tarjeta solo aparece
+   * si hay alguno: si el pedido falla tampoco aparece, y el detalle queda en la
+   * consola. Es algo para consultar, no un pendiente del alumno.
+   */
+  protected readonly contratos = toSignal(
+    this.contratosService.misContratos().pipe(catchError(() => of<ContratoAlumno[]>([]))),
+    { initialValue: [] },
+  );
+
+  protected readonly descargandoContrato = signal<number | null>(null);
+  protected readonly errorContrato = signal<string | null>(null);
+
+  protected descargarContrato(contrato: ContratoAlumno): void {
+    if (this.descargandoContrato() !== null) {
+      return;
+    }
+    this.descargandoContrato.set(contrato.idContrato);
+    this.errorContrato.set(null);
+
+    this.contratosService
+      .descargar(contrato.idContrato)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (pdf) => {
+          this.descargandoContrato.set(null);
+          descargarArchivo(pdf, nombreDeDescarga(contrato.nombre));
+        },
+        error: (fallo: Error) => {
+          this.descargandoContrato.set(null);
+          this.errorContrato.set(fallo.message);
+        },
+      });
   }
 
   constructor() {

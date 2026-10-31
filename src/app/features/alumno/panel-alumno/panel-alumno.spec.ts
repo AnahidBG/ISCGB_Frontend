@@ -4,6 +4,8 @@ import { provideRouter } from '@angular/router';
 import { NEVER, Observable, of, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Sesion } from '../../../core/auth/modelos/sesion';
+import { ContratosService } from '../../../core/contratos/contratos.service';
+import { ContratoAlumno } from '../../../core/contratos/modelos/contrato-alumno';
 import { LegajoService, MENSAJE_ERROR_LEGAJO } from '../../../core/legajos/legajo.service';
 import { DocumentoLegajo } from '../../../core/legajos/modelos/documento-legajo';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
@@ -47,6 +49,7 @@ type FuenteLegajo = DocumentoLegajo[] | (() => Observable<DocumentoLegajo[]>);
 async function montar(
   fuente: FuenteLegajo,
   requeridos: DocumentoRequerido[] = REQUERIDOS,
+  contratos: ContratoAlumno[] = [],
 ): Promise<ComponentFixture<PanelAlumno>> {
   const obtenerLegajoPropio = typeof fuente === 'function' ? fuente : () => of(fuente);
 
@@ -69,6 +72,7 @@ async function montar(
           documentosRequeridos: (): Observable<DocumentoRequerido[]> => of(requeridos),
         },
       },
+      { provide: ContratosService, useValue: { misContratos: () => of(contratos) } },
     ],
   });
   const fixture = TestBed.createComponent(PanelAlumno);
@@ -231,5 +235,24 @@ describe('PanelAlumno: aviso de legajo completo (SCRUM-153)', () => {
     const fixture = await montar(() => NEVER);
 
     expect(aviso(fixture)).toBeNull();
+  });
+});
+
+describe('PanelAlumno: contratos (SCRUM-227)', () => {
+  it('muestra los contratos que cargó Secretaría, y sin ninguno no muestra la tarjeta', async () => {
+    const conContrato = await montar([], REQUERIDOS, [
+      {
+        idContrato: 7,
+        nombre: 'Convenio Beca Fundación Encode',
+        fechaCarga: new Date(2026, 9, 30),
+      },
+    ]);
+    expect(raiz(conContrato).querySelector('[data-seccion="contratos"]')?.textContent).toContain(
+      'Convenio Beca Fundación Encode',
+    );
+
+    TestBed.resetTestingModule();
+    const sinContratos = await montar([]);
+    expect(raiz(sinContratos).querySelector('[data-seccion="contratos"]')).toBeNull();
   });
 });

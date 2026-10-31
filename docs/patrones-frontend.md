@@ -46,7 +46,7 @@ Todo dominio nuevo sigue el mismo trío. Si el endpoint todavía no existe, se a
 
 ### 2.2 Adapter: respuesta cruda de la API → modelo limpio
 
-`RespuestaLogin` se convierte en `Sesion` en `auth-http.service.ts` (método `aSesion`). Los tipos `*Api` de `legajo-http.service.ts` se mapean a los modelos de `core/legajos/modelos/`. Los errores pasan por `core/comun/error-api.ts` (`mensajeDelServidor`, `esEndpointInexistente`).
+`RespuestaLogin` se convierte en `Sesion` en `auth-http.service.ts` (método `aSesion`). Los tipos `*Api` de `legajo-http.service.ts` se mapean a los modelos de `core/legajos/modelos/`. Los errores pasan por `core/comun/error-api.ts` (`mensajeDelServidor`, `esEndpointInexistente`, y `traducirRechazo` para las escrituras: el mensaje del backend si es un rechazo del pedido, si no el genérico).
 
 Los tipos crudos de la API, con sus nombres mezclados como `estado_usuario` o `lugar_Nacimiento`, **no salen de `*-http.service.ts`**. Un componente nunca ve un `*Api` ni un `HttpErrorResponse`: ve modelos limpios y mensajes en español.
 

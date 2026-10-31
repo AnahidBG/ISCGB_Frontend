@@ -70,6 +70,12 @@ export function enlacesPorSesion(
       url: '/materias/asignaciones',
       icono: 'tabla',
     });
+    // Asignar un docente suplente y darle de baja la suplencia.
+    enlaces.push({
+      etiqueta: 'Suplencias docentes',
+      url: '/suplencias',
+      icono: 'usuarios',
+    });
   }
 
   // Solo Secretario: el backend no deja a Dirección ver estas solicitudes, y
@@ -79,6 +85,12 @@ export function enlacesPorSesion(
       etiqueta: 'Solicitudes de reconocimiento',
       url: '/secretario/reconocimiento-saberes',
       icono: 'revision',
+    });
+    // Cargar en el perfil del alumno sus contratos firmados (SCRUM-227).
+    enlaces.push({
+      etiqueta: 'Contratos de alumnos',
+      url: '/secretario/contratos',
+      icono: 'documento',
     });
     // Cada cuánto sale el aviso automático de documentación faltante (SCRUM-151).
     enlaces.push({
