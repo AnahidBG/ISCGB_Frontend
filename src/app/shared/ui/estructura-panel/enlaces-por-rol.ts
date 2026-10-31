@@ -70,6 +70,12 @@ export function enlacesPorSesion(
       url: '/materias/asignaciones',
       icono: 'tabla',
     });
+    // Asignar un docente suplente y darle de baja la suplencia.
+    enlaces.push({
+      etiqueta: 'Suplencias docentes',
+      url: '/suplencias',
+      icono: 'usuarios',
+    });
   }
 
   // Solo Secretario: el backend no deja a Dirección ver estas solicitudes, y

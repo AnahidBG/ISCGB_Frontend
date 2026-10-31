@@ -192,6 +192,18 @@ export const routes: Routes = [
       import('./features/materias/asignaciones/asignaciones').then((m) => m.Asignaciones),
   },
   {
+    // Suplencias docentes: Dirección y Secretaría asignan un suplente y le dan
+    // de baja la suplencia. `PUT /api/Docente/docentes/{idDocente}/suplencia`,
+    // que pide los mismos dos roles.
+    path: 'suplencias',
+    title: 'Suplencias docentes · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.director, ROLES.secretario)],
+    loadComponent: () =>
+      import('./features/suplencias/suplencias-docentes/suplencias-docentes').then(
+        (m) => m.SuplenciasDocentes,
+      ),
+  },
+  {
     // Legajo propio del Docente + progreso. Datos de ejemplo.
     path: 'docente/panel',
     title: 'Mi legajo · ISCGB',

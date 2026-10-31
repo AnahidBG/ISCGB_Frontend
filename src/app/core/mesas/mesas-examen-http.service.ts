@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, throwError } from 'rxjs';
 import { contextoDePedido } from '../carga/contexto-pedido';
-import { esEndpointInexistente, mensajeDelServidor } from '../comun/error-api';
+import { traducirRechazo } from '../comun/error-api';
 import { OpcionesPedido } from '../comun/opciones-pedido';
 import { RUTAS_API } from '../configuracion/api';
 import { textoFechaYHora } from '../examenes/registro-examen';
@@ -134,25 +134,6 @@ export class MesasExamenHttpService extends MesasExamenService {
       ),
     );
   }
-}
-
-/**
- * El mensaje que ve la persona si una escritura falla. El del backend primero,
- * pero solo si es un rechazo del pedido (4xx con texto): ahí explica qué pasó
- * ("El docente ya se encuentra asignado…"). Un 5xx o una ruta que no existe no
- * le dicen nada útil a quien está en la pantalla: mensaje genérico y el detalle
- * a la consola. Mismo criterio que el calendario.
- */
-function traducirRechazo(error: HttpErrorResponse, generico: string, registro: string): string {
-  const delServidor = mensajeDelServidor(error);
-  const esRechazoDelPedido =
-    error.status >= 400 && error.status < 500 && !esEndpointInexistente(error);
-
-  if (delServidor !== null && esRechazoDelPedido) {
-    return delServidor;
-  }
-  console.error(registro, error);
-  return generico;
 }
 
 /** Un id legible: un entero positivo. */

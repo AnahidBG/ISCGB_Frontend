@@ -317,6 +317,20 @@ export const RUTAS_API = {
    * `{ idExamen, idDocente }`. Solo `Director` y `Secretario`.
    */
   ocultarAlertaRechazoMesa: `${URL_BASE_API}/api/Configuracion/ocultar-alerta-rechazo`,
+
+  // --- Suplencias (ISCGB_Backend/Controllers/DocenteController.cs) ---
+
+  /**
+   * Asigna o da de baja la suplencia de un docente. `PUT`, body `{ esSuplente,
+   * fechaInicio, fechaFin }`, con las fechas como `DateTime` sin zona o `null`.
+   * Va con el `idDocente` (tabla `Docentes`), no con el `idUsuario`. Solo
+   * `Director` y `Secretario`. Responde `200 { message, esSuplente,
+   * estadoUsuario }` y `404 { message }` si el docente no existe. La baja le
+   * quita el acceso: si la persona solo es Docente, la cuenta queda inactiva; si
+   * tiene más roles, pierde el de Docente. No hay un GET con el estado.
+   */
+  suplenciaDocente: (idDocente: number) =>
+    `${URL_BASE_API}/api/Docente/docentes/${idDocente}/suplencia`,
 } as const;
 
 /**

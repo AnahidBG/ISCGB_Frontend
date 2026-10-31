@@ -918,6 +918,46 @@ igual los pendientes del instituto.
   crearla, la mesa solo se ve en el calendario del mes en curso (`del-mes`) y en la
   campana del docente.
 
+## Suplencias docentes
+
+### `PUT /api/Docente/docentes/{idDocente}/suplencia`
+
+Con `[Authorize(Roles = "Director,Secretario")]`. Va con el `idDocente` de la
+tabla `Docentes`, no con el `idUsuario`. Recibe `GestionarSuplenciaDto`:
+
+```json
+{ "esSuplente": true, "fechaInicio": "2026-11-02T00:00:00", "fechaFin": "2026-11-30T00:00:00" }
+```
+
+Las dos fechas son `DateTime?` sin zona. Responde `200` con
+`{ message, esSuplente, estadoUsuario }` y `404` con
+`{ "message": "No se encontró el registro del docente." }`.
+
+Asignar (`esSuplente: true`) guarda las fechas (sin inicio usa hoy), reactiva la
+cuenta si estaba inactiva y le agrega el rol Docente si no lo tenía.
+
+Dar de baja (`esSuplente: false`) le quita el acceso. Si la persona solo tiene el
+rol Docente, la cuenta queda inactiva; si tiene más roles, pierde el de Docente y
+conserva los otros. Si no tenía fecha de fin, queda la de hoy. El backend no mira
+si el docente era suplente: dar de baja a un titular también le quita el acceso.
+
+No es lo mismo que director suplente (`Docentes.director_suplente`), que se marca
+en el alta y la edición del usuario (`UsuariosAdmin`).
+
+El frontend lo usa en "Suplencias docentes" (`/suplencias`, Director y
+Secretario), con `SuplenciasService` (`core/suplencias/`). El docente sale de
+`docentes-disponibles`, que es la lista que trae el `idDocente`. La baja pide
+confirmación, y el mensaje final dice si la cuenta quedó inactiva
+(`mensajeDeSuplencia`).
+
+### Pendientes del backend
+
+- No hay un `GET` que diga quién es suplente ni con qué fechas: la pantalla no
+  puede listar las suplencias vigentes.
+- Nada da de baja la suplencia sola cuando llega la fecha de fin.
+- La baja debería rechazar a un docente que no es suplente, para no dejar sin
+  acceso a un titular por error.
+
 ## Materias y asignaciones
 
 Todo está en `MateriasController`, en `api/Materias`. La pantalla "Materias y

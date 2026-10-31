@@ -68,6 +68,16 @@ describe('enlacesPorSesion', () => {
     }
   });
 
+  it('"Suplencias docentes" es de Dirección y Secretaría, después de "Materias y asignaciones"', () => {
+    for (const rol of ['Director', 'Secretario'] as const) {
+      const urls = urlsDe(rol);
+      expect(urls.indexOf('/suplencias')).toBe(urls.indexOf('/materias/asignaciones') + 1);
+    }
+    for (const rol of ['Docente', 'Alumno'] as const) {
+      expect(urlsDe(rol)).not.toContain('/suplencias');
+    }
+  });
+
   it('un Director que además es Docente tiene los dos enlaces, cada uno una sola vez', () => {
     const urls = urlsDe('Director', 'Docente');
 

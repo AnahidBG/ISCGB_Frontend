@@ -75,3 +75,26 @@ export function esEndpointInexistente(error: HttpErrorResponse): boolean {
     cuerpo === null || cuerpo === undefined || (typeof cuerpo === 'string' && cuerpo.trim() === '')
   );
 }
+
+/**
+ * El mensaje que ve la persona si una escritura falla. El del backend primero,
+ * pero solo si es un rechazo del pedido (4xx con texto): ahí explica qué pasó
+ * ("El docente ya se encuentra asignado…"). Un 5xx o una ruta que no existe no
+ * le dicen nada útil a quien está en la pantalla: mensaje genérico y el detalle
+ * a la consola, con `registro` adelante.
+ */
+export function traducirRechazo(
+  error: HttpErrorResponse,
+  generico: string,
+  registro: string,
+): string {
+  const delServidor = mensajeDelServidor(error);
+  const esRechazoDelPedido =
+    error.status >= 400 && error.status < 500 && !esEndpointInexistente(error);
+
+  if (delServidor !== null && esRechazoDelPedido) {
+    return delServidor;
+  }
+  console.error(registro, error);
+  return generico;
+}

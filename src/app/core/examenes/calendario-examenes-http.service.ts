@@ -2,7 +2,7 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { contextoDePedido } from '../carga/contexto-pedido';
-import { esEndpointInexistente, mensajeDelServidor } from '../comun/error-api';
+import { esEndpointInexistente, traducirRechazo } from '../comun/error-api';
 import { OpcionesPedido } from '../comun/opciones-pedido';
 import { RUTAS_API } from '../configuracion/api';
 import { aCalendarioDelMes } from './adaptador-estado-mes';
@@ -293,28 +293,6 @@ export class CalendarioExamenesHttpService extends CalendarioExamenesService {
         }),
       );
   }
-}
-
-/**
- * El mensaje que ve la persona si un guardado (el límite, un parcial) falla.
- *
- * El del backend primero, pero solo si es un rechazo del pedido (4xx): ahí
- * explica qué corregir ("El límite de parciales Diarios debe ser mayor a cero.",
- * "No se puede registrar. Se ha superado el límite de parciales para ese día.",
- * "No se encontró el examen especificado.").
- * Un 5xx o una ruta que no existe no le dicen nada útil a quien está en la
- * pantalla: ahí va el mensaje genérico, y el detalle a la consola.
- */
-function traducirRechazo(error: HttpErrorResponse, generico: string, registro: string): string {
-  const delServidor = mensajeDelServidor(error);
-  const esRechazoDelPedido =
-    error.status >= 400 && error.status < 500 && !esEndpointInexistente(error);
-
-  if (delServidor !== null && esRechazoDelPedido) {
-    return delServidor;
-  }
-  console.error(registro, error);
-  return generico;
 }
 
 /** Un id legible: un entero positivo. */

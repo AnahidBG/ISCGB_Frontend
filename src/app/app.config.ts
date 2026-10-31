@@ -30,6 +30,8 @@ import { ProgramasMateriaService } from './core/programas-materia/programas-mate
 import { ReconocimientoSaberesService } from './core/reconocimiento-saberes/reconocimiento-saberes.service';
 import { ReconocimientoSaberesHttpService } from './core/reconocimiento-saberes/reconocimiento-saberes-http.service';
 import { ProgramasMateriaHttpService } from './core/programas-materia/programas-materia-http.service';
+import { SuplenciasService } from './core/suplencias/suplencias.service';
+import { SuplenciasHttpService } from './core/suplencias/suplencias-http.service';
 import { UsuariosService } from './core/usuarios/usuarios.service';
 import { UsuariosHttpService } from './core/usuarios/usuarios-http.service';
 
@@ -71,6 +73,7 @@ export const appConfig: ApplicationConfig = {
     { provide: FrecuenciaAvisosService, useClass: FrecuenciaAvisosHttpService },
     { provide: CalendarioExamenesService, useClass: CalendarioExamenesHttpService },
     { provide: MesasExamenService, useClass: MesasExamenHttpService },
+    { provide: SuplenciasService, useClass: SuplenciasHttpService },
 
     // UsuariosHttpService: GET /api/Usuarios (real) y gestión de usuarios
     // contra /api/UsuariosAdmin. Ver docs/contrato-api.md y

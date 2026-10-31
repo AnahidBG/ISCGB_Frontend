@@ -1,0 +1,80 @@
+<form
+  [formGroup]="formulario"
+  (ngSubmit)="enviar()"
+  aria-label="Asignar suplencia"
+  class="flex flex-col gap-4"
+  novalidate
+>
+  @if (error(); as mensaje) {
+    <p role="alert" class="rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+      {{ mensaje }}
+    </p>
+  } @else if (exito(); as mensaje) {
+    <p role="status" class="rounded-xl bg-aprobado/10 px-4 py-3 text-sm text-texto">
+      {{ mensaje }}
+    </p>
+  }
+
+  @let errorDocente = errorDe('idDocente');
+  <app-campo-formulario
+    etiqueta="Docente"
+    idCampo="suplencia-docente"
+    [requerido]="true"
+    [error]="errorDocente"
+  >
+    <select
+      id="suplencia-docente"
+      formControlName="idDocente"
+      [attr.aria-invalid]="errorDocente !== null"
+      [attr.aria-describedby]="descripcionDe('suplencia-docente', errorDocente)"
+      [class]="clasesDe(errorDocente)"
+    >
+      <option value="">Elegí un docente</option>
+      @for (docente of docentes(); track docente.idDocente) {
+        <option [value]="docente.idDocente">{{ docente.nombreCompleto }}</option>
+      }
+    </select>
+  </app-campo-formulario>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    @let errorDesde = errorDe('desde');
+    <app-campo-formulario
+      etiqueta="Desde"
+      idCampo="suplencia-desde"
+      [requerido]="true"
+      [error]="errorDesde"
+    >
+      <input
+        id="suplencia-desde"
+        type="date"
+        formControlName="desde"
+        [attr.aria-invalid]="errorDesde !== null"
+        [attr.aria-describedby]="descripcionDe('suplencia-desde', errorDesde)"
+        [class]="clasesDe(errorDesde)"
+      />
+    </app-campo-formulario>
+
+    @let errorHasta = errorDe('hasta');
+    <app-campo-formulario etiqueta="Hasta" idCampo="suplencia-hasta" [error]="errorHasta">
+      <input
+        id="suplencia-hasta"
+        type="date"
+        formControlName="hasta"
+        [attr.aria-invalid]="errorHasta !== null"
+        [attr.aria-describedby]="
+          descripcionDe('suplencia-hasta', errorHasta, 'ayuda-suplencia-hasta')
+        "
+        [class]="clasesDe(errorHasta)"
+      />
+      <span id="ayuda-suplencia-hasta" class="text-xs text-texto-suave">
+        Si todavía no se sabe, dejalo vacío.
+      </span>
+    </app-campo-formulario>
+  </div>
+
+  <div class="mt-2 flex justify-end">
+    <app-boton tipo="submit" [conFlecha]="false" [cargando]="enviando()" textoCargando="Asignando…">
+      Asignar suplencia
+    </app-boton>
+  </div>
+</form>

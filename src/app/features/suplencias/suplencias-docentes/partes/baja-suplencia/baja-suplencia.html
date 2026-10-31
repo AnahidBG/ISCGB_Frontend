@@ -1,0 +1,50 @@
+<form
+  [formGroup]="formulario"
+  (ngSubmit)="enviar()"
+  aria-label="Dar de baja una suplencia"
+  class="flex flex-col gap-4"
+  novalidate
+>
+  @if (error(); as mensaje) {
+    <p role="alert" class="rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+      {{ mensaje }}
+    </p>
+  } @else if (exito(); as mensaje) {
+    <p role="status" class="rounded-xl bg-aprobado/10 px-4 py-3 text-sm text-texto">
+      {{ mensaje }}
+    </p>
+  }
+
+  @let errorDelDocente = errorDocente();
+  <app-campo-formulario
+    etiqueta="Docente"
+    idCampo="baja-docente"
+    [requerido]="true"
+    [error]="errorDelDocente"
+  >
+    <select
+      id="baja-docente"
+      formControlName="idDocente"
+      [attr.aria-invalid]="errorDelDocente !== null"
+      [attr.aria-describedby]="descripcionDe('baja-docente', errorDelDocente)"
+      [class]="clasesDe(errorDelDocente)"
+    >
+      <option value="">Elegí un docente</option>
+      @for (docente of docentes(); track docente.idDocente) {
+        <option [value]="docente.idDocente">{{ docente.nombreCompleto }}</option>
+      }
+    </select>
+  </app-campo-formulario>
+
+  <div class="mt-2 flex justify-end">
+    <app-boton
+      tipo="submit"
+      nivel="secundario"
+      [conFlecha]="false"
+      [cargando]="enviando()"
+      textoCargando="Dando de baja…"
+    >
+      Dar de baja
+    </app-boton>
+  </div>
+</form>

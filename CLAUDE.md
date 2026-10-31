@@ -39,6 +39,7 @@ No generes código ni configuración para .NET 8 o 9, ni para Angular anterior a
 - Qué se muestra según el rol dentro de una pantalla: la directiva `*siRol` (`shared/directivas/si-rol/`), con los nombres de `ROLES`.
 - Fecha y hora de un examen hacia el backend: un `DateTime` sin zona, que se manda como texto local con `textoFechaYHora(...)` (`core/examenes/registro-examen.ts`). Nunca `toISOString()`: pasa a UTC y corre el examen tres horas.
 - Diálogos: `dialogo-modal` (`shared/ui/`) aloja un formulario u otro contenido, con foco, Escape y fondo inerte resueltos. `dialogo-confirmacion` es solo para confirmar una acción.
+- Docente suplente y director suplente son cosas distintas. El director suplente es una casilla del alta y la edición (`UsuariosAdmin`). La suplencia docente va por `PUT api/Docente/docentes/{idDocente}/suplencia`, con el `idDocente` y no el `idUsuario`, y su baja le quita el acceso a la persona (`core/suplencias/`, pantalla `/suplencias`).
 
 ## Convenciones de nombres
 
