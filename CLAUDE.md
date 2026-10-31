@@ -32,7 +32,7 @@ No generes código ni configuración para .NET 8 o 9, ni para Angular anterior a
 - Sesión: en `sessionStorage`, con la clave `iscgb.sesion` (`auth-http.service.ts`).
 - URLs de la API: solo en `core/configuracion/api.ts`.
 - Hay dos `establecer-password`: `api/UsuariosAdmin/establecer-password` es el del mail de alta (`/crear-password`) y `api/Auth/establecer-password` el del recupero (`/restablecer-password`, pedido con `api/Auth/recuperar-contrasena`). En `api.ts` son `establecerPassword` y `restablecerPassword`. No hay cambio de contraseña con la actual: "Configuración" manda el enlace de recupero.
-- Enlaces a sitios de afuera, como SIAADE: solo en `core/configuracion/enlaces-externos.ts`. SIAADE tiene una dirección para el alumno y otra para el docente.
+- Enlaces a sitios de afuera, como SIAADE: solo en `core/configuracion/enlaces-externos.ts`. SIAADE tiene una dirección para el alumno y otra para el docente. Los libros de temas son una carpeta de Drive por año (`LIBROS_DE_TEMAS`, pantalla `/docente/libro-de-temas`), y cambian con cada ciclo lectivo.
 - Estado de un día del calendario de parciales: `disponible`, `ocupado` o `completo`, que calcula `estadoDelDia(cantidad, limite)` en `core/examenes/estado-del-dia.ts`. Los estados de un documento son otra cosa.
 - Período del límite de parciales: una sola constante, `PERIODO_DEL_LIMITE`, en `core/examenes/periodo-limite.ts`. Todo texto que nombre el período sale de ahí.
 - Fechas en español: el locale `es-AR` está registrado en `app.config.ts`. Para nombres de días y meses se usa `DatePipe` o `formatDate` con `LOCALE_ID`, no listas escritas a mano.

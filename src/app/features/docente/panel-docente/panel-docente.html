@@ -159,6 +159,24 @@
     </div>
   }
 
-  <!-- Fuera del bloque del legajo: el acceso a SIAADE no depende de que haya cargado. -->
-  <app-acceso-siaade perfil="docente" class="mt-5 block sm:mt-6" />
+  <!-- Fuera del bloque del legajo: los accesos no dependen de que haya cargado. -->
+  <div class="mt-5 grid gap-4 sm:mt-6 sm:grid-cols-2">
+    <app-acceso-siaade perfil="docente" class="block" />
+    <a
+      routerLink="/docente/libro-de-temas"
+      class="flex items-center gap-3 rounded-2xl border border-borde bg-superficie p-5 transition-colors hover:bg-fondo-panel"
+    >
+      <span
+        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-fondo-panel text-texto-suave"
+      >
+        <app-icono nombre="documento" class="h-5 w-5" />
+      </span>
+      <span class="min-w-0">
+        <span class="block text-sm font-semibold text-texto">Libro de temas</span>
+        <span class="mt-0.5 block text-xs text-texto-suave">
+          Elegí el año y abrí su libro de temas en Google Drive.
+        </span>
+      </span>
+    </a>
+  </div>
 </app-estructura-panel>
