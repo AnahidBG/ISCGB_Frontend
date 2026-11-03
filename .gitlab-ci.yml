@@ -1,0 +1,9 @@
+stages:
+  - build
+
+build_frontend:
+  stage: build
+  script:
+    - docker build -t iscgb-frontend:latest .
+  only:
+    - main
