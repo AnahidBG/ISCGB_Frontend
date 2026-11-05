@@ -22,9 +22,7 @@ import {
 } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ROLES } from '../../../core/auth/modelos/rol';
-import { tieneAlgunRol } from '../../../core/auth/modelos/sesion';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
-import { PerfilRecursos } from '../../../core/configuracion/enlaces-externos';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { misDatosDe } from '../../../core/usuarios/mis-datos';
 import { MisDatos } from '../../../core/usuarios/modelos/mis-datos';
@@ -34,11 +32,12 @@ import {
   MENSAJE_ERROR_CARGAR_MIS_DATOS,
   UsuariosService,
 } from '../../../core/usuarios/usuarios.service';
+import { SiRol } from '../../../shared/directivas/si-rol/si-rol';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
-import { DatosDeIdentidad } from './partes/datos-de-identidad/datos-de-identidad';
 import { RecursosDescargables } from '../../../shared/ui/recursos-descargables/recursos-descargables';
+import { DatosDeIdentidad } from './partes/datos-de-identidad/datos-de-identidad';
 import { FormularioMisDatos } from './partes/formulario-mis-datos/formulario-mis-datos';
 import { FotoPerfil } from './partes/foto-perfil/foto-perfil';
 
@@ -84,6 +83,7 @@ const MENSAJE_FOTO_SUBIDA = 'Tu foto se actualizó.';
     DatosDeIdentidad,
     FormularioMisDatos,
     RecursosDescargables,
+    SiRol,
   ],
   templateUrl: './mi-perfil.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -103,17 +103,12 @@ export class MiPerfil {
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
 
   /**
-   * De quién es la documentación para descargar que se ve en el perfil
-   * (SCRUM-228 y SCRUM-229): la del alumno, la del docente o las dos si tiene los
-   * dos roles. Director y Secretario no tienen: la lista queda vacía.
+   * Quién ve cada documentación para descargar (SCRUM-228 y SCRUM-229), con
+   * `*siRol`: el alumno la suya, el docente la suya y quien tiene los dos roles,
+   * las dos. Director y Secretario no tienen.
    */
-  protected readonly perfilesRecursos = computed<PerfilRecursos[]>(() => {
-    const sesion = this.sesion();
-    const perfiles: PerfilRecursos[] = [];
-    if (tieneAlgunRol(sesion, [ROLES.alumno])) perfiles.push('alumno');
-    if (tieneAlgunRol(sesion, [ROLES.docente])) perfiles.push('docente');
-    return perfiles;
-  });
+  protected readonly rolAlumno = ROLES.alumno;
+  protected readonly rolDocente = ROLES.docente;
 
   /** La campana del encabezado, igual en todas las pantallas (`CampanaService`). */
   protected readonly notificaciones = this.campana.total;
