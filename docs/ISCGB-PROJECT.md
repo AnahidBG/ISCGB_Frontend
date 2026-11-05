@@ -36,7 +36,7 @@ src/app/
 ├── core/       auth · busqueda · carga · certificados · comun · configuracion · examenes · justificativos ·
 │               legajos · materias · notificaciones · programas-materia · reconocimiento-saberes · usuarios
 ├── features/   alumno · auth · calendario · configuracion · crear-password · director · docente · inicio ·
-│               justificativos · legajo · materias · mesas · no-encontrado · perfil · proximamente ·
+│               justificativos · legajo · materias · mesas · no-encontrado · perfil ·
 │               recuperar-contrasena · restablecer-password · secretario · sistema-diseno
 ├── shared/directivas/  si-rol
 └── shared/ui/  aviso-legajo-completo · boton · campo-formulario · dialogo-confirmacion ·

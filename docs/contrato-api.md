@@ -97,9 +97,11 @@ Crea un usuario con rol Director, sin nombre ni apellido, y devuelve
 
 ## Recupero y cambio de contraseña (SCRUM-28)
 
-Relevado el **23/10/2026** contra `main` del backend en `1d68430` (PR #40, de
-Anahid). Son dos endpoints públicos (`[AllowAnonymous]`) en `AuthController`. Los
-consume `AuthService` (`solicitarRecuperacion` y `restablecerPassword`).
+Relevado el **04/11/2026** contra `main` del backend, que tiene `bddb5ef` (Anahid)
+desde el PR #41 (`2261f7d`, 27/10). Son dos endpoints públicos
+(`[AllowAnonymous]`): el paso 1 en `AuthController` y el paso 2 en
+`UsuariosAdminController`. Los consume `AuthService` (`solicitarRecuperacion` y
+`restablecerPassword`).
 
 ### `POST /api/Auth/recuperar-contrasena`
 
@@ -117,28 +119,31 @@ con el mismo mensaje exista o no el DNI:
 ```
 
 - `400` `{ message }` si el DNI viene vacío. El front valida antes (7 u 8 números).
-- `500` `{ message, error }` si falla el envío del mail. `error` trae el detalle del
-  SMTP y el front no lo muestra.
+- Si falla el envío del mail, el backend lo loguea y responde el mismo `200`: ya no
+  devuelve `500`, para no revelar que el DNI existe. Desde el front no se puede saber
+  si el mail salió.
 
 Lo usan dos pantallas: `/recuperar-contrasena` (sin sesión, con el DNI que escribe la
 persona) y `/configuracion` (con el DNI de la sesión).
 
-### `POST /api/Auth/establecer-password`
+### `POST /api/UsuariosAdmin/establecer-password`
 
 ```json
 { "token": "3f2a...", "nuevaPassword": "Clave1234" }
 ```
 
 Busca la cuenta por `token_recuperacion`, guarda el hash con BCrypt y borra el token
-(es de un solo uso). Responde `200` `{ message }`, o `400` `{ message }` si el token no
-existe, ya se usó o venció. El front trata cualquier `400` como "enlace no válido" y
-ofrece pedir otro. Lo consume `/restablecer-password`.
+(es de un solo uso). Responde `200` `{ mensaje }` (con "a", no `message`). Los `400`
+llegan en dos formas: `{ message }` si falta el token o la contraseña, y texto suelto
+si el token no existe, ya se usó o venció. El front no lee el cuerpo: trata cualquier
+`400` como "enlace no válido".
 
-No es el mismo endpoint que `POST /api/UsuariosAdmin/establecer-password`, el del mail
-de alta (`/crear-password`): los dos buscan el token en la misma columna, pero el de
-alta devuelve el `400` como texto suelto y su remedio es pedirle otro enlace a
-Dirección. El front los mantiene separados (`RUTAS_API.establecerPassword` y
-`RUTAS_API.restablecerPassword`).
+Es el **único** endpoint para guardar la contraseña: `bddb5ef` borró
+`POST /api/Auth/establecer-password` (ahora da `404`). Lo usan el mail de alta
+(`/crear-password`) y el de recupero (`/restablecer-password`). En `api.ts` siguen
+siendo dos claves con la misma URL (`RUTAS_API.establecerPassword` y
+`RUTAS_API.restablecerPassword`), porque el remedio cambia: en el alta hay que pedirle
+otro enlace a Dirección y en el recupero la persona lo pide sola.
 
 ### Pendientes del backend
 

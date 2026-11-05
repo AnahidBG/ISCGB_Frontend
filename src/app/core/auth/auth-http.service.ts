@@ -75,9 +75,9 @@ export class AuthHttpService extends AuthService {
     return this.http.post(RUTAS_API.recuperarContrasena, { dni }).pipe(
       map(() => undefined),
       catchError((error: HttpErrorResponse) => {
-        // El 500 trae `error` con el detalle del servidor de correo: no se lee.
-        // Un 400 (DNI vacío) no debería llegar nunca, porque la pantalla valida
-        // antes; si llega, es una falla más.
+        // Desde `bddb5ef` el backend responde 200 aunque falle el mail, así que
+        // un 500 sería una falla inesperada. Un 400 (DNI vacío) no debería
+        // llegar nunca, porque la pantalla valida antes; si llega, es una falla más.
         const mensaje = error.status === 0 ? MENSAJE_SIN_CONEXION : MENSAJE_ERROR_RECUPERACION;
         return throwError(() => new Error(mensaje));
       }),

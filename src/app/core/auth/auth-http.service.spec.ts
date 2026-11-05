@@ -343,29 +343,31 @@ describe('AuthHttpService.restablecerPassword', () => {
     return { completo: () => completo, error: () => error };
   }
 
-  it('hace POST a /api/Auth/establecer-password (no al de UsuariosAdmin) con { token, nuevaPassword }', () => {
-    expect(RUTAS_API.restablecerPassword.endsWith('/api/Auth/establecer-password')).toBe(true);
-    expect(RUTAS_API.restablecerPassword).not.toBe(RUTAS_API.establecerPassword);
+  it('hace POST a /api/UsuariosAdmin/establecer-password (el mismo del alta) con { token, nuevaPassword }', () => {
+    expect(RUTAS_API.restablecerPassword.endsWith('/api/UsuariosAdmin/establecer-password')).toBe(
+      true,
+    );
+    expect(RUTAS_API.restablecerPassword).toBe(RUTAS_API.establecerPassword);
     enviar();
 
     const pedido = backend.expectOne(RUTAS_API.restablecerPassword);
     expect(pedido.request.method).toBe('POST');
     expect(pedido.request.body).toEqual({ token: 'tok-123', nuevaPassword: 'Clave1234' });
-    pedido.flush({ message: 'Contraseña configurada exitosamente. Ya puede iniciar sesión.' });
+    pedido.flush({ mensaje: 'Contraseña configurada exitosamente. Ya puede iniciar sesión.' });
   });
 
   it('200 completa sin error', () => {
     const resultado = enviar();
 
-    backend.expectOne(RUTAS_API.restablecerPassword).flush({ message: 'ok' });
+    backend.expectOne(RUTAS_API.restablecerPassword).flush({ mensaje: 'ok' });
 
     expect(resultado.completo()).toBe(true);
     expect(resultado.error()).toBeNull();
   });
 
   it.each([
-    ['inválido', { message: 'El enlace es inválido.' }],
-    ['vencido', { message: 'El enlace ha expirado. Solicite uno nuevo.' }],
+    ['inválido', 'El enlace es inválido.'],
+    ['vencido', 'El enlace ha expirado. Solicite uno nuevo.'],
   ])('400 por enlace %s falla con el mensaje de recuperación, sin el body crudo', (_caso, body) => {
     const resultado = enviar();
 

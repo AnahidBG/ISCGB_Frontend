@@ -56,7 +56,8 @@ function contrasenasCoinciden(grupo: AbstractControl): ValidationErrors | null {
  *
  * Se llega desde el enlace del mail que pide "¿Olvidaste tu contraseña?"
  * (`/restablecer-password?token=...`), sin sesión. Guarda con
- * `POST /api/Auth/establecer-password`. El token es de un solo uso y vence en
+ * `POST /api/UsuariosAdmin/establecer-password`, el mismo endpoint del alta.
+ * El token es de un solo uso y vence en
  * 1 hora; si no sirve, la persona puede pedir otro sola.
  *
  * Diseño de Gonza (rama `feature/recuperacion-contrasenia`). Es el
