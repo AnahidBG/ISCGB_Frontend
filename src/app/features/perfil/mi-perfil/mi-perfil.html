@@ -45,6 +45,14 @@
         [dni]="persona.dni"
         [roles]="persona.roles"
       />
+
+      <!--
+        Documentación para descargar (SCRUM-228 y SCRUM-229): el alumno ve la suya
+        y el docente la suya. Quien no es ninguno de los dos no ve la sección.
+      -->
+      @for (perfil of perfilesRecursos(); track perfil) {
+        <app-recursos-descargables [perfil]="perfil" tipo="documentacion" />
+      }
       <app-formulario-mis-datos
         [datosGuardados]="guardados"
         [provincias]="provincias()"
