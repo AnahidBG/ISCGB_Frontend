@@ -21,7 +21,10 @@ import {
   throwError,
 } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { ROLES } from '../../../core/auth/modelos/rol';
+import { tieneAlgunRol } from '../../../core/auth/modelos/sesion';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
+import { PerfilRecursos } from '../../../core/configuracion/enlaces-externos';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { misDatosDe } from '../../../core/usuarios/mis-datos';
 import { MisDatos } from '../../../core/usuarios/modelos/mis-datos';
@@ -35,6 +38,7 @@ import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-po
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
 import { DatosDeIdentidad } from './partes/datos-de-identidad/datos-de-identidad';
+import { RecursosDescargables } from '../../../shared/ui/recursos-descargables/recursos-descargables';
 import { FormularioMisDatos } from './partes/formulario-mis-datos/formulario-mis-datos';
 import { FotoPerfil } from './partes/foto-perfil/foto-perfil';
 
@@ -73,7 +77,14 @@ const MENSAJE_FOTO_SUBIDA = 'Tu foto se actualizó.';
  */
 @Component({
   selector: 'app-mi-perfil',
-  imports: [EstructuraPanel, PantallaCarga, FotoPerfil, DatosDeIdentidad, FormularioMisDatos],
+  imports: [
+    EstructuraPanel,
+    PantallaCarga,
+    FotoPerfil,
+    DatosDeIdentidad,
+    FormularioMisDatos,
+    RecursosDescargables,
+  ],
   templateUrl: './mi-perfil.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -90,6 +101,19 @@ export class MiPerfil {
   /** El rol que se muestra en el encabezado. Sale SIEMPRE de la sesión. */
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
+
+  /**
+   * De quién es la documentación para descargar que se ve en el perfil
+   * (SCRUM-228 y SCRUM-229): la del alumno, la del docente o las dos si tiene los
+   * dos roles. Director y Secretario no tienen: la lista queda vacía.
+   */
+  protected readonly perfilesRecursos = computed<PerfilRecursos[]>(() => {
+    const sesion = this.sesion();
+    const perfiles: PerfilRecursos[] = [];
+    if (tieneAlgunRol(sesion, [ROLES.alumno])) perfiles.push('alumno');
+    if (tieneAlgunRol(sesion, [ROLES.docente])) perfiles.push('docente');
+    return perfiles;
+  });
 
   /** La campana del encabezado, igual en todas las pantallas (`CampanaService`). */
   protected readonly notificaciones = this.campana.total;

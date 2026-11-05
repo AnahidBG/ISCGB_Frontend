@@ -32,6 +32,7 @@ import { DocumentosRechazados } from '../../../shared/ui/documentos-rechazados/d
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { PasoTramite, ProgresoTramite } from '../../../shared/ui/progreso-tramite/progreso-tramite';
+import { RecursosDescargables } from '../../../shared/ui/recursos-descargables/recursos-descargables';
 import { TarjetaMetrica } from '../../../shared/ui/tarjeta-metrica/tarjeta-metrica';
 
 const ACCION_DOCENTE: AccionPanel = {
@@ -67,6 +68,7 @@ interface ProximoPaso {
     DocumentosRechazados,
     AccesoSiaade,
     RouterLink,
+    RecursosDescargables,
   ],
   templateUrl: './panel-docente.html',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -42,6 +42,7 @@ import { DocumentosRechazados } from '../../../shared/ui/documentos-rechazados/d
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { ListaContratos } from '../../../shared/ui/lista-contratos/lista-contratos';
+import { RecursosDescargables } from '../../../shared/ui/recursos-descargables/recursos-descargables';
 import { PasoTramite, ProgresoTramite } from '../../../shared/ui/progreso-tramite/progreso-tramite';
 
 const ACCION_ALUMNO: AccionPanel = {
@@ -76,6 +77,7 @@ const ACCION_ALUMNO: AccionPanel = {
     DocumentosRechazados,
     AccesoSiaade,
     ListaContratos,
+    RecursosDescargables,
   ],
   templateUrl: './panel-alumno.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
