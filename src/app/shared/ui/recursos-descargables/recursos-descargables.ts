@@ -48,8 +48,8 @@ const ENCABEZADO_POR_TIPO: Readonly<
  *
  * Presentacional: recibe el perfil (y, si hace falta, qué tipo de material) y
  * dibuja lo que corresponde; la lista vive en `RECURSOS_POR_PERFIL`. La
- * documentación se ve desde "Mi perfil" y los tutoriales desde el Inicio de cada
- * rol. Cada material es una carpeta de Google Drive que abre en otra pestaña. Si
+ * documentación y los tutoriales se ven en el panel de cada rol, en dos
+ * secciones. Cada material es una carpeta de Google Drive que abre en otra pestaña. Si
  * todavía no hay nada cargado (`enlace` nulo) avisa en lugar de dejar un enlace
  * roto.
  */

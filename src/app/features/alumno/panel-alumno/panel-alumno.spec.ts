@@ -256,3 +256,12 @@ describe('PanelAlumno: contratos (SCRUM-227)', () => {
     expect(raiz(sinContratos).querySelector('[data-seccion="contratos"]')).toBeNull();
   });
 });
+
+describe('PanelAlumno: documentación y tutoriales (SCRUM-228 y SCRUM-231)', () => {
+  it('muestra en el panel la documentación para descargar y los tutoriales', async () => {
+    const texto = raiz(await montar([])).textContent ?? '';
+
+    expect(texto).toContain('Documentos y formatos estudiantiles');
+    expect(texto).toContain('Tutoriales para estudiantes');
+  });
+});
