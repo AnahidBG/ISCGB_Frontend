@@ -258,3 +258,12 @@ describe('PanelDocente: aviso de legajo completo (SCRUM-153)', () => {
     expect(texto).toContain('Renovar documentación');
   });
 });
+
+describe('PanelDocente: documentación y tutoriales (SCRUM-229 a SCRUM-231)', () => {
+  it('muestra en el panel la documentación para descargar y los tutoriales', async () => {
+    const texto = raiz(await montar([])).textContent ?? '';
+
+    expect(texto).toContain('ARCA, BDO (Encode) y certificado de servicios.');
+    expect(texto).toContain('Tutoriales de herramientas');
+  });
+});
