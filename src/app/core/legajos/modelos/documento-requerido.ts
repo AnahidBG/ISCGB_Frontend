@@ -29,8 +29,8 @@ export interface NuevoDocumentoLegajo {
    * ⚠️ Tiene que ser PDF (CLAUDE.md, regla de negocio #1). El frontend valida
    * la extensión por UX, pero eso NO es seguridad: cualquiera renombra un
    * .exe a .pdf. La validación real —por contenido, mirando los primeros
-   * bytes— va del lado del backend, y hoy `LegajosController` no la hace
-   * (ver docs/verificacion-backend.md → punto 5).
+   * bytes— la hace `LegajosController` desde el 10/11/2026, aunque además
+   * deja pasar JPG y PNG (ver docs/verificacion-backend.md → punto 5).
    */
   archivo: File;
 }
