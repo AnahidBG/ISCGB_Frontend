@@ -995,7 +995,8 @@ confirmación, y el mensaje final dice si la cuenta quedó inactiva
 
 Dirección y Secretaría cargan en el perfil del alumno los contratos firmados,
 sellados y digitalizados, como el convenio de la beca; el alumno los ve y los
-descarga desde su panel. El frontend usa `ContratosHttpService` contra
+descarga desde su panel y desde "Mis contratos" (`/alumno/contratos`, en su
+menú). El frontend usa `ContratosHttpService` contra
 `ContratosAlumnoController`; el mock queda solo para desarrollo aislado.
 
 ### `POST /api/ContratosAlumno`
@@ -1031,8 +1032,10 @@ desde `/uploads` porque es un documento personal. Si el registro o el archivo no
 existe, responde `404`.
 
 El frontend lo usa en "Contratos de alumnos" (`/secretario/contratos`, solo
-Dirección y Secretaría) y en la tarjeta "Mis contratos" del panel del alumno,
-que aparece solo si tiene alguno. No hay un endpoint para borrar contratos.
+Dirección y Secretaría), en la tarjeta "Mis contratos" del panel del alumno,
+que aparece solo si tiene alguno, y en la pantalla "Mis contratos"
+(`/alumno/contratos`), que avisa si el pedido falla y deja reintentar. No hay
+un endpoint para borrar contratos.
 
 ## Materias y asignaciones
 

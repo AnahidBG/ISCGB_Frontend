@@ -319,10 +319,10 @@ la pantalla cuenta cuántos hay cada día, pero no dice de qué materia son.
       semana) y el día enfocado tiene contorno. Tab saca del calendario.
 - [ ] Un lector de pantalla dice cada día como "13 de octubre, 1 de 2 parciales", y
       agrega "completo" en los que alcanzaron el límite.
-- [ ] Con Secretario o Director, tocar un día no hace nada: solo el Docente puede
-      elegirlos.
-- [ ] Un Alumno no tiene el enlace en el menú, y la dirección `/calendario` lo manda
-      a su panel con el aviso de acceso denegado.
+- [ ] Con Secretario, Director o Alumno, tocar un día no hace nada: solo el Docente
+      puede elegirlos.
+- [ ] Un Alumno tiene "Calendario de parciales" en el menú y ve los parciales del
+      mes, sin poder registrar, mover ni eliminar ninguno.
 
 ### Registrar un parcial
 

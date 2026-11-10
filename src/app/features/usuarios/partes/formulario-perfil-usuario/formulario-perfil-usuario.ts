@@ -69,7 +69,8 @@ function tildesDe(roles: readonly Rol[]): TildesDeRol {
  * arrancar y si está enviando, y emite el `PerfilUsuario` ya limpio (DNI y
  * CUIL solo dígitos, textos con `trim()`). Mismo patrón que
  * `FormularioLogin` y `FormularioProgramaMateria`. Vive en
- * `features/director/partes/` y no en `shared/` porque solo lo usa Dirección.
+ * `features/usuarios/partes/` y no en `shared/` porque solo lo usan esas dos
+ * pantallas, que comparten Dirección y Secretaría.
  *
  * Las secciones siguen el criterio de aceptación al pie de la letra:
  * "Datos personales" (nombre, CUIL, DNI, correo, sexo/género, domicilio,

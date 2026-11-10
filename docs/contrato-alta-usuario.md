@@ -14,6 +14,14 @@ En `Controllers/CargaUsuarioController.cs` de `ISCGB_Backend`, rama `main`. La
 clase se llama `UsuariosAdminController`, así que la ruta es `api/UsuariosAdmin`
 y no `api/CargaUsuario`.
 
+La clase entera es `[Authorize(Roles = "Director,Secretario")]`: Dirección y
+Secretaría dan de alta, modifican, dan de baja y reactivan, y el backend no
+limita qué roles asigna cada uno. En el front las pantallas son
+`/usuarios/nuevo` y `/usuarios/:idUsuario/editar`, en `features/usuarios/`, con
+`roleGuard` para los mismos dos roles. El Director llega desde su panel y el
+Secretario desde "Listado de personas"; los dos tienen "Nuevo Usuario" en el
+menú (10/11/2026).
+
 Contra un backend sin ese controlador las rutas responden 404 sin cuerpo, y la
 pantalla avisa que la gestión de usuarios todavía no está habilitada.
 

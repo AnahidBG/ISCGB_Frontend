@@ -84,23 +84,24 @@ export const routes: Routes = [
   },
   {
     // Alta de usuarios — Sprint 2, "Gestión de usuarios y roles" (SCRUM-16).
-    // Solo Director: ISCGB-PROJECT.md le da a ese rol el alta/baja de
-    // usuarios y roles. Pega contra `POST /api/UsuariosAdmin/alta` —
-    // ver docs/contrato-alta-usuario.md.
-    path: 'director/usuarios/nuevo',
+    // Dirección y Secretaría: `UsuariosAdminController` es
+    // `[Authorize(Roles = "Director,Secretario")]` y no limita qué roles asigna
+    // cada uno. Pega contra `POST /api/UsuariosAdmin/alta` — ver
+    // docs/contrato-alta-usuario.md.
+    path: 'usuarios/nuevo',
     title: 'Nuevo usuario · ISCGB',
-    canActivate: [authGuard, roleGuard(ROLES.director)],
+    canActivate: [authGuard, roleGuard(ROLES.director, ROLES.secretario)],
     loadComponent: () =>
-      import('./features/director/alta-usuario/alta-usuario').then((m) => m.AltaUsuario),
+      import('./features/usuarios/alta-usuario/alta-usuario').then((m) => m.AltaUsuario),
   },
   {
-    // Modificación y BAJA de usuarios — el complemento de "Nuevo Usuario".
-    // `PUT /api/UsuariosAdmin/modificar/{id}` y `.../baja/{id}`.
-    path: 'director/usuarios/:idUsuario/editar',
+    // Modificación y BAJA de usuarios — el complemento de "Nuevo Usuario", con
+    // los mismos roles. `PUT /api/UsuariosAdmin/modificar/{id}` y `.../baja/{id}`.
+    path: 'usuarios/:idUsuario/editar',
     title: 'Editar usuario · ISCGB',
-    canActivate: [authGuard, roleGuard(ROLES.director)],
+    canActivate: [authGuard, roleGuard(ROLES.director, ROLES.secretario)],
     loadComponent: () =>
-      import('./features/director/editar-usuario/editar-usuario').then((m) => m.EditarUsuario),
+      import('./features/usuarios/editar-usuario/editar-usuario').then((m) => m.EditarUsuario),
   },
   {
     // Documentos pendientes de revisión de todo el instituto. Datos de
@@ -352,13 +353,27 @@ export const routes: Routes = [
       ),
   },
   {
+    // Los contratos que le cargaron al alumno, para verlos y descargarlos
+    // (SCRUM-227). `GET /api/ContratosAlumno/mis-contratos`. Solo Alumno: Dirección
+    // y Secretaría los ven por alumno en /secretario/contratos.
+    path: 'alumno/contratos',
+    title: 'Mis contratos · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.alumno)],
+    loadComponent: () =>
+      import('./features/alumno/mis-contratos/mis-contratos').then((m) => m.MisContratos),
+  },
+  {
     // Calendario de exámenes parciales — Sprint 3 (SCRUM-183): consulta del
-    // estado de cada día del mes. `GET /api/ConfiguracionCalendario/estado-mes`.
-    // Docente, Secretario y Director: el Alumno no lo ve. El backend no exige
-    // rol en ese endpoint, así que acá el `roleGuard` es lo único que lo limita.
+    // estado de cada día del mes. `GET /api/ConfiguracionCalendario/estado-mes`
+    // y `del-mes`, que piden sesión sin rol. Los cuatro roles: el Docente
+    // registra y mueve los parciales de sus materias, Secretaría y Dirección
+    // fijan el límite, y el Alumno solo consulta.
     path: 'calendario',
     title: 'Calendario de parciales · ISCGB',
-    canActivate: [authGuard, roleGuard(ROLES.docente, ROLES.secretario, ROLES.director)],
+    canActivate: [
+      authGuard,
+      roleGuard(ROLES.docente, ROLES.secretario, ROLES.director, ROLES.alumno),
+    ],
     loadComponent: () =>
       import('./features/calendario/calendario-examenes/calendario-examenes').then(
         (m) => m.CalendarioExamenes,

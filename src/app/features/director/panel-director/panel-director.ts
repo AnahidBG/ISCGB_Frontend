@@ -25,7 +25,7 @@ import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga'
  */
 const ACCION_DIRECTOR: AccionPanel = {
   etiqueta: 'Nuevo Usuario',
-  url: '/director/usuarios/nuevo',
+  url: '/usuarios/nuevo',
   icono: 'usuarios',
 };
 

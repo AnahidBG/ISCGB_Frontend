@@ -4,6 +4,13 @@ import { Sesion, tieneAlgunRol } from '../../../core/auth/modelos/sesion';
 import { ENLACES_COMUNES } from './enlaces-comunes';
 import { EnlacePanel } from './estructura-panel';
 
+/** El calendario de parciales: lo registra el Docente y lo consulta el Alumno. */
+const ENLACE_CALENDARIO: EnlacePanel = {
+  etiqueta: 'Calendario de parciales',
+  url: '/calendario',
+  icono: 'calendario',
+};
+
 /** Casos particulares que cambian qué enlaces arma `enlacesPorSesion`. */
 export interface OpcionesEnlacesPorRol {
   /**
@@ -48,11 +55,10 @@ export function enlacesPorSesion(
     { etiqueta: 'Dashboard', url: destinoSegunRoles(sesion), icono: 'panel' },
   ];
 
-  if (tieneAlgunRol(sesion, [ROLES.director])) {
-    enlaces.push({ etiqueta: 'Nuevo Usuario', url: '/director/usuarios/nuevo', icono: 'usuarios' });
-  }
-
   if (tieneAlgunRol(sesion, [ROLES.director, ROLES.secretario])) {
+    // El alta, la edición y la baja son de los dos: `UsuariosAdmin` es
+    // `[Authorize(Roles = "Director,Secretario")]`.
+    enlaces.push({ etiqueta: 'Nuevo Usuario', url: '/usuarios/nuevo', icono: 'usuarios' });
     if (tieneAlgunRol(sesion, [ROLES.secretario])) {
       enlaces.push({
         etiqueta: 'Listado de personas',
@@ -136,6 +142,17 @@ export function enlacesPorSesion(
       url: '/alumno/reconocimiento-saberes',
       icono: 'legajo',
     });
+    // Los contratos que le cargaron, como el de la beca (SCRUM-227).
+    enlaces.push({
+      etiqueta: 'Mis contratos',
+      url: '/alumno/contratos',
+      icono: 'documento',
+    });
+    // Consulta los parciales del mes sin cargar nada. Si además es Docente, el
+    // enlace va con los suyos, más abajo, y no se repite.
+    if (!tieneAlgunRol(sesion, [ROLES.docente])) {
+      enlaces.push(ENLACE_CALENDARIO);
+    }
   }
 
   // Sin `else`, a propósito: una sesión Director+Docente (el caso real de
@@ -147,13 +164,8 @@ export function enlacesPorSesion(
       url: '/docente/entrega-programa',
       icono: 'legajo',
     });
-    // El Alumno no ve el calendario, y Secretaría y Dirección llegan a él desde
-    // "Límite de parciales".
-    enlaces.push({
-      etiqueta: 'Calendario de parciales',
-      url: '/calendario',
-      icono: 'calendario',
-    });
+    // Secretaría y Dirección llegan al calendario desde "Límite de parciales".
+    enlaces.push(ENLACE_CALENDARIO);
     // Las mesas de examen a las que lo convocaron, para aceptarlas o rechazarlas (SCRUM-246).
     enlaces.push({
       etiqueta: 'Mis mesas de examen',

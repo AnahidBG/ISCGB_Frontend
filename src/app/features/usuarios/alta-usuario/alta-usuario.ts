@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { PerfilUsuario } from '../../../core/usuarios/modelos/perfil-usuario';
@@ -19,10 +20,10 @@ import { FormularioPerfilUsuario } from '../partes/formulario-perfil-usuario/for
  * "Editar Usuario"); acá solo se habla con `UsuariosService` y se decide qué
  * mostrar después.
  *
- * Es del Director y de nadie más: ISCGB-PROJECT.md le da a ese rol el
- * "alta/baja/modificación de usuarios y roles". La ruta está protegida con
- * `roleGuard(ROLES.director)` — y el backend tiene que protegerla con
- * `[Authorize(Roles = "Director")]` (hoy está comentado en el controlador).
+ * Es de Dirección y de Secretaría: el backend protege `UsuariosAdmin` con
+ * `[Authorize(Roles = "Director,Secretario")]` y no limita qué roles asigna
+ * cada uno, y la ruta usa `roleGuard` con los mismos dos roles. "Volver" lleva
+ * al panel de quien está cargando (`destinoSegunRoles`).
  *
  * Pega contra `POST /api/UsuariosAdmin/alta`. Ese endpoint NO recibe
  * contraseña: la persona nace con la contraseña pendiente y el backend le
@@ -55,6 +56,9 @@ export class AltaUsuario {
   protected readonly notificacionesDetalle = this.campana.detalle;
 
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
+
+  /** El panel de quien está cargando: Dirección o Secretaría. */
+  protected readonly panel = computed(() => destinoSegunRoles(this.sesion()));
 
   protected readonly enviando = signal(false);
   protected readonly error = signal<string | null>(null);
@@ -109,7 +113,7 @@ export class AltaUsuario {
   }
 
   protected volverAlPanel(): void {
-    this.router.navigate(['/director/panel']);
+    this.router.navigateByUrl(this.panel());
   }
 
   protected cerrarSesion(): void {

@@ -37,7 +37,7 @@ src/app/
 │               legajos · materias · notificaciones · programas-materia · reconocimiento-saberes · usuarios
 ├── features/   alumno · auth · calendario · configuracion · crear-password · director · docente · inicio ·
 │               justificativos · legajo · materias · mesas · no-encontrado · perfil ·
-│               recuperar-contrasena · restablecer-password · secretario · sistema-diseno
+│               recuperar-contrasena · restablecer-password · secretario · sistema-diseno · usuarios
 ├── shared/directivas/  si-rol
 └── shared/ui/  aviso-legajo-completo · boton · campo-formulario · dialogo-confirmacion ·
                 documentacion-por-entregar · documentos-rechazados · encabezado · estructura-panel ·
@@ -47,12 +47,13 @@ src/app/
 
 Las rutas, por rol:
 
-- Director: `/director/panel`, `/director/usuarios/nuevo` y `/director/usuarios/:idUsuario/editar`.
+- Director: `/director/panel`.
 - Secretario: `/secretario/panel`, `/secretario/listados`, `/secretario/control-legajos`, `/secretario/reconocimiento-saberes`, `/secretario/frecuencia-avisos` y `/secretario/limite-parciales`, que también abre el Director.
 - Docente: `/docente/panel` y `/docente/entrega-programa`.
-- Alumno: `/alumno/panel`, `/alumno/certificado/regular`, `/alumno/certificado/regular-con-horario` y `/alumno/reconocimiento-saberes`.
+- Alumno: `/alumno/panel`, `/alumno/certificado/regular`, `/alumno/certificado/regular-con-horario`, `/alumno/reconocimiento-saberes` y `/alumno/contratos`.
 - Compartidas: `/legajo/subir-documento`, `/legajo/mis-documentos`, `/legajo/usuario/:idUsuario`, `/materias/asignaciones`, `/justificativos/cargar`, `/perfil` (Mi perfil: cada persona edita sus datos de contacto), `/configuracion` (cambio de contraseña con el enlace por mail) e `/inicio`.
-- Docente, Secretario y Director: `/calendario`, el calendario de exámenes parciales. El Alumno no lo ve.
+- Director y Secretario: `/usuarios/nuevo` y `/usuarios/:idUsuario/editar`, el alta, la edición y la baja de usuarios.
+- Los cuatro roles: `/calendario`, el calendario de exámenes parciales. El Docente registra y mueve los suyos, y el Alumno solo consulta.
 - Públicas: `/login`, `/crear-password` (mail de alta), `/recuperar-contrasena` y `/restablecer-password` (mail de recupero).
 
 ### Patrones de diseño

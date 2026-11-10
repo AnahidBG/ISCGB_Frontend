@@ -39,11 +39,14 @@ describe('enlacesPorSesion', () => {
     }
   });
 
-  it('"Calendario de parciales" es del Docente y el Alumno ya no lo tiene', () => {
-    expect(etiquetasDe('Docente')).toContain('Calendario de parciales');
-    expect(urlsDe('Docente')).toContain('/calendario');
+  it('"Calendario de parciales" es del Docente y del Alumno, una sola vez si tiene los dos roles', () => {
+    for (const rol of ['Docente', 'Alumno'] as const) {
+      expect(etiquetasDe(rol)).toContain('Calendario de parciales');
+      expect(urlsDe(rol)).toContain('/calendario');
+    }
+    expect(urlsDe('Docente', 'Alumno').filter((url) => url === '/calendario')).toHaveLength(1);
 
-    for (const rol of ['Alumno', 'Secretario', 'Director'] as const) {
+    for (const rol of ['Secretario', 'Director'] as const) {
       expect(urlsDe(rol)).not.toContain('/calendario');
     }
   });
@@ -78,11 +81,31 @@ describe('enlacesPorSesion', () => {
     }
   });
 
+  it('"Nuevo Usuario" es de Dirección y Secretaría: el back les deja a los dos el alta', () => {
+    for (const rol of ['Director', 'Secretario'] as const) {
+      expect(urlsDe(rol)).toContain('/usuarios/nuevo');
+    }
+    for (const rol of ['Docente', 'Alumno'] as const) {
+      expect(urlsDe(rol)).not.toContain('/usuarios/nuevo');
+    }
+  });
+
   it('"Contratos de alumnos" es de Dirección y Secretaría (SCRUM-227)', () => {
     expect(urlsDe('Secretario')).toContain('/secretario/contratos');
     expect(urlsDe('Director')).toContain('/secretario/contratos');
     for (const rol of ['Docente', 'Alumno'] as const) {
       expect(urlsDe(rol)).not.toContain('/secretario/contratos');
+    }
+  });
+
+  it('"Mis contratos" es solo del Alumno, después de "Reconocimiento de saberes" (SCRUM-227)', () => {
+    const delAlumno = urlsDe('Alumno');
+
+    expect(delAlumno.indexOf('/alumno/contratos')).toBe(
+      delAlumno.indexOf('/alumno/reconocimiento-saberes') + 1,
+    );
+    for (const rol of ['Docente', 'Secretario', 'Director'] as const) {
+      expect(urlsDe(rol)).not.toContain('/alumno/contratos');
     }
   });
 

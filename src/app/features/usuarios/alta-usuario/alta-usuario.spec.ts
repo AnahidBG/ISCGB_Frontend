@@ -1,8 +1,9 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { Router, provideRouter } from '@angular/router';
 import { Observable, Subject, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
+import { Sesion } from '../../../core/auth/modelos/sesion';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { NotificacionPanel } from '../../../core/notificaciones/modelos/notificacion-panel';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
@@ -97,6 +98,31 @@ describe('AltaUsuario', () => {
     expect(texto).toContain('correo');
     expect(texto).not.toContain('equipo técnico');
     expect(texto).not.toContain('provisoria');
+  });
+
+  it('con sesión de Secretario, "Volver" y "Cancelar" llevan a su panel y no al del Director', async () => {
+    const secretario: Sesion = {
+      token: 't',
+      idUsuario: 5,
+      nombreCompleto: 'Sergio Secretario',
+      dni: '28111222',
+      email: 'sergio@ejemplo.com',
+      roles: ['Secretario'],
+      venceEl: new Date(Date.now() + 60_000),
+    };
+    TestBed.overrideProvider(AuthService, {
+      useValue: { sesion: signal(secretario), cerrarSesion: () => {} },
+    });
+    const { fixture, hijo } = await instanciaDelFormulario();
+    const navegar = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+    const encabezado = fixture.debugElement.query(
+      (d) => d.componentInstance instanceof EstructuraPanel,
+    ).componentInstance as EstructuraPanel;
+
+    hijo.cancelar.emit();
+
+    expect(encabezado.volverUrl()).toBe('/secretario/panel');
+    expect(navegar).toHaveBeenCalledWith('/secretario/panel');
   });
 
   it('pide el refresco de la campana y le pasa al encabezado el total y el detalle del servicio', async () => {
