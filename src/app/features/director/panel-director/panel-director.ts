@@ -17,6 +17,7 @@ import { AccionPanel, EstructuraPanel } from '../../../shared/ui/estructura-pane
 import { FiltroSegmentado, OpcionFiltro } from '../../../shared/ui/filtro-segmentado/filtro-segmentado';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
+import { RevisionJustificativos } from '../../justificativos/revision-justificativos/revision-justificativos';
 
 /**
  * El botón verde del encabezado. Dar de alta a alguien es LA acción del
@@ -60,10 +61,23 @@ const FILTROS_DE_ROL: readonly OpcionFiltro<FiltroRolUsuario>[] = [
  * Filtro por rol: los mismos chips que Control de Legajos
  * (`filtro-segmentado`). Filtra solo la tabla; las tarjetas de arriba siguen
  * contando todo el instituto. Alguien con dos roles aparece en los dos filtros.
+ *
+ * Arriba de todo van los justificativos de inasistencia pendientes
+ * (`RevisionJustificativos`, la misma lista que el Panel del Secretario): el
+ * Director también los aprueba o rechaza con motivo, y así el justificativo de
+ * un Secretario no depende de que lo revise Secretaría. Carga aparte del
+ * listado: si uno falla, el otro se ve igual.
  */
 @Component({
   selector: 'app-panel-director',
-  imports: [EstructuraPanel, FiltroSegmentado, InsigniaEstado, PantallaCarga, RouterLink],
+  imports: [
+    EstructuraPanel,
+    FiltroSegmentado,
+    InsigniaEstado,
+    PantallaCarga,
+    RouterLink,
+    RevisionJustificativos,
+  ],
   templateUrl: './panel-director.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

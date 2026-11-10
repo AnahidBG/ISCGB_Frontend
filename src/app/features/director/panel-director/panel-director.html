@@ -11,6 +11,8 @@
   [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
+  <app-revision-justificativos class="mb-6 sm:mb-8" />
+
   @if (cargando()) {
     <app-pantalla-carga tamano="md" mensaje="Cargando el listado del instituto…" />
   } @else if (errorCarga()) {

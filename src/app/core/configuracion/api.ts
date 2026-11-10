@@ -239,8 +239,9 @@ export const RUTAS_API = {
   cargarJustificativo: `${URL_BASE_API}/api/Justificativos/cargar`,
 
   /**
-   * Aprobar/rechazar un justificativo. Director y Secretario. El auditor sale del
-   * token desde el 10/11/2026: el `idUsuarioAuditor` del body se ignora.
+   * Aprobar/rechazar un justificativo. Director y Secretario. Body: `{ estado,
+   * comentario? }`; el auditor sale del token desde el 10/11/2026. Al rechazar,
+   * el backend manda el `comentario` por mail como motivo y no lo guarda.
    */
   auditarJustificativo: (idJustificativo: number) =>
     `${URL_BASE_API}/api/Justificativos/auditar/${idJustificativo}`,

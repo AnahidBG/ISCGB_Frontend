@@ -175,7 +175,7 @@ Los nombres de días y meses salen del locale `es-AR`, registrado en `app.config
 
 La grilla ya sabe listar parciales en su día, y modificarlos, eliminarlos y arrastrarlos está hecho, pero contra la API real no hay ninguno que listar hasta que el backend tenga el endpoint: el parcial recién registrado no aparece con su materia, solo cambia el color del día, y nada de lo anterior se ve fuera del servicio simulado. Los pendientes están en `docs/contrato-api.md`.
 
-**Rechazo con motivo obligatorio.** Hecho en legajos el 05/10/2026: el catálogo único `MOTIVOS_RECHAZO`, en `core/legajos/motivos-rechazo.ts`, tiene los 7 motivos de la institución, con una aclaración opcional en lugar de "Otro". `comentarioDeRechazo(motivos, aclaracion)` arma el texto y el presentacional `mis-documentos/partes/cuadro-rechazo` no confirma sin al menos un motivo (CP23). **Falta en justificativos:** el catálogo es el mismo, pero el PUT no recibe comentario.
+**Rechazo con motivo obligatorio.** Hecho en legajos el 05/10/2026: el catálogo único `MOTIVOS_RECHAZO`, en `core/legajos/motivos-rechazo.ts`, tiene los 7 motivos de la institución, con una aclaración opcional en lugar de "Otro". `comentarioDeRechazo(motivos, aclaracion)` arma el texto y el presentacional `shared/ui/cuadro-rechazo` no confirma sin al menos un motivo (CP23). Desde el 10/11/2026 también lo usan los justificativos (`revision-justificativos`): el PUT recibe `comentario` y el backend lo manda por mail.
 
 **Cambios sin guardar.** Memento liviano más un guard: se guarda una foto del valor inicial del formulario, se compara con la actual, y un `canDeactivate` reutilizable pregunta antes de salir. Ya lo usa la entrega del programa de materia, con `confirmarSalidaGuard`.
 
@@ -191,7 +191,7 @@ Para corregir cuando se toquen esos archivos.
 
 1. El conteo de estados está duplicado. `panel-docente.ts` y `mis-documentos.ts` cuentan con `filter(d => d.estado === '...')`, cuando ya existe `contarPorEstado()` en `core/legajos/resumen-legajo.ts`.
 2. Los estados andan como texto suelto. Hay comparaciones con `'Aprobado'`, `'Pendiente'` y `'Rechazado'` repartidas por las features. Conviene un único `EstadoDocumento` con sus constantes en `core/legajos/`; hoy el tipo está en `shared/ui/insignia-estado`.
-3. `mis-documentos.ts` tiene unas 600 líneas y mezcla la carga de datos, el armado de filas, el orden y la auditoría. Es candidato a separar en funciones puras en `core/legajos/` y a partir la UI en `partes/`. El primer paso ya está: el cuadro de rechazo vive en `partes/cuadro-rechazo`.
+3. `mis-documentos.ts` tiene unas 600 líneas y mezcla la carga de datos, el armado de filas, el orden y la auditoría. Es candidato a separar en funciones puras en `core/legajos/` y a partir la UI en `partes/`. El primer paso ya está: el cuadro de rechazo se separó, y hoy vive en `shared/ui/cuadro-rechazo` porque también lo usan los justificativos.
 4. La barra de progreso de los paneles cuenta un documento como aprobado si alguna de sus versiones lo está, mientras que `legajoEstaCompleto` mira solo la vigente. Desde el 10/11/2026 un aprobado vencido (`estaVencido`) ya no suma, así que el caso del anual vencido y vuelto a subir quedó resuelto; la diferencia sigue con otros casos, como un aprobado al que después le rechazaron una versión nueva.
 5. `calendario-examenes.ts` pasó las 550 líneas: junta la carga del mes, el registro, la reprogramación, la baja y el arrastre. Conviene sacar la carga del mes (`CargaMes` y su pedido) y las acciones sobre un parcial a archivos propios.
 

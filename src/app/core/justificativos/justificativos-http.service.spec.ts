@@ -4,7 +4,10 @@ import { TestBed } from '@angular/core/testing';
 import { SIN_CARGA_GLOBAL } from '../carga/carga.interceptor';
 import { RUTAS_API } from '../configuracion/api';
 import { JustificativosHttpService } from './justificativos-http.service';
-import { MENSAJE_ERROR_MIS_JUSTIFICATIVOS } from './justificativos.service';
+import {
+  MENSAJE_ERROR_AUDITORIA,
+  MENSAJE_ERROR_MIS_JUSTIFICATIVOS,
+} from './justificativos.service';
 import { JustificativoPropio } from './modelos/justificativo-propio';
 
 describe('JustificativosHttpService', () => {
@@ -36,6 +39,43 @@ describe('JustificativosHttpService', () => {
       const pedido = backend.expectOne(RUTAS_API.justificativosPendientes);
       expect(pedido.request.context.get(SIN_CARGA_GLOBAL)).toBe(false);
       pedido.flush([]);
+    });
+  });
+
+  describe('auditar', () => {
+    it('aprobar manda solo el estado: el auditor sale del token', () => {
+      servicio.auditar(9, { veredicto: 'Aprobado' }).subscribe();
+
+      const pedido = backend.expectOne(RUTAS_API.auditarJustificativo(9));
+      expect(pedido.request.method).toBe('PUT');
+      expect(pedido.request.body).toEqual({ estado: 'Aprobado' });
+      pedido.flush({ message: 'Justificativo aprobado con éxito' });
+    });
+
+    it('rechazar manda el motivo como `comentario`, que el backend pone en el mail', () => {
+      servicio
+        .auditar(9, { veredicto: 'Rechazado', motivo: 'El certificado no tiene firma.' })
+        .subscribe();
+
+      const pedido = backend.expectOne(RUTAS_API.auditarJustificativo(9));
+      expect(pedido.request.body).toEqual({
+        estado: 'Rechazado',
+        comentario: 'El certificado no tiene firma.',
+      });
+      pedido.flush({ message: 'Justificativo rechazado con éxito' });
+    });
+
+    it('si falla, da un mensaje legible', () => {
+      let mensaje = '';
+      servicio
+        .auditar(9, { veredicto: 'Aprobado' })
+        .subscribe({ error: (e: Error) => (mensaje = e.message) });
+
+      backend
+        .expectOne(RUTAS_API.auditarJustificativo(9))
+        .flush(null, { status: 500, statusText: 'Server Error' });
+
+      expect(mensaje).toBe(MENSAJE_ERROR_AUDITORIA);
     });
   });
 

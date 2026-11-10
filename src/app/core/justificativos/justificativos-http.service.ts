@@ -10,6 +10,7 @@ import {
 } from './modelos/justificativo-pendiente';
 import { JustificativoPropio } from './modelos/justificativo-propio';
 import {
+  AuditoriaJustificativo,
   JustificativosService,
   MENSAJE_CARGA_POR_DEFECTO,
   MENSAJE_ERROR_AUDITORIA,
@@ -22,6 +23,13 @@ import {
 /** Lo único que devuelve `POST /api/Justificativos/cargar` en un 200. */
 interface RespuestaCargaApi {
   message?: string;
+}
+
+/** El cuerpo del `PUT /api/Justificativos/auditar/{id}`. */
+interface AuditarJustificativoApi {
+  estado: VeredictoAuditoria;
+  /** El motivo del rechazo. El backend lo pone en el correo y no lo guarda. */
+  comentario?: string;
 }
 
 /**
@@ -80,16 +88,16 @@ export class JustificativosHttpService extends JustificativosService {
     );
   }
 
-  auditar(
-    idJustificativo: number,
-    veredicto: VeredictoAuditoria,
-    idUsuarioAuditor: number,
-  ): Observable<void> {
+  auditar(idJustificativo: number, auditoria: AuditoriaJustificativo): Observable<void> {
+    // `AuditarJustificativoDto`. Sin `idUsuarioAuditor`: desde el 10/11/2026 el
+    // backend lo ignora y usa el del token. El `comentario` va solo al rechazar.
+    const cuerpo: AuditarJustificativoApi =
+      auditoria.veredicto === 'Rechazado'
+        ? { estado: auditoria.veredicto, comentario: auditoria.motivo }
+        : { estado: auditoria.veredicto };
+
     return this.http
-      .put(RUTAS_API.auditarJustificativo(idJustificativo), {
-        idUsuarioAuditor,
-        estado: veredicto,
-      })
+      .put(RUTAS_API.auditarJustificativo(idJustificativo), cuerpo)
       .pipe(
         map(() => undefined),
         catchError((error: HttpErrorResponse) => {

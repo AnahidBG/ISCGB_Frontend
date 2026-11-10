@@ -490,7 +490,7 @@ Cómo se arma:
 
 La lista y el armado del texto están en `core/legajos/motivos-rechazo.ts`
 (`MOTIVOS_RECHAZO` y `comentarioDeRechazo`). El cuadro es
-`features/legajo/mis-documentos/partes/cuadro-rechazo`.
+`shared/ui/cuadro-rechazo`: lo usan el legajo y los justificativos.
 
 `legajo.comentario` es `varchar(max)` y `AuditoriaLegajoDto.Comentario` no
 tiene `[MaxLength]`. Los 7 motivos juntos suman 228 caracteres, así que la
@@ -501,15 +501,34 @@ El Docente y el Alumno ven el motivo completo en Mis Documentos, en la tarjeta
 "Documentación rechazada" del panel y en la campana. Los rechazos viejos, con
 motivo libre, se muestran igual.
 
-Dos pendientes del backend:
+### El rechazo de un justificativo
 
-- `PUT /api/Justificativos/auditar/{id}` recibe
-  `AuditarJustificativoDto { idUsuarioAuditor, estado }`, sin `comentario`. El
-  motivo del rechazo de un justificativo no tiene a dónde ir. Cuando exista el
-  campo, se reusan el cuadro de rechazo y `MOTIVOS_RECHAZO`.
-- El mail automático de rechazo. `IEmailService` tiene
-  `EnviarAvisoFaltantesAsync` para los avisos de faltantes, pero `AuditarLegajo`
-  y `AuditarJustificativo` no envían nada al rechazar.
+Desde el 10/11/2026 (`bd7b565`), `PUT /api/Justificativos/auditar/{id}` recibe
+`AuditarJustificativoDto { estado, comentario? }`. El auditor sale del token.
+Al pasar a `Rechazado`, el backend le manda un mail a la persona
+(`EnviarAvisoRechazoAsync`) con el período, el tipo y el `comentario` como
+motivo. El comentario **no se guarda**: solo viaja en el mail.
+
+```jsonc
+// PUT /api/Justificativos/auditar/{idJustificativo}
+{ "estado": "Rechazado", "comentario": "Falta sello y/o firma" }
+```
+
+El frontend manda `comentario` solo al rechazar, y no deja rechazar sin al
+menos un motivo: usa el mismo cuadro y los mismos `MOTIVOS_RECHAZO` que el
+legajo. La revisión está en `features/justificativos/revision-justificativos`,
+que usan el Panel del Secretario y el Panel del Director.
+
+Pendientes del backend:
+
+- `GET /api/Justificativos/pendientes` no dice de quién es cada uno (ni id ni
+  rol), y `auditar` no impide revisar el propio. Un Secretario puede aprobar su
+  propio justificativo. Haría falta `idUsuario` o el rol en
+  `JustificativoPendienteDto`, y que `auditar` responda 403 si
+  `justificativo.IdUsuario` es el del token.
+- Como el comentario no se guarda, la persona no ve el motivo en "Mis
+  justificativos": solo le queda el mail.
+- El mail dice "Secretaría revisó…" aunque haya rechazado el Director.
 
 ## Frecuencia de los avisos de documentación faltante
 

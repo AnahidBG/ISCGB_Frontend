@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { MOTIVOS_RECHAZO } from '../../../../../core/legajos/motivos-rechazo';
+import { MOTIVOS_RECHAZO } from '../../../core/legajos/motivos-rechazo';
 import { CuadroRechazo } from './cuadro-rechazo';
 
 describe('CuadroRechazo', () => {

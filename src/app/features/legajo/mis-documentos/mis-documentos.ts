@@ -30,7 +30,7 @@ import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { Icono } from '../../../shared/ui/icono/icono';
 import { InsigniaEstado } from '../../../shared/ui/insignia-estado/insignia-estado';
 import { TarjetaMetrica } from '../../../shared/ui/tarjeta-metrica/tarjeta-metrica';
-import { CuadroRechazo } from './partes/cuadro-rechazo/cuadro-rechazo';
+import { CuadroRechazo } from '../../../shared/ui/cuadro-rechazo/cuadro-rechazo';
 
 /** Las pestañas de arriba de la lista. */
 type Filtro = 'todos' | 'Aprobado' | 'Pendiente' | 'Rechazado' | 'sin-cargar';

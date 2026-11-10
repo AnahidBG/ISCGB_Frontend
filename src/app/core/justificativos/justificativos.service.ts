@@ -9,6 +9,15 @@ import { JustificativoPropio } from './modelos/justificativo-propio';
 /** Los dos únicos veredictos posibles. Ver CLAUDE.md, regla de negocio #3. */
 export type VeredictoAuditoria = 'Aprobado' | 'Rechazado';
 
+/**
+ * Lo que se decide al revisar un justificativo. Rechazar lleva SIEMPRE un
+ * motivo: es lo que le llega por correo a la persona, y sin él no sabe qué
+ * corregir. Aprobar no lo lleva.
+ */
+export type AuditoriaJustificativo =
+  | { veredicto: 'Aprobado' }
+  | { veredicto: 'Rechazado'; motivo: string };
+
 export const MENSAJE_ERROR_JUSTIFICATIVOS =
   'No pudimos traer los justificativos. Intentá de nuevo en un momento.';
 
@@ -35,26 +44,19 @@ export const MENSAJE_ERROR_MIS_JUSTIFICATIVOS =
  */
 export abstract class JustificativosService {
   /**
-   * Los que esperan revisión de Secretaría.
+   * Los que esperan revisión de Secretaría o Dirección.
    * `opciones.enSegundoPlano`: pedido accesorio, que no bloquee la pantalla.
    */
   abstract listarPendientes(opciones?: OpcionesPedido): Observable<JustificativoPendiente[]>;
 
   /**
-   * Aprobar o rechazar uno.
+   * Aprobar o rechazar uno. Director y Secretario; el auditor sale del token.
    *
-   * ⚠️ La regla de negocio #4 de CLAUDE.md pide que rechazar dispare un email
-   * automático al docente. El backend TODAVÍA NO LO HACE: `AuditarJustificativo`
-   * solo actualiza el estado y el auditor, no hay `IEmailService` en el
-   * proyecto (ver docs/verificacion-backend.md → punto 5). Por eso la pantalla
-   * que use esto tiene que avisarle a quien revisa que el aviso hay que
-   * mandarlo a mano por ahora — callarlo sería peor que no tener el botón.
+   * Desde el 10/11/2026, al rechazar el backend le manda un correo a la persona
+   * con el motivo (regla de negocio #4). El motivo NO se guarda en la base: solo
+   * viaja en ese correo.
    */
-  abstract auditar(
-    idJustificativo: number,
-    veredicto: VeredictoAuditoria,
-    idUsuarioAuditor: number,
-  ): Observable<void>;
+  abstract auditar(idJustificativo: number, auditoria: AuditoriaJustificativo): Observable<void>;
 
   /**
    * Cargar un justificativo nuevo. Devuelve el `message` del backend porque
