@@ -581,7 +581,7 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
       expect(bloqueo.querySelector('[role="alert"]')).not.toBeNull();
       expect(bloqueo.textContent).toContain('20 de octubre · Fecha bloqueada');
       expect(bloqueo.textContent).toContain(
-        'Ya se completó el máximo de parciales por día. Elegí otra fecha.',
+        'Algún año y comisión ya tiene ese día el máximo de parciales por día. Elegí otra fecha.',
       );
       expect(dialogo(fixture)).toBeNull();
       // Está arriba de la grilla, y el día completo se sigue leyendo como completo.

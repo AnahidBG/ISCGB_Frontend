@@ -22,6 +22,7 @@ import {
 } from './calendario-examenes.service';
 import { CalendarioDelMes } from './modelos/calendario-del-mes';
 import { ExamenCalendario } from './modelos/examen-calendario';
+import { GrupoDeAlumnos } from './modelos/grupo-de-alumnos';
 import { MateriaDelDocente } from './modelos/materia-del-docente';
 import { MesaAsignada } from './modelos/mesa-asignada';
 import { NuevoExamen } from './modelos/nuevo-examen';
@@ -85,9 +86,10 @@ export class CalendarioExamenesHttpService extends CalendarioExamenesService {
     anio: number,
     mes: number,
     opciones?: OpcionesPedido,
+    grupo?: GrupoDeAlumnos,
   ): Observable<CalendarioDelMes> {
     return this.http
-      .get<unknown>(RUTAS_API.estadoMesCalendario(anio, mes), {
+      .get<unknown>(RUTAS_API.estadoMesCalendario(anio, mes, grupo), {
         context: contextoDePedido(opciones),
       })
       .pipe(

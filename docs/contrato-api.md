@@ -585,9 +585,11 @@ días es solo del frontend.
 
 Todo está en `ConfiguracionCalendarioController`, en `api/ConfiguracionCalendario`.
 El archivo se llama `CalendarioExamenesController.cs`, pero la clase y la ruta
-no. La regla de negocio es un límite de exámenes **por día**, único para todo el
-instituto, que define Secretaría Académica. Hoy vale 2 si nunca se configuró. No
-hay límite por comisión.
+no. La regla de negocio es un límite de exámenes **por día**, que define Secretaría
+Académica. Hoy vale 2 si nunca se configuró. Desde el 10/11/2026 (`bd7b565`) se
+cuenta **por año (el curso de la materia) y comisión**: con límite 2, un día puede
+tener 2 de Primer Año A, 2 de Primer Año B y 2 de Segundo Año A. Por eso el curso
+de una materia se elige de una lista (`GET /api/Materias/cursos`).
 
 Esta sección se relevó el 10/10/2026 contra el código del backend, los endpoints
 `modificar` y `eliminar` se volvieron a verificar el 12/10/2026, y se actualizó el
@@ -612,13 +614,22 @@ sin `[Authorize]` `estado-mes`, `tipos-examen`, `modificar` y `eliminar`.
 
 ### `GET /api/ConfiguracionCalendario/estado-mes?anio=2026&mes=10`
 
-`mes` va de 1 a 12. Devuelve `200`:
+`mes` va de 1 a 12. Desde el 10/11/2026 acepta además `&idMateria=4&idComision=2`:
+la materia y la comisión que se están por cargar. Devuelve `200`:
 
 ```json
 {
   "limiteDiario": 2,
   "diasOcupados": [
-    { "fecha": "2026-10-13T00:00:00", "cantidadExamenes": 1, "limiteAlcanzado": false }
+    {
+      "fecha": "2026-10-13T00:00:00",
+      "cantidadExamenes": 3,
+      "limiteAlcanzado": false,
+      "porGrupo": [
+        { "curso": "Primer Año", "idComision": 1, "comision": "1° A", "cantidadExamenes": 1, "limiteAlcanzado": false },
+        { "curso": "Segundo Año", "idComision": 2, "comision": "2° A", "cantidadExamenes": 2, "limiteAlcanzado": true }
+      ]
+    }
   ]
 }
 ```
@@ -628,20 +639,28 @@ sin `[Authorize]` `estado-mes`, `tipos-examen`, `modificar` y `eliminar`.
 - `fecha` es un `DateTime` de .NET serializado sin zona, a medianoche. El frontend
   lo convierte con `desdeFechaSola` para que no se corra un día por la zona
   horaria.
-- `limiteAlcanzado` lo calcula el backend (`cantidadExamenes >= limiteDiario`). El
-  frontend no lo usa: calcula el estado de cada día él mismo con la cantidad y el
-  límite (`estadoDelDia`), que es la misma cuenta.
-- No hay más campos. No trae qué exámenes son, de qué materia ni a qué hora.
+- Sin `idMateria`/`idComision`, `cantidadExamenes` es el total del día y
+  `limiteAlcanzado` es `true` si **algún** año y comisión llegó al límite. Con
+  ellos, los dos son solo de ese grupo.
+- Cuentan los exámenes que cargan los docentes y las mesas pendientes o aceptadas;
+  no las mesas que todos rechazaron.
+- `porGrupo` trae el detalle de cada año y comisión. El frontend no lo usa.
 - Un mes inválido (0 o 13, por ejemplo) responde `500`: el controller arma un
   `DateTime` con el valor sin validarlo.
 
 El frontend arma con eso el modelo `CalendarioDelMes` (`aCalendarioDelMes`, en
 `core/examenes/adaptador-estado-mes.ts`): todos los días del mes, en orden, con
 `fecha` como `yyyy-MM-dd`, `cantidad` (0 en los que el backend no lista), `limite` y
-`estado`. El estado sale de `estadoDelDia(cantidad, limite)`: `disponible` sin
-parciales, `ocupado` si tiene alguno y falta para el límite, y `completo` si lo
-alcanzó. Si la cantidad o el límite no son números válidos, el día queda
-`disponible`.
+`estado`. El estado sale de `limiteAlcanzado`: `disponible` sin exámenes,
+`completo` si el backend dice que no hay lugar y `ocupado` si no. Ya no se calcula
+con `cantidad >= limite`: con varios grupos, un día con 3 exámenes y límite 2 puede
+tener lugar. Si `limiteAlcanzado` no viene (un backend anterior), se calcula como
+antes (`estadoDelDia`).
+
+`CalendarioExamenesService.calendarioDelMes(anio, mes, opciones, grupo)` manda el
+grupo cuando lo hay. Lo usa "Mesas de examen" para revisar el día de la mesa. La
+grilla de `/calendario` lo pide sin grupo, así que para el Docente un día
+"completo" quiere decir que algún año y comisión llegó, no necesariamente el suyo.
 
 Una entrada de `diasOcupados` que no se puede leer (una fecha inválida, o una
 cantidad que no es un entero de 0 para arriba) se descarta y ese día queda
@@ -699,8 +718,9 @@ Recibe `{ "nuevoLimite": 3 }` y cambia el límite de exámenes por día. Respond
 Con `nuevoLimite` en cero o negativo responde `400` con
 `{ "message": "El límite de parciales Diarios debe ser mayor a cero." }`.
 
-- El límite es por día y único para todo el instituto. Cuenta todos los tipos de
-  examen, no solo los parciales, aunque el endpoint se llame así.
+- El límite es por día y es un solo número, pero desde el 10/11/2026 se aplica a
+  cada año y comisión por separado. Cuenta todos los tipos de examen, no solo los
+  parciales, aunque el endpoint se llame así.
 - No hay un GET propio. El valor vigente se lee de `limiteDiario` en
   `estado-mes`, que es el mismo en cualquier mes:
   `CalendarioExamenesHttpService.limiteDiario()` pide el mes actual y se queda con
@@ -747,7 +767,7 @@ No verifica la comisión.
   `core/examenes/registro-examen.ts`. Nunca `toISOString()`: lo pasa a UTC y corre el
   examen tres horas (un parcial a las 23:30 caería al día siguiente).
 - El límite cuenta los exámenes de la misma fecha sin mirar la hora, de cualquier
-  materia, comisión o tipo.
+  tipo, del mismo año (curso de la materia) y la misma comisión.
 - No valida que la comisión ni el tipo existan: con ids inválidos responde `500`.
   Tampoco que la fecha no sea pasada. El frontend cuida la fecha (`errorDeDia`: no
   deja registrar en un día anterior a hoy) y ofrece solo las materias del docente de
@@ -942,7 +962,9 @@ Con `[Authorize(Roles = "Director,Secretario")]`. Recibe `RegistrarMesaDto`:
 Crea el examen y la asignación del docente en `Pendiente`, en una transacción.
 Responde `200` con `{ message, idExamen }`, `400` con
 `{ "message": "El docente seleccionado no existe." }` y `500` con un mensaje si
-falla el guardado. No respeta el límite de exámenes por día ni valida la fecha.
+falla el guardado. No valida la fecha. Desde el 10/11/2026 respeta el límite del
+día para el año y la comisión de la mesa (`400` "No se puede registrar la mesa: ese
+año y comisión ya tienen el máximo…") y le manda un mail al docente convocado.
 
 El frontend lo usa en "Mesas de examen" (`/mesas-examen`, Director y Secretario).
 `erroresDeNuevaMesa` (`core/mesas/nueva-mesa.ts`) exige todo, fecha desde hoy y
@@ -998,19 +1020,18 @@ igual los pendientes del instituto.
 
 ### Pendientes del backend
 
-- Ni `registrar-mesa` ni `asignar-docente` mandan el mail al docente, aunque el
-  mensaje de respuesta dice "Se ha notificado al profesor".
 - No hay un endpoint que liste las mesas creadas ni sus asignaciones: después de
-  crearla, la mesa solo se ve en el calendario del mes en curso (`del-mes`) y en la
-  campana del docente.
-- `registrar-mesa` no valida el límite de parciales del día, aunque la mesa se
-  guarda en `Examenes` y `estado-mes` la cuenta. Así, un día con 2 parciales y
-  límite 2 podía quedar con 3. Las mesas cuentan para el límite (lo definió Milena el
-  10/11/2026): el front revisa el día con `calendarioDelMes` antes de mandarla
-  (`motivoSinLugar`, `core/mesas/lugar-en-el-dia.ts`) y no la arma en un día
-  completo. Si no puede revisarlo, no la manda. Falta que el back llame a
-  `SuperaLimiteDiarioAsync` en `registrar-mesa`. `PUT limite-parciales` tampoco
-  revisa lo cargado: si se baja el límite, los días que ya lo superaban quedan así.
+  crearla, la mesa solo se ve en el calendario del mes en curso (`del-mes`), y
+  desde el 10/11/2026 recién cuando el docente la acepta.
+- `PUT limite-parciales` no revisa lo cargado: si se baja el límite, los días que
+  ya lo superaban quedan así.
+
+Resuelto el 10/11/2026 (`bd7b565`): `registrar-mesa` valida el límite del día (por
+año y comisión) y `registrar-mesa` y `asignar-docente` mandan el mail al docente.
+Las mesas cuentan para el límite (lo definió Milena el 10/11/2026): el front igual
+revisa el día con `calendarioDelMes` para el año y la comisión de la mesa antes de
+mandarla (`motivoSinLugar`, `core/mesas/lugar-en-el-dia.ts`), y si no puede
+revisarlo no la manda.
 
 ## Suplencias docentes
 

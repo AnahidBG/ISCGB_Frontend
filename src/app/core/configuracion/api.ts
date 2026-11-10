@@ -258,9 +258,18 @@ export const RUTAS_API = {
    * Qué días de un mes tienen exámenes y cuántos, más el límite diario. Mes de
    * 1 a 12. Solo trae los días con al menos un examen: el resto son libres. Un
    * mes inválido responde 500.
+   *
+   * Desde el 10/11/2026 el límite es por año y comisión. Con `grupo` (la materia
+   * y la comisión que se están por cargar) cada día cuenta solo ese grupo; sin
+   * él, un día figura lleno si algún grupo llegó al límite.
    */
-  estadoMesCalendario: (anio: number, mes: number) =>
-    `${URL_BASE_API}/api/ConfiguracionCalendario/estado-mes?anio=${anio}&mes=${mes}`,
+  estadoMesCalendario: (
+    anio: number,
+    mes: number,
+    grupo?: { idMateria: number; idComision: number },
+  ) =>
+    `${URL_BASE_API}/api/ConfiguracionCalendario/estado-mes?anio=${anio}&mes=${mes}` +
+    (grupo ? `&idMateria=${grupo.idMateria}&idComision=${grupo.idComision}` : ''),
 
   /**
    * Cambia el límite de exámenes por día. Body: `{ nuevoLimite }`. Solo se

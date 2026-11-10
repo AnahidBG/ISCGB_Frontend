@@ -34,13 +34,32 @@ describe('aCalendarioDelMes', () => {
     expect(aCalendarioDelMes(respuesta([]), mes).dias).toHaveLength(cantidad);
   });
 
-  it('el estado sale de la cantidad y del límite, y no del `limiteAlcanzado` del backend', () => {
+  it('el estado sale del `limiteAlcanzado` del backend: el límite es por año y comisión', () => {
+    // Desde el 10/11/2026 `cantidadExamenes` es el total del día, de todos los
+    // años y comisiones: 3 con límite 2 no es "completo" si ningún grupo llegó.
     const { dias } = aCalendarioDelMes(
-      respuesta([{ fecha: '2026-10-05T00:00:00', cantidadExamenes: 2, limiteAlcanzado: false }], 3),
+      respuesta([
+        { fecha: '2026-10-05T00:00:00', cantidadExamenes: 3, limiteAlcanzado: false },
+        { fecha: '2026-10-06T00:00:00', cantidadExamenes: 2, limiteAlcanzado: true },
+      ]),
       OCTUBRE,
     );
 
-    expect(dias[4]).toMatchObject({ cantidad: 2, limite: 3, estado: 'ocupado' });
+    expect(dias[4]).toMatchObject({ cantidad: 3, limite: 2, estado: 'ocupado' });
+    expect(dias[5]).toMatchObject({ cantidad: 2, limite: 2, estado: 'completo' });
+  });
+
+  it('sin `limiteAlcanzado` (un backend anterior) lo calcula con la cantidad y el límite', () => {
+    const { dias } = aCalendarioDelMes(
+      respuesta([
+        { fecha: '2026-10-05T00:00:00', cantidadExamenes: 2 },
+        { fecha: '2026-10-06T00:00:00', cantidadExamenes: 1 },
+      ]),
+      OCTUBRE,
+    );
+
+    expect(dias[4].estado).toBe('completo');
+    expect(dias[5].estado).toBe('ocupado');
   });
 
   it('descarta una entrada ilegible y ese día queda disponible, sin tirar abajo el mes', () => {

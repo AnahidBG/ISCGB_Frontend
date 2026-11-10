@@ -85,12 +85,17 @@ export function avisoDeParcialRegistrado(dia: string, horario: string, locale: s
 /**
  * Lo que se le dice al Docente que toca un día completo: "18 de octubre · Fecha
  * bloqueada" y el motivo. El período sale de la constante del límite, como en el
- * resto de los textos que lo nombran; la frase evita el artículo ("ese día") para
- * seguir leyéndose bien si el período cambia.
+ * resto de los textos que lo nombran.
+ *
+ * Desde el 10/11/2026 el límite es por año y comisión, y la grilla no está
+ * filtrada por grupo: "completo" quiere decir que ALGÚN año y comisión llegó, y el
+ * texto lo dice así.
  */
 export function avisoDeFechaBloqueada(dia: string, locale: string): AvisoDelCalendario {
   return {
     titulo: `${formatDate(dia, "d 'de' MMMM", locale)} · Fecha bloqueada`,
-    texto: `Ya se completó el máximo de parciales por ${PERIODO_DEL_LIMITE}. Elegí otra fecha.`,
+    texto:
+      `Algún año y comisión ya tiene ese día el máximo de parciales por ${PERIODO_DEL_LIMITE}. ` +
+      'Elegí otra fecha.',
   };
 }

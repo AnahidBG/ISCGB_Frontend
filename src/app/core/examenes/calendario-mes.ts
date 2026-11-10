@@ -176,9 +176,15 @@ export function leyendaDelCalendario(limite: number): ItemLeyenda[] {
   return [libre, conParciales, completo];
 }
 
-/** La nota de abajo de la grilla, con el límite vigente y el período que sale de la constante. */
+/**
+ * La nota de abajo de la grilla, con el límite vigente y el período que sale de la
+ * constante. Desde el 10/11/2026 el límite se cuenta por año y comisión.
+ */
 export function textoDelLimite(limite: number): string {
-  return `Los días completos ya alcanzaron el límite de ${textoDeParciales(limite)} por ${PERIODO_DEL_LIMITE} que define Secretaría Académica.`;
+  return (
+    `En los días completos, algún año y comisión ya alcanzó el límite de ` +
+    `${textoDeParciales(limite)} por ${PERIODO_DEL_LIMITE} que define Secretaría Académica.`
+  );
 }
 
 /**

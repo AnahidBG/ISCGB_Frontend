@@ -2,6 +2,7 @@ import { Observable } from 'rxjs';
 import { OpcionesPedido } from '../comun/opciones-pedido';
 import { CalendarioDelMes } from './modelos/calendario-del-mes';
 import { ExamenCalendario } from './modelos/examen-calendario';
+import { GrupoDeAlumnos } from './modelos/grupo-de-alumnos';
 import { MateriaDelDocente } from './modelos/materia-del-docente';
 import { MesaAsignada } from './modelos/mesa-asignada';
 import { NuevoExamen } from './modelos/nuevo-examen';
@@ -67,6 +68,11 @@ export abstract class CalendarioExamenesService {
    * el estado de cada uno (los que el backend no lista vienen con cantidad 0).
    * `mes` va de 1 a 12.
    *
+   * El límite es por año y comisión (desde el 10/11/2026). Con `grupo`, cada día
+   * cuenta solo los exámenes de ese año y comisión, y "completo" quiere decir que
+   * ESE grupo no tiene lugar. Sin `grupo`, un día es "completo" si algún grupo
+   * llegó al límite, y la cantidad es la de todo el día.
+   *
    * `opciones.enSegundoPlano`: la pantalla ya muestra su propia espera, que no
    * tape todo con el velo global.
    *
@@ -76,6 +82,7 @@ export abstract class CalendarioExamenesService {
     anio: number,
     mes: number,
     opciones?: OpcionesPedido,
+    grupo?: GrupoDeAlumnos,
   ): Observable<CalendarioDelMes>;
 
   /**

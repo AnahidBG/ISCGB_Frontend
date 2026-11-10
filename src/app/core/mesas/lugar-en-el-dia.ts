@@ -10,9 +10,11 @@ export const MENSAJE_SIN_REVISAR_LUGAR =
  * Por qué una mesa de examen no entra en su día, o `null` si entra.
  *
  * Las mesas se guardan en `Examenes`, igual que los parciales, y el backend las
- * cuenta para el límite del día (`estado-mes`). Pero `registrar-mesa` no lo
- * valida, así que el front no deja armarla en un día completo. Un día que el
- * calendario no lista no tiene exámenes: entra.
+ * cuenta para el límite del día. `calendario` tiene que ser el del año y la
+ * comisión de la mesa (`calendarioDelMes` con grupo): desde el 10/11/2026 el
+ * límite es por grupo. `registrar-mesa` también lo valida desde ese día; esto
+ * avisa antes de mandarla. Un día que el calendario no lista no tiene exámenes:
+ * entra.
  */
 export function motivoSinLugar(calendario: CalendarioDelMes, dia: string): string | null {
   const delDia = calendario.dias.find((otro) => otro.fecha === dia);
@@ -20,7 +22,7 @@ export function motivoSinLugar(calendario: CalendarioDelMes, dia: string): strin
     return null;
   }
   return (
-    `Ese día ya alcanzó el límite de ${textoDeParciales(calendario.limite)} por ` +
-    `${PERIODO_DEL_LIMITE}, y las mesas de examen también cuentan. Elegí otra fecha.`
+    `Ese año y comisión ya tienen ese día el límite de ${textoDeParciales(calendario.limite)} ` +
+    `por ${PERIODO_DEL_LIMITE}, y las mesas de examen también cuentan. Elegí otra fecha.`
   );
 }

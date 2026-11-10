@@ -51,8 +51,9 @@ interface OpcionesDeMesa {
  *
  *   · Nueva mesa: `POST /api/ConfiguracionCalendario/registrar-mesa`. El docente
  *     elegido queda convocado en "Pendiente" y lo ve en "Mis mesas de examen".
- *     Antes se revisa el día con `calendarioDelMes`: la mesa cuenta para el límite
- *     de parciales y el backend no lo valida al registrarla (`motivoSinLugar`).
+ *     Antes se revisa el día con `calendarioDelMes` para el año y la comisión de
+ *     la mesa: cuenta para el límite, que es por grupo (`motivoSinLugar`). Desde el
+ *     10/11/2026 el backend también lo valida y responde 400 con su motivo.
  *   · Mesas rechazadas: `GET /api/Configuracion/alertas-rechazos`. "Ya lo vi"
  *     archiva la alerta (`PUT .../ocultar-alerta-rechazo`). También se puede
  *     convocar a otro docente (`POST .../asignar-docente`), y entonces la alerta
@@ -228,10 +229,14 @@ export class MesasExamen {
     this.errorMesa.set(null);
     this.exitoMesa.set(null);
 
-    // `dia` es "2026-11-20": de ahí salen el año y el mes que hay que revisar.
+    // `dia` es "2026-11-20": de ahí salen el año y el mes que hay que revisar. El
+    // límite es por año y comisión: se revisa el grupo de la mesa.
     const [anio, mes] = mesa.dia.split('-').map(Number);
     this.examenes
-      .calendarioDelMes(anio, mes)
+      .calendarioDelMes(anio, mes, undefined, {
+        idMateria: mesa.idMateria,
+        idComision: mesa.idComision,
+      })
       .pipe(
         catchError(() => throwError(() => new Error(MENSAJE_SIN_REVISAR_LUGAR))),
         switchMap((calendario) => {

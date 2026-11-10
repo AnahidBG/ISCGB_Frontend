@@ -84,10 +84,12 @@ describe('textos del día', () => {
     );
   });
 
-  it('el aviso de fecha bloqueada nombra el día y toma el período del límite', () => {
+  it('el aviso de fecha bloqueada nombra el día, toma el período y dice que el límite es por año y comisión', () => {
     expect(avisoDeFechaBloqueada('2026-10-18', 'es-AR')).toEqual({
       titulo: '18 de octubre · Fecha bloqueada',
-      texto: `Ya se completó el máximo de parciales por ${PERIODO_DEL_LIMITE}. Elegí otra fecha.`,
+      texto:
+        `Algún año y comisión ya tiene ese día el máximo de parciales por ${PERIODO_DEL_LIMITE}. ` +
+        'Elegí otra fecha.',
     });
   });
 });
