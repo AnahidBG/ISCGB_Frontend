@@ -150,7 +150,10 @@ describe('GrillaCalendario', () => {
   it('un parcial se arrastra a un día que lo admita, y a ningún otro', async () => {
     const { fixture, movidos } = await montar(true);
     fixture.componentRef.setInput('examenes', [PARCIAL_DEL_21, PARCIAL_DEL_5]);
-    fixture.componentRef.setInput('arrastrable', true);
+    fixture.componentRef.setInput(
+      'arrastrables',
+      new Set([PARCIAL_DEL_21.idExamen, PARCIAL_DEL_5.idExamen]),
+    );
     await fixture.whenStable();
 
     // Solo el parcial que no pasó se puede agarrar.

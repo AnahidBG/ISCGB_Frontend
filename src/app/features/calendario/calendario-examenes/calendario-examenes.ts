@@ -48,11 +48,13 @@ import { AvisoDelCalendario } from '../../../core/examenes/modelos/aviso-calenda
 import { CalendarioDelMes } from '../../../core/examenes/modelos/calendario-del-mes';
 import { DiaCalendario } from '../../../core/examenes/modelos/dia-calendario';
 import { ExamenCalendario } from '../../../core/examenes/modelos/examen-calendario';
+import { MateriaDelDocente } from '../../../core/examenes/modelos/materia-del-docente';
 import { NuevoExamen } from '../../../core/examenes/modelos/nuevo-examen';
 import {
   avisoDeParcialEliminado,
   avisoDeParcialReprogramado,
 } from '../../../core/examenes/modificacion-examen';
+import { parcialesGestionables } from '../../../core/examenes/parciales-gestionables';
 import {
   avisoDeFechaBloqueada,
   avisoDeParcialRegistrado,
@@ -105,6 +107,12 @@ const OPCIONES_CARGANDO: CargaOpcionesDeRegistro = { fase: 'cargando' };
 /** El título del aviso cuando el backend no deja mover un parcial arrastrado a otro día. */
 const TITULO_PARCIAL_NO_MOVIDO = 'No se pudo mover el parcial';
 
+/** Lo que se explica cuando el Docente toca un parcial de una materia que no dicta. */
+const AVISO_PARCIAL_AJENO: AvisoDelCalendario = {
+  titulo: 'Este parcial no es de tus materias',
+  texto: 'Solo podés modificar, mover o eliminar los parciales de las materias que dictás.',
+};
+
 /**
  * La pantalla ya muestra su propia espera dentro de la tarjeta: al pasar de mes
  * no tiene que taparse todo con el velo global. Lo mismo vale para el modal de
@@ -133,9 +141,11 @@ const EN_SEGUNDO_PLANO: OpcionesPedido = { enSegundoPlano: true };
  * Con un parcial ya cargado (SCRUM-184) el Docente puede tocarlo, para abrir
  * "Modificar parcial" y cambiar su fecha y horario (`PUT .../modificar/{id}`) o
  * eliminarlo, con confirmación (`DELETE .../eliminar/{id}`), o arrastrarlo a otro
- * día con el mouse, que conserva el horario. Con la API real la grilla lista los
- * parciales del mes en curso (`GET .../del-mes`); en los otros meses solo se ve
- * el estado de cada día, porque el backend no los lista.
+ * día con el mouse, que conserva el horario. Solo los de las materias que dicta
+ * (`parcialesGestionables`): con los demás el backend responde 403, así que al
+ * tocarlos se explica por qué no y no se arrastran. Con la API real la grilla
+ * lista los parciales del mes en curso (`GET .../del-mes`); en los otros meses
+ * solo se ve el estado de cada día, porque el backend no los lista.
  *
  * Contenedor: es el único que conoce `CalendarioExamenesService`. El encabezado,
  * la leyenda, la grilla, lo de adentro de cada celda, los avisos y los modales
@@ -194,6 +204,25 @@ export class CalendarioExamenes {
   protected readonly rolesQueRegistran = [ROLES.docente];
   protected readonly puedeRegistrar = computed(() =>
     tieneAlgunRol(this.sesion(), this.rolesQueRegistran),
+  );
+
+  /**
+   * Las materias que dicta el Docente de la sesión: con ellas se sabe qué
+   * parciales puede tocar. Se piden al abrir la pantalla, aparte de las del modal
+   * de registro, que se piden cada vez. Si fallan queda vacía: no ofrecer tocar
+   * nada es mejor que un 403. Para los demás roles no se piden.
+   */
+  private readonly materiasQueDicta = toSignal(
+    toObservable(this.puedeRegistrar).pipe(
+      switchMap((puede) =>
+        puede
+          ? this.servicio
+              .materiasDelDocente(EN_SEGUNDO_PLANO)
+              .pipe(catchError(() => of<MateriaDelDocente[]>([])))
+          : of<MateriaDelDocente[]>([]),
+      ),
+    ),
+    { initialValue: [] },
   );
 
   /** El día en que se abrió la pantalla. Lo usan "Hoy" y la marca de la grilla. */
@@ -274,6 +303,11 @@ export class CalendarioExamenes {
       textoLimite: textoDelLimite(carga.calendario.limite),
     };
   });
+
+  /** Los parciales del mes que el Docente puede modificar, mover o eliminar, por su id. */
+  protected readonly gestionables = computed(() =>
+    parcialesGestionables(this.calendario()?.examenes ?? [], this.materiasQueDicta()),
+  );
 
   /** El día elegido para registrar un parcial, "2026-10-13", o `null` con el modal cerrado. */
   protected readonly diaARegistrar = signal<string | null>(null);
@@ -413,12 +447,19 @@ export class CalendarioExamenes {
       });
   }
 
-  /** Abre el modal para modificar o eliminar el parcial que se tocó. Es cosa del Docente. */
+  /**
+   * Abre el modal para modificar o eliminar el parcial que se tocó. Es cosa del
+   * Docente, y solo con los de sus materias: con otro explica por qué no.
+   */
   protected abrirModificacion(examen: ExamenCalendario): void {
     if (!this.puedeRegistrar()) {
       return;
     }
     this.limpiarAvisos();
+    if (!this.gestionables().has(examen.idExamen)) {
+      this.alerta.set(AVISO_PARCIAL_AJENO);
+      return;
+    }
     this.errorModificacion.set(null);
     this.parcialAModificar.set(examen);
   }
@@ -485,7 +526,7 @@ export class CalendarioExamenes {
    * motivo va arriba de la grilla, que es donde la persona está mirando.
    */
   protected moverParcial({ examen, dia }: MovimientoDeExamen): void {
-    if (!this.puedeRegistrar() || this.modificando()) {
+    if (!this.gestionables().has(examen.idExamen) || this.modificando()) {
       return;
     }
     this.limpiarAvisos();
