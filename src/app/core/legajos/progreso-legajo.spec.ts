@@ -1,8 +1,10 @@
 import { DocumentoLegajo } from './modelos/documento-legajo';
 import { DocumentoRequerido } from './modelos/documento-requerido';
 import {
+  MotivoVencimiento,
   calcularProgresoLegajo,
   legajoEstaCompleto,
+  motivoDeVencimiento,
   obligatoriosSinCargar,
   requeridoDelDocumento,
   ultimaVersionPorTipo,
@@ -283,5 +285,45 @@ describe('legajoEstaCompleto (SCRUM-153)', () => {
     ];
 
     expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(true);
+  });
+});
+
+describe('motivoDeVencimiento: la regla del mail de faltantes (10/11/2026)', () => {
+  const AHORA = new Date('2026-11-10T12:00:00').getTime();
+  const APTO_ANUAL: DocumentoRequerido = { ...requerido('Apto médico'), anual: true };
+  const REQUERIDOS = [requerido('DNI'), APTO_ANUAL];
+
+  it.each<[string, DocumentoLegajo, MotivoVencimiento | null]>([
+    [
+      'un anual subido el año pasado ya no vale, aunque su fecha no haya pasado',
+      {
+        ...documento('Apto médico', 'Aprobado', new Date('2025-12-20')),
+        fechaVencimiento: new Date('2026-12-20'),
+      },
+      'anio',
+    ],
+    ['un anual subido este año vale', documento('Apto médico', 'Aprobado'), null],
+    [
+      'uno que no es anual vale aunque sea de otro año',
+      documento('DNI', 'Aprobado', new Date('2019-03-01')),
+      null,
+    ],
+    [
+      'con la fecha de vencimiento pasada ya no vale, aunque sea de este año',
+      { ...documento('DNI', 'Aprobado'), fechaVencimiento: new Date('2026-10-01') },
+      'fecha',
+    ],
+  ])('%s', (_caso, doc, esperado) => {
+    expect(motivoDeVencimiento(doc, REQUERIDOS, AHORA)).toBe(esperado);
+  });
+
+  it('un anual aprobado el año pasado no suma en el progreso ni completa el legajo', () => {
+    const documentos = [
+      documento('DNI', 'Aprobado'),
+      documento('Apto médico', 'Aprobado', new Date('2025-06-01')),
+    ];
+
+    expect(calcularProgresoLegajo(documentos, REQUERIDOS, AHORA).aprobados).toBe(1);
+    expect(legajoEstaCompleto(documentos, REQUERIDOS, AHORA)).toBe(false);
   });
 });

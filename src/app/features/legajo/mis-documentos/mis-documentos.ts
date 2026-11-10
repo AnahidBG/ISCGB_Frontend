@@ -13,8 +13,10 @@ import { LegajoService, VeredictoLegajo } from '../../../core/legajos/legajo.ser
 import { DocumentoLegajo } from '../../../core/legajos/modelos/documento-legajo';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import {
+  MotivoVencimiento,
   calcularProgresoLegajo,
   documentosSinCargar,
+  motivoDeVencimiento,
   requeridoDelDocumento,
   ultimaVersionPorTipo,
 } from '../../../core/legajos/progreso-legajo';
@@ -75,6 +77,11 @@ interface FilaDocumento {
    * ya elegido (SCRUM-152). `null` si el tipo no está entre los de su rol.
    */
   consultaSubir: Record<string, string> | null;
+  /**
+   * Por qué ya no vale y hay que volver a presentarlo (`motivoDeVencimiento`),
+   * o `null`. Siempre `null` en las filas "faltante".
+   */
+  vencimiento: MotivoVencimiento | null;
 }
 
 /**
@@ -342,6 +349,8 @@ export class MisDocumentos {
         .map((requerido) => normalizarTexto(requerido.nombreDocumento)),
     );
 
+    const ahora = Date.now();
+
     // Agrupa por tipo y se queda con el más nuevo de cada uno.
     const porTipo = new Map<string, DocumentoLegajo[]>();
     for (const documento of this.documentosConOverrides()) {
@@ -372,6 +381,7 @@ export class MisDocumentos {
         presentadoFisico: ultima.presentadoFisico,
         auditor: ultima.auditor ?? null,
         consultaSubir: tipo === null ? null : consultaConTipo(tipo.idTipoDoc),
+        vencimiento: motivoDeVencimiento(ultima, this.requeridos(), ahora),
       };
     });
 
@@ -391,6 +401,7 @@ export class MisDocumentos {
       presentadoFisico: false,
       auditor: null,
       consultaSubir: consultaConTipo(requerido.idTipoDoc),
+      vencimiento: null,
     }));
 
     return [...subidos, ...faltantes].sort(
@@ -411,9 +422,9 @@ export class MisDocumentos {
     }
   });
 
-  /** `true` si el documento venció. Un anual del año pasado ya no sirve. */
+  /** `true` si el documento venció: pasó su fecha, o es un anual de otro año. */
   protected estaVencido(fila: FilaDocumento): boolean {
-    return fila.fechaVencimiento !== null && fila.fechaVencimiento.getTime() < Date.now();
+    return fila.vencimiento !== null;
   }
 
   protected cambiarFiltro(filtro: Filtro): void {

@@ -124,14 +124,15 @@ export class PanelDocente {
   /** Conteos sobre la versión VIGENTE de cada documento (un rechazo ya corregido no suma). */
   protected readonly resumen = computed(() => {
     const documentos = ultimaVersionPorTipo(this.documentos());
+    const requeridos = this.requeridos();
     const ahora = Date.now();
     return {
       total: documentos.length,
       aprobados: documentos.filter((d) => d.estado === 'Aprobado').length,
       pendientes: documentos.filter((d) => d.estado === 'Pendiente').length,
       rechazados: documentos.filter((d) => d.estado === 'Rechazado').length,
-      /** Aprobados cuya fecha ya pasó: hay que volver a presentarlos. */
-      vencidos: documentos.filter((d) => estaVencido(d, ahora)).length,
+      /** Aprobados que ya no valen (`estaVencido`): hay que volver a presentarlos. */
+      vencidos: documentos.filter((d) => estaVencido(d, requeridos, ahora)).length,
     };
   });
 
