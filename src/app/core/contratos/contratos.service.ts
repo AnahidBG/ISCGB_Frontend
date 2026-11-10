@@ -18,9 +18,9 @@ export const MENSAJE_ERROR_DESCARGAR_CONTRATO =
  * Mismo patrón que el resto de `core/`: una clase abstracta con una
  * implementación HTTP y una simulada, intercambiables desde `app.config.ts`.
  *
- * El backend todavía no tiene estos endpoints. `ContratosHttpService` sigue el
- * contrato que propuso el frontend (`api/ContratosAlumno`, ver
- * docs/contrato-api.md) y hasta que exista se usa `ContratosMockService`.
+ * El backend implementa estos endpoints en `api/ContratosAlumno`.
+ * `ContratosHttpService` es la implementación activa; `ContratosMockService`
+ * queda disponible para pruebas y desarrollo aislado.
  */
 export abstract class ContratosService {
   /**

@@ -66,6 +66,11 @@ export function enlacesPorSesion(
       icono: 'legajo',
     });
     enlaces.push({
+      etiqueta: 'Contratos de alumnos',
+      url: '/secretario/contratos',
+      icono: 'documento',
+    });
+    enlaces.push({
       etiqueta: 'Materias y asignaciones',
       url: '/materias/asignaciones',
       icono: 'tabla',
@@ -85,12 +90,6 @@ export function enlacesPorSesion(
       etiqueta: 'Solicitudes de reconocimiento',
       url: '/secretario/reconocimiento-saberes',
       icono: 'revision',
-    });
-    // Cargar en el perfil del alumno sus contratos firmados (SCRUM-227).
-    enlaces.push({
-      etiqueta: 'Contratos de alumnos',
-      url: '/secretario/contratos',
-      icono: 'documento',
     });
     // Cada cuánto sale el aviso automático de documentación faltante (SCRUM-151).
     enlaces.push({

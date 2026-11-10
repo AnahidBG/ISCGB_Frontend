@@ -963,34 +963,27 @@ confirmación, y el mensaje final dice si la cuenta quedó inactiva
 - La baja debería rechazar a un docente que no es suplente, para no dejar sin
   acceso a un titular por error.
 
-## Contratos de alumnos (propuesta)
+## Contratos de alumnos (SCRUM-227)
 
-SCRUM-227: Secretaría carga en el perfil del alumno los contratos firmados,
-sellados y digitalizados, como el convenio de la beca, y el alumno los ve y los
-descarga desde su panel.
-
-**El backend todavía no tiene estos endpoints.** Es la propuesta del frontend del
-31/10/2026, para acordar con backend. `ContratosHttpService` ya la sigue, pero
-`app.config.ts` provee `ContratosMockService`, que guarda en memoria lo que se
-carga mientras no se recargue la página. Cuando backend los publique, se cambia
-esa línea.
-
-Un controlador `ContratosAlumnoController`, en `api/ContratosAlumno`:
+Dirección y Secretaría cargan en el perfil del alumno los contratos firmados,
+sellados y digitalizados, como el convenio de la beca; el alumno los ve y los
+descarga desde su panel. El frontend usa `ContratosHttpService` contra
+`ContratosAlumnoController`; el mock queda solo para desarrollo aislado.
 
 ### `POST /api/ContratosAlumno`
 
-Solo `Secretario`. `multipart/form-data` con `idUsuario` (la persona con rol
-Alumno), `nombre` (hasta 100 caracteres, por ejemplo "Convenio Beca Fundación
-Encode 2026") y `archivo`. Responde `200` con `{ message, idContrato }` y `400`
-con `{ message }` si la persona no es alumno o el archivo no es un PDF.
+Dirección o Secretaría. `multipart/form-data` con `idUsuario` (la persona con
+rol Alumno), `nombre` (hasta 100 caracteres) y `archivo` (PDF, hasta 10 MB).
+Responde `200` con `{ message, idContrato }`; valida el tipo y contenido del
+archivo y que el usuario indicado sea alumno. Un nombre vacío, demasiado largo,
+archivo inválido o usuario que no sea alumno responde `400` con `{ message }`.
 
-Tiene que cumplir las reglas de siempre: validar el PDF por magic bytes y guardar
-el archivo renombrado (`ISCGB_NombreyApellido_NombreDocumento.pdf`), sin el nombre
-original.
+El archivo se guarda fuera de `wwwroot`, con un nombre generado por el sistema;
+el nombre original no se publica ni se usa como ruta.
 
 ### `GET /api/ContratosAlumno/alumno/{idUsuario}`
 
-Secretario y Director. Los contratos de un alumno:
+Dirección o Secretaría. Los contratos de un alumno:
 
 ```json
 [{ "idContrato": 7, "nombre": "Convenio Beca Fundación Encode 2026", "fechaCarga": "2026-10-31T14:20:00" }]
@@ -1004,13 +997,14 @@ Solo `Alumno`. Los mismos datos, del alumno del token.
 
 ### `GET /api/ContratosAlumno/{idContrato}/pdf`
 
-El PDF (`application/pdf`). Secretario, Director o el alumno dueño del contrato;
-cualquier otro, `403`. Se sirve por acá y no desde `/uploads` porque es un
-documento personal.
+El PDF (`application/pdf`). Dirección, Secretaría o el alumno dueño del contrato;
+cualquier otro usuario autenticado recibe `403`. Se sirve por este endpoint y no
+desde `/uploads` porque es un documento personal. Si el registro o el archivo no
+existe, responde `404`.
 
 El frontend lo usa en "Contratos de alumnos" (`/secretario/contratos`, solo
-Secretario) y en la tarjeta "Mis contratos" del panel del alumno, que aparece solo
-si tiene alguno. Falta acordar si un contrato cargado por error se puede borrar.
+Dirección y Secretaría) y en la tarjeta "Mis contratos" del panel del alumno,
+que aparece solo si tiene alguno. No hay un endpoint para borrar contratos.
 
 ## Materias y asignaciones
 

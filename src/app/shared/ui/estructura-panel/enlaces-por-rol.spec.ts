@@ -78,9 +78,10 @@ describe('enlacesPorSesion', () => {
     }
   });
 
-  it('"Contratos de alumnos" es solo de Secretaría (SCRUM-227)', () => {
+  it('"Contratos de alumnos" es de Dirección y Secretaría (SCRUM-227)', () => {
     expect(urlsDe('Secretario')).toContain('/secretario/contratos');
-    for (const rol of ['Director', 'Docente', 'Alumno'] as const) {
+    expect(urlsDe('Director')).toContain('/secretario/contratos');
+    for (const rol of ['Docente', 'Alumno'] as const) {
       expect(urlsDe(rol)).not.toContain('/secretario/contratos');
     }
   });
