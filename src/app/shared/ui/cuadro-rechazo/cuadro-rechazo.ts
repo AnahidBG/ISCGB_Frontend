@@ -3,19 +3,21 @@ import {
   MOTIVOS_RECHAZO,
   MotivoRechazo,
   comentarioDeRechazo,
-} from '../../../../../core/legajos/motivos-rechazo';
+} from '../../../core/legajos/motivos-rechazo';
 
 /**
- * Cuadro de "Rechazar" un documento del legajo (Secretaría o Dirección
- * revisando el legajo de otra persona).
+ * Cuadro de "Rechazar" con los motivos de la institución (regla #4). Lo usan
+ * Secretaría y Dirección al revisar un documento del legajo de otra persona
+ * (`MisDocumentos`) y al revisar un justificativo de inasistencia
+ * (`RevisionJustificativos`): el catálogo es el mismo para los dos.
  *
  * Antes el motivo era un textarea libre. Ahora son casillas con los motivos
- * de la institución (regla #4), se puede marcar más de uno y hace falta al
- * menos uno, más una aclaración opcional para el detalle ("falta la hoja 2").
+ * de la institución, se puede marcar más de uno y hace falta al menos uno,
+ * más una aclaración opcional para el detalle ("falta la hoja 2").
  *
  * Presentacional (Mediator, `docs/patrones-frontend.md` §2.5): no inyecta
  * servicios ni sabe de la API. Solo junta la elección y emite el `comentario`
- * ya armado por `comentarioDeRechazo`. El envío lo hace `MisDocumentos`.
+ * ya armado por `comentarioDeRechazo`. El envío lo hace quien lo usa.
  */
 @Component({
   selector: 'app-cuadro-rechazo',

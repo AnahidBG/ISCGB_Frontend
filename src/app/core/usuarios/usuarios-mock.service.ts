@@ -216,6 +216,11 @@ export class UsuariosMockService extends UsuariosService {
       idProvincia: propios?.idProvincia || null,
       fechaNac: null,
       estadoUsuario: encontrado.activo,
+      cuil: null,
+      genero: null,
+      afiliacionEmergencia: null,
+      esDirectorSuplente: this.suplente === encontrado.nombreCompleto,
+      legajo: encontrado.roles.includes(ROLES.alumno) ? encontrado.dni : null,
       roles: [...encontrado.roles],
       rolesConId: encontrado.roles.map((rol) => ({ idRol: ID_ROL[rol], nombreRol: rol })),
     }).pipe(delay(DEMORA_SIMULADA_MS));

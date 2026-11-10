@@ -152,6 +152,11 @@ describe('misDatosDe y limpiarMisDatos', () => {
       idProvincia: null,
       fechaNac: null,
       estadoUsuario: true,
+      cuil: null,
+      genero: null,
+      afiliacionEmergencia: null,
+      esDirectorSuplente: false,
+      legajo: null,
       roles: [],
       rolesConId: [],
     } satisfies UsuarioDetalle;

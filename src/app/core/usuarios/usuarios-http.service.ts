@@ -39,6 +39,13 @@ interface UsuarioDetalleApi {
   /** `DateOnly?` → "1990-05-14", sin hora. */
   fechaNac: string | null;
   estadoUsuario: boolean;
+  /** Los cinco de acá abajo llegan desde el 10/11/2026: con un backend anterior faltan. */
+  cuil?: string | null;
+  genero?: string | null;
+  afiliacionEmergencia?: string | null;
+  esDirectorSuplente?: boolean | null;
+  /** Del perfil de alumno; `null` si no es alumno. */
+  legajo?: string | null;
   roles: RolApi[] | null;
 }
 
@@ -93,8 +100,9 @@ interface CargaUsuarioApi {
 
 /**
  * `ActualizarPerfilDto` del backend, sin los dos campos que "Mi perfil" no usa
- * (`genero` y `afiliacionEmergencia`: el `GET` no los devuelve, así que no se
- * pueden precargar, y un campo ausente el backend lo deja como estaba).
+ * (`genero` y `afiliacionEmergencia`; un campo ausente el backend lo deja como
+ * estaba). Desde el 10/11/2026 el `GET` sí los devuelve, así que la pantalla
+ * podría sumarlos.
  *
  * Desde el 17/10/2026 un texto vacío borra el dato y una provincia <= 0 la
  * borra; el correo vacío se ignora. Ver `datosAEnviar`.
@@ -393,6 +401,12 @@ function aUsuarioDetalle(usuario: UsuarioDetalleApi): UsuarioDetalle {
     // `desdeFechaSola` y no `new Date(...)`: ver `core/comun/fechas.ts`.
     fechaNac: desdeFechaSola(usuario.fechaNac),
     estadoUsuario: usuario.estadoUsuario,
+    // Anulables en la base: un texto vacío o de espacios es "no cargado".
+    cuil: usuario.cuil?.trim() || null,
+    genero: usuario.genero?.trim() || null,
+    afiliacionEmergencia: usuario.afiliacionEmergencia?.trim() || null,
+    esDirectorSuplente: usuario.esDirectorSuplente === true,
+    legajo: usuario.legajo?.trim() || null,
     roles: nombresDeRoles(usuario.roles),
     rolesConId: usuario.roles ?? [],
   };

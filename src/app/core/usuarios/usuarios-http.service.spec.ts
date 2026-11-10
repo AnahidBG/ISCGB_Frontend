@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { RUTAS_API, urlArchivoSubido } from '../configuracion/api';
 import { MisDatos } from './modelos/mis-datos';
 import { PerfilUsuario } from './modelos/perfil-usuario';
+import { UsuarioDetalle } from './modelos/usuario-detalle';
 import { UsuariosHttpService } from './usuarios-http.service';
 import {
   MENSAJE_ERROR_ACTUALIZAR_MIS_DATOS,
@@ -172,6 +173,74 @@ describe('UsuariosHttpService', () => {
     });
 
     expect(dia).toBe(14);
+  });
+
+  it('el detalle trae CUIL, género, afiliación, suplencia y legajo (desde el 10/11/2026)', () => {
+    let detalle: UsuarioDetalle | null = null;
+    servicio.obtener(9).subscribe((usuario) => (detalle = usuario));
+
+    backend.expectOne(RUTAS_API.usuarioPorId(9)).flush({
+      idUsuario: 9,
+      dni: '12345678',
+      nombre: 'María',
+      apellido: 'Gómez',
+      email: 'maria@ejemplo.com',
+      telefono: null,
+      telefonoEmergencia: null,
+      lugarNacimiento: null,
+      contactoEmergencia: null,
+      direccion: null,
+      idProvincia: null,
+      fechaNac: null,
+      estadoUsuario: true,
+      cuil: ' 27123456780 ',
+      genero: 'Femenino',
+      afiliacionEmergencia: 'APROSS',
+      esDirectorSuplente: true,
+      legajo: '1203',
+      roles: [{ idRol: 3, nombreRol: 'Docente' }],
+    });
+
+    expect(detalle).toMatchObject({
+      cuil: '27123456780',
+      genero: 'Femenino',
+      afiliacionEmergencia: 'APROSS',
+      esDirectorSuplente: true,
+      legajo: '1203',
+    });
+  });
+
+  it('el detalle sin esos datos los deja vacíos: un texto en blanco es "no cargado"', () => {
+    let detalle: UsuarioDetalle | null = null;
+    servicio.obtener(9).subscribe((usuario) => (detalle = usuario));
+
+    backend.expectOne(RUTAS_API.usuarioPorId(9)).flush({
+      idUsuario: 9,
+      dni: '12345678',
+      nombre: 'María',
+      apellido: 'Gómez',
+      email: null,
+      telefono: null,
+      telefonoEmergencia: null,
+      lugarNacimiento: null,
+      contactoEmergencia: null,
+      direccion: null,
+      idProvincia: null,
+      fechaNac: null,
+      estadoUsuario: true,
+      cuil: null,
+      genero: '  ',
+      afiliacionEmergencia: null,
+      roles: null,
+    });
+
+    expect(detalle).toMatchObject({
+      cuil: null,
+      genero: null,
+      afiliacionEmergencia: null,
+      esDirectorSuplente: false,
+      legajo: null,
+    });
   });
 
   it('el listado trae el estado de la cuenta', () => {

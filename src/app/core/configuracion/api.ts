@@ -183,7 +183,18 @@ export const RUTAS_API = {
   /** Todas las comisiones, ordenadas por nombre. */
   comisionesDisponibles: `${URL_BASE_API}/api/Materias/comisiones-disponibles`,
 
-  /** Alta de una materia. Body: `CargarMateriaDto`. */
+  /**
+   * Los cursos (años) válidos de una materia, como lista de textos: `["Primer
+   * Año", "Segundo Año", "Tercer Año"]`. Es lo que va en el desplegable "Curso"
+   * del alta. Agregado el 10/11/2026.
+   */
+  cursosMateria: `${URL_BASE_API}/api/Materias/cursos`,
+
+  /**
+   * Alta de una materia. Body: `CargarMateriaDto`. Desde el 10/11/2026 el curso
+   * tiene que ser uno de `cursos` (si no, `400 { message }`): de él depende el
+   * límite de exámenes por día, que se cuenta por año y comisión.
+   */
   cargarMateria: `${URL_BASE_API}/api/Materias/cargar-materia`,
 
   /** Asigna una materia a un docente en una comisión. Body: `AsignarMateriaDto`. */
@@ -228,8 +239,9 @@ export const RUTAS_API = {
   cargarJustificativo: `${URL_BASE_API}/api/Justificativos/cargar`,
 
   /**
-   * Aprobar/rechazar un justificativo. Director y Secretario. El auditor sale del
-   * token desde el 10/11/2026: el `idUsuarioAuditor` del body se ignora.
+   * Aprobar/rechazar un justificativo. Director y Secretario. Body: `{ estado,
+   * comentario? }`; el auditor sale del token desde el 10/11/2026. Al rechazar,
+   * el backend manda el `comentario` por mail como motivo y no lo guarda.
    */
   auditarJustificativo: (idJustificativo: number) =>
     `${URL_BASE_API}/api/Justificativos/auditar/${idJustificativo}`,
@@ -246,9 +258,18 @@ export const RUTAS_API = {
    * Qué días de un mes tienen exámenes y cuántos, más el límite diario. Mes de
    * 1 a 12. Solo trae los días con al menos un examen: el resto son libres. Un
    * mes inválido responde 500.
+   *
+   * Desde el 10/11/2026 el límite es por año y comisión. Con `grupo` (la materia
+   * y la comisión que se están por cargar) cada día cuenta solo ese grupo; sin
+   * él, un día figura lleno si algún grupo llegó al límite.
    */
-  estadoMesCalendario: (anio: number, mes: number) =>
-    `${URL_BASE_API}/api/ConfiguracionCalendario/estado-mes?anio=${anio}&mes=${mes}`,
+  estadoMesCalendario: (
+    anio: number,
+    mes: number,
+    grupo?: { idMateria: number; idComision: number },
+  ) =>
+    `${URL_BASE_API}/api/ConfiguracionCalendario/estado-mes?anio=${anio}&mes=${mes}` +
+    (grupo ? `&idMateria=${grupo.idMateria}&idComision=${grupo.idComision}` : ''),
 
   /**
    * Cambia el límite de exámenes por día. Body: `{ nuevoLimite }`. Solo se

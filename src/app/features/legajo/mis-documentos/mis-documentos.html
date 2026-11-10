@@ -13,11 +13,11 @@
   (cerrarSesion)="cerrarSesion()"
 >
   @if (esLegajoAjeno()) {
-    <!-- Rechazar guarda el motivo pero todavía no manda el mail (regla #4). -->
-    <div class="mb-6 rounded-lg bg-pendiente/10 px-4 py-3 text-sm text-texto">
-      Al rechazar un documento se guarda el motivo, pero el
-      <strong>aviso automático por correo todavía no está implementado</strong>
-      en el sistema: por ahora hay que avisarle a la persona por otro medio.
+    <!-- Regla #4: desde el 10/11/2026 rechazar manda el mail con el motivo. -->
+    <div class="mb-6 rounded-lg bg-fondo px-4 py-3 text-sm text-texto">
+      Al rechazar un documento se guarda el motivo y el sistema le
+      <strong>avisa por correo</strong> a la persona, con ese motivo, para que lo vuelva a
+      subir.
     </div>
   }
 

@@ -103,28 +103,38 @@ tiene la bandeja de solicitudes. El contrato está en
 
 ## Pendientes para el backend
 
-Por impacto. Revisada el 10/11/2026 contra el backend de ese día (commits `523d05b`
-y `dbb76fa`).
+Por impacto. Revisada el 10/11/2026 contra el backend de ese día (hasta `bd7b565`,
+PR #44).
 
-1. **Mail al rechazar**, en `AuditarLegajo` y `AuditarJustificativo`. Es la
-   regla 4.
-2. **Motivo en el rechazo de un justificativo.** `AuditarJustificativoDto` solo
-   tiene el auditor y el estado.
-3. **Solo PDF en Legajos.** Desde `523d05b` se valida el contenido, pero Legajos
+1. **Solo PDF en Legajos.** Desde `523d05b` se valida el contenido, pero Legajos
    acepta también JPG y PNG, y la regla 1 pide solo PDF.
-4. **Nadie aprueba sus propios documentos.** `auditar` no compara al auditor con
-   el dueño del documento. Es la regla 5.
-5. **`GET /api/Usuarios/{id}`** tiene que devolver CUIL, género, afiliación y
-   `DirectorSuplente`. Sin el último, editar a un suplente sin volver a tildar
-   la casilla le quita la suplencia.
-6. **Avisos automáticos.** El `PUT` de la frecuencia no tiene tope máximo.
+2. **Nadie aprueba sus propios documentos ni justificativos.** `auditar` no compara
+   al auditor con el dueño. Es la regla 5. En justificativos, además, `pendientes`
+   no dice de quién es cada uno: un Secretario puede aprobar el suyo, aunque desde
+   el 10/11/2026 el Director también los revisa desde su panel.
+3. **El motivo del rechazo de un justificativo no se guarda.** Viaja solo en el
+   mail; la persona no lo ve en "Mis justificativos". El mail dice "Secretaría
+   revisó…" aunque haya rechazado el Director.
+4. **Avisos automáticos.** El `PUT` de la frecuencia no tiene tope máximo.
    Detalle en `contrato-api.md`.
-7. **Calendario y mesas.** `del-mes` debería recibir año y mes; el límite es por
-   día y Jira dice por semana (SCRUM-187); las mesas no mandan el mail que
-   anuncian. Detalle en `contrato-api.md`.
-8. **Sello del certificado, a verificar.** Ahora es `sello.JPG`, pero el código lo
+5. **Calendario y mesas.** `del-mes` debería recibir año y mes; el período del
+   límite es por día y Jira dice por semana (SCRUM-187); `tipos-examen` devuelve
+   tipos que `registrar` rechaza. Detalle en `contrato-api.md`.
+6. **Sello del certificado, a verificar.** Ahora es `sello.JPG`, pero el código lo
    busca en `wwwroot/images/` y en el repo está en `wwwRoot/Images/`. En Windows
    anda; en Linux y Docker las mayúsculas importan y el certificado respondería 500.
+7. **Una clave en el repo.** `appsettings.Development.json` trae `Email:Password`
+   (la contraseña de aplicación del correo que manda los mails). Debería ir en una
+   variable de entorno o en `dotnet user-secrets`, y esa contraseña habría que
+   regenerarla.
+
+Resueltos el 10/11/2026 por la tarde (`d60d93c` y `bd7b565`): el mail al rechazar
+un documento o un justificativo, con el motivo (regla 4); el motivo en el rechazo de
+un justificativo (`comentario`); `GET /api/Usuarios/{id}` con CUIL, género,
+afiliación, suplencia y legajo; el mail de las mesas de examen y el límite en
+`registrar-mesa`; el límite por año y comisión, con el curso de la materia de una
+lista (`GET /api/Materias/cursos`); y que un docente solo modifique los exámenes que
+cargó él (`puedeModificar`).
 
 Resueltos el 10/11/2026 (`523d05b` y `dbb76fa`): la sesión en todos los endpoints
 y los roles de Justificativos, Legajos, Usuarios y el buscador; que un Docente

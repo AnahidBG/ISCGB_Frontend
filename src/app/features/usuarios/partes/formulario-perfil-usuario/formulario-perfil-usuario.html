@@ -97,11 +97,6 @@
           class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
           placeholder="20-12345678-6"
         />
-        @if (esEdicion()) {
-          <span class="text-xs text-texto-suave">
-            El sistema todavía no devuelve el CUIL guardado: cargalo de nuevo al editar.
-          </span>
-        }
         @if (errorCuil; as mensaje) {
           <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
         }
@@ -361,12 +356,6 @@
               <span class="mt-0.5 block text-xs leading-relaxed text-texto-suave">
                 Puede haber uno solo. Si ya hay otro asignado, el sistema te avisa quién es.
               </span>
-              @if (esEdicion()) {
-                <span class="mt-1.5 block text-xs leading-relaxed text-pendiente">
-                  El sistema todavía no informa si esta persona ya es suplente: si lo es, dejalo
-                  tildado — si lo destildás, deja de serlo al guardar.
-                </span>
-              }
             </span>
           </label>
         </p>

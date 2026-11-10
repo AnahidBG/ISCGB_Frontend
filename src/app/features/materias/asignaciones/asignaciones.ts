@@ -27,8 +27,9 @@ import { FormularioNuevaMateria } from './partes/formulario-nueva-materia/formul
  * CONTENEDOR: trae materias, docentes, comisiones y alumnos, y habla con
  * `MateriasService`. Los tres formularios viven en `partes/`.
  *
- *   · Nueva materia: `POST /api/Materias/cargar-materia`. Al crearla se
- *     vuelve a pedir la lista, así ya se puede asignar.
+ *   · Nueva materia: `POST /api/Materias/cargar-materia`. El curso sale del
+ *     desplegable de `GET /api/Materias/cursos`. Al crearla se vuelve a pedir
+ *     la lista, así ya se puede asignar.
  *   · Asignar: `POST /api/Materias/asignar`. Es lo que después ve el
  *     docente en "Entregar programa de materia".
  *   · Inscribir alumno (SCRUM-248): `POST /api/Materias/asignar-alumno`. Es lo
@@ -62,6 +63,7 @@ export class Asignaciones {
   protected readonly notificacionesDetalle = this.campana.detalle;
 
   protected readonly materias = signal<MateriaDisponible[]>([]);
+  protected readonly cursos = signal<string[]>([]);
   protected readonly docentes = signal<DocenteDisponible[]>([]);
   protected readonly comisiones = signal<ComisionDisponible[]>([]);
   protected readonly alumnos = signal<AlumnoDisponible[]>([]);
@@ -93,12 +95,14 @@ export class Asignaciones {
     this.errorCarga.set(null);
     forkJoin({
       materias: this.materiasService.listarDisponibles(),
+      cursos: this.materiasService.listarCursos(),
       docentes: this.materiasService.listarDocentes(),
       comisiones: this.materiasService.listarComisiones(),
       alumnos: this.materiasService.listarAlumnos(),
     }).subscribe({
-      next: ({ materias, docentes, comisiones, alumnos }) => {
+      next: ({ materias, cursos, docentes, comisiones, alumnos }) => {
         this.materias.set(materias);
+        this.cursos.set(cursos);
         this.docentes.set(docentes);
         this.comisiones.set(comisiones);
         this.alumnos.set(alumnos);

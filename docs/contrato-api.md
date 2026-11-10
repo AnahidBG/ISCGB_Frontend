@@ -249,10 +249,21 @@ Responde `200` con `{ "message": "Datos del perfil actualizados correctamente." 
 - Por acá no se cambian el nombre, el apellido, el DNI ni los roles. Eso lo hace
   Dirección con `PUT /api/UsuariosAdmin/modificar/{id}`.
 
-`genero` y `afiliacionEmergencia` se pueden escribir pero no leer:
-`GET /api/Usuarios/{id}` no los devuelve (el login sí, pero solo los de quien
-inicia sesión, y `Sesion` no los guarda). Por eso la pantalla no los ofrece: no
-podría precargarlos, y pedirlos de cero obligaría a reescribir lo que ya estaba.
+`genero` y `afiliacionEmergencia` no están en la pantalla. Hasta el 10/11/2026
+`GET /api/Usuarios/{id}` no los devolvía y no se podían precargar. Desde
+`d60d93c` sí los devuelve (ver abajo), así que "Mi perfil" ya podría ofrecerlos:
+queda para cuando se pida.
+
+### `GET /api/Usuarios/{id}`
+
+Lo puede pedir la propia persona, o Director y Secretario. Desde el 10/11/2026
+(`d60d93c`) trae, además de los datos de contacto y los roles, lo que carga el
+alta: `cuil`, `genero`, `afiliacionEmergencia`, `esDirectorSuplente` (si alguno
+de sus perfiles de docente lo es) y `legajo` (del perfil de alumno, `null` si no
+es alumno). "Editar usuario" los precarga, así que ya no hay que volver a
+cargar el CUIL ni volver a tildar la suplencia. El legajo se muestra tal cual si
+no es el DNI: es un número cargado a mano y el backend lo respeta aunque se
+corrija el DNI.
 
 Cómo lo usa el frontend, en `/perfil`:
 
@@ -437,7 +448,9 @@ nunca ausente. Responde `200`:
 ```
 
 Los errores son `404` si el legajo no existe y `400` si el auditor no es válido,
-los dos con `{ "message": "…" }`. El endpoint no manda mails.
+los dos con `{ "message": "…" }`. Desde el 10/11/2026 (`bd7b565`), al pasar a
+`Rechazado` le manda un mail a la persona con el `comentario` como motivo
+(`EnviarAvisoRechazoAsync`). Si el mail falla, la auditoría queda guardada igual.
 
 Cómo lo usa la pantalla:
 
@@ -490,7 +503,7 @@ Cómo se arma:
 
 La lista y el armado del texto están en `core/legajos/motivos-rechazo.ts`
 (`MOTIVOS_RECHAZO` y `comentarioDeRechazo`). El cuadro es
-`features/legajo/mis-documentos/partes/cuadro-rechazo`.
+`shared/ui/cuadro-rechazo`: lo usan el legajo y los justificativos.
 
 `legajo.comentario` es `varchar(max)` y `AuditoriaLegajoDto.Comentario` no
 tiene `[MaxLength]`. Los 7 motivos juntos suman 228 caracteres, así que la
@@ -501,15 +514,34 @@ El Docente y el Alumno ven el motivo completo en Mis Documentos, en la tarjeta
 "Documentación rechazada" del panel y en la campana. Los rechazos viejos, con
 motivo libre, se muestran igual.
 
-Dos pendientes del backend:
+### El rechazo de un justificativo
 
-- `PUT /api/Justificativos/auditar/{id}` recibe
-  `AuditarJustificativoDto { idUsuarioAuditor, estado }`, sin `comentario`. El
-  motivo del rechazo de un justificativo no tiene a dónde ir. Cuando exista el
-  campo, se reusan el cuadro de rechazo y `MOTIVOS_RECHAZO`.
-- El mail automático de rechazo. `IEmailService` tiene
-  `EnviarAvisoFaltantesAsync` para los avisos de faltantes, pero `AuditarLegajo`
-  y `AuditarJustificativo` no envían nada al rechazar.
+Desde el 10/11/2026 (`bd7b565`), `PUT /api/Justificativos/auditar/{id}` recibe
+`AuditarJustificativoDto { estado, comentario? }`. El auditor sale del token.
+Al pasar a `Rechazado`, el backend le manda un mail a la persona
+(`EnviarAvisoRechazoAsync`) con el período, el tipo y el `comentario` como
+motivo. El comentario **no se guarda**: solo viaja en el mail.
+
+```jsonc
+// PUT /api/Justificativos/auditar/{idJustificativo}
+{ "estado": "Rechazado", "comentario": "Falta sello y/o firma" }
+```
+
+El frontend manda `comentario` solo al rechazar, y no deja rechazar sin al
+menos un motivo: usa el mismo cuadro y los mismos `MOTIVOS_RECHAZO` que el
+legajo. La revisión está en `features/justificativos/revision-justificativos`,
+que usan el Panel del Secretario y el Panel del Director.
+
+Pendientes del backend:
+
+- `GET /api/Justificativos/pendientes` no dice de quién es cada uno (ni id ni
+  rol), y `auditar` no impide revisar el propio. Un Secretario puede aprobar su
+  propio justificativo. Haría falta `idUsuario` o el rol en
+  `JustificativoPendienteDto`, y que `auditar` responda 403 si
+  `justificativo.IdUsuario` es el del token.
+- Como el comentario no se guarda, la persona no ve el motivo en "Mis
+  justificativos": solo le queda el mail.
+- El mail dice "Secretaría revisó…" aunque haya rechazado el Director.
 
 ## Frecuencia de los avisos de documentación faltante
 
@@ -555,9 +587,11 @@ días es solo del frontend.
 
 Todo está en `ConfiguracionCalendarioController`, en `api/ConfiguracionCalendario`.
 El archivo se llama `CalendarioExamenesController.cs`, pero la clase y la ruta
-no. La regla de negocio es un límite de exámenes **por día**, único para todo el
-instituto, que define Secretaría Académica. Hoy vale 2 si nunca se configuró. No
-hay límite por comisión.
+no. La regla de negocio es un límite de exámenes **por día**, que define Secretaría
+Académica. Hoy vale 2 si nunca se configuró. Desde el 10/11/2026 (`bd7b565`) se
+cuenta **por año (el curso de la materia) y comisión**: con límite 2, un día puede
+tener 2 de Primer Año A, 2 de Primer Año B y 2 de Segundo Año A. Por eso el curso
+de una materia se elige de una lista (`GET /api/Materias/cursos`).
 
 Esta sección se relevó el 10/10/2026 contra el código del backend, los endpoints
 `modificar` y `eliminar` se volvieron a verificar el 12/10/2026, y se actualizó el
@@ -582,13 +616,22 @@ sin `[Authorize]` `estado-mes`, `tipos-examen`, `modificar` y `eliminar`.
 
 ### `GET /api/ConfiguracionCalendario/estado-mes?anio=2026&mes=10`
 
-`mes` va de 1 a 12. Devuelve `200`:
+`mes` va de 1 a 12. Desde el 10/11/2026 acepta además `&idMateria=4&idComision=2`:
+la materia y la comisión que se están por cargar. Devuelve `200`:
 
 ```json
 {
   "limiteDiario": 2,
   "diasOcupados": [
-    { "fecha": "2026-10-13T00:00:00", "cantidadExamenes": 1, "limiteAlcanzado": false }
+    {
+      "fecha": "2026-10-13T00:00:00",
+      "cantidadExamenes": 3,
+      "limiteAlcanzado": false,
+      "porGrupo": [
+        { "curso": "Primer Año", "idComision": 1, "comision": "1° A", "cantidadExamenes": 1, "limiteAlcanzado": false },
+        { "curso": "Segundo Año", "idComision": 2, "comision": "2° A", "cantidadExamenes": 2, "limiteAlcanzado": true }
+      ]
+    }
   ]
 }
 ```
@@ -598,20 +641,31 @@ sin `[Authorize]` `estado-mes`, `tipos-examen`, `modificar` y `eliminar`.
 - `fecha` es un `DateTime` de .NET serializado sin zona, a medianoche. El frontend
   lo convierte con `desdeFechaSola` para que no se corra un día por la zona
   horaria.
-- `limiteAlcanzado` lo calcula el backend (`cantidadExamenes >= limiteDiario`). El
-  frontend no lo usa: calcula el estado de cada día él mismo con la cantidad y el
-  límite (`estadoDelDia`), que es la misma cuenta.
-- No hay más campos. No trae qué exámenes son, de qué materia ni a qué hora.
+- Sin `idMateria`/`idComision`, `cantidadExamenes` es el total del día y
+  `limiteAlcanzado` es `true` si **algún** año y comisión llegó al límite. Con
+  ellos, los dos son solo de ese grupo.
+- Cuentan los exámenes que cargan los docentes y las mesas pendientes o aceptadas;
+  no las mesas que todos rechazaron.
+- `porGrupo` trae el detalle de cada año y comisión. El frontend no lo usa.
 - Un mes inválido (0 o 13, por ejemplo) responde `500`: el controller arma un
   `DateTime` con el valor sin validarlo.
 
 El frontend arma con eso el modelo `CalendarioDelMes` (`aCalendarioDelMes`, en
 `core/examenes/adaptador-estado-mes.ts`): todos los días del mes, en orden, con
 `fecha` como `yyyy-MM-dd`, `cantidad` (0 en los que el backend no lista), `limite` y
-`estado`. El estado sale de `estadoDelDia(cantidad, limite)`: `disponible` sin
-parciales, `ocupado` si tiene alguno y falta para el límite, y `completo` si lo
-alcanzó. Si la cantidad o el límite no son números válidos, el día queda
-`disponible`.
+`estado`. El estado sale de `limiteAlcanzado`: `disponible` sin exámenes,
+`completo` si el backend dice que no hay lugar y `ocupado` si no. Ya no se calcula
+con `cantidad >= limite`: con varios grupos, un día con 3 exámenes y límite 2 puede
+tener lugar. Si `limiteAlcanzado` no viene (un backend anterior), se calcula como
+antes (`estadoDelDia`).
+
+`CalendarioExamenesService.calendarioDelMes(anio, mes, opciones, grupo)` manda el
+grupo cuando lo hay. Lo usa "Mesas de examen" para revisar el día de la mesa. La
+grilla de `/calendario` lo pide sin grupo, así que para el Docente un día
+"completo" quiere decir que algún año y comisión llegó, no necesariamente el suyo.
+Por eso desde el 10/11/2026 el Docente lo puede elegir igual (y soltar ahí un
+parcial): el modal avisa, y si el grupo de la materia no tiene lugar el `400` de
+`registrar` o `modificar` lo dice.
 
 Una entrada de `diasOcupados` que no se puede leer (una fecha inválida, o una
 cantidad que no es un entero de 0 para arriba) se descarta y ese día queda
@@ -630,7 +684,8 @@ exámenes del **mes en curso**, ordenados por fecha (`ExamenMesDto`):
     "materia": "Redes",
     "fecha": "2026-10-20T09:00:00",
     "comision": "Comisión 1° A",
-    "tipoExamen": "Parcial"
+    "tipoExamen": "Parcial",
+    "puedeModificar": true
   }
 ]
 ```
@@ -638,11 +693,19 @@ exámenes del **mes en curso**, ordenados por fecha (`ExamenMesDto`):
 - **No recibe año ni mes**: usa el `DateTime.Now` del servidor. Para otro mes no hay
   listado.
 - No trae los ids de materia, comisión ni tipo, ni quién registró el examen.
+- `puedeModificar` (desde el 10/11/2026, `bd7b565`): si quien pide puede
+  modificarlo o eliminarlo. Director y Secretario, siempre; un Docente, solo el
+  Parcial, Recuperatorio o Final que cargó él (`Examenes.id_docente_creador`). Los
+  exámenes anteriores a esa columna no tienen creador: ningún Docente los puede
+  tocar.
+- Desde el 10/11/2026 las mesas de examen aparecen recién cuando el docente
+  convocado las acepta.
 - Sin exámenes responde `200` con `[]`.
 
 El frontend lo traduce a `ExamenCalendario` con `aExamenesDelMes`
 (`core/examenes/adaptador-examenes-mes.ts`): separa el día y el horario, descarta
 un examen que no se puede leer (sin id, o sin fecha con hora) y uno de otro mes.
+`puedeModificar` vale solo si llega `true`: sin el campo, nada se puede tocar.
 `CalendarioExamenesHttpService.examenesDelMes(anio, mes)` lo pide solo si
 `anio`/`mes` son el mes en curso; para cualquier otro devuelve `[]` sin pedir nada.
 Con eso, en el mes en curso la grilla lista los parciales y se pueden reprogramar y
@@ -660,8 +723,9 @@ Recibe `{ "nuevoLimite": 3 }` y cambia el límite de exámenes por día. Respond
 Con `nuevoLimite` en cero o negativo responde `400` con
 `{ "message": "El límite de parciales Diarios debe ser mayor a cero." }`.
 
-- El límite es por día y único para todo el instituto. Cuenta todos los tipos de
-  examen, no solo los parciales, aunque el endpoint se llame así.
+- El límite es por día y es un solo número, pero desde el 10/11/2026 se aplica a
+  cada año y comisión por separado. Cuenta todos los tipos de examen, no solo los
+  parciales, aunque el endpoint se llame así.
 - No hay un GET propio. El valor vigente se lee de `limiteDiario` en
   `estado-mes`, que es el mismo en cualquier mes:
   `CalendarioExamenesHttpService.limiteDiario()` pide el mes actual y se queda con
@@ -687,7 +751,16 @@ Registra un examen. Recibe `CargaExamenDto`:
 Responde `200` con `{ "message": "Examen registrado correctamente.", "idExamen": 31 }`
 (el id se agregó el 17/10/2026; el frontend no lo usa: después de registrar vuelve a
 pedir el mes). Si el día ya alcanzó el límite responde `400` con
-`{ "message": "No se puede registrar. Se ha superado el límite de parciales para ese día." }`.
+`{ "message": "No se puede registrar: ese año y comisión ya tienen el máximo de exámenes permitido para ese día." }`.
+
+Desde el 10/11/2026 (`bd7b565`):
+
+- El límite se cuenta por **año (curso de la materia) + comisión**, no por día
+  para todo el instituto. Cuentan también las mesas pendientes o aceptadas.
+- Solo acepta los tipos Parcial, Recuperatorio y Final; con otro responde `400`
+  `"Tipo de examen no válido. Debe ser Parcial, Recuperatorio o Final."`. Por eso
+  el modal del Docente ofrece solo esos tres (`tiposQueRegistraElDocente`).
+- Guarda quién lo cargó (`id_docente_creador`): es lo que decide `puedeModificar`.
 
 Desde el 17/10/2026 pide el rol Docente, saca al docente del token y verifica que
 dicte esa materia (`docente_materia`); si no, `400` con
@@ -699,7 +772,7 @@ No verifica la comisión.
   `core/examenes/registro-examen.ts`. Nunca `toISOString()`: lo pasa a UTC y corre el
   examen tres horas (un parcial a las 23:30 caería al día siguiente).
 - El límite cuenta los exámenes de la misma fecha sin mirar la hora, de cualquier
-  materia, comisión o tipo.
+  tipo, del mismo año (curso de la materia) y la misma comisión.
 - No valida que la comisión ni el tipo existan: con ids inválidos responde `500`.
   Tampoco que la fecha no sea pasada. El frontend cuida la fecha (`errorDeDia`: no
   deja registrar en un día anterior a hoy) y ofrece solo las materias del docente de
@@ -712,11 +785,13 @@ No verifica la comisión.
 
 ### `GET /api/ConfiguracionCalendario/tipos-examen`
 
-Devuelve `200` con `[{ "idTipoExamen": 1, "nombre": "Parcial" }]`. No exige rol y no
-recibe parámetros. Hoy la base tiene cuatro: "Parcial", "Recupetario" (así, con el
-error de tipeo), "Parcial Integrador Final" y "Coloquio". El frontend los muestra
-tal cual vienen. Si la respuesta no se puede leer (no es una lista, o un tipo
-no trae id o nombre) es un error.
+Devuelve `200` con `[{ "idTipoExamen": 1, "nombre": "Parcial" }]`. Pide sesión y no
+recibe parámetros. Devuelve TODOS los de la base: en algunas hay "Recupetario" (así,
+con el error de tipeo), "Parcial Integrador Final" o "Coloquio", y desde el
+10/11/2026 el seeder agrega "Parcial", "Recuperatorio" y "Final" si faltan. El
+frontend los muestra tal cual vienen en "Mesas de examen", y en el modal del Docente
+solo los tres que acepta `registrar`. Si la respuesta no se puede leer (no es una
+lista, o un tipo no trae id o nombre) es un error.
 
 ### `GET /api/ConfiguracionCalendario/mis-materias-docente`
 
@@ -767,13 +842,13 @@ Responde `200` con `{ "message": "La fecha del examen se ha modificado correctam
 - `nuevaFecha` es un `DateTime` de .NET **sin zona y con hora**, igual que `fecha` en
   `registrar`: el frontend la arma con `textoFechaYHora(dia, horario)` y nunca con
   `toISOString()`.
-- Desde `523d05b` pide sesión, y un Docente solo puede con los exámenes de las
-  materias que dicta, en cualquier comisión (`PuedeGestionarExamenAsync`); con otro
+- Pide sesión. Desde el 10/11/2026 (`bd7b565`) un Docente solo puede con el Parcial,
+  Recuperatorio o Final que cargó él (`PuedeGestionarExamenAsync`); con otro
   responde `403` sin body. Director y Secretario pueden con todos. No valida que la
   fecha no sea pasada. El frontend cuida la fecha (`errorDeDia`) y solo deja abrir y
-  arrastrar los parciales de las materias del Docente (`parcialesGestionables`, que
-  cruza `del-mes` con `mis-materias-docente` por el nombre de la materia). Con otro
-  parcial explica por qué no, sin llamar al backend.
+  arrastrar los que `del-mes` marca con `puedeModificar` (`parcialesGestionables`).
+  Con otro explica por qué no, sin llamar al backend. Antes cruzaba `del-mes` con
+  `mis-materias-docente` por el nombre de la materia, que era la regla de `523d05b`.
 - Cómo lo usa el frontend: `CalendarioExamenesService.reprogramarExamen(idExamen,
   fechaYHora)`. Un `4xx` con texto se muestra tal cual (el del límite, por ejemplo); un
   `5xx` o la falta de red, con el mensaje genérico. Va en segundo plano, sin el velo
@@ -787,7 +862,9 @@ Quita un examen del calendario. No recibe cuerpo. Responde `200` con
 `{ "message": "El examen ha sido eliminado del calendario correctamente." }` y `404`
 con `{ "message": "No se encontró el examen especificado." }` si no existe.
 
-- Mismo permiso que `modificar`: con un examen de otra materia, el Docente recibe `403`.
+- Mismo permiso que `modificar`: con un examen que no cargó él, el Docente recibe `403`.
+- Desde el 10/11/2026 borra antes las convocatorias de la mesa (`mesa_examen`): una
+  mesa con docente asignado ya se puede eliminar.
 - Cómo lo usa el frontend: `CalendarioExamenesService.eliminarExamen(idExamen)`, desde
   "Modificar parcial" y recién después de confirmar en el diálogo "¿Eliminar el
   parcial de…?". Mismo criterio de errores que `modificar`.
@@ -799,9 +876,10 @@ la grilla muestra cuántos hay cada día, sin listarlos. Ver `docs/como-probar.m
 ### Pendientes del backend
 
 - `del-mes` solo trae el mes en curso. Debería recibir `anio` y `mes` como
-  `estado-mes`, para listar y tocar los parciales de cualquier mes. Tampoco trae el
-  id de la materia, así que el frontend sabe cuáles son del docente cruzando por
-  el nombre.
+  `estado-mes`, para listar y tocar los parciales de cualquier mes.
+- `tipos-examen` devuelve todos los tipos de la base, aunque `registrar` acepte solo
+  Parcial, Recuperatorio y Final. El frontend filtra en el modal del Docente; sería
+  mejor que el backend los marcara o los filtrara.
 - El período del límite no está definido. El backend cuenta por día
   (`limite_parciales_diario`) y en Jira figura "por semana". Si cambia, el frontend
   toca `PERIODO_DEL_LIMITE`, que solo cambia la redacción, y tendría que revisar
@@ -889,7 +967,9 @@ Con `[Authorize(Roles = "Director,Secretario")]`. Recibe `RegistrarMesaDto`:
 Crea el examen y la asignación del docente en `Pendiente`, en una transacción.
 Responde `200` con `{ message, idExamen }`, `400` con
 `{ "message": "El docente seleccionado no existe." }` y `500` con un mensaje si
-falla el guardado. No respeta el límite de exámenes por día ni valida la fecha.
+falla el guardado. No valida la fecha. Desde el 10/11/2026 respeta el límite del
+día para el año y la comisión de la mesa (`400` "No se puede registrar la mesa: ese
+año y comisión ya tienen el máximo…") y le manda un mail al docente convocado.
 
 El frontend lo usa en "Mesas de examen" (`/mesas-examen`, Director y Secretario).
 `erroresDeNuevaMesa` (`core/mesas/nueva-mesa.ts`) exige todo, fecha desde hoy y
@@ -945,19 +1025,18 @@ igual los pendientes del instituto.
 
 ### Pendientes del backend
 
-- Ni `registrar-mesa` ni `asignar-docente` mandan el mail al docente, aunque el
-  mensaje de respuesta dice "Se ha notificado al profesor".
 - No hay un endpoint que liste las mesas creadas ni sus asignaciones: después de
-  crearla, la mesa solo se ve en el calendario del mes en curso (`del-mes`) y en la
-  campana del docente.
-- `registrar-mesa` no valida el límite de parciales del día, aunque la mesa se
-  guarda en `Examenes` y `estado-mes` la cuenta. Así, un día con 2 parciales y
-  límite 2 podía quedar con 3. Las mesas cuentan para el límite (lo definió Milena el
-  10/11/2026): el front revisa el día con `calendarioDelMes` antes de mandarla
-  (`motivoSinLugar`, `core/mesas/lugar-en-el-dia.ts`) y no la arma en un día
-  completo. Si no puede revisarlo, no la manda. Falta que el back llame a
-  `SuperaLimiteDiarioAsync` en `registrar-mesa`. `PUT limite-parciales` tampoco
-  revisa lo cargado: si se baja el límite, los días que ya lo superaban quedan así.
+  crearla, la mesa solo se ve en el calendario del mes en curso (`del-mes`), y
+  desde el 10/11/2026 recién cuando el docente la acepta.
+- `PUT limite-parciales` no revisa lo cargado: si se baja el límite, los días que
+  ya lo superaban quedan así.
+
+Resuelto el 10/11/2026 (`bd7b565`): `registrar-mesa` valida el límite del día (por
+año y comisión) y `registrar-mesa` y `asignar-docente` mandan el mail al docente.
+Las mesas cuentan para el límite (lo definió Milena el 10/11/2026): el front igual
+revisa el día con `calendarioDelMes` para el año y la comisión de la mesa antes de
+mandarla (`motivoSinLugar`, `core/mesas/lugar-en-el-dia.ts`), y si no puede
+revisarlo no la manda.
 
 ## Suplencias docentes
 
@@ -1065,8 +1144,14 @@ asignaciones" usa todos menos `mis-materias`. Desde el 17/10/2026, `asignar`,
   `{ data: [{ idComision, nombreComision }] }`.
 - `POST /api/Materias/asignar`, con `{ idDocente, idMateria, idComision }`.
   Responde 400 si ya está asignada en esa comisión.
+- `GET /api/Materias/cursos` (agregado el 10/11/2026): arreglo plano de textos,
+  `["Primer Año", "Segundo Año", "Tercer Año"]`. Pide sesión, sin rol. Es el
+  desplegable "Curso" del alta de materia.
 - `POST /api/Materias/cargar-materia`, con `{ nombreMateria, carrera, curso }`.
-  Devuelve `{ message, idMateria }`, o 400 si el nombre se repite.
+  Devuelve `{ message, idMateria }`, o 400 si el nombre se repite. Desde el
+  10/11/2026 también responde 400 si el curso no es uno de `cursos`: lo
+  normaliza ("1° año" → "Primer Año") porque el límite de exámenes por día se
+  cuenta por año y comisión. Por eso el frontend no deja escribirlo.
 - `GET /api/Materias/mis-materias`, solo para el rol Alumno. Devuelve un
   arreglo plano, sin `{ data }`: `[{ idMateria, nombre, carrera, curso }]`, con
   las materias en las que el alumno está inscripto. Puede venir vacío, y con

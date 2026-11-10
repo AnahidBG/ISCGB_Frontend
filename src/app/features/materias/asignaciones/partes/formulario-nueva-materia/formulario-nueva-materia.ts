@@ -15,7 +15,7 @@ import { NuevaMateria } from '../../../../../core/materias/modelos/asignacion-ma
 const OBLIGATORIOS = {
   nombre: 'Ingresá el nombre de la materia.',
   carrera: 'Ingresá la carrera.',
-  curso: 'Ingresá el curso.',
+  curso: 'Elegí el curso.',
 } as const;
 
 type Campo = keyof typeof OBLIGATORIOS;
@@ -27,6 +27,11 @@ type Campo = keyof typeof OBLIGATORIOS;
  * limpia y el contenedor decide qué hacer. Cuando el alta sale bien, el
  * contenedor incrementa `reinicio` y el formulario se vacía; si falla (nombre
  * repetido), los datos quedan para corregirlos.
+ *
+ * El curso se ELIGE de `cursos` (`GET /api/Materias/cursos`), no se escribe:
+ * el límite de exámenes por día se cuenta por año y comisión, así que el
+ * backend solo acepta los años de esa lista. Un valor que no está en la lista
+ * cuenta como vacío.
  */
 @Component({
   selector: 'app-formulario-nueva-materia',
@@ -37,6 +42,8 @@ type Campo = keyof typeof OBLIGATORIOS;
 export class FormularioNuevaMateria {
   private readonly fb = inject(FormBuilder);
 
+  /** Los cursos válidos, en el orden del backend. */
+  readonly cursos = input<readonly string[]>([]);
   readonly enviando = input(false);
   readonly error = input<string | null>(null);
   readonly exito = input<string | null>(null);
@@ -68,7 +75,9 @@ export class FormularioNuevaMateria {
     if (!this.seIntentoEnviar()) {
       return null;
     }
-    return this.formulario.controls[campo].value.trim() === '' ? OBLIGATORIOS[campo] : null;
+    const valor = this.formulario.controls[campo].value.trim();
+    const falta = campo === 'curso' ? !this.cursos().includes(valor) : valor === '';
+    return falta ? OBLIGATORIOS[campo] : null;
   }
 
   protected enviar(): void {

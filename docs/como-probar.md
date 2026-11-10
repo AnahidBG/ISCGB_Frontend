@@ -277,9 +277,9 @@ Solo para Secretario, en el menú lateral.
 Lo ven el Docente, el Secretario y el Director. El Docente lo tiene en "Calendario
 de parciales" del menú lateral; Secretaría y Dirección llegan desde "Límite de
 parciales", con el enlace "Ver el calendario de parciales". Solo el Docente puede
-registrar parciales (ver "Registrar un parcial", más abajo), tocar un día completo
-para ver por qué está bloqueado (ver "Fecha bloqueada") y reprogramar, eliminar o
-arrastrar uno ya cargado (ver "Reprogramar, eliminar y arrastrar un parcial").
+registrar parciales (ver "Registrar un parcial", más abajo), también en un día
+completo (ver "Día completo") y reprogramar, eliminar o arrastrar uno ya cargado (ver
+"Reprogramar, eliminar y arrastrar un parcial").
 
 Para tener algo que ver con un Secretario o un Director, registrá parciales con el
 Docente o desde Swagger con `POST /api/ConfiguracionCalendario/registrar`:
@@ -331,19 +331,22 @@ materias asignadas: filas en `docente_materia` con su materia y su comisión. Pa
 probar el rechazo por límite, un día con el límite alcanzado (con el límite en 2,
 dos parciales el mismo día).
 
-- [ ] Debajo de la grilla dice "Elegí un día disponible para registrar un parcial. Los
-      días completos y las fechas pasadas no admiten registros." Con Secretario o
-      Director no está.
-- [ ] Los días pasados y los completos no se pueden elegir (con clic ni con Enter o
-      Espacio) y un lector de pantalla los anuncia como no disponibles. Hoy sí.
+- [ ] Debajo de la grilla dice "Elegí un día para registrar un parcial. Las fechas
+      pasadas no admiten registros. En un día completo, algún año y comisión ya llegó
+      al límite: si es el de tu materia, el sistema te lo dice al guardar." Con
+      Secretario o Director no está.
+- [ ] Los días pasados no se pueden elegir (con clic ni con Enter o Espacio) y un
+      lector de pantalla los anuncia como no disponibles. Hoy sí, y los completos
+      también (ver "Día completo").
 - [ ] Al elegir un día se abre "Registrar parcial", con el día debajo del título
       ("Martes 13 de octubre de 2026"). Mientras trae las materias y los tipos
       muestra la espera dentro del modal.
 - [ ] "Materia y comisión" es un solo desplegable: cada opción dice la materia y la
       comisión, con la carrera entre paréntesis. Una materia en dos comisiones son
       dos opciones.
-- [ ] "Tipo de examen" lista los tipos que devuelve el backend, con sus nombres tal
-      cual ("Recupetario" incluido).
+- [ ] "Tipo de examen" lista solo Parcial, Recuperatorio y Final, los que acepta
+      `registrar` desde el 10/11/2026. Si la base tiene otros ("Recupetario",
+      "Coloquio"), no aparecen.
 - [ ] "Fecha" viene con el día elegido, se puede cambiar y no deja ir antes de hoy.
       "Horario" dice "Horario en formato 24 h.".
 - [ ] Guardar con algún campo vacío marca los que faltan y no manda nada (mirá
@@ -358,10 +361,10 @@ dos parciales el mismo día).
 - [ ] Si sale bien, el modal se cierra, aparece "Parcial registrado para el martes 13
       de octubre a las 09:00." y el día cambia de color sin que la grilla desaparezca.
       El foco queda en ese día.
-- [ ] Registrar en un día que ya alcanzó el límite (cambiando la fecha en el modal)
-      muestra, dentro del formulario, "No se puede registrar. Se ha superado el
-      límite de parciales para ese día." El modal sigue abierto, con lo que
-      completaste, y se puede probar con otra fecha.
+- [ ] Registrar en un día en el que el año y la comisión de la materia ya tienen el
+      límite muestra, dentro del formulario, "No se puede registrar: ese año y
+      comisión ya tienen el máximo de exámenes permitido para ese día." El modal sigue
+      abierto, con lo que completaste, y se puede probar con otra fecha.
 - [ ] Un Docente sin materias asignadas ve "Todavía no tenés materias asignadas.
       Consultá en Secretaría." y no hay formulario.
 - [ ] Con el backend apagado el modal muestra el aviso con "Reintentar". Si se apaga
@@ -374,23 +377,27 @@ dos parciales el mismo día).
 - [ ] A 375 px de ancho el modal entra sin scroll horizontal, con "Fecha" y "Horario"
       uno debajo del otro.
 
-### Fecha bloqueada
+### Día completo (SCRUM-185)
 
-Con el backend real y el Docente. Hace falta un día con el límite alcanzado (con el
-límite en 2, dos parciales el mismo día) que no sea pasado.
+Desde el 10/11/2026 el límite es por año y comisión, y la grilla no sabe de qué grupo
+va a ser el parcial: un día "completo" es uno en el que ALGÚN año y comisión llegó al
+límite. Por eso el Docente lo puede elegir igual, y el que bloquea es el backend al
+guardar. Con el backend real y el Docente, hace falta un día que no sea pasado con dos
+parciales del mismo año y comisión (límite en 2), y que el Docente dicte una materia
+de ese grupo y otra de otro.
 
-- [ ] Tocar ese día, con clic, Enter o Espacio, no abre "Registrar parcial". Aparece
-      arriba de la grilla una franja roja suave con borde izquierdo rojo: "20 de
-      octubre · Fecha bloqueada" y debajo "Ya se completó el máximo de parciales por
-      día. Elegí otra fecha."
-- [ ] El día completo sigue en el recorrido de las flechas, y un lector de pantalla lo
-      dice como "20 de octubre, 2 de 2 parciales, completo". El aviso se anuncia solo
-      cuando aparece.
-- [ ] El aviso desaparece al pasar de mes, al elegir un día disponible (que abre el
-      registro) y al abrir cualquier modal.
+- [ ] El día dice "Completo", con el candado, y un lector de pantalla lo dice como
+      "20 de octubre, 2 de 2 parciales, completo".
+- [ ] Tocarlo abre "Registrar parcial" con el aviso "Ese día, algún año y comisión ya
+      tiene el máximo de exámenes. Si es el de la materia que elijas, el sistema no te
+      va a dejar registrarlo y te lo va a decir al guardar."
+- [ ] Con la materia del grupo lleno, "Guardar" muestra el rechazo del backend dentro
+      del formulario. Con la del otro grupo, se registra.
+- [ ] Arrastrar un parcial a ese día lo intenta: si su grupo no tiene lugar, el
+      rechazo aparece arriba de la grilla ("No se pudo mover el parcial").
 - [ ] Un día completo que ya pasó no hace nada.
-- [ ] Con Secretario o Director, tocar un día completo no muestra el aviso: para ellos
-      el calendario es de consulta.
+- [ ] Con Secretario o Director, tocar un día no abre nada: para ellos el calendario
+      es de consulta.
 
 ### Reprogramar, eliminar y arrastrar un parcial
 
@@ -414,7 +421,9 @@ o borres se queda hasta que recargues la página.
       día nuevo. Si lo pasaste a otro mes, queda en el día donde estaba.
 - [ ] Pasarlo a un día completo (el 12) muestra, dentro del formulario, "No se puede
       reprogramar. El día ha superado el límite de parciales." El modal sigue abierto.
-      Cambiarle solo la hora a uno de los dos del 12 sí se puede.
+      Cambiarle solo la hora a uno de los dos del 12 sí se puede. (Con el backend real
+      el texto es "No se puede reprogramar: ese año y comisión ya tienen el
+      máximo…", y solo si el grupo del parcial es el que está lleno.)
 - [ ] "Eliminar parcial" pide confirmación: "¿Eliminar el parcial de Matemática del
       martes 12 de octubre?". "Cancelar" y Escape cierran la pregunta y dejan el modal
       abierto, con el foco otra vez en "Eliminar parcial". "Eliminar" lo borra, avisa
@@ -613,12 +622,12 @@ mirando si la llamada salió y qué contestó.
 No está roto: no existe.
 
 - El buscador de la barra superior está deshabilitado.
-- Editar en "Mi perfil" el género y la afiliación de emergencia: el backend los
-  acepta, pero `GET /api/Usuarios/{id}` no los devuelve, y la pantalla no los
-  ofrece. El nombre, el apellido, el DNI y los roles los cambia Dirección.
+- Editar en "Mi perfil" el género y la afiliación de emergencia: desde el
+  10/11/2026 `GET /api/Usuarios/{id}` los devuelve, pero la pantalla todavía no
+  los ofrece. El nombre, el apellido, el DNI y los roles los cambia Dirección o
+  Secretaría desde "Editar usuario", que sí los precarga.
 - Cambiar la contraseña escribiendo la actual: el backend no tiene ese endpoint.
   "Configuración" manda el enlace de recupero al correo de la sesión.
-- El mail al rechazar un documento o un justificativo.
 - Del calendario de parciales, con el backend real, abrir, reprogramar, eliminar o
   arrastrar un parcial ya cargado: las pantallas están, pero el backend no tiene un
   listado de exámenes, así que la grilla no muestra la materia de cada parcial ni

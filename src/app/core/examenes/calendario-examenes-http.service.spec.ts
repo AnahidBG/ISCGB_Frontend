@@ -53,6 +53,17 @@ describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
     pedido.flush({ limiteDiario: 2, diasOcupados: [] });
   });
 
+  it('con un grupo pide el mes de ese año y comisión (`idMateria` e `idComision`)', () => {
+    servicio.calendarioDelMes(2026, 10, undefined, { idMateria: 4, idComision: 2 }).subscribe();
+
+    const pedido = backend.expectOne(
+      (p) =>
+        p.url.includes('/api/ConfiguracionCalendario/estado-mes') &&
+        p.urlWithParams.includes('anio=2026&mes=10&idMateria=4&idComision=2'),
+    );
+    pedido.flush({ limiteDiario: 2, diasOcupados: [] });
+  });
+
   it('adapta la respuesta: todos los días del mes, con su estado, sin correr la fecha un día', () => {
     let calendario: CalendarioDelMes | undefined;
     servicio.calendarioDelMes(2026, 10).subscribe((valor) => (calendario = valor));
@@ -85,6 +96,7 @@ describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
 
   it('en segundo plano el pedido lleva SIN_CARGA_GLOBAL, y sin la opción no', () => {
     servicio.calendarioDelMes(2026, 10, { enSegundoPlano: true }).subscribe();
+    // (El grupo va aparte: ver el test de abajo.)
     const enSegundoPlano = backend.expectOne(RUTAS_API.estadoMesCalendario(2026, 10));
     expect(enSegundoPlano.request.context.get(SIN_CARGA_GLOBAL)).toBe(true);
     enSegundoPlano.flush({ limiteDiario: 2, diasOcupados: [] });
@@ -159,6 +171,7 @@ describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
           fecha: '2026-10-20T09:00:00',
           comision: 'Comisión 1° A',
           tipoExamen: 'Parcial',
+          puedeModificar: false,
         },
       ]);
 
@@ -170,6 +183,7 @@ describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
           materia: 'Redes',
           comision: 'Comisión 1° A',
           tipo: 'Parcial',
+          puedeModificar: false,
         },
       ]);
     });

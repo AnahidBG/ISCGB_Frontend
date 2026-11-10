@@ -78,6 +78,11 @@ const PERSONA_REVISADA: UsuarioDetalle = {
   idProvincia: null,
   fechaNac: null,
   estadoUsuario: true,
+  cuil: null,
+  genero: null,
+  afiliacionEmergencia: null,
+  esDirectorSuplente: false,
+  legajo: null,
   roles: ['Docente'],
   rolesConId: [{ idRol: 3, nombreRol: 'Docente' }],
 };

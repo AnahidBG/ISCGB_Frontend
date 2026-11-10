@@ -15,6 +15,8 @@ export interface ExamenMesApi {
   fecha: string;
   comision: string;
   tipoExamen: string;
+  /** Desde el 10/11/2026. Con un backend anterior falta, y se toma como `false`. */
+  puedeModificar: boolean;
 }
 
 /** "2026-10-20T09:00:00" → el día y el horario. Sin hora no hay examen: no se inventa una. */
@@ -51,6 +53,9 @@ function leerExamen(entrada: unknown): ExamenCalendario | null {
     materia: textoO(examen.materia, 'Materia sin nombre'),
     comision: textoO(examen.comision, 'Sin comisión'),
     tipo: textoO(examen.tipoExamen, 'Examen'),
+    // Solo un `true` explícito: ofrecer tocar algo que el backend rechaza con 403
+    // sería peor que no ofrecerlo.
+    puedeModificar: examen.puedeModificar === true,
   };
 }
 

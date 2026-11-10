@@ -127,13 +127,11 @@ Lo que pide SCRUM-16 y cómo está en el frontend:
    `[Authorize(Roles = "Director,Secretario")]` de la clase y no tiene
    `[AllowAnonymous]`. Quien crea su contraseña desde el enlace del mail no
    tiene sesión, así que el endpoint le responde 401.
-2. `GET /api/Usuarios/{id}` no devuelve CUIL, género, afiliación ni
-   `DirectorSuplente`, y la edición no puede precargarlos. Si se edita a un
-   suplente y no se vuelve a tildar la casilla, el backend le quita la
-   suplencia. El login sí devuelve esos datos, pero solo de quien inicia sesión.
-3. El DNI y el correo repetidos se validan en el controlador del alta.
+2. El DNI y el correo repetidos se validan en el controlador del alta.
 
-Ya resuelto: el controlador exige `[Authorize(Roles = "Director,Secretario")]`,
+Ya resuelto: desde el 10/11/2026 (`d60d93c`) `GET /api/Usuarios/{id}` devuelve
+CUIL, género, afiliación, `esDirectorSuplente` y el legajo, y la edición los
+precarga; el controlador exige `[Authorize(Roles = "Director,Secretario")]`,
 el alta deja la contraseña pendiente y manda por correo el enlace a
 `/crear-password`, las provincias salen de `GET /api/Ubicaciones/paises` y
 `.../paises/{id}/provincias`, y una cuenta se reactiva con

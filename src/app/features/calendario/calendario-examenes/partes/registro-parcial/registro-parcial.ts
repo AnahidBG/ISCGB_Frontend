@@ -49,6 +49,13 @@ export class RegistroParcial {
 
   /** El día elegido en el calendario: "2026-10-13". */
   readonly dia = input.required<string>();
+
+  /**
+   * `true` si ese día figura completo: algún año y comisión ya llegó al límite.
+   * Se puede registrar igual (puede no ser el grupo de la materia que se elija),
+   * pero se avisa, porque si es el suyo el backend lo va a rechazar al guardar.
+   */
+  readonly diaCompleto = input<boolean>(false);
   readonly hoy = input<Date>(new Date());
   readonly carga = input.required<CargaOpcionesDeRegistro>();
 

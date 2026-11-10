@@ -2,7 +2,7 @@ import { aFechaSola, desdeFechaSola } from '../comun/fechas';
 import { MesCalendario } from './calendario-mes';
 import { estadoDelDia } from './estado-del-dia';
 import { CalendarioDelMes } from './modelos/calendario-del-mes';
-import { DiaCalendario } from './modelos/dia-calendario';
+import { DiaCalendario, EstadoDiaCalendario } from './modelos/dia-calendario';
 
 /**
  * Un elemento de `diasOcupados`. La fecha es un `DateTime` de .NET:
@@ -13,8 +13,14 @@ import { DiaCalendario } from './modelos/dia-calendario';
  */
 export interface DiaOcupadoApi {
   fecha: string;
+  /** Los exámenes del día: de todos los grupos, o del grupo pedido. */
   cantidadExamenes: number;
-  /** No se usa: el estado sale de `estadoDelDia(cantidad, limite)`. */
+  /**
+   * Si el día no tiene lugar. Desde el 10/11/2026 el límite es por año y comisión:
+   * sin grupo, es `true` si ALGÚN grupo llegó; con grupo, si llegó ese. Por eso el
+   * estado sale de acá y no de `cantidadExamenes >= limiteDiario`, que con varios
+   * grupos marcaría lleno un día con lugar.
+   */
   limiteAlcanzado: boolean;
 }
 
@@ -29,16 +35,24 @@ function esCantidadLegible(valor: unknown): valor is number {
   return typeof valor === 'number' && Number.isInteger(valor) && valor >= 0;
 }
 
+/** Un día de `diasOcupados` ya leído. `lleno` es `null` si el backend no lo mandó. */
+interface DiaLeido {
+  fecha: string;
+  cantidad: number;
+  lleno: boolean | null;
+}
+
 /**
- * Lee un elemento de `diasOcupados` y devuelve `[fecha, cantidad]`, o `null` si
- * no se puede leer (no es un objeto, la fecha no es una fecha o la cantidad no
- * es un número válido).
+ * Lee un elemento de `diasOcupados`, o devuelve `null` si no se puede leer (no
+ * es un objeto, la fecha no es una fecha o la cantidad no es un número válido).
  */
-function leerDiaOcupado(entrada: unknown): [string, number] | null {
+function leerDiaOcupado(entrada: unknown): DiaLeido | null {
   if (typeof entrada !== 'object' || entrada === null) {
     return null;
   }
-  const { fecha, cantidadExamenes } = entrada as Partial<Record<keyof DiaOcupadoApi, unknown>>;
+  const { fecha, cantidadExamenes, limiteAlcanzado } = entrada as Partial<
+    Record<keyof DiaOcupadoApi, unknown>
+  >;
 
   // `desdeFechaSola` y no `new Date(texto)`: una fecha sin zona se leería en UTC
   // y en Argentina caería el día anterior.
@@ -46,7 +60,26 @@ function leerDiaOcupado(entrada: unknown): [string, number] | null {
   if (fechaLocal === null || !esCantidadLegible(cantidadExamenes)) {
     return null;
   }
-  return [aFechaSola(fechaLocal), cantidadExamenes];
+  return {
+    fecha: aFechaSola(fechaLocal),
+    cantidad: cantidadExamenes,
+    lleno: typeof limiteAlcanzado === 'boolean' ? limiteAlcanzado : null,
+  };
+}
+
+/**
+ * El estado del día. Manda `limiteAlcanzado` del backend, que sabe de años y
+ * comisiones. Si no vino (un backend anterior al 10/11/2026, cuando el límite
+ * era para todo el día), se calcula con la cantidad y el límite.
+ */
+function estadoSegunBackend(dia: DiaLeido | undefined, limite: number): EstadoDiaCalendario {
+  if (dia === undefined || dia.cantidad === 0) {
+    return 'disponible';
+  }
+  if (dia.lleno === null) {
+    return estadoDelDia(dia.cantidad, limite);
+  }
+  return dia.lleno ? 'completo' : 'ocupado';
 }
 
 /**
@@ -76,11 +109,11 @@ export function aCalendarioDelMes(respuesta: unknown, mes: MesCalendario): Calen
     throw new Error('La respuesta no trae `diasOcupados`.');
   }
 
-  const cantidadPorFecha = new Map<string, number>();
+  const porFecha = new Map<string, DiaLeido>();
   for (const entrada of diasOcupados) {
     const dia = leerDiaOcupado(entrada);
     if (dia !== null) {
-      cantidadPorFecha.set(dia[0], dia[1]);
+      porFecha.set(dia.fecha, dia);
     }
   }
 
@@ -88,8 +121,13 @@ export function aCalendarioDelMes(respuesta: unknown, mes: MesCalendario): Calen
   const diasDelMes = new Date(mes.anio, mes.mes, 0).getDate();
   const dias = Array.from({ length: diasDelMes }, (_, posicion): DiaCalendario => {
     const fecha = aFechaSola(new Date(mes.anio, mes.mes - 1, posicion + 1));
-    const cantidad = cantidadPorFecha.get(fecha) ?? 0;
-    return { fecha, cantidad, limite: limiteDiario, estado: estadoDelDia(cantidad, limiteDiario) };
+    const dia = porFecha.get(fecha);
+    return {
+      fecha,
+      cantidad: dia?.cantidad ?? 0,
+      limite: limiteDiario,
+      estado: estadoSegunBackend(dia, limiteDiario),
+    };
   });
 
   return { limite: limiteDiario, dias };

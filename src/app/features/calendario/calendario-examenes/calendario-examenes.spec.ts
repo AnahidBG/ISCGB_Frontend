@@ -67,12 +67,14 @@ const MATERIAS: MateriaDelDocente[] = [
   },
 ];
 
+/** "Coloquio" está en la base, pero `registrar` lo rechaza desde el 10/11/2026. */
 const TIPOS: TipoExamen[] = [
   { idTipoExamen: 1, nombre: 'Parcial' },
   { idTipoExamen: 4, nombre: 'Coloquio' },
+  { idTipoExamen: 6, nombre: 'Final' },
 ];
 
-/** Un parcial del 13 de octubre, de una materia que dicta el docente. */
+/** Un parcial del 13 de octubre que cargó el docente de la sesión: lo puede tocar. */
 const PARCIAL_DEL_13: ExamenCalendario = {
   idExamen: 1,
   fecha: '2026-10-13',
@@ -80,6 +82,7 @@ const PARCIAL_DEL_13: ExamenCalendario = {
   materia: 'Programación II',
   comision: 'Comisión 1° A',
   tipo: 'Parcial',
+  puedeModificar: true,
 };
 
 /** Cómo responde el servicio al registro de un parcial. Lo que no se pasa, anda bien. */
@@ -278,13 +281,12 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
 
   it('el Docente puede elegir un día y lo orienta un texto; Secretaría y Dirección solo miran', async () => {
     const fixture = await montar(() => of(OCTUBRE));
-    const ayuda =
-      'Elegí un día disponible para registrar un parcial. Los días completos y las fechas pasadas no admiten registros.';
+    const ayuda = 'Elegí un día para registrar un parcial. Las fechas pasadas no admiten registros.';
 
     expect(raiz(fixture).querySelector('table')?.getAttribute('aria-readonly')).toBeNull();
-    // El día completo y el pasado no se pueden elegir.
-    expect(celda(fixture, '2026-10-20').getAttribute('aria-disabled')).toBe('true');
+    // El pasado no se puede elegir. El completo sí: el límite es por año y comisión.
     expect(celda(fixture, '2026-10-05').getAttribute('aria-disabled')).toBe('true');
+    expect(celda(fixture, '2026-10-20').getAttribute('aria-disabled')).toBeNull();
     expect(raiz(fixture).textContent).toContain(ayuda);
 
     sesion.set(sesionDe('Secretario'));
@@ -307,6 +309,7 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
       materia: 'Matemática',
       comision: 'Comisión 1° A',
       tipo: 'Parcial',
+      puedeModificar: false,
     };
 
     const fixture = await montar(
@@ -435,11 +438,8 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
         'Programación II · Comisión A (Tecnicatura en Desarrollo de Software)',
         'Programación II · Comisión B (Tecnicatura en Desarrollo de Software)',
       ]);
-      expect(opciones('#registro-tipo')).toEqual([
-        'Elegí un tipo de examen',
-        'Parcial',
-        'Coloquio',
-      ]);
+      // Solo los que acepta `registrar`: Coloquio daría un 400 seguro.
+      expect(opciones('#registro-tipo')).toEqual(['Elegí un tipo de examen', 'Parcial', 'Final']);
     });
 
     it('no guarda con campos sin completar o con una fecha pasada, y marca lo que falta', async () => {
@@ -535,15 +535,15 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
     });
 
     it('si no se pueden traer las materias lo avisa y "Reintentar" las vuelve a pedir', async () => {
-      // La primera la pide la pantalla al abrirse, para saber qué parciales son del
-      // docente. La que falla es la del modal.
+      // Las pide solo el modal: qué parciales puede tocar lo dice el backend
+      // (`puedeModificar`), así que la pantalla ya no las pide al abrirse.
       let llamadas = 0;
       const fixture = await montar(
         () => of(OCTUBRE),
         () => of([]),
         {
           materiasDelDocente: () =>
-            ++llamadas === 2
+            ++llamadas === 1
               ? throwError(() => new Error(MENSAJE_ERROR_MATERIAS_DEL_DOCENTE))
               : of(MATERIAS),
         },
@@ -566,44 +566,49 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
     });
   });
 
-  describe('fecha bloqueada (SCRUM-185)', () => {
-    /** El aviso rojo de arriba de la grilla, o `null`. */
-    const aviso = (fixture: ComponentFixture<CalendarioExamenes>) =>
-      raiz(fixture).querySelector<HTMLElement>('app-aviso-calendario');
-
-    it('un día completo avisa que la fecha está bloqueada sin abrir el registro, y el aviso se va al seguir', async () => {
+  describe('día completo (SCRUM-185, con el límite por año y comisión)', () => {
+    // Desde el 10/11/2026 el límite es por año y comisión, y la grilla no sabe de
+    // qué grupo va a ser el parcial: "completo" quiere decir que ALGÚN grupo llegó.
+    // El día se elige igual y el que bloquea es el backend, al guardar.
+    it('un día completo abre el registro y avisa que algún año y comisión ya llegó al límite', async () => {
       const fixture = await montar(() => of(OCTUBRE));
 
       await elegirDia(fixture, '2026-10-20');
 
-      const bloqueo = aviso(fixture)!;
-      expect(bloqueo.querySelector('[role="alert"]')).not.toBeNull();
-      expect(bloqueo.textContent).toContain('20 de octubre · Fecha bloqueada');
-      expect(bloqueo.textContent).toContain(
-        'Ya se completó el máximo de parciales por día. Elegí otra fecha.',
+      const modal = dialogo(fixture)!;
+      expect(modal).not.toBeNull();
+      expect(modal.textContent).toContain(
+        'Ese día, algún año y comisión ya tiene el máximo de exámenes.',
       );
-      expect(dialogo(fixture)).toBeNull();
-      // Está arriba de la grilla, y el día completo se sigue leyendo como completo.
-      expect(
-        bloqueo.compareDocumentPosition(raiz(fixture).querySelector('table')!) &
-          Node.DOCUMENT_POSITION_FOLLOWING,
-      ).toBeTruthy();
-      expect(celda(fixture, '2026-10-20').getAttribute('aria-label')).toContain('completo');
-
-      // Cambiar de mes lo saca.
-      await tocar(fixture, 'button[aria-label="Mes siguiente"]');
-      await tocar(fixture, 'button[aria-label="Mes anterior"]');
-      expect(aviso(fixture)).toBeNull();
-
-      // Elegir un día disponible también (y abre el registro, que sí corresponde).
-      await elegirDia(fixture, '2026-10-20');
-      expect(aviso(fixture)).not.toBeNull();
-      await elegirDia(fixture, '2026-10-14');
-      expect(aviso(fixture)).toBeNull();
-      expect(dialogo(fixture)).not.toBeNull();
+      expect(raiz(fixture).querySelector('app-aviso-calendario')).toBeNull();
     });
 
-    it('un día completo que ya pasó no dice nada, y Secretaría y Dirección no lo ven', async () => {
+    it('un día que no está completo abre el registro sin ese aviso', async () => {
+      const fixture = await montar(() => of(OCTUBRE));
+
+      await elegirDia(fixture, '2026-10-14');
+
+      expect(dialogo(fixture)!.textContent).not.toContain('ya tiene el máximo de exámenes');
+    });
+
+    it('si el grupo de la materia elegida ya está lleno, el rechazo del backend queda en el formulario', async () => {
+      const rechazo =
+        'No se puede registrar: ese año y comisión ya tienen el máximo de exámenes permitido para ese día.';
+      const fixture = await montar(
+        () => of(OCTUBRE),
+        () => of([]),
+        { registrarExamen: () => throwError(() => new Error(rechazo)) },
+      );
+
+      await elegirDia(fixture, '2026-10-20');
+      await completarRegistro(fixture);
+      await guardarRegistro(fixture);
+
+      expect(registrados).toHaveLength(1);
+      expect(dialogo(fixture)!.querySelector('[role="alert"]')?.textContent).toContain(rechazo);
+    });
+
+    it('un día completo que ya pasó no abre nada, y Secretaría y Dirección no eligen días', async () => {
       const fixture = await montar(() =>
         of(
           mes(2026, 10, [
@@ -614,12 +619,11 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
       );
 
       await elegirDia(fixture, '2026-10-06');
-      expect(aviso(fixture)).toBeNull();
+      expect(dialogo(fixture)).toBeNull();
 
       sesion.set(sesionDe('Secretario'));
       await fixture.whenStable();
       await elegirDia(fixture, '2026-10-20');
-      expect(aviso(fixture)).toBeNull();
       expect(dialogo(fixture)).toBeNull();
     });
   });
@@ -765,10 +769,11 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
       expect(document.activeElement).toBe(celda(fixture, '2026-10-13'));
     });
 
-    it('un parcial de una materia que no dicta no se arrastra y, al tocarlo, explica por qué sin abrir nada', async () => {
+    it('un examen que el backend no le deja modificar no se arrastra y, al tocarlo, explica por qué sin abrir nada', async () => {
+      // Aunque sea de una materia que dicta: lo cargó otro docente, o es una mesa.
       const fixture = await montar(
         () => of(OCTUBRE),
-        () => of([{ ...PARCIAL_DEL_13, materia: 'Matemática' }]),
+        () => of([{ ...PARCIAL_DEL_13, puedeModificar: false }]),
       );
 
       expect(celda(fixture, '2026-10-13').querySelector('[draggable="true"]')).toBeNull();
@@ -777,7 +782,7 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
 
       expect(dialogo(fixture)).toBeNull();
       expect(raiz(fixture).querySelector('app-aviso-calendario')?.textContent).toContain(
-        'Este parcial no es de tus materias',
+        'Solo podés modificar, mover o eliminar los exámenes que cargaste vos',
       );
     });
   });
@@ -806,8 +811,7 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
         await fixture.whenStable();
       };
 
-      // Un día completo y el mismo día no lo reciben.
-      await arrastrarA('2026-10-20');
+      // El mismo día no lo recibe.
       await arrastrarA('2026-10-13');
       expect(reprogramados).toEqual([]);
 
@@ -824,6 +828,24 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
       expect(alerta.textContent).toContain(rechazo);
       expect(raiz(fixture).querySelector('p[role="status"]')).toBeNull();
       expect(dialogo(fixture)).toBeNull();
+    });
+
+    it('un día completo también lo recibe: si su año y comisión no tiene lugar, lo dice el backend', async () => {
+      const fixture = await montar(
+        () => of(OCTUBRE),
+        () => of([PARCIAL_DEL_13]),
+      );
+
+      celda(fixture, '2026-10-13')
+        .querySelector('[draggable="true"]')!
+        .dispatchEvent(new Event('dragstart', { bubbles: true }));
+      await fixture.whenStable();
+      celda(fixture, '2026-10-20').dispatchEvent(
+        new Event('drop', { bubbles: true, cancelable: true }),
+      );
+      await fixture.whenStable();
+
+      expect(reprogramados).toEqual([{ idExamen: 1, fechaYHora: '2026-10-20T14:00:00' }]);
     });
   });
 });

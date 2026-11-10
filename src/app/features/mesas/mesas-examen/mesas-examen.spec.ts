@@ -47,6 +47,8 @@ const ALERTA: AlertaRechazo = {
 
 /** Las mesas que se mandaron a crear, en orden. */
 let creadas: NuevaMesa[];
+/** El año y comisión con que se revisó el lugar del día, en orden. */
+let gruposRevisados: ({ idMateria: number; idComision: number } | undefined)[];
 /** Lo que se pidió sobre las alertas, en orden. */
 let llamadas: string[];
 
@@ -63,6 +65,7 @@ async function montar(
 ): Promise<ComponentFixture<MesasExamen>> {
   creadas = [];
   llamadas = [];
+  gruposRevisados = [];
   const registrar = opciones.registrar ?? (() => of('Mesa de examen registrada exitosamente.'));
 
   TestBed.configureTestingModule({
@@ -89,7 +92,15 @@ async function montar(
         provide: CalendarioExamenesService,
         useValue: {
           tiposDeExamen: () => of([{ idTipoExamen: 3, nombre: 'Final' }]),
-          calendarioDelMes: opciones.calendario ?? (() => of({ limite: 2, dias: [] })),
+          calendarioDelMes: (
+            anio: number,
+            mes: number,
+            _opciones: unknown,
+            grupo?: { idMateria: number; idComision: number },
+          ) => {
+            gruposRevisados.push(grupo);
+            return (opciones.calendario ?? (() => of({ limite: 2, dias: [] })))();
+          },
         },
       },
       {
@@ -185,8 +196,16 @@ describe('MesasExamen (SCRUM-245)', () => {
 
     expect(creadas).toEqual([]);
     expect(raiz(fixture).querySelector('form [role="alert"]')?.textContent).toContain(
-      'Ese día ya alcanzó el límite de 2 parciales por día',
+      'Ese año y comisión ya tienen ese día el límite de 2 parciales por día',
     );
+  });
+
+  it('revisa el lugar del día para el año y la comisión de la mesa, no para todo el instituto', async () => {
+    const fixture = await montar();
+
+    await crearMesa(fixture);
+
+    expect(gruposRevisados).toEqual([{ idMateria: 4, idComision: 1 }]);
   });
 
   it('si el backend la rechaza muestra su mensaje', async () => {

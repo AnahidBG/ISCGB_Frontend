@@ -1,7 +1,5 @@
 import { formatDate } from '@angular/common';
 import { aFechaSola, desdeFechaSola } from '../comun/fechas';
-import { AvisoDelCalendario } from './modelos/aviso-calendario';
-import { PERIODO_DEL_LIMITE } from './periodo-limite';
 
 /** Un horario de 24 h: "09:00", "23:59". Es lo que entrega un `<input type="time">`. */
 const HORARIO_DE_24_HORAS = /^([01]\d|2[0-3]):[0-5]\d$/;
@@ -80,17 +78,4 @@ export function diaEnPalabras(dia: string, locale: string): string {
 /** El aviso al registrar un parcial: "Parcial registrado para el martes 13 de octubre a las 09:00." */
 export function avisoDeParcialRegistrado(dia: string, horario: string, locale: string): string {
   return `Parcial registrado para el ${formatDate(dia, "EEEE d 'de' MMMM", locale)} a las ${horario}.`;
-}
-
-/**
- * Lo que se le dice al Docente que toca un día completo: "18 de octubre · Fecha
- * bloqueada" y el motivo. El período sale de la constante del límite, como en el
- * resto de los textos que lo nombran; la frase evita el artículo ("ese día") para
- * seguir leyéndose bien si el período cambia.
- */
-export function avisoDeFechaBloqueada(dia: string, locale: string): AvisoDelCalendario {
-  return {
-    titulo: `${formatDate(dia, "d 'de' MMMM", locale)} · Fecha bloqueada`,
-    texto: `Ya se completó el máximo de parciales por ${PERIODO_DEL_LIMITE}. Elegí otra fecha.`,
-  };
 }

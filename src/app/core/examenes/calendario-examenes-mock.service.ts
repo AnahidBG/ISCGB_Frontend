@@ -14,6 +14,7 @@ import { MateriaDelDocente } from './modelos/materia-del-docente';
 import { MesaAsignada } from './modelos/mesa-asignada';
 import { NuevoExamen } from './modelos/nuevo-examen';
 import { TipoExamen } from './modelos/tipo-examen';
+import { tiposQueRegistraElDocente } from './tipos-del-docente';
 
 /** Cuánto tarda la respuesta falsa, para ver el estado de carga en pantalla. */
 const DEMORA_SIMULADA_MS = 400;
@@ -35,11 +36,7 @@ const MENSAJE_EXAMEN_NO_ENCONTRADO = 'No se encontró el examen especificado.';
 /** "2026-10-20T09:00:00" → el día y el horario. Lo que el backend lee como un `DateTime` sin zona. */
 const FECHA_Y_HORA = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/;
 
-/**
- * Las materias del docente de ejemplo: una de ellas, en dos comisiones. Dicta
- * Matemática para que alguno de los parciales de ejemplo sea suyo y se pueda
- * modificar (`parcialesGestionables`).
- */
+/** Las materias del docente de ejemplo: una de ellas, en dos comisiones. */
 const MATERIAS_DEL_DOCENTE: readonly MateriaDelDocente[] = [
   { idMateria: 2, materia: 'Matemática', carrera: null, idComision: 1, comision: 'Comisión 1° A' },
   {
@@ -59,24 +56,34 @@ const MATERIAS_DEL_DOCENTE: readonly MateriaDelDocente[] = [
   { idMateria: 7, materia: 'Redes', carrera: null, idComision: 1, comision: 'Comisión A' },
 ];
 
-/** Los tipos de examen que hoy tiene la base, con sus nombres tal cual. */
+/**
+ * Los tipos de examen de una base vieja, con sus nombres tal cual, más los dos que
+ * el seeder agrega si faltan desde el 10/11/2026 ("Recuperatorio" y "Final").
+ * `registrar` solo acepta Parcial, Recuperatorio y Final.
+ */
 const TIPOS_DE_EXAMEN: readonly TipoExamen[] = [
   { idTipoExamen: 1, nombre: 'Parcial' },
   { idTipoExamen: 2, nombre: 'Recupetario' },
   { idTipoExamen: 3, nombre: 'Parcial Integrador Final' },
   { idTipoExamen: 4, nombre: 'Coloquio' },
+  { idTipoExamen: 5, nombre: 'Recuperatorio' },
+  { idTipoExamen: 6, nombre: 'Final' },
 ];
 
-/** Un parcial de ejemplo: el día del mes en que cae, a qué hora y de qué es. */
+/**
+ * Un parcial de ejemplo: el día del mes en que cae, a qué hora y de qué es.
+ * `puedeModificar` imita al backend: solo el que cargó el docente de ejemplo.
+ */
 interface EjemploDeParcial {
   dia: number;
   horario: string;
   materia: string;
   comision: string;
   tipo: string;
+  puedeModificar: boolean;
 }
 
-/** Los parciales de ejemplo de cualquier mes. */
+/** Los parciales de ejemplo de cualquier mes. El de Matemática lo cargó el docente de ejemplo. */
 const EJEMPLOS: readonly EjemploDeParcial[] = [
   {
     dia: 5,
@@ -84,16 +91,32 @@ const EJEMPLOS: readonly EjemploDeParcial[] = [
     materia: 'Introducción a Sistemas',
     comision: 'Comisión 1° A',
     tipo: 'Parcial',
+    puedeModificar: false,
   },
-  { dia: 12, horario: '14:00', materia: 'Matemática', comision: 'Comisión 1° A', tipo: 'Parcial' },
+  {
+    dia: 12,
+    horario: '14:00',
+    materia: 'Matemática',
+    comision: 'Comisión 1° A',
+    tipo: 'Parcial',
+    puedeModificar: true,
+  },
   {
     dia: 12,
     horario: '18:30',
     materia: 'Didáctica General',
     comision: 'Comisión 2° A',
     tipo: 'Parcial',
+    puedeModificar: false,
   },
-  { dia: 21, horario: '10:00', materia: 'Pedagogía', comision: 'Comisión 2° A', tipo: 'Parcial' },
+  {
+    dia: 21,
+    horario: '10:00',
+    materia: 'Pedagogía',
+    comision: 'Comisión 2° A',
+    tipo: 'Parcial',
+    puedeModificar: false,
+  },
 ];
 
 /** Un mes fuera de 1 a 12 falla: es el 500 del backend. */
@@ -189,6 +212,11 @@ export class CalendarioExamenesMockService extends CalendarioExamenesService {
     if (materia === undefined || tipo === undefined || fecha === null) {
       return throwError(() => new Error(MENSAJE_ERROR_REGISTRAR_EXAMEN));
     }
+    if (tiposQueRegistraElDocente([tipo]).length === 0) {
+      return throwError(
+        () => new Error('Tipo de examen no válido. Debe ser Parcial, Recuperatorio o Final.'),
+      );
+    }
 
     const delDia = this.examenesDe(fecha.getFullYear(), fecha.getMonth() + 1).filter(
       (existente) => existente.fecha === examen.dia,
@@ -204,6 +232,8 @@ export class CalendarioExamenesMockService extends CalendarioExamenesService {
       materia: materia.materia,
       comision: materia.comision,
       tipo: tipo.nombre,
+      // Lo cargó el docente de la sesión.
+      puedeModificar: true,
     });
     return of(undefined).pipe(delay(DEMORA_SIMULADA_MS));
   }
