@@ -6,16 +6,24 @@ import { Sesion } from './modelos/sesion';
 /**
  * Mensaje único para credenciales inválidas.
  *
- * El backend hoy distingue "Contraseña incorrecta." de "DNI no encontrado",
- * lo que le permitiría a un atacante averiguar qué DNIs existen en el
- * instituto probando uno por uno. El frontend NO reenvía esa distinción:
- * muestra siempre lo mismo, falle lo que falle.
+ * Desde el 10/11/2026 el backend también responde lo mismo ("DNI o contraseña
+ * incorrectos.") si el DNI no existe, si la cuenta está inactiva o si la
+ * contraseña no coincide, para que nadie pueda averiguar qué DNIs están
+ * registrados. El frontend igual no lee el body: muestra siempre lo mismo.
  */
 export const MENSAJE_CREDENCIALES_INVALIDAS = 'El DNI o la contraseña no son correctos.';
 
 /** Cuando el servidor no responde (está apagado, no hay internet, CORS, etc.). */
 export const MENSAJE_SIN_CONEXION =
   'No pudimos conectarnos con el servidor. Intentá de nuevo en un momento.';
+
+/**
+ * El 429 del backend: desde el 10/11/2026 el login, el pedido de recuperación y
+ * el guardado de la contraseña admiten 10 pedidos por minuto por IP, para frenar
+ * los intentos de adivinar contraseñas. Llega sin body.
+ */
+export const MENSAJE_DEMASIADOS_INTENTOS =
+  'Hiciste demasiados intentos seguidos. Esperá un minuto y volvé a probar.';
 
 /**
  * El enlace para crear la contraseña no sirve: no existe, ya se usó o venció.

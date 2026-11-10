@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import { RUTAS_API, urlArchivoSubido } from '../configuracion/api';
 import { AuthHttpService, CLAVE_SESION } from './auth-http.service';
 import {
+  MENSAJE_DEMASIADOS_INTENTOS,
   MENSAJE_ENLACE_INVALIDO,
   MENSAJE_ENLACE_RECUPERACION_INVALIDO,
   MENSAJE_ERROR_CREAR_PASSWORD,
@@ -316,6 +317,16 @@ describe('AuthHttpService.solicitarRecuperacion', () => {
       .flush({ message: 'El DNI es obligatorio.' }, { status: 400, statusText: 'Bad Request' });
 
     expect(resultado.error()).toBe(MENSAJE_ERROR_RECUPERACION);
+  });
+
+  it('429 (más de 10 pedidos por minuto) pide esperar, no culpa al correo', () => {
+    const resultado = pedir();
+
+    backend
+      .expectOne(RUTAS_API.recuperarContrasena)
+      .flush(null, { status: 429, statusText: 'Too Many Requests' });
+
+    expect(resultado.error()).toBe(MENSAJE_DEMASIADOS_INTENTOS);
   });
 });
 

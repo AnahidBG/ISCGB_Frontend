@@ -5,6 +5,7 @@ import { RUTAS_API, urlArchivoSubido } from '../configuracion/api';
 import {
   AuthService,
   MENSAJE_CREDENCIALES_INVALIDAS,
+  MENSAJE_DEMASIADOS_INTENTOS,
   MENSAJE_ENLACE_INVALIDO,
   MENSAJE_ENLACE_RECUPERACION_INVALIDO,
   MENSAJE_ERROR_CREAR_PASSWORD,
@@ -42,10 +43,13 @@ export class AuthHttpService extends AuthService {
         return sesion;
       }),
       catchError((error: HttpErrorResponse) => {
-        // 401 = credenciales incorrectas. Cualquier otra cosa (0, 500, timeout)
+        // 401 = credenciales incorrectas. Cualquier otra cosa (500, timeout)
         // es un problema de conexión o del servidor, y no es culpa del usuario.
-        const mensaje =
-          error.status === 401 ? MENSAJE_CREDENCIALES_INVALIDAS : MENSAJE_SIN_CONEXION;
+        const mensaje = mensajeDeAcceso(
+          error,
+          { 401: MENSAJE_CREDENCIALES_INVALIDAS },
+          MENSAJE_SIN_CONEXION,
+        );
         return throwError(() => new Error(mensaje));
       }),
     );
@@ -60,12 +64,11 @@ export class AuthHttpService extends AuthService {
           // El 400 del backend llega en tres formas (string pelado, `{ message }`
           // o ProblemDetails). No se lee ninguna: cualquier 400 es "el enlace no
           // sirve" y el body crudo nunca llega a la pantalla.
-          const mensaje =
-            error.status === 0
-              ? MENSAJE_SIN_CONEXION
-              : error.status === 400
-                ? MENSAJE_ENLACE_INVALIDO
-                : MENSAJE_ERROR_CREAR_PASSWORD;
+          const mensaje = mensajeDeAcceso(
+            error,
+            { 400: MENSAJE_ENLACE_INVALIDO },
+            MENSAJE_ERROR_CREAR_PASSWORD,
+          );
           return throwError(() => new Error(mensaje));
         }),
       );
@@ -78,7 +81,7 @@ export class AuthHttpService extends AuthService {
         // Desde `bddb5ef` el backend responde 200 aunque falle el mail, así que
         // un 500 sería una falla inesperada. Un 400 (DNI vacío) no debería
         // llegar nunca, porque la pantalla valida antes; si llega, es una falla más.
-        const mensaje = error.status === 0 ? MENSAJE_SIN_CONEXION : MENSAJE_ERROR_RECUPERACION;
+        const mensaje = mensajeDeAcceso(error, {}, MENSAJE_ERROR_RECUPERACION);
         return throwError(() => new Error(mensaje));
       }),
     );
@@ -90,12 +93,11 @@ export class AuthHttpService extends AuthService {
       catchError((error: HttpErrorResponse) => {
         // Mismo criterio que `establecerPassword`: cualquier 400 es "el enlace
         // no sirve" (inexistente, usado o vencido) y el body no se muestra.
-        const mensaje =
-          error.status === 0
-            ? MENSAJE_SIN_CONEXION
-            : error.status === 400
-              ? MENSAJE_ENLACE_RECUPERACION_INVALIDO
-              : MENSAJE_ERROR_CREAR_PASSWORD;
+        const mensaje = mensajeDeAcceso(
+          error,
+          { 400: MENSAJE_ENLACE_RECUPERACION_INVALIDO },
+          MENSAJE_ERROR_CREAR_PASSWORD,
+        );
         return throwError(() => new Error(mensaje));
       }),
     );
@@ -153,6 +155,24 @@ export class AuthHttpService extends AuthService {
     this.sesionActual.set(sesion);
     sessionStorage.setItem(CLAVE_SESION, JSON.stringify(sesion));
   }
+}
+
+/**
+ * El mensaje de un error del login o de la contraseña, por status (tabla por
+ * clave). Sin conexión (0) y demasiados intentos (429) son iguales en los cuatro
+ * pedidos; cada uno agrega los suyos en `propios` y su caso por defecto.
+ */
+function mensajeDeAcceso(
+  error: HttpErrorResponse,
+  propios: Partial<Record<number, string>>,
+  porDefecto: string,
+): string {
+  const porStatus: Partial<Record<number, string>> = {
+    0: MENSAJE_SIN_CONEXION,
+    429: MENSAJE_DEMASIADOS_INTENTOS,
+    ...propios,
+  };
+  return porStatus[error.status] ?? porDefecto;
 }
 
 /**
