@@ -18,12 +18,24 @@ export type NivelBoton = 'primario' | 'secundario' | 'terciario';
  * abrir en pestaña nueva, un botón ejecuta una acción en esta página.
  * Usar uno por otro rompe la navegación por teclado y confunde a los
  * lectores de pantalla.
+ *
+ * El host es `inline-flex`, no `inline` como cualquier etiqueta desconocida.
+ * Inline, el botón de adentro se apoyaba en la línea base del texto: en una fila
+ * flex que estira a sus hijos el host crecía y el botón quedaba arriba, más alto
+ * que el de al lado (pasaba con "Cancelar", terciario, junto a "Guardar"). Como
+ * flex, el botón ocupa todo el alto del host y su texto queda centrado. Para que
+ * ocupe su propia línea, el host lleva `w-full`, no `block`: dos clases de
+ * `display` en el mismo elemento dependen del orden del CSS.
  */
 @Component({
   selector: 'app-boton',
   imports: [NgTemplateOutlet],
   templateUrl: './boton.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    class: 'inline-flex',
+    '[class.w-full]': 'anchoCompleto()',
+  },
 })
 export class Boton {
   readonly nivel = input<NivelBoton>('primario');
