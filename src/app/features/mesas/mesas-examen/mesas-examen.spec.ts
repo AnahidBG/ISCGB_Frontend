@@ -56,6 +56,7 @@ async function montar(
   opciones: {
     sesion?: Sesion;
     materias?: () => Observable<{ idMateria: number; nombre: string }[]>;
+    tipos?: () => Observable<{ idTipoExamen: number; nombre: string }[]>;
     calendario?: () => Observable<CalendarioDelMes>;
     registrar?: () => Observable<string>;
     alertas?: () => Observable<AlertaRechazo[]>;
@@ -91,7 +92,7 @@ async function montar(
       {
         provide: CalendarioExamenesService,
         useValue: {
-          tiposDeExamen: () => of([{ idTipoExamen: 3, nombre: 'Final' }]),
+          tiposDeExamen: opciones.tipos ?? (() => of([{ idTipoExamen: 3, nombre: 'Final' }])),
           calendarioDelMes: (
             anio: number,
             mes: number,
@@ -147,7 +148,6 @@ async function crearMesa(fixture: ComponentFixture<MesasExamen>, dia = diaFuturo
     'mesa-horario': '09:00',
     'mesa-materia': '4',
     'mesa-comision': '1',
-    'mesa-tipo': '3',
     'mesa-docente': '8',
   };
   for (const [id, valor] of Object.entries(valores)) {
@@ -166,8 +166,32 @@ describe('MesasExamen (SCRUM-245)', () => {
     const texto = (id: string) => raiz(fixture).querySelector(`#${id}`)?.textContent ?? '';
     expect(texto('mesa-materia')).toContain('Redes');
     expect(texto('mesa-comision')).toContain('Comisión A');
-    expect(texto('mesa-tipo')).toContain('Final');
+    expect(raiz(fixture).querySelector<HTMLInputElement>('#mesa-tipo')?.value).toBe(
+      'Mesa de examen',
+    );
     expect(texto('mesa-docente')).toContain('Ana Pérez');
+  });
+
+  it('no se puede elegir el tipo: la mesa siempre se registra como "Mesa de examen"', async () => {
+    const fixture = await montar({
+      tipos: () =>
+        of([
+          { idTipoExamen: 1, nombre: 'Parcial' },
+          { idTipoExamen: 3, nombre: 'Final' },
+          { idTipoExamen: 4, nombre: 'Coloquio' },
+        ]),
+    });
+
+    const tipo = raiz(fixture).querySelector<HTMLInputElement>('#mesa-tipo');
+    expect(tipo?.value).toBe('Mesa de examen');
+    expect(tipo?.readOnly).toBe(true);
+    expect(raiz(fixture).querySelector('#mesa-tipo select')).toBeNull();
+  });
+
+  it('si la base no tiene el tipo "Final", avisa que no se pueden crear mesas', async () => {
+    const fixture = await montar({ tipos: () => of([{ idTipoExamen: 4, nombre: 'Coloquio' }]) });
+
+    expect(raiz(fixture).textContent).toContain('No está cargado el tipo de examen "Final"');
   });
 
   it('crea la mesa, confirma con el mensaje del backend y deja el formulario vacío', async () => {

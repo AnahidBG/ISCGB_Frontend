@@ -91,25 +91,19 @@
       </select>
     </app-campo-formulario>
 
-    @let errorTipo = errorDe('idTipoExamen');
     <app-campo-formulario
       etiqueta="Tipo de examen"
       idCampo="mesa-tipo"
       [requerido]="true"
-      [error]="errorTipo"
     >
-      <select
+      <input
         id="mesa-tipo"
-        formControlName="idTipoExamen"
-        [attr.aria-invalid]="errorTipo !== null"
-        [attr.aria-describedby]="descripcionDe('mesa-tipo', errorTipo)"
-        [class]="clasesDe(errorTipo)"
-      >
-        <option value="">Elegí un tipo de examen</option>
-        @for (tipo of tipos(); track tipo.idTipoExamen) {
-          <option [value]="tipo.idTipoExamen">{{ tipo.nombre }}</option>
-        }
-      </select>
+        type="text"
+        value="Mesa de examen"
+        readonly
+        aria-readonly="true"
+        [class]="clasesDe(null)"
+      />
     </app-campo-formulario>
   </div>
 
@@ -138,7 +132,13 @@
   </app-campo-formulario>
 
   <div class="mt-2 flex justify-end">
-    <app-boton tipo="submit" [conFlecha]="false" [cargando]="enviando()" textoCargando="Creando…">
+    <app-boton
+      tipo="submit"
+      [conFlecha]="false"
+      [cargando]="enviando()"
+      [deshabilitado]="tipos().length !== 1"
+      textoCargando="Creando…"
+    >
       Crear mesa
     </app-boton>
   </div>

@@ -240,6 +240,14 @@ Se entra por el botón verde "Nuevo Documento" o por el menú lateral.
       Es la regla de negocio 1.
 - [ ] El botón "Subir documento" queda apagado hasta completar todo.
 - [ ] Después de enviar, el documento aparece en el panel como Pendiente.
+- [ ] **Con un PDF elegido y sin tocar "Subir documento", "‹ Volver",
+      "Cancelar", el menú lateral, la campana o "Cerrar sesión" muestran
+      "Cargaste documentación nueva, debes Guardar para que se registre"**
+      (SCRUM-42 y SCRUM-113). "Volver y guardar" deja todo como estaba y
+      "Salir sin guardar" sale. Con "Cerrar sesión", quedarse no corta la sesión.
+- [ ] Recargar o cerrar la pestaña con el PDF elegido muestra el aviso propio
+      del navegador (no deja poner otro texto).
+- [ ] Sin archivo elegido, o después de subirlo, se sale sin preguntar.
 
 Si la pantalla dice "No pudimos saber qué documentos te corresponden", hay una
 sesión vieja guardada en el navegador. Cerrá sesión y volvé a entrar.

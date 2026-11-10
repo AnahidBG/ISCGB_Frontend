@@ -29,17 +29,12 @@
   --color-humo: #f5f5f5; /* Blanco humo */
   --color-gris-marca: #919d99; /* Gris verdoso suave */
 
-  /* Derivados. No están en el manual: hacían falta estados (hover, press) que
-     el manual no define y un gris de texto que cumpla accesibilidad. Mantienen
-     el matiz. */
+  /* Derivados. Estados de los colores principales */
   --color-principal-oscuro: #35504a; /* Hover y press del botón principal */
   --color-principal-suave: #eaf0ee; /* Fondo tenue del color principal */
   --color-acento-verde-claro: #b8ddb4; /* Botón primario en reposo */
   --color-acento-verde-press: #7aab80; /* Botón primario presionado */
 
-  /* El gris de marca #919D99 sobre blanco da 2,80:1 y WCAG AA pide 4,5:1 para
-     texto. Va solo en trazos decorativos y bordes. Para texto secundario se
-     usa este, que mantiene el matiz y da 4,81:1. */
   --color-texto-suave: #666e6b;
 
   /* Superficies, líneas y texto */

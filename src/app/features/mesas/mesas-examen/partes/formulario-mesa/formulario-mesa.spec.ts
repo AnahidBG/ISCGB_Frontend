@@ -39,7 +39,6 @@ describe('FormularioMesa (SCRUM-245)', () => {
     completar('mesa-horario', '09:00');
     completar('mesa-materia', '4');
     completar('mesa-comision', '1');
-    completar('mesa-tipo', '3');
     completar('mesa-docente', '8');
     await enviar();
 
@@ -51,6 +50,14 @@ describe('FormularioMesa (SCRUM-245)', () => {
       idTipoExamen: 3,
       idDocente: 8,
     });
+  });
+
+  it('muestra el tipo fijo y no ofrece un selector', () => {
+    const tipo = raiz().querySelector<HTMLInputElement>('#mesa-tipo');
+
+    expect(tipo?.value).toBe('Mesa de examen');
+    expect(tipo?.readOnly).toBe(true);
+    expect(raiz().querySelector('#mesa-tipo select')).toBeNull();
   });
 
   it('vacío no emite y muestra qué falta', async () => {

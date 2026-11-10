@@ -65,6 +65,12 @@
           El docente recibe el aviso y confirma si puede estar. Si la rechaza, aparece en "Mesas
           rechazadas".
         </p>
+        @if (listas.tipos.length === 0) {
+          <p role="alert" class="mb-5 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+            No está cargado el tipo de examen "Final" en la base, así que todavía no se pueden
+            crear mesas. Hay que pedírselo a backend.
+          </p>
+        }
         <app-formulario-mesa
           [materias]="listas.materias"
           [comisiones]="listas.comisiones"

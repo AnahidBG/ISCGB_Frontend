@@ -213,3 +213,119 @@ describe('SubirDocumento: abre con el tipo que pide el enlace (?tipo=)', () => {
     expect(fixture.nativeElement.textContent).not.toContain('vencimiento');
   });
 });
+
+describe('SubirDocumento: aviso de salir sin guardar (SCRUM-42 y SCRUM-113)', () => {
+  const AVISO = 'Cargaste documentación nueva, debes Guardar para que se registre';
+
+  let fixture: ComponentFixture<SubirDocumento>;
+
+  type SubirDocumentoExpuesta = {
+    idTipoElegido: { set(valor: number): void };
+    archivo: { set(valor: File | null): void };
+    enviar(): void;
+    confirmarSalida(): boolean | Promise<boolean>;
+  };
+
+  beforeEach(async () => {
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter([]),
+        {
+          provide: AuthService,
+          useValue: {
+            sesion: signal(sesionCon([{ idRol: 4, nombreRol: 'Alumno' }])),
+            cerrarSesion: () => {},
+          },
+        },
+        {
+          provide: CampanaService,
+          useValue: { total: signal(0), detalle: signal<NotificacionPanel[]>([]), refrescar: () => {} },
+        },
+        {
+          provide: LegajoService,
+          useValue: {
+            documentosRequeridos: (): Observable<DocumentoRequerido[]> => of(TIPOS),
+            subirDocumento: (): Observable<void> => of(undefined),
+          },
+        },
+      ],
+    });
+    fixture = TestBed.createComponent(SubirDocumento);
+    await fixture.whenStable();
+  });
+
+  const pantalla = () => fixture.componentInstance as unknown as SubirDocumentoExpuesta;
+  const texto = () => (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+  async function elegirArchivo(): Promise<void> {
+    pantalla().idTipoElegido.set(7);
+    pantalla().archivo.set(new File(['%PDF-1.7'], 'dni.pdf', { type: 'application/pdf' }));
+    await fixture.whenStable();
+  }
+
+  function botonQueDice(etiqueta: string): HTMLButtonElement {
+    const botones = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('button'),
+    );
+    return botones.find((b) => b.textContent?.trim() === etiqueta)!;
+  }
+
+  it('sin archivo elegido deja salir sin preguntar', () => {
+    expect(pantalla().confirmarSalida()).toBe(true);
+    expect(texto()).not.toContain(AVISO);
+  });
+
+  it('con un archivo sin subir muestra el aviso, y "Volver y guardar" lo deja en la pantalla', async () => {
+    await elegirArchivo();
+
+    const respuesta = pantalla().confirmarSalida();
+    await fixture.whenStable();
+    expect(texto()).toContain(AVISO);
+
+    botonQueDice('Volver y guardar').click();
+    await fixture.whenStable();
+
+    await expect(respuesta).resolves.toBe(false);
+    expect(texto()).not.toContain(AVISO);
+  });
+
+  it('si elige "Salir sin guardar", sale', async () => {
+    await elegirArchivo();
+
+    const respuesta = pantalla().confirmarSalida();
+    await fixture.whenStable();
+    botonQueDice('Salir sin guardar').click();
+
+    await expect(respuesta).resolves.toBe(true);
+  });
+
+  it('si quitó el archivo, ya no hay nada que guardar', async () => {
+    await elegirArchivo();
+    pantalla().archivo.set(null);
+    await fixture.whenStable();
+
+    expect(pantalla().confirmarSalida()).toBe(true);
+  });
+
+  it('después de subirlo ya no pregunta', async () => {
+    await elegirArchivo();
+
+    pantalla().enviar();
+    await fixture.whenStable();
+
+    expect(texto()).toContain('Documento enviado');
+    expect(pantalla().confirmarSalida()).toBe(true);
+  });
+
+  it('cerrar o recargar la pestaña con un archivo sin subir pide confirmación al navegador', async () => {
+    const limpia = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(limpia);
+    expect(limpia.defaultPrevented).toBe(false);
+
+    await elegirArchivo();
+
+    const conArchivo = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(conArchivo);
+    expect(conArchivo.defaultPrevented).toBe(true);
+  });
+});
