@@ -67,12 +67,14 @@ const MATERIAS: MateriaDelDocente[] = [
   },
 ];
 
+/** "Coloquio" está en la base, pero `registrar` lo rechaza desde el 10/11/2026. */
 const TIPOS: TipoExamen[] = [
   { idTipoExamen: 1, nombre: 'Parcial' },
   { idTipoExamen: 4, nombre: 'Coloquio' },
+  { idTipoExamen: 6, nombre: 'Final' },
 ];
 
-/** Un parcial del 13 de octubre, de una materia que dicta el docente. */
+/** Un parcial del 13 de octubre que cargó el docente de la sesión: lo puede tocar. */
 const PARCIAL_DEL_13: ExamenCalendario = {
   idExamen: 1,
   fecha: '2026-10-13',
@@ -80,6 +82,7 @@ const PARCIAL_DEL_13: ExamenCalendario = {
   materia: 'Programación II',
   comision: 'Comisión 1° A',
   tipo: 'Parcial',
+  puedeModificar: true,
 };
 
 /** Cómo responde el servicio al registro de un parcial. Lo que no se pasa, anda bien. */
@@ -307,6 +310,7 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
       materia: 'Matemática',
       comision: 'Comisión 1° A',
       tipo: 'Parcial',
+      puedeModificar: false,
     };
 
     const fixture = await montar(
@@ -435,11 +439,8 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
         'Programación II · Comisión A (Tecnicatura en Desarrollo de Software)',
         'Programación II · Comisión B (Tecnicatura en Desarrollo de Software)',
       ]);
-      expect(opciones('#registro-tipo')).toEqual([
-        'Elegí un tipo de examen',
-        'Parcial',
-        'Coloquio',
-      ]);
+      // Solo los que acepta `registrar`: Coloquio daría un 400 seguro.
+      expect(opciones('#registro-tipo')).toEqual(['Elegí un tipo de examen', 'Parcial', 'Final']);
     });
 
     it('no guarda con campos sin completar o con una fecha pasada, y marca lo que falta', async () => {
@@ -535,15 +536,15 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
     });
 
     it('si no se pueden traer las materias lo avisa y "Reintentar" las vuelve a pedir', async () => {
-      // La primera la pide la pantalla al abrirse, para saber qué parciales son del
-      // docente. La que falla es la del modal.
+      // Las pide solo el modal: qué parciales puede tocar lo dice el backend
+      // (`puedeModificar`), así que la pantalla ya no las pide al abrirse.
       let llamadas = 0;
       const fixture = await montar(
         () => of(OCTUBRE),
         () => of([]),
         {
           materiasDelDocente: () =>
-            ++llamadas === 2
+            ++llamadas === 1
               ? throwError(() => new Error(MENSAJE_ERROR_MATERIAS_DEL_DOCENTE))
               : of(MATERIAS),
         },
@@ -765,10 +766,11 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
       expect(document.activeElement).toBe(celda(fixture, '2026-10-13'));
     });
 
-    it('un parcial de una materia que no dicta no se arrastra y, al tocarlo, explica por qué sin abrir nada', async () => {
+    it('un examen que el backend no le deja modificar no se arrastra y, al tocarlo, explica por qué sin abrir nada', async () => {
+      // Aunque sea de una materia que dicta: lo cargó otro docente, o es una mesa.
       const fixture = await montar(
         () => of(OCTUBRE),
-        () => of([{ ...PARCIAL_DEL_13, materia: 'Matemática' }]),
+        () => of([{ ...PARCIAL_DEL_13, puedeModificar: false }]),
       );
 
       expect(celda(fixture, '2026-10-13').querySelector('[draggable="true"]')).toBeNull();
@@ -777,7 +779,7 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
 
       expect(dialogo(fixture)).toBeNull();
       expect(raiz(fixture).querySelector('app-aviso-calendario')?.textContent).toContain(
-        'Este parcial no es de tus materias',
+        'Solo podés modificar, mover o eliminar los exámenes que cargaste vos',
       );
     });
   });

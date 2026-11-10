@@ -32,6 +32,7 @@ const PARCIAL_DEL_21: ExamenCalendario = {
   materia: 'Pedagogía',
   comision: 'Comisión 2° A',
   tipo: 'Parcial',
+  puedeModificar: true,
 };
 
 /** Un parcial que ya pasó: no se arrastra. */

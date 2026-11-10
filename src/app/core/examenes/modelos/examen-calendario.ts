@@ -11,4 +11,11 @@ export interface ExamenCalendario {
   comision: string;
   /** El tipo de examen: "Parcial", "Final". */
   tipo: string;
+  /**
+   * Si quien mira lo puede modificar, mover o eliminar. Lo decide el backend
+   * (`ExamenMesDto.PuedeModificar`, desde el 10/11/2026): Dirección y
+   * Secretaría siempre; un docente, solo el Parcial, Recuperatorio o Final que
+   * cargó él.
+   */
+  puedeModificar: boolean;
 }

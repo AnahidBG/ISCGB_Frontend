@@ -11,6 +11,7 @@ function examen(datos: Record<string, unknown> = {}) {
     fecha: '2026-10-20T09:00:00',
     comision: 'Comisión 1° A',
     tipoExamen: 'Parcial',
+    puedeModificar: true,
     ...datos,
   };
 }
@@ -25,8 +26,19 @@ describe('aExamenesDelMes', () => {
         materia: 'Redes',
         comision: 'Comisión 1° A',
         tipo: 'Parcial',
+        puedeModificar: true,
       },
     ]);
+  });
+
+  it.each([
+    ['false', false],
+    ['ausente (backend anterior al 10/11/2026)', undefined],
+    ['algo que no es un booleano', 'true'],
+  ])('con `puedeModificar` %s no se puede tocar', (_caso, valor) => {
+    const [unico] = aExamenesDelMes([examen({ puedeModificar: valor })], OCTUBRE);
+
+    expect(unico.puedeModificar).toBe(false);
   });
 
   it('los ordena por día y hora', () => {

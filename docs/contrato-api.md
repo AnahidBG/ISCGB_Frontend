@@ -660,7 +660,8 @@ exámenes del **mes en curso**, ordenados por fecha (`ExamenMesDto`):
     "materia": "Redes",
     "fecha": "2026-10-20T09:00:00",
     "comision": "Comisión 1° A",
-    "tipoExamen": "Parcial"
+    "tipoExamen": "Parcial",
+    "puedeModificar": true
   }
 ]
 ```
@@ -668,11 +669,19 @@ exámenes del **mes en curso**, ordenados por fecha (`ExamenMesDto`):
 - **No recibe año ni mes**: usa el `DateTime.Now` del servidor. Para otro mes no hay
   listado.
 - No trae los ids de materia, comisión ni tipo, ni quién registró el examen.
+- `puedeModificar` (desde el 10/11/2026, `bd7b565`): si quien pide puede
+  modificarlo o eliminarlo. Director y Secretario, siempre; un Docente, solo el
+  Parcial, Recuperatorio o Final que cargó él (`Examenes.id_docente_creador`). Los
+  exámenes anteriores a esa columna no tienen creador: ningún Docente los puede
+  tocar.
+- Desde el 10/11/2026 las mesas de examen aparecen recién cuando el docente
+  convocado las acepta.
 - Sin exámenes responde `200` con `[]`.
 
 El frontend lo traduce a `ExamenCalendario` con `aExamenesDelMes`
 (`core/examenes/adaptador-examenes-mes.ts`): separa el día y el horario, descarta
 un examen que no se puede leer (sin id, o sin fecha con hora) y uno de otro mes.
+`puedeModificar` vale solo si llega `true`: sin el campo, nada se puede tocar.
 `CalendarioExamenesHttpService.examenesDelMes(anio, mes)` lo pide solo si
 `anio`/`mes` son el mes en curso; para cualquier otro devuelve `[]` sin pedir nada.
 Con eso, en el mes en curso la grilla lista los parciales y se pueden reprogramar y
@@ -717,7 +726,16 @@ Registra un examen. Recibe `CargaExamenDto`:
 Responde `200` con `{ "message": "Examen registrado correctamente.", "idExamen": 31 }`
 (el id se agregó el 17/10/2026; el frontend no lo usa: después de registrar vuelve a
 pedir el mes). Si el día ya alcanzó el límite responde `400` con
-`{ "message": "No se puede registrar. Se ha superado el límite de parciales para ese día." }`.
+`{ "message": "No se puede registrar: ese año y comisión ya tienen el máximo de exámenes permitido para ese día." }`.
+
+Desde el 10/11/2026 (`bd7b565`):
+
+- El límite se cuenta por **año (curso de la materia) + comisión**, no por día
+  para todo el instituto. Cuentan también las mesas pendientes o aceptadas.
+- Solo acepta los tipos Parcial, Recuperatorio y Final; con otro responde `400`
+  `"Tipo de examen no válido. Debe ser Parcial, Recuperatorio o Final."`. Por eso
+  el modal del Docente ofrece solo esos tres (`tiposQueRegistraElDocente`).
+- Guarda quién lo cargó (`id_docente_creador`): es lo que decide `puedeModificar`.
 
 Desde el 17/10/2026 pide el rol Docente, saca al docente del token y verifica que
 dicte esa materia (`docente_materia`); si no, `400` con
@@ -742,11 +760,13 @@ No verifica la comisión.
 
 ### `GET /api/ConfiguracionCalendario/tipos-examen`
 
-Devuelve `200` con `[{ "idTipoExamen": 1, "nombre": "Parcial" }]`. No exige rol y no
-recibe parámetros. Hoy la base tiene cuatro: "Parcial", "Recupetario" (así, con el
-error de tipeo), "Parcial Integrador Final" y "Coloquio". El frontend los muestra
-tal cual vienen. Si la respuesta no se puede leer (no es una lista, o un tipo
-no trae id o nombre) es un error.
+Devuelve `200` con `[{ "idTipoExamen": 1, "nombre": "Parcial" }]`. Pide sesión y no
+recibe parámetros. Devuelve TODOS los de la base: en algunas hay "Recupetario" (así,
+con el error de tipeo), "Parcial Integrador Final" o "Coloquio", y desde el
+10/11/2026 el seeder agrega "Parcial", "Recuperatorio" y "Final" si faltan. El
+frontend los muestra tal cual vienen en "Mesas de examen", y en el modal del Docente
+solo los tres que acepta `registrar`. Si la respuesta no se puede leer (no es una
+lista, o un tipo no trae id o nombre) es un error.
 
 ### `GET /api/ConfiguracionCalendario/mis-materias-docente`
 
@@ -797,13 +817,13 @@ Responde `200` con `{ "message": "La fecha del examen se ha modificado correctam
 - `nuevaFecha` es un `DateTime` de .NET **sin zona y con hora**, igual que `fecha` en
   `registrar`: el frontend la arma con `textoFechaYHora(dia, horario)` y nunca con
   `toISOString()`.
-- Desde `523d05b` pide sesión, y un Docente solo puede con los exámenes de las
-  materias que dicta, en cualquier comisión (`PuedeGestionarExamenAsync`); con otro
+- Pide sesión. Desde el 10/11/2026 (`bd7b565`) un Docente solo puede con el Parcial,
+  Recuperatorio o Final que cargó él (`PuedeGestionarExamenAsync`); con otro
   responde `403` sin body. Director y Secretario pueden con todos. No valida que la
   fecha no sea pasada. El frontend cuida la fecha (`errorDeDia`) y solo deja abrir y
-  arrastrar los parciales de las materias del Docente (`parcialesGestionables`, que
-  cruza `del-mes` con `mis-materias-docente` por el nombre de la materia). Con otro
-  parcial explica por qué no, sin llamar al backend.
+  arrastrar los que `del-mes` marca con `puedeModificar` (`parcialesGestionables`).
+  Con otro explica por qué no, sin llamar al backend. Antes cruzaba `del-mes` con
+  `mis-materias-docente` por el nombre de la materia, que era la regla de `523d05b`.
 - Cómo lo usa el frontend: `CalendarioExamenesService.reprogramarExamen(idExamen,
   fechaYHora)`. Un `4xx` con texto se muestra tal cual (el del límite, por ejemplo); un
   `5xx` o la falta de red, con el mensaje genérico. Va en segundo plano, sin el velo
@@ -817,7 +837,9 @@ Quita un examen del calendario. No recibe cuerpo. Responde `200` con
 `{ "message": "El examen ha sido eliminado del calendario correctamente." }` y `404`
 con `{ "message": "No se encontró el examen especificado." }` si no existe.
 
-- Mismo permiso que `modificar`: con un examen de otra materia, el Docente recibe `403`.
+- Mismo permiso que `modificar`: con un examen que no cargó él, el Docente recibe `403`.
+- Desde el 10/11/2026 borra antes las convocatorias de la mesa (`mesa_examen`): una
+  mesa con docente asignado ya se puede eliminar.
 - Cómo lo usa el frontend: `CalendarioExamenesService.eliminarExamen(idExamen)`, desde
   "Modificar parcial" y recién después de confirmar en el diálogo "¿Eliminar el
   parcial de…?". Mismo criterio de errores que `modificar`.
@@ -829,9 +851,10 @@ la grilla muestra cuántos hay cada día, sin listarlos. Ver `docs/como-probar.m
 ### Pendientes del backend
 
 - `del-mes` solo trae el mes en curso. Debería recibir `anio` y `mes` como
-  `estado-mes`, para listar y tocar los parciales de cualquier mes. Tampoco trae el
-  id de la materia, así que el frontend sabe cuáles son del docente cruzando por
-  el nombre.
+  `estado-mes`, para listar y tocar los parciales de cualquier mes.
+- `tipos-examen` devuelve todos los tipos de la base, aunque `registrar` acepte solo
+  Parcial, Recuperatorio y Final. El frontend filtra en el modal del Docente; sería
+  mejor que el backend los marcara o los filtrara.
 - El período del límite no está definido. El backend cuenta por día
   (`limite_parciales_diario`) y en Jira figura "por semana". Si cambia, el frontend
   toca `PERIODO_DEL_LIMITE`, que solo cambia la redacción, y tendría que revisar

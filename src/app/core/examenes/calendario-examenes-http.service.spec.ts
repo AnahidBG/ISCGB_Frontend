@@ -159,6 +159,7 @@ describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
           fecha: '2026-10-20T09:00:00',
           comision: 'Comisión 1° A',
           tipoExamen: 'Parcial',
+          puedeModificar: false,
         },
       ]);
 
@@ -170,6 +171,7 @@ describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
           materia: 'Redes',
           comision: 'Comisión 1° A',
           tipo: 'Parcial',
+          puedeModificar: false,
         },
       ]);
     });

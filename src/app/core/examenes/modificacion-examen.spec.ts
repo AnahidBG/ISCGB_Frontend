@@ -17,6 +17,7 @@ const PARCIAL: ExamenCalendario = {
   materia: 'Matemática',
   comision: 'Comisión 1° A',
   tipo: 'Parcial',
+  puedeModificar: true,
 };
 
 describe('hayCambiosEnElParcial', () => {
