@@ -2,7 +2,7 @@
   [enlaces]="enlaces()"
   encabezado="titulo"
   tituloPagina="Mesas de examen"
-  subtitulo="Armá las mesas de examen, convocá a quien las preside y resolvé las que rechazaron."
+  subtitulo="Armá las mesas de examen, convocá al tribunal y resolvé las que rechazaron."
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
@@ -62,8 +62,8 @@
       <section class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
         <h2 class="text-base font-semibold text-texto">Nueva mesa de examen</h2>
         <p class="mt-1 mb-5 text-sm text-texto-suave">
-          El docente recibe el aviso y confirma si puede estar. Si la rechaza, aparece en "Mesas
-          rechazadas".
+          Quien la preside y los dos vocales reciben el aviso, y cada uno confirma si puede estar.
+          Si alguno la rechaza, aparece en "Mesas rechazadas".
         </p>
         @if (listas.tipos.length === 0) {
           <p role="alert" class="mb-5 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">

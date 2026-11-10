@@ -9,7 +9,7 @@ import { Sesion } from '../../../core/auth/modelos/sesion';
 import { CalendarioExamenesService } from '../../../core/examenes/calendario-examenes.service';
 import { CalendarioDelMes } from '../../../core/examenes/modelos/calendario-del-mes';
 import { MateriasService } from '../../../core/materias/materias.service';
-import { MesasExamenService } from '../../../core/mesas/mesas-examen.service';
+import { MesaIncompleta, MesasExamenService } from '../../../core/mesas/mesas-examen.service';
 import { AlertaRechazo } from '../../../core/mesas/modelos/alerta-rechazo';
 import { NuevaMesa } from '../../../core/mesas/modelos/nueva-mesa';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
@@ -45,6 +45,15 @@ const ALERTA: AlertaRechazo = {
   fecha: new Date(2026, 10, 20, 9, 0),
 };
 
+const ANA = { idDocente: 8, nombreCompleto: 'Ana Pérez' };
+
+/** Los docentes para armar un tribunal: quien preside y los dos vocales. */
+const TRIBUNAL = [
+  ANA,
+  { idDocente: 9, nombreCompleto: 'Bruno Gómez' },
+  { idDocente: 10, nombreCompleto: 'Carla Ruiz' },
+];
+
 /** Las mesas que se mandaron a crear, en orden. */
 let creadas: NuevaMesa[];
 /** El año y comisión con que se revisó el lugar del día, en orden. */
@@ -56,6 +65,7 @@ async function montar(
   opciones: {
     sesion?: Sesion;
     materias?: () => Observable<{ idMateria: number; nombre: string }[]>;
+    docentes?: () => Observable<{ idDocente: number; nombreCompleto: string }[]>;
     tipos?: () => Observable<{ idTipoExamen: number; nombre: string }[]>;
     calendario?: () => Observable<CalendarioDelMes>;
     registrar?: () => Observable<string>;
@@ -86,7 +96,7 @@ async function montar(
         useValue: {
           listarDisponibles: opciones.materias ?? (() => of([{ idMateria: 4, nombre: 'Redes' }])),
           listarComisiones: () => of([{ idComision: 1, nombre: 'Comisión A' }]),
-          listarDocentes: () => of([{ idDocente: 8, nombreCompleto: 'Ana Pérez' }]),
+          listarDocentes: opciones.docentes ?? (() => of(TRIBUNAL)),
         },
       },
       {
@@ -149,6 +159,8 @@ async function crearMesa(fixture: ComponentFixture<MesasExamen>, dia = diaFuturo
     'mesa-materia': '4',
     'mesa-comision': '1',
     'mesa-docente': '8',
+    'mesa-vocal-1': '9',
+    'mesa-vocal-2': '10',
   };
   for (const [id, valor] of Object.entries(valores)) {
     const control = raiz(fixture).querySelector<HTMLInputElement | HTMLSelectElement>(`#${id}`)!;
@@ -201,7 +213,16 @@ describe('MesasExamen (SCRUM-245)', () => {
     await crearMesa(fixture, dia);
 
     expect(creadas).toEqual([
-      { dia, horario: '09:00', idMateria: 4, idComision: 1, idTipoExamen: 3, idDocente: 8 },
+      {
+        dia,
+        horario: '09:00',
+        idMateria: 4,
+        idComision: 1,
+        idTipoExamen: 3,
+        idDocente: 8,
+        idVocal1: 9,
+        idVocal2: 10,
+      },
     ]);
     expect(raiz(fixture).querySelector('form [role="status"]')?.textContent).toContain(
       'Mesa de examen registrada exitosamente.',
@@ -242,6 +263,24 @@ describe('MesasExamen (SCRUM-245)', () => {
     expect(raiz(fixture).querySelector('form [role="alert"]')?.textContent).toContain(
       'El docente seleccionado no existe.',
     );
+    // La mesa no se creó: el formulario queda como estaba para corregir y reintentar.
+    expect(raiz(fixture).querySelector<HTMLSelectElement>('#mesa-docente')?.value).toBe('8');
+  });
+
+  it('si la mesa se crea pero falta un vocal, lo avisa y vacía el formulario para no crearla dos veces', async () => {
+    const fixture = await montar({
+      registrar: () =>
+        throwError(
+          () => new MesaIncompleta('La mesa se creó, pero no pudimos convocar al vocal 2.'),
+        ),
+    });
+
+    await crearMesa(fixture);
+
+    expect(raiz(fixture).querySelector('form [role="alert"]')?.textContent).toContain(
+      'no pudimos convocar al vocal 2',
+    );
+    expect(raiz(fixture).querySelector<HTMLSelectElement>('#mesa-docente')?.value).toBe('');
   });
 
   it('si no se pueden traer las listas lo avisa, y "Reintentar" las vuelve a pedir', async () => {
@@ -292,7 +331,7 @@ describe('MesasExamen: mesas rechazadas (SCRUM-247)', () => {
   });
 
   it('Secretaría convoca a otro docente, sin el que la rechazó, y la alerta se archiva', async () => {
-    const fixture = await montar({ alertas: () => of([ALERTA]) });
+    const fixture = await montar({ alertas: () => of([ALERTA]), docentes: () => of([ANA]) });
     const select = raiz(fixture).querySelector<HTMLSelectElement>('#reasignar-31-8')!;
 
     // El único docente de la lista es el que la rechazó: no se ofrece.
@@ -318,6 +357,7 @@ describe('MesasExamen: mesas rechazadas (SCRUM-247)', () => {
     const fixture = await montar({
       sesion: DIRECTOR,
       alertas: () => of([ALERTA]),
+      docentes: () => of([ANA]),
       asignar: () =>
         throwError(() => new Error('El docente ya se encuentra asignado a esta mesa de examen.')),
     });

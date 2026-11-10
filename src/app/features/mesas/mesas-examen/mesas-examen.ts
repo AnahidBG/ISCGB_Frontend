@@ -20,7 +20,7 @@ import {
 } from '../../../core/materias/modelos/asignacion-materia';
 import { MateriaDisponible } from '../../../core/materias/modelos/materia-disponible';
 import { MENSAJE_SIN_REVISAR_LUGAR, motivoSinLugar } from '../../../core/mesas/lugar-en-el-dia';
-import { MesasExamenService } from '../../../core/mesas/mesas-examen.service';
+import { MesaIncompleta, MesasExamenService } from '../../../core/mesas/mesas-examen.service';
 import { AlertaRechazo } from '../../../core/mesas/modelos/alerta-rechazo';
 import { NuevaMesa } from '../../../core/mesas/modelos/nueva-mesa';
 import { tipoDeLaMesa } from '../../../core/mesas/tipo-de-la-mesa';
@@ -55,8 +55,11 @@ interface OpcionesDeMesa {
  * (`MateriasService`) y los tipos de examen (`CalendarioExamenesService`), y
  * habla con `MesasExamenService`:
  *
- *   · Nueva mesa: `POST /api/ConfiguracionCalendario/registrar-mesa`. El docente
- *     elegido queda convocado en "Pendiente" y lo ve en "Mis mesas de examen".
+ *   · Nueva mesa: `POST /api/ConfiguracionCalendario/registrar-mesa` con quien la
+ *     preside, y después `POST .../asignar-docente` con cada vocal. Los tres
+ *     quedan convocados en "Pendiente" y la ven en "Mis mesas de examen". Si la
+ *     mesa se crea pero falta convocar a un vocal (`MesaIncompleta`), se avisa
+ *     y el formulario se vacía igual, para no crearla dos veces.
  *     Antes se revisa el día con `calendarioDelMes` para el año y la comisión de
  *     la mesa: cuenta para el límite, que es por grupo (`motivoSinLugar`). Desde el
  *     10/11/2026 el backend también lo valida y responde 400 con su motivo.
@@ -269,6 +272,11 @@ export class MesasExamen {
         error: (fallo: Error) => {
           this.creando.set(false);
           this.errorMesa.set(fallo.message);
+          // La mesa ya existe aunque falte convocar a un vocal: se vacía el
+          // formulario para que no se cree dos veces.
+          if (fallo instanceof MesaIncompleta) {
+            this.reinicioMesa.update((n) => n + 1);
+          }
         },
       });
   }

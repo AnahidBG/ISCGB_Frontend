@@ -32,9 +32,9 @@ import {
 } from '../../../../../shared/ui/campo-formulario/clases-del-campo';
 
 /**
- * El alta de una mesa de examen con el docente que la preside (SCRUM-245):
- * fecha, horario, materia, comisión y docente. El tipo es siempre "Mesa de
- * examen" y su id se asigna automáticamente.
+ * El alta de una mesa de examen con su tribunal (SCRUM-245): fecha, horario,
+ * materia, comisión, el docente que la preside y los vocales 1 y 2. El tipo es
+ * siempre "Mesa de examen" y su id se asigna automáticamente.
  *
  * PRESENTACIONAL: recibe las listas del contenedor (`MesasExamen`) y emite la
  * mesa ya validada (`erroresDeNuevaMesa`). Los errores de cada campo aparecen
@@ -81,6 +81,8 @@ export class FormularioMesa {
     idComision: '',
     idTipoExamen: '',
     idDocente: '',
+    idVocal1: '',
+    idVocal2: '',
   });
 
   constructor() {

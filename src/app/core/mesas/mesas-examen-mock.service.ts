@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, delay, of, throwError } from 'rxjs';
-import { MesasExamenService } from './mesas-examen.service';
+import { MENSAJE_MESA_CREADA, MesasExamenService } from './mesas-examen.service';
 import { AlertaRechazo } from './modelos/alerta-rechazo';
 import { NuevaMesa } from './modelos/nueva-mesa';
 
@@ -55,10 +55,11 @@ export class MesasExamenMockService extends MesasExamenService {
       return this.fallar('El docente seleccionado no existe.');
     }
     const idExamen = this.siguienteIdExamen++;
-    this.asignaciones.add(`${idExamen}-${mesa.idDocente}`);
-    return of(
-      'Mesa de examen registrada exitosamente. Se ha enviado la notificación pendiente al docente.',
-    ).pipe(delay(DEMORA_SIMULADA_MS));
+    // Quien la preside y los dos vocales, como hace el servicio real.
+    for (const idDocente of [mesa.idDocente, mesa.idVocal1, mesa.idVocal2]) {
+      this.asignaciones.add(`${idExamen}-${idDocente}`);
+    }
+    return of(MENSAJE_MESA_CREADA).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
   asignarDocente(idExamen: number, idDocente: number): Observable<string> {
