@@ -49,6 +49,8 @@ describe('MesasExamenMockService', () => {
       idComision: 1,
       idTipoExamen: 1,
       idDocente: 99,
+      idVocal1: 1,
+      idVocal2: 2,
     };
 
     await expect(firstValueFrom(servicio.registrarMesa(mesa))).rejects.toThrow(

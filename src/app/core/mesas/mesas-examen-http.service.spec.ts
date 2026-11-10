@@ -10,6 +10,8 @@ import {
   MENSAJE_ERROR_OCULTAR_ALERTA,
   MENSAJE_ERROR_REGISTRAR_MESA,
   MENSAJE_ERROR_RESPONDER_MESA,
+  MENSAJE_MESA_CREADA,
+  MesaIncompleta,
 } from './mesas-examen.service';
 import { AlertaRechazo } from './modelos/alerta-rechazo';
 
@@ -46,9 +48,11 @@ describe('MesasExamenHttpService', () => {
       idComision: 1,
       idTipoExamen: 3,
       idDocente: 8,
+      idVocal1: 9,
+      idVocal2: 10,
     };
 
-    it('manda `RegistrarMesaDto` con la fecha sin zona y devuelve el mensaje', () => {
+    it('manda `RegistrarMesaDto` con quien la preside y la fecha sin zona, y después convoca a los vocales', () => {
       let mensaje = '';
       servicio.registrarMesa(mesa).subscribe((m) => (mensaje = m));
 
@@ -64,7 +68,58 @@ describe('MesasExamenHttpService', () => {
       });
       pedido.flush({ message: 'Mesa de examen registrada exitosamente.', idExamen: 31 });
 
-      expect(mensaje).toBe('Mesa de examen registrada exitosamente.');
+      const vocal1 = backend.expectOne(RUTAS_API.asignarDocenteAMesa);
+      expect(vocal1.request.body).toEqual({ idExamen: 31, idDocente: 9 });
+      vocal1.flush({ message: 'Docente asignado correctamente.' });
+
+      const vocal2 = backend.expectOne(RUTAS_API.asignarDocenteAMesa);
+      expect(vocal2.request.body).toEqual({ idExamen: 31, idDocente: 10 });
+      vocal2.flush({ message: 'Docente asignado correctamente.' });
+
+      expect(mensaje).toBe(MENSAJE_MESA_CREADA);
+    });
+
+    it('si no puede convocar al vocal 2, avisa que la mesa quedó creada', () => {
+      let fallo: unknown;
+      servicio.registrarMesa(mesa).subscribe({ error: (e: unknown) => (fallo = e) });
+
+      backend.expectOne(RUTAS_API.registrarMesaExamen).flush({ idExamen: 31 });
+      backend.expectOne(RUTAS_API.asignarDocenteAMesa).flush({ message: 'ok' });
+      backend
+        .expectOne(RUTAS_API.asignarDocenteAMesa)
+        .flush(
+          { message: 'El docente ya se encuentra asignado a esta mesa de examen.' },
+          { status: 400, statusText: 'Bad Request' },
+        );
+
+      expect(fallo).toBeInstanceOf(MesaIncompleta);
+      expect((fallo as Error).message).toBe(
+        'La mesa se creó, pero no pudimos convocar al vocal 2. ' +
+          'El docente ya se encuentra asignado a esta mesa de examen.',
+      );
+    });
+
+    it('si falla el vocal 1 no pide el 2, y no repite el "Intentá de nuevo" del genérico', () => {
+      let fallo: unknown;
+      servicio.registrarMesa(mesa).subscribe({ error: (e: unknown) => (fallo = e) });
+
+      backend.expectOne(RUTAS_API.registrarMesaExamen).flush({ idExamen: 31 });
+      backend
+        .expectOne(RUTAS_API.asignarDocenteAMesa)
+        .flush(null, { status: 500, statusText: 'Error' });
+
+      expect(fallo).toBeInstanceOf(MesaIncompleta);
+      expect((fallo as Error).message).toBe('La mesa se creó, pero no pudimos convocar a los vocales.');
+    });
+
+    it('sin el id de la mesa no puede convocar a los vocales, y lo avisa', () => {
+      let fallo: unknown;
+      servicio.registrarMesa(mesa).subscribe({ error: (e: unknown) => (fallo = e) });
+
+      backend.expectOne(RUTAS_API.registrarMesaExamen).flush({ message: 'Mesa registrada.' });
+
+      expect(fallo).toBeInstanceOf(MesaIncompleta);
+      expect((fallo as Error).message).toContain('no pudimos convocar a los vocales');
     });
 
     it('un 400 muestra el mensaje del backend', () => {

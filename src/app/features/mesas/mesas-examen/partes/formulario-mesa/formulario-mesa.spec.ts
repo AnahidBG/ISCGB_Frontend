@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NuevaMesa } from '../../../../../core/mesas/modelos/nueva-mesa';
+import { MENSAJE_DOCENTE_REPETIDO } from '../../../../../core/mesas/nueva-mesa';
 import { FormularioMesa } from './formulario-mesa';
 
 describe('FormularioMesa (SCRUM-245)', () => {
@@ -15,7 +16,11 @@ describe('FormularioMesa (SCRUM-245)', () => {
     fixture.componentRef.setInput('materias', [{ idMateria: 4, nombre: 'Redes' }]);
     fixture.componentRef.setInput('comisiones', [{ idComision: 1, nombre: 'Comisión A' }]);
     fixture.componentRef.setInput('tipos', [{ idTipoExamen: 3, nombre: 'Final' }]);
-    fixture.componentRef.setInput('docentes', [{ idDocente: 8, nombreCompleto: 'Ana Pérez' }]);
+    fixture.componentRef.setInput('docentes', [
+      { idDocente: 8, nombreCompleto: 'Ana Pérez' },
+      { idDocente: 9, nombreCompleto: 'Bruno Gómez' },
+      { idDocente: 10, nombreCompleto: 'Carla Ruiz' },
+    ]);
     await fixture.whenStable();
   });
 
@@ -34,12 +39,18 @@ describe('FormularioMesa (SCRUM-245)', () => {
     await fixture.whenStable();
   }
 
-  it('emite la mesa con los ids como números', async () => {
+  function completarTodo(): void {
     completar('mesa-dia', '2026-11-20');
     completar('mesa-horario', '09:00');
     completar('mesa-materia', '4');
     completar('mesa-comision', '1');
     completar('mesa-docente', '8');
+    completar('mesa-vocal-1', '9');
+    completar('mesa-vocal-2', '10');
+  }
+
+  it('emite la mesa con el tribunal y los ids como números', async () => {
+    completarTodo();
     await enviar();
 
     expect(emitida).toEqual({
@@ -49,7 +60,18 @@ describe('FormularioMesa (SCRUM-245)', () => {
       idComision: 1,
       idTipoExamen: 3,
       idDocente: 8,
+      idVocal1: 9,
+      idVocal2: 10,
     });
+  });
+
+  it('no deja repetir un docente en el tribunal', async () => {
+    completarTodo();
+    completar('mesa-vocal-2', '8');
+    await enviar();
+
+    expect(emitida).toBeNull();
+    expect(raiz().textContent).toContain(MENSAJE_DOCENTE_REPETIDO);
   });
 
   it('muestra el tipo fijo y no ofrece un selector', () => {
@@ -66,6 +88,8 @@ describe('FormularioMesa (SCRUM-245)', () => {
     expect(emitida).toBeNull();
     expect(raiz().textContent).toContain('Elegí la fecha de la mesa.');
     expect(raiz().textContent).toContain('Elegí el docente que la preside.');
+    expect(raiz().textContent).toContain('Elegí el vocal 1.');
+    expect(raiz().textContent).toContain('Elegí el vocal 2.');
   });
 
   it('no deja una fecha anterior a hoy', async () => {

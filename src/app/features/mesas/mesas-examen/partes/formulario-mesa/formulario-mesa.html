@@ -118,7 +118,7 @@
       id="mesa-docente"
       formControlName="idDocente"
       [attr.aria-invalid]="errorDocente !== null"
-      [attr.aria-describedby]="descripcionDe('mesa-docente', errorDocente, 'ayuda-mesa-docente')"
+      [attr.aria-describedby]="descripcionDe('mesa-docente', errorDocente, 'ayuda-mesa-tribunal')"
       [class]="clasesDe(errorDocente)"
     >
       <option value="">Elegí un docente</option>
@@ -126,10 +126,54 @@
         <option [value]="docente.idDocente">{{ docente.nombreCompleto }}</option>
       }
     </select>
-    <span id="ayuda-mesa-docente" class="text-xs text-texto-suave">
-      Le llega el aviso para que acepte o rechace la mesa.
-    </span>
   </app-campo-formulario>
+
+  <div class="grid gap-4 sm:grid-cols-2">
+    @let errorVocal1 = errorDe('idVocal1');
+    <app-campo-formulario
+      etiqueta="Vocal 1"
+      idCampo="mesa-vocal-1"
+      [requerido]="true"
+      [error]="errorVocal1"
+    >
+      <select
+        id="mesa-vocal-1"
+        formControlName="idVocal1"
+        [attr.aria-invalid]="errorVocal1 !== null"
+        [attr.aria-describedby]="descripcionDe('mesa-vocal-1', errorVocal1, 'ayuda-mesa-tribunal')"
+        [class]="clasesDe(errorVocal1)"
+      >
+        <option value="">Elegí un docente</option>
+        @for (docente of docentes(); track docente.idDocente) {
+          <option [value]="docente.idDocente">{{ docente.nombreCompleto }}</option>
+        }
+      </select>
+    </app-campo-formulario>
+
+    @let errorVocal2 = errorDe('idVocal2');
+    <app-campo-formulario
+      etiqueta="Vocal 2"
+      idCampo="mesa-vocal-2"
+      [requerido]="true"
+      [error]="errorVocal2"
+    >
+      <select
+        id="mesa-vocal-2"
+        formControlName="idVocal2"
+        [attr.aria-invalid]="errorVocal2 !== null"
+        [attr.aria-describedby]="descripcionDe('mesa-vocal-2', errorVocal2, 'ayuda-mesa-tribunal')"
+        [class]="clasesDe(errorVocal2)"
+      >
+        <option value="">Elegí un docente</option>
+        @for (docente of docentes(); track docente.idDocente) {
+          <option [value]="docente.idDocente">{{ docente.nombreCompleto }}</option>
+        }
+      </select>
+    </app-campo-formulario>
+  </div>
+  <p id="ayuda-mesa-tribunal" class="-mt-2 text-xs text-texto-suave">
+    A los tres les llega el aviso para que acepten o rechacen la mesa.
+  </p>
 
   <div class="mt-2 flex justify-end">
     <app-boton

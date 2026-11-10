@@ -1,4 +1,9 @@
-import { ValoresNuevaMesa, aNuevaMesa, erroresDeNuevaMesa } from './nueva-mesa';
+import {
+  MENSAJE_DOCENTE_REPETIDO,
+  ValoresNuevaMesa,
+  aNuevaMesa,
+  erroresDeNuevaMesa,
+} from './nueva-mesa';
 
 /** Sábado 10/10/2026 por la tarde. */
 const HOY = new Date(2026, 9, 10, 15, 30);
@@ -10,6 +15,8 @@ const COMPLETOS: ValoresNuevaMesa = {
   idComision: '1',
   idTipoExamen: '3',
   idDocente: '8',
+  idVocal1: '9',
+  idVocal2: '10',
 };
 
 describe('erroresDeNuevaMesa', () => {
@@ -29,6 +36,20 @@ describe('erroresDeNuevaMesa', () => {
       idComision: 'Elegí la comisión.',
       idTipoExamen: 'Elegí el tipo de examen.',
       idDocente: 'Elegí el docente que la preside.',
+      idVocal1: 'Elegí el vocal 1.',
+      idVocal2: 'Elegí el vocal 2.',
+    });
+  });
+
+  it('el tribunal son tres docentes distintos', () => {
+    expect(erroresDeNuevaMesa({ ...COMPLETOS, idVocal1: '8' }, HOY)).toEqual({
+      idVocal1: MENSAJE_DOCENTE_REPETIDO,
+    });
+    expect(erroresDeNuevaMesa({ ...COMPLETOS, idVocal2: '8' }, HOY)).toEqual({
+      idVocal2: MENSAJE_DOCENTE_REPETIDO,
+    });
+    expect(erroresDeNuevaMesa({ ...COMPLETOS, idVocal2: '9' }, HOY)).toEqual({
+      idVocal2: MENSAJE_DOCENTE_REPETIDO,
     });
   });
 
@@ -56,6 +77,8 @@ describe('aNuevaMesa', () => {
       idComision: 1,
       idTipoExamen: 3,
       idDocente: 8,
+      idVocal1: 9,
+      idVocal2: 10,
     });
   });
 });

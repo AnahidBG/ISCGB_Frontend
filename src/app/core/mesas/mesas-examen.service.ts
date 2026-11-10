@@ -18,6 +18,21 @@ export const MENSAJE_ERROR_ALERTAS_RECHAZO =
 export const MENSAJE_ERROR_OCULTAR_ALERTA =
   'No pudimos archivar el aviso. Intentá de nuevo en un momento.';
 
+export const MENSAJE_MESA_CREADA =
+  'Mesa creada. Convocamos a quien la preside y a los dos vocales: cada uno recibe el aviso para aceptarla o rechazarla.';
+
+/**
+ * La mesa se creó, pero no se pudo convocar a todo el tribunal. No es un error
+ * como los otros: la mesa ya existe, así que la pantalla vacía el formulario
+ * para que no se cree dos veces, y muestra el mensaje.
+ */
+export class MesaIncompleta extends Error {
+  constructor(mensaje: string) {
+    super(mensaje);
+    this.name = 'MesaIncompleta';
+  }
+}
+
 /**
  * Las mesas de examen (SCRUM-245, SCRUM-246 y SCRUM-247): Dirección o Secretaría
  * arman una mesa y convocan a un docente, el docente acepta o rechaza, y si
@@ -39,11 +54,12 @@ export const MENSAJE_ERROR_OCULTAR_ALERTA =
  */
 export abstract class MesasExamenService {
   /**
-   * Crea la mesa y deja al docente convocado, con la asignación "Pendiente".
-   * Devuelve el mensaje de confirmación del backend.
+   * Crea la mesa con quien la preside y después convoca a los dos vocales: los
+   * tres quedan con la asignación "Pendiente". Devuelve `MENSAJE_MESA_CREADA`.
    *
-   * Falla con el mensaje del backend cuando rechaza el pedido (el docente no
-   * existe, por ejemplo), o con `MENSAJE_ERROR_REGISTRAR_MESA`.
+   * Falla con el mensaje del backend cuando rechaza la mesa (el docente no
+   * existe, por ejemplo), o con `MENSAJE_ERROR_REGISTRAR_MESA`. Si la mesa se
+   * crea pero no se puede convocar a un vocal, falla con `MesaIncompleta`.
    */
   abstract registrarMesa(mesa: NuevaMesa): Observable<string>;
 

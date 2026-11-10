@@ -22,7 +22,12 @@ const VACIO: Readonly<Record<CampoNuevaMesa, string>> = {
   idComision: 'Elegí la comisión.',
   idTipoExamen: 'Elegí el tipo de examen.',
   idDocente: 'Elegí el docente que la preside.',
+  idVocal1: 'Elegí el vocal 1.',
+  idVocal2: 'Elegí el vocal 2.',
 };
+
+/** Lo que dice un vocal que repite a otro integrante del tribunal. */
+export const MENSAJE_DOCENTE_REPETIDO = 'Ese docente ya está en el tribunal: elegí otro.';
 
 /**
  * Qué campos no se pueden guardar y por qué.
@@ -30,7 +35,9 @@ const VACIO: Readonly<Record<CampoNuevaMesa, string>> = {
  * Todos son obligatorios. La fecha no puede ser anterior a hoy y el horario
  * tiene que ser de 24 h: son las mismas reglas que el registro de un parcial
  * (`errorDeDia`, `errorDeHorario`), porque el backend no valida ninguna de las
- * dos. Recibe `hoy` por parámetro para seguir siendo una función pura.
+ * dos. El tribunal son tres docentes distintos: el backend no deja convocar dos
+ * veces al mismo, pero recién después de crear la mesa, y quedaría a medias.
+ * Recibe `hoy` por parámetro para seguir siendo una función pura.
  */
 export function erroresDeNuevaMesa(valores: ValoresNuevaMesa, hoy: Date): ErroresNuevaMesa {
   const errores: ErroresNuevaMesa = {};
@@ -49,6 +56,14 @@ export function erroresDeNuevaMesa(valores: ValoresNuevaMesa, hoy: Date): Errore
   if (errorHora !== null) {
     errores.horario = errorHora;
   }
+
+  const { idDocente, idVocal1, idVocal2 } = valores;
+  if (idVocal1 !== '' && idVocal1 === idDocente) {
+    errores.idVocal1 = MENSAJE_DOCENTE_REPETIDO;
+  }
+  if (idVocal2 !== '' && (idVocal2 === idDocente || idVocal2 === idVocal1)) {
+    errores.idVocal2 = MENSAJE_DOCENTE_REPETIDO;
+  }
   return errores;
 }
 
@@ -61,5 +76,7 @@ export function aNuevaMesa(valores: ValoresNuevaMesa): NuevaMesa {
     idComision: Number(valores.idComision),
     idTipoExamen: Number(valores.idTipoExamen),
     idDocente: Number(valores.idDocente),
+    idVocal1: Number(valores.idVocal1),
+    idVocal2: Number(valores.idVocal2),
   };
 }
