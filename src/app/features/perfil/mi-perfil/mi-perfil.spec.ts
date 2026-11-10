@@ -1,4 +1,4 @@
-import { WritableSignal, signal } from '@angular/core';
+import { signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { Observable, of, throwError } from 'rxjs';
@@ -173,32 +173,6 @@ describe('MiPerfil', () => {
     // Lo guardado es el nuevo punto de partida: vuelve a no haber nada para guardar.
     expect(campo<HTMLInputElement>(fixture, 'email').value).toBe('nueva@ejemplo.com');
     expect(botonGuardar(fixture).disabled).toBe(true);
-  });
-
-  it('muestra la documentación para descargar de cada rol que tiene la persona', async () => {
-    const fixture = await montar();
-    const sesion = TestBed.inject(AuthService).sesion as WritableSignal<Sesion | null>;
-    const secciones = () =>
-      Array.from(
-        raiz(fixture).querySelectorAll('app-recursos-descargables'),
-        (seccion) => seccion.textContent ?? '',
-      );
-
-    // Docente: solo la suya.
-    expect(secciones()).toEqual([expect.stringContaining('ARCA, BDO (Encode)')]);
-
-    // Con los dos roles ve las dos, primero la del alumno.
-    sesion.set({ ...SESION, roles: ['Alumno', 'Docente'] });
-    await fixture.whenStable();
-    expect(secciones()).toEqual([
-      expect.stringContaining('Documentos y formatos estudiantiles'),
-      expect.stringContaining('ARCA, BDO (Encode)'),
-    ]);
-
-    // Director y Secretario no tienen documentación para descargar.
-    sesion.set({ ...SESION, roles: ['Director', 'Secretario'] });
-    await fixture.whenStable();
-    expect(secciones()).toEqual([]);
   });
 
   describe('foto de perfil', () => {

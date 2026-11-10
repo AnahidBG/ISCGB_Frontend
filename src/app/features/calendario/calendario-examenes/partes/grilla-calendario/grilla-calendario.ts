@@ -95,7 +95,7 @@ const CLASES_BASE_CELDA =
  * al activarlo (clic, Enter o Espacio), emite `diaBloqueado`: quien usa la grilla
  * decide cómo explicarlo.
  *
- * Arrastrar: con `arrastrable`, un parcial que no pasó se agarra y se suelta en
+ * Arrastrar: un parcial de `arrastrables` que no pasó se agarra y se suelta en
  * otro día que lo admita (de este mes, no pasado ni completo, y distinto del que
  * ya tiene). La grilla solo avisa con `examenMovido`; quien la usa llama al
  * servicio. El arrastre es una comodidad del mouse: el teclado ya tiene su camino,
@@ -127,8 +127,8 @@ export class GrillaCalendario {
   /** Habilita elegir un día. Deshabilitada por defecto. */
   readonly seleccionable = input<boolean>(false);
 
-  /** Habilita arrastrar un parcial a otro día. Deshabilitada por defecto. */
-  readonly arrastrable = input<boolean>(false);
+  /** Los parciales que se pueden arrastrar a otro día, por su id. Por defecto, ninguno. */
+  readonly arrastrables = input<ReadonlySet<number>>(new Set());
 
   /** El día de hoy: lo marca la grilla y separa los días pasados. */
   readonly hoy = input<Date>(new Date());
@@ -142,7 +142,7 @@ export class GrillaCalendario {
   /** Se emite con el parcial que se tocó. */
   readonly examenSeleccionado = output<ExamenCalendario>();
 
-  /** Se emite con el parcial que se soltó en otro día. Solo con `arrastrable`. */
+  /** Se emite con el parcial que se soltó en otro día. Solo con los de `arrastrables`. */
   readonly examenMovido = output<MovimientoDeExamen>();
 
   /** Una semana cualquiera, de lunes a domingo: el locale pone el nombre de cada columna. */
@@ -166,7 +166,7 @@ export class GrillaCalendario {
       examenesPorFecha.set(examen.fecha, [...(examenesPorFecha.get(examen.fecha) ?? []), examen]);
     }
     const permitido = this.seleccionable();
-    const enElAire = this.arrastrable() ? this.examenArrastrado() : null;
+    const enElAire = this.examenArrastrado();
 
     return semanasDelMes(this.mes(), this.dias(), this.hoy()).map((semana) =>
       semana.map((celda): CeldaVisible => ({
@@ -295,7 +295,15 @@ export class GrillaCalendario {
     this.examenSeleccionado.emit(examen);
   }
 
+  /** `true` si ese parcial se puede agarrar: es de `arrastrables` y su día no pasó. */
+  protected esArrastrable(examen: ExamenCalendario, celda: CeldaVisible): boolean {
+    return !celda.esPasado && this.arrastrables().has(examen.idExamen);
+  }
+
   protected empezarArrastre(evento: DragEvent, examen: ExamenCalendario): void {
+    if (!this.arrastrables().has(examen.idExamen)) {
+      return;
+    }
     this.examenArrastrado.set(examen);
     // Firefox no arranca el arrastre sin datos. Se lee el estado de la grilla, no esto.
     if (evento.dataTransfer) {

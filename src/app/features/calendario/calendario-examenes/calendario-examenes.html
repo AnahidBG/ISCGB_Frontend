@@ -60,9 +60,9 @@
         adentro de la celda que arma la grilla.
 
         Elegir un día, modificar un parcial y arrastrarlo son cosas del Docente: para
-        los demás el calendario es de consulta. Un día completo no se elige, pero
-        explica por qué (el aviso de arriba). Con la API real la lista de parciales
-        viene vacía, así que no hay parcial que tocar ni arrastrar.
+        los demás el calendario es de consulta. El Docente solo arrastra los parciales
+        de sus materias (`gestionables`). Un día completo no se elige, pero explica por
+        qué (el aviso de arriba), y lo mismo un parcial que no es suyo.
       -->
       <div class="mt-4">
         @if (alerta(); as alertaActual) {
@@ -78,7 +78,7 @@
           [hoy]="hoy"
           [plantillaCelda]="plantillaDia"
           [seleccionable]="puedeRegistrar()"
-          [arrastrable]="puedeRegistrar()"
+          [arrastrables]="gestionables()"
           (diaSeleccionado)="abrirRegistro($event)"
           (diaBloqueado)="mostrarFechaBloqueada($event)"
           (examenSeleccionado)="abrirModificacion($event)"

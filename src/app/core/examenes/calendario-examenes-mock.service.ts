@@ -35,8 +35,13 @@ const MENSAJE_EXAMEN_NO_ENCONTRADO = 'No se encontró el examen especificado.';
 /** "2026-10-20T09:00:00" → el día y el horario. Lo que el backend lee como un `DateTime` sin zona. */
 const FECHA_Y_HORA = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/;
 
-/** Las materias del docente de ejemplo: una de ellas, en dos comisiones. */
+/**
+ * Las materias del docente de ejemplo: una de ellas, en dos comisiones. Dicta
+ * Matemática para que alguno de los parciales de ejemplo sea suyo y se pueda
+ * modificar (`parcialesGestionables`).
+ */
 const MATERIAS_DEL_DOCENTE: readonly MateriaDelDocente[] = [
+  { idMateria: 2, materia: 'Matemática', carrera: null, idComision: 1, comision: 'Comisión 1° A' },
   {
     idMateria: 4,
     materia: 'Programación II',

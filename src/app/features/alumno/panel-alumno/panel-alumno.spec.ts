@@ -94,6 +94,15 @@ function porEntregar(fixture: ComponentFixture<PanelAlumno>): (string | undefine
   );
 }
 
+// El apto médico es anual y los documentos son de 2026: con la fecha real, desde
+// 2027 contarían como vencidos (`motivoDeVencimiento`). Solo `Date`.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 9, 10, 12));
+});
+
+afterEach(() => vi.useRealTimers());
+
 describe('PanelAlumno: documentación por entregar (SCRUM-150)', () => {
   it('muestra los obligatorios que nunca se subieron', async () => {
     const fixture = await montar([documento(101, 'DNI', 'Rechazado')]);
@@ -254,5 +263,14 @@ describe('PanelAlumno: contratos (SCRUM-227)', () => {
     TestBed.resetTestingModule();
     const sinContratos = await montar([]);
     expect(raiz(sinContratos).querySelector('[data-seccion="contratos"]')).toBeNull();
+  });
+});
+
+describe('PanelAlumno: documentación y tutoriales (SCRUM-228 y SCRUM-231)', () => {
+  it('muestra en el panel la documentación para descargar y los tutoriales', async () => {
+    const texto = raiz(await montar([])).textContent ?? '';
+
+    expect(texto).toContain('Documentos y formatos estudiantiles');
+    expect(texto).toContain('Tutoriales para estudiantes');
   });
 });

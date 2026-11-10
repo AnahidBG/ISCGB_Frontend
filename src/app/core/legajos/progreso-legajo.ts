@@ -61,14 +61,13 @@ export interface ProgresoLegajo {
  *    esto por una comparación de ids — es más barato y no se rompe si alguien
  *    corrige una tilde en `tipos_documentos`.
  *
- * 2. **No mira vencimientos.** Un documento `anual` aprobado el año pasado
- *    hoy cuenta como aprobado igual. Para contemplarlo hay que comparar
- *    `fechaVencimiento` contra hoy, y eso es una regla de negocio que todavía
- *    no está definida (¿vencido cuenta como pendiente, o como rechazado?).
+ * Un aprobado que venció (`estaVencido`) no cuenta: hay que volver a
+ * presentarlo, y la barra no puede decir 100 % mientras tanto.
  */
 export function calcularProgresoLegajo(
   documentos: readonly DocumentoLegajo[],
   requeridos: readonly DocumentoRequerido[],
+  ahora: number = Date.now(),
 ): ProgresoLegajo {
   const obligatorios = requeridos.filter((requerido) => requerido.obligatorio);
 
@@ -76,7 +75,10 @@ export function calcularProgresoLegajo(
   // los dos no es tener dos documentos hechos, es tener uno.
   const nombresAprobados = new Set(
     documentos
-      .filter((documento) => documento.estado === 'Aprobado')
+      .filter(
+        (documento) =>
+          documento.estado === 'Aprobado' && !estaVencido(documento, requeridos, ahora),
+      )
       .map((documento) => normalizarTexto(documento.nombre)),
   );
 
@@ -186,12 +188,39 @@ export function ultimaVersionPorTipo(
   return [...porTipo.values()];
 }
 
-/** `true` si es un documento aprobado cuya fecha de vencimiento ya pasó. */
-export function estaVencido(documento: DocumentoLegajo, ahora: number): boolean {
+/**
+ * Por qué un documento ya no vale y hay que volver a presentarlo:
+ *
+ *   · `fecha`: pasó la fecha de vencimiento que se cargó al subirlo.
+ *   · `anio`: su tipo es ANUAL (apto médico, Ley 9680…) y se subió antes del
+ *     año en curso. Es la regla del backend desde el 10/11/2026
+ *     (`DocumentacionService.CalcularFaltantes`), la misma del mail de
+ *     documentación faltante: así el panel y el mail dicen lo mismo.
+ */
+export type MotivoVencimiento = 'fecha' | 'anio';
+
+/** Por qué ya no vale el documento, sea cual sea su estado, o `null` si vale. */
+export function motivoDeVencimiento(
+  documento: DocumentoLegajo,
+  requeridos: readonly DocumentoRequerido[],
+  ahora: number,
+): MotivoVencimiento | null {
+  if (documento.fechaVencimiento !== null && documento.fechaVencimiento.getTime() < ahora) {
+    return 'fecha';
+  }
+  const esAnual = requeridoDelDocumento(documento, requeridos)?.anual === true;
+  const esDeOtroAnio = documento.fechaSubida.getFullYear() < new Date(ahora).getFullYear();
+  return esAnual && esDeOtroAnio ? 'anio' : null;
+}
+
+/** `true` si es un documento aprobado que ya no vale (`motivoDeVencimiento`). */
+export function estaVencido(
+  documento: DocumentoLegajo,
+  requeridos: readonly DocumentoRequerido[],
+  ahora: number,
+): boolean {
   return (
-    documento.estado === 'Aprobado' &&
-    documento.fechaVencimiento !== null &&
-    documento.fechaVencimiento.getTime() < ahora
+    documento.estado === 'Aprobado' && motivoDeVencimiento(documento, requeridos, ahora) !== null
   );
 }
 
@@ -218,12 +247,15 @@ export function legajoEstaCompleto(
   ahora: number = Date.now(),
 ): boolean {
   const vigentes = ultimaVersionPorTipo(documentos);
-  const progreso = calcularProgresoLegajo(vigentes, requeridos);
+  const progreso = calcularProgresoLegajo(vigentes, requeridos, ahora);
 
   return (
     !progreso.estimado &&
     progreso.aprobados === progreso.total &&
-    !vigentes.some((documento) => documento.estado === 'Rechazado' || estaVencido(documento, ahora))
+    !vigentes.some(
+      (documento) =>
+        documento.estado === 'Rechazado' || estaVencido(documento, requeridos, ahora),
+    )
   );
 }
 

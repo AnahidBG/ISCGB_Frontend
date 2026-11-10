@@ -14,12 +14,12 @@ interface ContratoGuardado {
 }
 
 /**
- * Los contratos, en memoria. Es el que provee `app.config.ts` mientras el
- * backend no tenga los endpoints (ver `ContratosService`).
+ * Los contratos, en memoria. Se usa solo cuando se selecciona explícitamente
+ * en `app.config.ts`, por ejemplo durante desarrollo sin backend.
  *
  * Arranca vacío a propósito, para no mostrarle a ningún alumno un contrato que
- * no existe. Lo que carga Secretaría lo ve el alumno de la sesión mientras no se
- * recargue la página.
+ * no existe. Lo que carga el personal administrativo lo ve el alumno de la
+ * sesión mientras no se recargue la página.
  */
 @Injectable()
 export class ContratosMockService extends ContratosService {

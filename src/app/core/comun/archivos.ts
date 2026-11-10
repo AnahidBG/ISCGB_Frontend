@@ -21,7 +21,8 @@ export const MENSAJE_ARCHIVO_MUY_GRANDE =
  * controla quien sube el archivo. Sirve para atajar el error honesto —
  * alguien que eligió el archivo equivocado. La validación real es por
  * contenido (los primeros bytes de un PDF son `%PDF-`) y va del lado del
- * servidor. Es la regla de negocio #1 y el backend todavía no la hace.
+ * servidor. Es la regla de negocio #1, y el backend la hace desde el
+ * 10/11/2026 (`ValidadorArchivos`).
  */
 export function validarArchivoPdf(archivo: File): string | null {
   // Se acepta `type` vacío porque algunos navegadores lo mandan así para PDFs

@@ -15,7 +15,7 @@ import { cargaInterceptor } from './core/carga/carga.interceptor';
 import { CertificadosService } from './core/certificados/certificados.service';
 import { CertificadosHttpService } from './core/certificados/certificados-http.service';
 import { ContratosService } from './core/contratos/contratos.service';
-import { ContratosMockService } from './core/contratos/contratos-mock.service';
+import { ContratosHttpService } from './core/contratos/contratos-http.service';
 import { CalendarioExamenesService } from './core/examenes/calendario-examenes.service';
 import { CalendarioExamenesHttpService } from './core/examenes/calendario-examenes-http.service';
 import { JustificativosService } from './core/justificativos/justificativos.service';
@@ -91,10 +91,8 @@ export const appConfig: ApplicationConfig = {
     // `./core/legajos/legajo-mock.service`).
     { provide: LegajoService, useClass: LegajoHttpService },
 
-    // ── El único que todavía va con datos en memoria ──────────────────────
-    // Contratos de alumnos (SCRUM-227): el backend no tiene los endpoints.
-    // `ContratosHttpService` ya sigue el contrato propuesto
-    // (docs/contrato-api.md); cuando backend lo publique, se cambia esta línea.
-    { provide: ContratosService, useClass: ContratosMockService },
+    // Contratos de alumnos (SCRUM-227): guardar y servir los PDF desde el
+    // backend autenticado. `ContratosMockService` queda disponible para pruebas.
+    { provide: ContratosService, useClass: ContratosHttpService },
   ],
 };

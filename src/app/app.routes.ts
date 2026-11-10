@@ -147,12 +147,11 @@ export const routes: Routes = [
       ),
   },
   {
-    // Contratos firmados en el perfil de cada alumno (SCRUM-227). Solo
-    // Secretario: es quien los carga. El backend todavía no tiene los
-    // endpoints: anda con `ContratosMockService` (ver app.config.ts).
+    // Contratos firmados en el perfil de cada alumno (SCRUM-227).
+    // Dirección y Secretaría pueden cargarlos y consultarlos en el backend.
     path: 'secretario/contratos',
     title: 'Contratos de alumnos · ISCGB',
-    canActivate: [authGuard, roleGuard(ROLES.secretario)],
+    canActivate: [authGuard, roleGuard(ROLES.director, ROLES.secretario)],
     loadComponent: () =>
       import('./features/secretario/contratos-alumnos/contratos-alumnos').then(
         (m) => m.ContratosAlumnos,

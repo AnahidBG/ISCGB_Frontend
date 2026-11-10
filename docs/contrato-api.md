@@ -10,6 +10,36 @@ La dirección base en desarrollo es `http://localhost:5231`.
 Describe la API como está hoy, no como debería estar. Los problemas
 detectados están junto a cada endpoint.
 
+## Seguridad del backend (10/11/2026)
+
+Relevado contra `main` del backend en `e26afd8` (commits `523d05b` y
+`dbb76fa`, Angel). Vale para todos los endpoints de este documento:
+
+- **Sesión en todo.** `Program.cs` tiene una `FallbackPolicy`: sin token, todo
+  responde 401. Los únicos públicos son `login`, `recuperar-contrasena`,
+  `establecer-password` y `Ubicaciones`, marcados `[AllowAnonymous]`.
+- **Lo de todo el instituto**, para Director y Secretario
+  (`UsuarioActual.RolesAdministrativos`): el buscador, el listado de
+  `Usuarios`, `pendientes`, `resumen-estado` y `aprobados` de Legajos,
+  `pendientes` y `todos` de Justificativos, las dos auditorías y
+  `docentes-disponibles` y `alumnos-disponibles` de Materias.
+- **Lo de una persona** (`Usuarios/{id}`, `Legajos/usuario/{id}`,
+  `Legajos/{id}/faltantes`, `Justificativos/{id}/justificativos`, y subir un
+  legajo o un justificativo) lo puede pedir ella misma o Director y Secretario.
+  Con otro id responde 403 sin body. `sesionInterceptor` lo trata como un 403
+  de rol: vuelve al panel con el aviso de acceso denegado.
+- **El auditor sale del token.** En `auditar` de Legajos y de Justificativos el
+  `idUsuarioAuditor` que manda el frontend se ignora.
+- **Intentos.** `login`, `recuperar-contrasena` y `establecer-password` admiten
+  10 pedidos por minuto por IP; después responden 429 sin body, y el frontend
+  muestra "Hiciste demasiados intentos seguidos" (`MENSAJE_DEMASIADOS_INTENTOS`).
+- **Archivos.** `ValidadorArchivos` revisa la extensión, el tamaño (10 MB; la
+  foto de perfil, 5 MB) y los primeros bytes. Los nombres llevan un código
+  aleatorio, porque `/uploads` se sirve sin token. Los contratos se guardan
+  fuera de `wwwroot` y solo se bajan con el token.
+- **Configuración.** La URL del frontend (CORS y enlaces de los mails) sale de
+  `Frontend:Url` en `appsettings.json`. Swagger solo está en desarrollo.
+
 ## Login: `POST /api/Auth/login`
 
 Autentica por DNI, no por correo. El DNI va sin puntos.
@@ -53,15 +83,17 @@ Los últimos cinco campos llegaron con el PR #24. `RespuestaLogin` los tipa como
 opcionales, pero no pasan a `Sesion`: ninguna pantalla los usa.
 `esDirectorSuplente` no da permisos de Director; los permisos salen de `roles`.
 
-Devuelve `401` con uno de estos tres mensajes:
+Devuelve `401` con uno de estos dos mensajes (desde `523d05b`, el mismo para
+"no existe", "inactiva" y "contraseña incorrecta"):
 
 ```json
-{ "message": "Contraseña incorrecta." }
-{ "message": "DNI no encontrado o cuenta inactiva." }
+{ "message": "DNI o contraseña incorrectos." }
 { "message": "Debe configurar su contraseña por primera vez usando el enlace enviado a su correo electrónico." }
 ```
 
-El último sale cuando la cuenta todavía no pasó por `/crear-password`.
+El segundo sale cuando la cuenta todavía no pasó por `/crear-password`. El
+frontend no lee el body: con cualquier 401 muestra "El DNI o la contraseña no
+son correctos.". Con más de 10 intentos por minuto responde 429.
 
 La ruta es `POST /api/Auth/login`, no `POST /api/Auth`.
 
@@ -85,15 +117,7 @@ de uno el JWT los serializa como arreglo, así que `role` puede llegar como
 texto o como lista. El frontend no lo usa para decidir el rol: toma los roles y
 sus ids de `roles`, en el cuerpo, y los guarda en `Sesion.rolesConId`.
 
-### `POST /api/Auth/crear-usuario-prueba`
-
-```json
-{ "dni": "11111111", "password": "Test1234" }
-```
-
-Crea un usuario con rol Director, sin nombre ni apellido, y devuelve
-`{ "message": "Usuario de prueba creado con éxito." }`. No pide autenticación.
-**No puede llegar a producción.**
+`POST /api/Auth/crear-usuario-prueba` ya no existe: lo borró `523d05b`.
 
 ## Recupero y cambio de contraseña (SCRUM-28)
 
@@ -111,7 +135,8 @@ desde el PR #41 (`2261f7d`, 27/10). Son dos endpoints públicos
 
 Si el DNI corresponde a una cuenta activa, guarda un token nuevo en
 `Usuarios.token_recuperacion`, con `expiracion_token` a **1 hora**, y manda un mail
-con el enlace `http://localhost:4200/restablecer-password?token=...`. Responde `200`
+con el enlace `{Frontend:Url}/restablecer-password?token=...` (en desarrollo,
+`http://localhost:4200`). Responde `200`
 con el mismo mensaje exista o no el DNI:
 
 ```json
@@ -155,10 +180,9 @@ otro enlace a Dirección y en el recupero la persona lo pide sola.
   enlace de recupero al correo de la sesión.
 - El mail de recupero reusa la plantilla del alta: el asunto dice "Configura tu
   contraseña" y el texto, "crear tu contraseña".
-- El enlace del mail está fijo en `http://localhost:4200`. Para el despliegue tiene que
-  salir de la configuración.
-- Si falla el SMTP responde `500`, y eso deja ver que el DNI existe (con un DNI
-  inexistente responde `200`).
+
+Resuelto en `523d05b`: el enlace del mail sale de `Frontend:Url` y ya no está fijo
+en `http://localhost:4200`.
 
 ## Gestión de usuarios
 
@@ -508,21 +532,24 @@ El frontend lo usa en la pantalla "Frecuencia de avisos"
 (`/secretario/frecuencia-avisos`), solo para Secretario. Valida un entero entre
 1 y 365 antes de enviar y, si el backend rechaza el valor, muestra su mensaje.
 
-El envío no es inmediato. `NotificadorFaltantesWorker` corre al arrancar el
-servidor y después una vez cada 24 horas, así que un cambio rige desde la
-próxima pasada.
+El envío no es inmediato. Desde `dbb76fa`, `NotificadorFaltantesWorker` corre
+una vez por día a las 08:00, hora argentina (`Notificaciones:HoraEnvio` y
+`ZonaHoraria` en `appsettings.json`), y a cada persona activa le escribe solo si
+pasaron los días de la frecuencia desde su último aviso. Si el servidor arranca
+después de esa hora, hace una pasada en ese momento.
 
-Pendientes del backend:
+El mail lista lo que le falta a la persona según su rol
+(`DocumentacionService.CalcularFaltantes`): lo que nunca subió, lo rechazado y
+los documentos anuales que no subió en el año en curso. El frontend usa la
+misma regla para los anuales (`motivoDeVencimiento` en
+`core/legajos/progreso-legajo.ts`): uno de un año anterior sale como vencido en
+la campana y en "Mis documentos", y no suma en la barra de progreso.
 
-- Los dos endpoints de frecuencia no tienen `[Authorize]`: responden sin
-  autenticación. En el mismo controlador, `mis-notificaciones` sí exige el rol
-  Docente (ver "Mesas de examen asignadas al docente").
-- El `PUT` no tiene tope máximo. Con un valor muy grande el worker falla al
-  calcular la fecha límite y no envía ningún aviso. El tope de 365 días es solo
-  del frontend.
-- El worker compara contra todos los tipos de documento, no contra los
-  obligatorios del rol, y recorre a todos los usuarios. El mail puede listar
-  documentos distintos de los que el frontend muestra como faltantes.
+Los dos endpoints piden sesión; el `PUT`, además, Director o Secretario.
+
+Pendiente del backend: el `PUT` no tiene tope máximo. Con un valor muy grande el
+worker falla al calcular la fecha límite y no envía ningún aviso. El tope de 365
+días es solo del frontend.
 
 ## Calendario de exámenes
 
@@ -740,9 +767,13 @@ Responde `200` con `{ "message": "La fecha del examen se ha modificado correctam
 - `nuevaFecha` es un `DateTime` de .NET **sin zona y con hora**, igual que `fecha` en
   `registrar`: el frontend la arma con `textoFechaYHora(dia, horario)` y nunca con
   `toISOString()`.
-- No valida que la fecha no sea pasada, ni que quien llama sea Docente, ni que el
-  examen sea suyo: no tiene `[Authorize]`. El frontend cuida la fecha (`errorDeDia`)
-  y solo ofrece mover un parcial al Docente.
+- Desde `523d05b` pide sesión, y un Docente solo puede con los exámenes de las
+  materias que dicta, en cualquier comisión (`PuedeGestionarExamenAsync`); con otro
+  responde `403` sin body. Director y Secretario pueden con todos. No valida que la
+  fecha no sea pasada. El frontend cuida la fecha (`errorDeDia`) y solo deja abrir y
+  arrastrar los parciales de las materias del Docente (`parcialesGestionables`, que
+  cruza `del-mes` con `mis-materias-docente` por el nombre de la materia). Con otro
+  parcial explica por qué no, sin llamar al backend.
 - Cómo lo usa el frontend: `CalendarioExamenesService.reprogramarExamen(idExamen,
   fechaYHora)`. Un `4xx` con texto se muestra tal cual (el del límite, por ejemplo); un
   `5xx` o la falta de red, con el mensaje genérico. Va en segundo plano, sin el velo
@@ -756,7 +787,7 @@ Quita un examen del calendario. No recibe cuerpo. Responde `200` con
 `{ "message": "El examen ha sido eliminado del calendario correctamente." }` y `404`
 con `{ "message": "No se encontró el examen especificado." }` si no existe.
 
-- Tampoco exige rol ni que el examen sea del docente que llama.
+- Mismo permiso que `modificar`: con un examen de otra materia, el Docente recibe `403`.
 - Cómo lo usa el frontend: `CalendarioExamenesService.eliminarExamen(idExamen)`, desde
   "Modificar parcial" y recién después de confirmar en el diálogo "¿Eliminar el
   parcial de…?". Mismo criterio de errores que `modificar`.
@@ -768,8 +799,9 @@ la grilla muestra cuántos hay cada día, sin listarlos. Ver `docs/como-probar.m
 ### Pendientes del backend
 
 - `del-mes` solo trae el mes en curso. Debería recibir `anio` y `mes` como
-  `estado-mes`, para listar y tocar los parciales de cualquier mes. Tampoco dice
-  quién registró cada examen, así que el frontend no puede marcar "los tuyos".
+  `estado-mes`, para listar y tocar los parciales de cualquier mes. Tampoco trae el
+  id de la materia, así que el frontend sabe cuáles son del docente cruzando por
+  el nombre.
 - El período del límite no está definido. El backend cuenta por día
   (`limite_parciales_diario`) y en Jira figura "por semana". Si cambia, el frontend
   toca `PERIODO_DEL_LIMITE`, que solo cambia la redacción, y tendría que revisar
@@ -777,8 +809,6 @@ la grilla muestra cuántos hay cada día, sin listarlos. Ver `docs/como-probar.m
 - `registrar` no valida que la comisión ni el tipo existan (responde `500`), ni que
   la fecha sea futura, ni la comisión del docente. Debería responder `400` con un
   mensaje en cada caso.
-- `modificar` y `eliminar` siguen sin `[Authorize]` y no verifican que el examen sea
-  del docente que llama: cualquiera puede mover o borrar un parcial ajeno.
 - `PUT limite-parciales` valida `nuevoLimite <= 0`, pero `nuevoLimite` es `int?`:
   un cuerpo sin ese campo pasa la validación y deja el límite en `null`, que el
   resto del controller lee como 2. El frontend siempre manda un entero, pero
@@ -867,13 +897,13 @@ horario de 24 h, y `textoFechaYHora` arma la fecha sin zona.
 
 ### `POST /api/ConfiguracionCalendario/asignar-docente`
 
-Pide `[Authorize(Roles = "Director,Administrador")]`. El rol Administrador no
-existe, así que en la práctica solo Dirección puede usarlo; Secretaría recibe `403`.
+Pide `[Authorize(Roles = "Director,Secretario")]` desde `523d05b` (antes pedía
+`Director,Administrador` y dejaba afuera a Secretaría).
 Recibe `{ idExamen, idDocente }`, crea la asignación en `Pendiente` y responde `200`
 con un mensaje, o `400` si ese docente ya estaba asignado a esa mesa. No valida que
 el examen ni el docente existan.
 
-El frontend lo usa para "Reasignar" una mesa rechazada, solo con el rol Director.
+El frontend lo usa para "Reasignar" una mesa rechazada, con Director y Secretario.
 Si sale bien, archiva la alerta (`ocultar-alerta-rechazo`).
 
 ### `PUT /api/Docente/responder-asignacion` (SCRUM-246)
@@ -908,15 +938,13 @@ El `PUT` recibe `{ idExamen, idDocente }` y pasa la asignación a `Rechazada_Vis
 que la saca de la lista sin borrar el historial. Responde `404` si no existe y `400`
 si no estaba en `Rechazada`.
 
-El frontend las muestra en "Mesas de examen", con "Ya lo vi" y, para Dirección,
-"Reasignar", y en la campana de Secretario y Director, primero y en rojo
+El frontend las muestra en "Mesas de examen", con "Ya lo vi" y "Reasignar", y en
+la campana de Secretario y Director, primero y en rojo
 (`notificacionesPorMesasRechazadas`). Si ese pedido falla, la campana muestra
 igual los pendientes del instituto.
 
 ### Pendientes del backend
 
-- `asignar-docente` debería aceptar el rol Secretario (o el que corresponda): hoy
-  pide `Administrador`, que no existe.
 - Ni `registrar-mesa` ni `asignar-docente` mandan el mail al docente, aunque el
   mensaje de respuesta dice "Se ha notificado al profesor".
 - No hay un endpoint que liste las mesas creadas ni sus asignaciones: después de
@@ -963,34 +991,27 @@ confirmación, y el mensaje final dice si la cuenta quedó inactiva
 - La baja debería rechazar a un docente que no es suplente, para no dejar sin
   acceso a un titular por error.
 
-## Contratos de alumnos (propuesta)
+## Contratos de alumnos (SCRUM-227)
 
-SCRUM-227: Secretaría carga en el perfil del alumno los contratos firmados,
-sellados y digitalizados, como el convenio de la beca, y el alumno los ve y los
-descarga desde su panel.
-
-**El backend todavía no tiene estos endpoints.** Es la propuesta del frontend del
-31/10/2026, para acordar con backend. `ContratosHttpService` ya la sigue, pero
-`app.config.ts` provee `ContratosMockService`, que guarda en memoria lo que se
-carga mientras no se recargue la página. Cuando backend los publique, se cambia
-esa línea.
-
-Un controlador `ContratosAlumnoController`, en `api/ContratosAlumno`:
+Dirección y Secretaría cargan en el perfil del alumno los contratos firmados,
+sellados y digitalizados, como el convenio de la beca; el alumno los ve y los
+descarga desde su panel. El frontend usa `ContratosHttpService` contra
+`ContratosAlumnoController`; el mock queda solo para desarrollo aislado.
 
 ### `POST /api/ContratosAlumno`
 
-Solo `Secretario`. `multipart/form-data` con `idUsuario` (la persona con rol
-Alumno), `nombre` (hasta 100 caracteres, por ejemplo "Convenio Beca Fundación
-Encode 2026") y `archivo`. Responde `200` con `{ message, idContrato }` y `400`
-con `{ message }` si la persona no es alumno o el archivo no es un PDF.
+Dirección o Secretaría. `multipart/form-data` con `idUsuario` (la persona con
+rol Alumno), `nombre` (hasta 100 caracteres) y `archivo` (PDF, hasta 10 MB).
+Responde `200` con `{ message, idContrato }`; valida el tipo y contenido del
+archivo y que el usuario indicado sea alumno. Un nombre vacío, demasiado largo,
+archivo inválido o usuario que no sea alumno responde `400` con `{ message }`.
 
-Tiene que cumplir las reglas de siempre: validar el PDF por magic bytes y guardar
-el archivo renombrado (`ISCGB_NombreyApellido_NombreDocumento.pdf`), sin el nombre
-original.
+El archivo se guarda fuera de `wwwroot`, con un nombre generado por el sistema;
+el nombre original no se publica ni se usa como ruta.
 
 ### `GET /api/ContratosAlumno/alumno/{idUsuario}`
 
-Secretario y Director. Los contratos de un alumno:
+Dirección o Secretaría. Los contratos de un alumno:
 
 ```json
 [{ "idContrato": 7, "nombre": "Convenio Beca Fundación Encode 2026", "fechaCarga": "2026-10-31T14:20:00" }]
@@ -1004,13 +1025,14 @@ Solo `Alumno`. Los mismos datos, del alumno del token.
 
 ### `GET /api/ContratosAlumno/{idContrato}/pdf`
 
-El PDF (`application/pdf`). Secretario, Director o el alumno dueño del contrato;
-cualquier otro, `403`. Se sirve por acá y no desde `/uploads` porque es un
-documento personal.
+El PDF (`application/pdf`). Dirección, Secretaría o el alumno dueño del contrato;
+cualquier otro usuario autenticado recibe `403`. Se sirve por este endpoint y no
+desde `/uploads` porque es un documento personal. Si el registro o el archivo no
+existe, responde `404`.
 
 El frontend lo usa en "Contratos de alumnos" (`/secretario/contratos`, solo
-Secretario) y en la tarjeta "Mis contratos" del panel del alumno, que aparece solo
-si tiene alguno. Falta acordar si un contrato cargado por error se puede borrar.
+Dirección y Secretaría) y en la tarjeta "Mis contratos" del panel del alumno,
+que aparece solo si tiene alguno. No hay un endpoint para borrar contratos.
 
 ## Materias y asignaciones
 
@@ -1065,8 +1087,9 @@ Existen en `main` y no tienen pantalla:
 `GET /api/Buscador/global?termino=xx` devuelve
 `{ cantidad, data: [{ tipo, titulo, subtitulo, idReferencia }] }` con personas,
 materias y justificativos, y a todas las personas las etiqueta como "Docente".
-El frontend tiene el servicio armado, pero la caja de búsqueda del encabezado
-sigue deshabilitada.
+Desde `523d05b` es solo para Director y Secretario, los mismos roles de
+`ROLES_QUE_BUSCAN` en el frontend. El frontend tiene el servicio armado, pero la
+caja de búsqueda del encabezado sigue deshabilitada.
 
 ## La base y el documento del MVP
 

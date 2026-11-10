@@ -1,5 +1,12 @@
 export const URL_BASE_API = 'http://localhost:5231';
 
+/**
+ * Desde el 10/11/2026 (back `523d05b`) todo endpoint pide sesión, salvo login,
+ * `recuperar-contrasena`, `establecer-password` y `Ubicaciones`. Lo que es de
+ * una persona lo puede pedir ella misma o Director y Secretario: con otro id
+ * responde 403. Los archivos de `/uploads` siguen sin token (ver
+ * `urlArchivoSubido`).
+ */
 export const RUTAS_API = {
   login: `${URL_BASE_API}/api/Auth/login`,
   /**
@@ -49,10 +56,18 @@ export const RUTAS_API = {
   /** Documentos de UN usuario. 404 = no tiene ninguno cargado. */
   legajosPorUsuario: (idUsuario: number) => `${URL_BASE_API}/api/Legajos/usuario/${idUsuario}`,
 
-  /** Subir un documento. multipart/form-data. */
+  /**
+   * Subir un documento propio (o de otro, si sos Director o Secretario).
+   * multipart/form-data. Desde el 10/11/2026 el backend revisa el contenido del
+   * archivo y acepta también JPG y PNG; el front manda solo PDF (regla de negocio #1).
+   */
   subirLegajo: `${URL_BASE_API}/api/Legajos`,
 
-  /** Aprobar/rechazar un documento del legajo. */
+  /**
+   * Aprobar/rechazar un documento del legajo. Director y Secretario. Desde el
+   * 10/11/2026 el auditor sale del token: `idUsuarioAuditor` se manda pero el
+   * backend lo ignora.
+   */
   auditarLegajo: (idLegajo: number, idUsuarioAuditor: number) =>
     `${URL_BASE_API}/api/Legajos/auditar/${idLegajo}?idUsuarioAuditor=${idUsuarioAuditor}`,
 
@@ -82,10 +97,10 @@ export const RUTAS_API = {
 
   // --- Usuarios (ISCGB_Backend/Controllers/UsuarioController.cs) ---
 
-  /** Listado paginado. Solo lectura: `UsuariosController` no tiene POST ni PUT. */
+  /** Listado paginado. Solo Director y Secretario. Para escribir están `miPerfil` y `UsuariosAdmin`. */
   usuarios: `${URL_BASE_API}/api/Usuarios`,
 
-  /** Detalle de un usuario. */
+  /** Detalle de un usuario. La persona misma, o Director y Secretario; con otro id, 403. */
   usuarioPorId: (id: number) => `${URL_BASE_API}/api/Usuarios/${id}`,
 
   /**
@@ -99,7 +114,8 @@ export const RUTAS_API = {
   /**
    * La persona de la sesión sube su foto de perfil. `POST` multipart con el
    * archivo en `Foto`, con `[Authorize]` y sin rol. Solo `.jpg`, `.jpeg` y
-   * `.png` (si no, `400 { message }`). Responde `200 { message, url }`, con la
+   * `.png`, hasta 5 MB y con el contenido de una imagen de verdad (si no,
+   * `400 { message }`). Responde `200 { message, url }`, con la
    * ruta relativa ("/uploads/perfiles/…"). La foto vuelve en el login (`foto`).
    */
   fotoPerfil: `${URL_BASE_API}/api/Usuarios/foto-perfil`,
@@ -111,7 +127,11 @@ export const RUTAS_API = {
   /** Alta. Body: `CargaUsuarioDto`. */
   altaUsuario: `${URL_BASE_API}/api/UsuariosAdmin/alta`,
 
-  /** Modificación del perfil. Body: `CargaUsuarioDto` completo. */
+  /**
+   * Modificación del perfil. Body: `CargaUsuarioDto` completo. Desde el
+   * 10/11/2026 corrige también el DNI (y el N.° de legajo, si seguía siendo el
+   * DNI anterior); `400 { message }` si otra persona ya lo tiene.
+   */
   modificarUsuario: (id: number) => `${URL_BASE_API}/api/UsuariosAdmin/modificar/${id}`,
 
   /** Baja lógica (estado inactivo). Sin body. */
@@ -121,7 +141,7 @@ export const RUTAS_API = {
   reactivarUsuario: (id: number) => `${URL_BASE_API}/api/UsuariosAdmin/alta/${id}`,
 
   // --- Ubicaciones (ISCGB_Backend/Controllers/UbicacionController.cs) ---
-  // Sin autenticación. No existe "todas las provincias" ni "provincia → país":
+  // Sin autenticación (`[AllowAnonymous]`). No existe "todas las provincias" ni "provincia → país":
   // hay que pedir los países y después las provincias de cada uno.
 
   /** Países, ordenados por nombre. */
@@ -157,7 +177,7 @@ export const RUTAS_API = {
    */
   misMaterias: `${URL_BASE_API}/api/Materias/mis-materias`,
 
-  /** Todos los docentes (fila en `Docentes`), ordenados por nombre. */
+  /** Todos los docentes (fila en `Docentes`), ordenados por nombre. Solo Director y Secretario. */
   docentesDisponibles: `${URL_BASE_API}/api/Materias/docentes-disponibles`,
 
   /** Todas las comisiones, ordenadas por nombre. */
@@ -171,7 +191,8 @@ export const RUTAS_API = {
 
   /**
    * Todos los alumnos, `{ data: [{ idAlumno, nombreCompleto }] }`, con el nombre
-   * como "Apellido, Nombre (Legajo: X)". Sin rol. Agregado el 14/10/2026.
+   * como "Apellido, Nombre (Legajo: X)". Agregado el 14/10/2026; desde el
+   * 10/11/2026, solo Director y Secretario.
    */
   alumnosDisponibles: `${URL_BASE_API}/api/Materias/alumnos-disponibles`,
 
@@ -184,7 +205,10 @@ export const RUTAS_API = {
 
   // --- Buscador (ISCGB_Backend/Controllers/BusquedaController.cs, clase `BuscadorController`) ---
 
-  /** Personas, materias y justificativos que contienen el término. Menos de 2 letras = vacío. */
+  /**
+   * Personas, materias y justificativos que contienen el término. Menos de 2
+   * letras = vacío. Solo Director y Secretario (desde el 10/11/2026).
+   */
   busquedaGlobal: (termino: string) =>
     `${URL_BASE_API}/api/Buscador/global?termino=${encodeURIComponent(termino)}`,
 
@@ -197,13 +221,16 @@ export const RUTAS_API = {
 
   // --- Justificativos (ISCGB_Backend/Controllers/JustificativosController.cs) ---
 
-  /** Justificativos en estado Pendiente. Devuelve `[]` (no 404) si no hay ninguno. */
+  /** Justificativos en estado Pendiente. Director y Secretario. Devuelve `[]` (no 404) si no hay ninguno. */
   justificativosPendientes: `${URL_BASE_API}/api/Justificativos/pendientes`,
 
-  /** Cargar un justificativo. multipart/form-data. */
+  /** Cargar un justificativo propio (o de otro, si sos Director o Secretario). multipart/form-data. */
   cargarJustificativo: `${URL_BASE_API}/api/Justificativos/cargar`,
 
-  /** Aprobar/rechazar un justificativo. */
+  /**
+   * Aprobar/rechazar un justificativo. Director y Secretario. El auditor sale del
+   * token desde el 10/11/2026: el `idUsuarioAuditor` del body se ignora.
+   */
   auditarJustificativo: (idJustificativo: number) =>
     `${URL_BASE_API}/api/Justificativos/auditar/${idJustificativo}`,
 
@@ -255,12 +282,16 @@ export const RUTAS_API = {
    * ni la materia, ni la comisión, ni el tipo. Responde `200 { message }`, `404
    * { message }` si el examen no existe y `400 { message }` si el día nuevo ya
    * alcanzó el límite (el propio examen no se cuenta). No valida que la fecha no
-   * sea pasada.
+   * sea pasada. Desde el 10/11/2026 un Docente solo puede con los exámenes de las
+   * materias que dicta (con otro, `403` sin body); Director y Secretario, con todos.
    */
   modificarExamen: (idExamen: number) =>
     `${URL_BASE_API}/api/ConfiguracionCalendario/modificar/${idExamen}`,
 
-  /** Quita un examen del calendario. Responde `200 { message }` y `404 { message }` si no existe. */
+  /**
+   * Quita un examen del calendario. Responde `200 { message }` y `404 { message }`
+   * si no existe. Mismo permiso que `modificarExamen`.
+   */
   eliminarExamen: (idExamen: number) =>
     `${URL_BASE_API}/api/ConfiguracionCalendario/eliminar/${idExamen}`,
 
@@ -297,8 +328,8 @@ export const RUTAS_API = {
 
   /**
    * Convoca a otro docente a una mesa existente. Body: `{ idExamen, idDocente }`.
-   * Pide `Director,Administrador`: como el rol Administrador no existe, en la
-   * práctica es solo `Director`. `400 { message }` si ya estaba asignado.
+   * Director y Secretario (hasta el 10/11/2026 pedía `Director,Administrador`).
+   * `400 { message }` si ya estaba asignado.
    */
   asignarDocenteAMesa: `${URL_BASE_API}/api/ConfiguracionCalendario/asignar-docente`,
 
@@ -337,14 +368,11 @@ export const RUTAS_API = {
     `${URL_BASE_API}/api/Docente/docentes/${idDocente}/suplencia`,
 
   // --- Contratos de alumnos (SCRUM-227) ---
-  // PROPUESTA del frontend del 31/10/2026: el backend todavía no tiene estos
-  // endpoints. Hasta que los publique, `app.config.ts` provee
-  // `ContratosMockService`. El contrato completo está en docs/contrato-api.md.
 
-  /** Secretaría carga un contrato. multipart: `idUsuario`, `nombre`, `archivo` (PDF). */
+  /** Dirección o Secretaría carga un contrato. multipart: `idUsuario`, `nombre`, `archivo` (PDF). */
   cargarContratoAlumno: `${URL_BASE_API}/api/ContratosAlumno`,
 
-  /** Los contratos de un alumno, `[{ idContrato, nombre, fechaCarga }]`. Secretario y Director. */
+  /** Los contratos de un alumno, `[{ idContrato, nombre, fechaCarga }]`. Dirección y Secretaría. */
   contratosDeAlumno: (idUsuario: number) =>
     `${URL_BASE_API}/api/ContratosAlumno/alumno/${idUsuario}`,
 

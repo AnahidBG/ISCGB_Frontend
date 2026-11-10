@@ -72,12 +72,12 @@ const TIPOS: TipoExamen[] = [
   { idTipoExamen: 4, nombre: 'Coloquio' },
 ];
 
-/** Un parcial del 13 de octubre, de los que lista el servicio simulado. */
+/** Un parcial del 13 de octubre, de una materia que dicta el docente. */
 const PARCIAL_DEL_13: ExamenCalendario = {
   idExamen: 1,
   fecha: '2026-10-13',
   horario: '14:00',
-  materia: 'Matemática',
+  materia: 'Programación II',
   comision: 'Comisión 1° A',
   tipo: 'Parcial',
 };
@@ -535,13 +535,15 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
     });
 
     it('si no se pueden traer las materias lo avisa y "Reintentar" las vuelve a pedir', async () => {
+      // La primera la pide la pantalla al abrirse, para saber qué parciales son del
+      // docente. La que falla es la del modal.
       let llamadas = 0;
       const fixture = await montar(
         () => of(OCTUBRE),
         () => of([]),
         {
           materiasDelDocente: () =>
-            ++llamadas === 1
+            ++llamadas === 2
               ? throwError(() => new Error(MENSAJE_ERROR_MATERIAS_DEL_DOCENTE))
               : of(MATERIAS),
         },
@@ -653,7 +655,7 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
       expect(modal.querySelector('h2')?.textContent).toContain('Modificar parcial');
       expect(modal.textContent).toContain('Martes 13 de octubre de 2026');
       // La materia, la comisión y el tipo se leen pero no se editan: el backend no los cambia.
-      expect(modal.textContent).toContain('Matemática');
+      expect(modal.textContent).toContain('Programación II');
       expect(modal.textContent).toContain('Comisión 1° A');
       expect(modal.textContent).toContain('Parcial');
       expect(modal.querySelector('select')).toBeNull();
@@ -734,7 +736,7 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
 
       const confirmacion = raiz(fixture).querySelector<HTMLElement>('[role="alertdialog"]')!;
       expect(confirmacion.textContent).toContain(
-        '¿Eliminar el parcial de Matemática del martes 13 de octubre?',
+        '¿Eliminar el parcial de Programación II del martes 13 de octubre?',
       );
       expect(eliminados).toEqual([]);
 
@@ -757,10 +759,26 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
       expect(eliminados).toEqual([1]);
       expect(dialogo(fixture)).toBeNull();
       expect(raiz(fixture).querySelector('p[role="status"]')?.textContent).toContain(
-        'Parcial de Matemática del martes 13 de octubre eliminado.',
+        'Parcial de Programación II del martes 13 de octubre eliminado.',
       );
       expect(pedidos).toHaveLength(2);
       expect(document.activeElement).toBe(celda(fixture, '2026-10-13'));
+    });
+
+    it('un parcial de una materia que no dicta no se arrastra y, al tocarlo, explica por qué sin abrir nada', async () => {
+      const fixture = await montar(
+        () => of(OCTUBRE),
+        () => of([{ ...PARCIAL_DEL_13, materia: 'Matemática' }]),
+      );
+
+      expect(celda(fixture, '2026-10-13').querySelector('[draggable="true"]')).toBeNull();
+
+      await abrirParcial(fixture, '2026-10-13');
+
+      expect(dialogo(fixture)).toBeNull();
+      expect(raiz(fixture).querySelector('app-aviso-calendario')?.textContent).toContain(
+        'Este parcial no es de tus materias',
+      );
     });
   });
 

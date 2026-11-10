@@ -1,7 +1,9 @@
 # Verificación entre el frontend y el backend
 
 Revisado el **06/10/2026** contra el código de `ISCGB_Backend` (`main` en
-`f856989`). La primera versión es del 27/08/2026.
+`f856989`). La primera versión es del 27/08/2026. Las reglas de negocio y los
+datos de prueba se volvieron a revisar el **10/11/2026**, con los cambios de
+seguridad del back (`523d05b` y `dbb76fa`, `main` en `e26afd8`).
 
 Es una revisión estática: se leyó el código de los dos lados y se comparó
 campo por campo. No reemplaza a probarlo; para eso está `como-probar.md`. Los
@@ -75,32 +77,49 @@ El orden para cargar datos:
    saberes. Sin esto, `mis-materias` devuelve una lista vacía y el alumno no
    puede elegir materia. Ningún endpoint las crea: van con un `INSERT` a mano.
 
-`POST /api/Auth/crear-usuario-prueba` crea el usuario con el rol 1 fijo, el
-correo `prueba@test.com` y sin nombre ni apellido. El login devuelve
-`usuario: " "` y el panel muestra el nombre vacío. Sirve para comprobar que el
-login responde, no para probar pantallas.
+`POST /api/Auth/crear-usuario-prueba` ya no existe: el back lo borró en
+`523d05b`. Un usuario se crea con el alta de Dirección (`UsuariosAdmin/alta`),
+que manda el mail para elegir la contraseña, o con los scripts de la base.
+
+Los tipos de documento y lo que se le pide a cada rol ya no se cargan a mano:
+`DbSeeder` los sincroniza en cada arranque con su lista (`dbb76fa`). Al
+Docente le pide DNI, Curriculum Vitae, Título profesional, Apto médico, Apto
+psicológico, Ley 9680 y Certificado de domicilio; al Alumno, DNI, Analítico
+del secundario, Partida de nacimiento, Antecedentes penales, Apto médico y
+Apto psicológico. Todos son obligatorios, y los aptos, la Ley 9680 y el
+certificado de domicilio son anuales. El DNI pasó a ser un solo archivo ("DNI
+FRENTE" se renombró a "DNI" y "DNI DORSO" se borra si nadie lo subió).
 
 ## Reglas de negocio que el backend todavía no cumple
 
-**Regla 1, validar el PDF por contenido.** Legajos no valida nada.
-Justificativos mira el `ContentType`, que lo manda el navegador y se puede
-falsear. Falta revisar los magic bytes (`%PDF-`).
+**Regla 1, validar el PDF por contenido.** Desde `523d05b` se cumple:
+`Seguridad/ValidadorArchivos.cs` revisa la extensión, el tamaño (hasta 10 MB)
+y los primeros bytes en legajos, justificativos, reconocimiento de saberes y
+contratos. Lo que falta es que legajos acepta también JPG y PNG, y la regla
+pide solo PDF. El frontend manda solo PDF.
 
-**Regla 2, el renombrado.** Se cumple, con un timestamp agregado: legajos queda
-como `ISCGB_{NombreApellido}_{TipoDoc}_{timestamp}.pdf` y justificativos como
-`ISCGB_{NombreApellido}_Justificativo_{timestamp}.pdf`. Se hace en los
-controllers, no en un servicio.
+**Regla 2, el renombrado.** Se cumple, con un timestamp y un código aleatorio
+agregados: legajos queda como
+`ISCGB_{NombreApellido}_{TipoDoc}_{timestamp}_{código}.pdf` y justificativos
+como `ISCGB_{NombreApellido}_Justificativo_{timestamp}_{código}.pdf`. El
+código hace que la URL de `/uploads`, que se sirve sin token, no se pueda
+adivinar. Se hace en los controllers, no en un servicio.
 
 **Regla 4, el mail al rechazar.** `IEmailService` existe y manda los avisos de
 documentación faltante, pero `AuditarLegajo` y `AuditarJustificativo` no lo
 llaman.
 
-**Regla 5, `[Authorize]`.** Lo tienen `UsuariosAdmin`, `Certificados`,
-`ReconocimientoSaberes` y `mis-materias`. Faltan `Usuarios`, `Legajos`,
-`Justificativos`, `ProgramasMateria` y `Configuracion`: cualquiera que sepa la
-URL puede pedir el listado del instituto o el legajo de una persona sin token.
-Un guard del lado del cliente no es seguridad, porque se saltea desde las
-herramientas del navegador.
+**Regla 5, `[Authorize]`.** Desde `523d05b` se cumple: `Program.cs` tiene una
+`FallbackPolicy` que pide sesión en todo endpoint, salvo los marcados
+`[AllowAnonymous]` (login, recupero, `establecer-password` y `Ubicaciones`).
+Lo de todo el instituto pide Director o Secretario, y lo de una persona lo
+puede pedir ella misma o Dirección y Secretaría (`UsuarioActual.PuedeAccederA`);
+con otro id responde 403. Lo que sigue sin cumplirse es que nadie apruebe sus
+propios documentos: el back no lo controla.
+
+**Fuerza bruta.** Login, recupero y `establecer-password` admiten 10 pedidos
+por minuto por IP; después responden 429 sin body. El frontend lo muestra como
+"Hiciste demasiados intentos seguidos".
 
 ## Detalles para tener en cuenta
 

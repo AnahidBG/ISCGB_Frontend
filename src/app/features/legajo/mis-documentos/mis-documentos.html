@@ -127,7 +127,12 @@
                 </p>
               }
 
-              @if (fila.fechaVencimiento; as vence) {
+              @if (fila.vencimiento === 'anio') {
+                <p class="mt-1 text-xs text-rechazado">
+                  Es anual y se presentó en {{ fila.fechaSubida | date: 'yyyy' }}: hay que volver a
+                  presentarlo este año.
+                </p>
+              } @else if (fila.fechaVencimiento; as vence) {
                 <p
                   class="mt-1 text-xs"
                   [class.text-texto-suave]="!estaVencido(fila)"

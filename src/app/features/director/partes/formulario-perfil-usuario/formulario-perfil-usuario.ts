@@ -82,7 +82,10 @@ function tildesDe(roles: readonly Rol[]): TildesDeRol {
  * vez. Al menos uno es obligatorio.
  *
  * En modo edición:
- *   · El DNI no se toca: es el usuario del login y el N.° de legajo.
+ *   · El DNI se puede corregir (desde el 10/11/2026 el backend lo acepta). Es el
+ *     usuario del login, así que la persona pasa a entrar con el nuevo, y el
+ *     backend corrige el N.° de legajo si seguía siendo el DNI anterior. Si otra
+ *     persona ya lo tiene, responde 400 con el motivo.
  *   · Los roles arrancan con TODOS los que la persona ya tiene: el
  *     `PUT /api/UsuariosAdmin/modificar` borra los anteriores y deja solo los
  *     enviados, así que destildar uno se lo quita.
@@ -211,10 +214,6 @@ export class FormularioPerfilUsuario implements OnInit {
         roles: tildesDe(inicial.roles ?? []),
         esDirectorSuplente: inicial.esDirectorSuplente ?? false,
       });
-    }
-
-    if (this.esEdicion()) {
-      this.formulario.controls.dni.disable();
     }
   }
 

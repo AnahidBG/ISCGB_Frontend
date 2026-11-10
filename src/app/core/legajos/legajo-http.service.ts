@@ -4,6 +4,7 @@ import { Observable, catchError, map, of, throwError } from 'rxjs';
 import { AuthService } from '../auth/auth.service';
 import { contextoDePedido } from '../carga/contexto-pedido';
 import { RUTAS_API } from '../configuracion/api';
+import { traducirRechazo } from '../comun/error-api';
 import { OpcionesPedido } from '../comun/opciones-pedido';
 import { DocumentoLegajo } from './modelos/documento-legajo';
 import { DocumentoRequerido, NuevoDocumentoLegajo } from './modelos/documento-requerido';
@@ -146,10 +147,15 @@ export class LegajoHttpService extends LegajoService {
     // `boundary` que necesita multipart. Ponerlo a mano rompe la subida.
     return this.http.post(RUTAS_API.subirLegajo, cuerpo).pipe(
       map(() => undefined),
-      catchError((error: HttpErrorResponse) => {
-        console.error('Error al subir el documento:', error);
-        return throwError(() => new Error(MENSAJE_ERROR_SUBIDA));
-      }),
+      // Desde el 10/11/2026 el backend revisa los primeros bytes del archivo y
+      // explica el rechazo en un 400 ("El contenido del archivo no corresponde
+      // con su formato."): ese mensaje le dice a la persona qué corregir.
+      catchError((error: HttpErrorResponse) =>
+        throwError(
+          () =>
+            new Error(traducirRechazo(error, MENSAJE_ERROR_SUBIDA, 'Error al subir el documento:')),
+        ),
+      ),
     );
   }
 

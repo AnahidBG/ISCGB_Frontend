@@ -68,7 +68,8 @@ export interface NovedadesLegajo {
  *
  *   1. Rechazados (SCRUM-152): hay que corregir y volver a subir. Salen de
  *      `rechazosVigentes`, igual que la tarjeta del panel.
- *   2. Vencidos: documentos anuales aprobados cuya fecha ya pasó.
+ *   2. Vencidos: aprobados que ya no valen (`estaVencido`): pasó su fecha de
+ *      vencimiento o son anuales de un año anterior, como cuenta el mail.
  *   3. Faltantes (SCRUM-150/154): obligatorios del rol que nunca se subieron.
  *      El texto sigue el mail que pide SCRUM-156: cargarlo desde Autogestión
  *      y entregarlo en papel en Secretaría.
@@ -91,7 +92,7 @@ export function novedadesDelLegajo(
   });
 
   const vencidos: NotificacionPanel[] = vigentes
-    .filter((documento) => estaVencido(documento, ahora))
+    .filter((documento) => estaVencido(documento, requeridos, ahora))
     .map((documento) => {
       // El legajo no trae el id del tipo: se busca por nombre entre los del
       // rol. Si ya no está entre ellos, el formulario abre sin tipo elegido.

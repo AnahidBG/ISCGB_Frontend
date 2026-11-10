@@ -21,7 +21,7 @@ import {
  * modificación del perfil y BAJA.
  *
  * CONTENEDOR. El formulario es el mismo de "Nuevo Usuario"
- * (`FormularioPerfilUsuario`) en modo edición: el DNI queda fijo.
+ * (`FormularioPerfilUsuario`) en modo edición: el DNI se puede corregir.
  *
  *   · Precarga: `GET /api/Usuarios/{id}` (real, en `main`), con TODOS los
  *     roles de la persona tildados.

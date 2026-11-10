@@ -6,9 +6,9 @@ import { Icono } from '../icono/icono';
 /**
  * Los contratos de un alumno, cada uno con su fecha y el botón para descargarlo.
  *
- * Presentacional: lo usan "Contratos de alumnos" (Secretaría) y el panel del
- * Alumno. No sabe de dónde salen ni cómo se descarga el PDF: solo avisa cuál
- * tocaron.
+ * Presentacional: lo usan "Contratos de alumnos" (Dirección y Secretaría) y el
+ * panel del Alumno. No sabe de dónde salen ni cómo se descarga el PDF: solo
+ * avisa cuál tocaron.
  */
 @Component({
   selector: 'app-lista-contratos',

@@ -81,13 +81,15 @@ computadora compartida evita que el siguiente entre con la sesión del anterior.
 
 ## Pendientes del backend
 
-Revisados contra `main` del backend el 06/10/2026.
+Revisados contra `main` del backend el 10/11/2026.
 
-1. `POST /api/Auth/crear-usuario-prueba` crea usuarios sin autenticación. No
-   puede llegar a producción.
-2. Los mensajes del 401 siguen siendo tres distintos. Conviene unificarlos en
-   uno genérico.
-3. `dni` es `varchar` y acepta `"Lucas23"`. Ya lo detectó QA.
+1. `dni` es `varchar` y acepta `"Lucas23"`. Ya lo detectó QA.
+
+Resueltos en `523d05b`: el back borró `POST /api/Auth/crear-usuario-prueba`, y
+el 401 dice lo mismo ("DNI o contraseña incorrectos.") si el DNI no existe, si
+la cuenta está inactiva o si la contraseña no coincide. Además el login admite
+10 intentos por minuto por IP y después responde 429, que el frontend muestra
+como "Hiciste demasiados intentos seguidos".
 
 La ruta del login es `POST /api/Auth/login`, y no `POST /api/Auth`: el
 controlador conserva `[HttpPost("login")]`.

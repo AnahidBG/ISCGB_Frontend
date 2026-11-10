@@ -1,7 +1,7 @@
 /**
- * Un contrato firmado, sellado y digitalizado que Secretaría carga en el perfil
- * de un alumno, como el convenio de la beca (SCRUM-227). El alumno lo ve y lo
- * descarga desde su panel.
+ * Un contrato firmado, sellado y digitalizado que Dirección o Secretaría carga
+ * en el perfil de un alumno, como el convenio de la beca (SCRUM-227). El alumno
+ * lo ve y lo descarga desde su panel.
  */
 export interface ContratoAlumno {
   idContrato: number;
@@ -10,7 +10,7 @@ export interface ContratoAlumno {
   fechaCarga: Date;
 }
 
-/** Lo que manda Secretaría al cargar un contrato. */
+/** Lo que manda el personal administrativo al cargar un contrato. */
 export interface NuevoContrato {
   /** El de la tabla `Usuarios`: la persona con rol Alumno. */
   idUsuario: number;

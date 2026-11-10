@@ -90,6 +90,15 @@ function porEntregar(fixture: ComponentFixture<PanelDocente>): (string | undefin
   );
 }
 
+// El apto médico es anual y los documentos son de 2026: con la fecha real, desde
+// 2027 contarían como vencidos (`motivoDeVencimiento`). Solo `Date`.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 9, 10, 12));
+});
+
+afterEach(() => vi.useRealTimers());
+
 describe('PanelDocente: documentación por entregar (SCRUM-150)', () => {
   it('muestra los obligatorios que nunca se subieron', async () => {
     const fixture = await montar([documento(101, 'DNI', 'Rechazado')]);
@@ -256,5 +265,14 @@ describe('PanelDocente: aviso de legajo completo (SCRUM-153)', () => {
     const texto = raiz(fixture).textContent ?? '';
     expect(texto).not.toContain('Legajo al día');
     expect(texto).toContain('Renovar documentación');
+  });
+});
+
+describe('PanelDocente: documentación y tutoriales (SCRUM-229 a SCRUM-231)', () => {
+  it('muestra en el panel la documentación para descargar y los tutoriales', async () => {
+    const texto = raiz(await montar([])).textContent ?? '';
+
+    expect(texto).toContain('ARCA, BDO (Encode) y certificado de servicios.');
+    expect(texto).toContain('Tutoriales de herramientas');
   });
 });

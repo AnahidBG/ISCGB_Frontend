@@ -49,7 +49,6 @@
         <app-alertas-rechazo
           [alertas]="alertas()"
           [docentes]="opciones()?.docentes ?? []"
-          [puedeReasignar]="puedeReasignar()"
           [procesando]="procesandoAlerta()"
           (archivar)="archivarAlerta($event)"
           (reasignar)="reasignar($event)"

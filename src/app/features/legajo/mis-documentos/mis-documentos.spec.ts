@@ -159,6 +159,15 @@ async function apretar(contenedor: HTMLElement, etiqueta: string, fixture: Compo
   await fixture.whenStable();
 }
 
+// El apto médico es anual y los documentos son de 2026: con la fecha real, desde
+// 2027 contarían como vencidos (`motivoDeVencimiento`). Solo `Date`.
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date(2026, 9, 10, 12));
+});
+
+afterEach(() => vi.useRealTimers());
+
 describe('MisDocumentos: volver a subir (SCRUM-152)', () => {
   it('"Resubir" y "Cargar" abren Subir Documento con el tipo de ese documento ya elegido', async () => {
     const fixture = await montar(DOCENTE, null, [
@@ -174,6 +183,25 @@ describe('MisDocumentos: volver a subir (SCRUM-152)', () => {
     expect(destinos).toContainEqual(['Resubir', '/legajo/subir-documento?tipo=1']);
     expect(destinos).toContainEqual(['Cargar', '/legajo/subir-documento?tipo=3']);
     expect(destinos).toHaveLength(2);
+  });
+
+  it('un apto médico del año pasado pide volver a presentarlo, aunque esté aprobado', async () => {
+    const fixture = await montar(DOCENTE, null, [
+      ...LEGAJO,
+      {
+        ...LEGAJO[1],
+        id: 103,
+        nombre: 'Apto médico',
+        estado: 'Aprobado',
+        fechaSubida: new Date('2025-11-03T10:00:00'),
+      },
+    ]);
+
+    const fila = filaDe(fixture, 'Apto médico');
+    expect(fila.textContent).toContain('Es anual y se presentó en 2025');
+    expect(Array.from(fila.querySelectorAll('a')).map((a) => a.textContent?.trim())).toContain(
+      'Resubir',
+    );
   });
 });
 

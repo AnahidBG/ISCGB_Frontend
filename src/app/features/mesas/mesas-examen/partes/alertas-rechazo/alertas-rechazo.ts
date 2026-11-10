@@ -25,7 +25,7 @@ export function claveDeAlerta(alerta: AlertaRechazo): string {
 
 /**
  * Las mesas que algún docente rechazó (SCRUM-247), cada una con "Ya lo vi" para
- * archivarla y, si la sesión puede, un desplegable para convocar a otro docente.
+ * archivarla y un desplegable para convocar a otro docente.
  *
  * PRESENTACIONAL: recibe las alertas y avisa qué se tocó. El contenedor
  * (`MesasExamen`) habla con el servicio y saca de la lista lo que se resuelve.
@@ -41,12 +41,6 @@ export class AlertasRechazo {
 
   readonly alertas = input<readonly AlertaRechazo[]>([]);
   readonly docentes = input<readonly DocenteDisponible[]>([]);
-
-  /**
-   * Si la sesión puede convocar a otro docente. El backend solo se lo deja a
-   * Dirección (`asignar-docente` pide "Director,Administrador").
-   */
-  readonly puedeReasignar = input(false);
 
   /** La alerta que se está resolviendo (`claveDeAlerta`): sus botones quedan bloqueados. */
   readonly procesando = input<string | null>(null);

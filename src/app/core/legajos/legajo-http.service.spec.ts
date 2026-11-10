@@ -177,6 +177,27 @@ describe('LegajoHttpService: campos del backend que no se pierden al mapear', ()
     expect(cuerpo.get('idTipoDoc')).toBe('4');
     pedido.flush({ message: 'ok', idLegajo: 1, ruta: '/uploads/legajos/x.pdf' });
   });
+
+  it('si el backend rechaza el archivo muestra su motivo', () => {
+    let error: string | null = null;
+    servicio
+      .subirDocumento({
+        idUsuario: ID_USUARIO,
+        idTipoDoc: 4,
+        fechaVencimiento: null,
+        archivo: new File(['MZ'], 'dni.pdf', { type: 'application/pdf' }),
+      })
+      .subscribe({ error: (fallo: Error) => (error = fallo.message) });
+
+    backend
+      .expectOne(RUTAS_API.subirLegajo)
+      .flush(
+        { message: 'El contenido del archivo no corresponde con su formato.' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    expect(error).toBe('El contenido del archivo no corresponde con su formato.');
+  });
 });
 
 describe('LegajoHttpService: la auditoría guarda el veredicto, el comentario y la entrega en papel', () => {

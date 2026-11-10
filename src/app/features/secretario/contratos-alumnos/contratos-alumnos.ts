@@ -33,11 +33,12 @@ function alumnosActivos(personas: UsuarioInstitucional[]): UsuarioInstitucional[
 }
 
 /**
- * Contratos de alumnos — Secretaría (SCRUM-227).
+ * Contratos de alumnos — Dirección y Secretaría (SCRUM-227).
  *
  * CONTENEDOR: trae a los alumnos (`UsuariosService.listar`) y habla con
- * `ContratosService`. Secretaría elige al alumno, carga el contrato firmado y
- * sellado (un PDF) y ve los que ya tiene. El alumno los ve en su panel.
+ * `ContratosService`. El personal administrativo elige al alumno, carga el
+ * contrato firmado y sellado (un PDF) y ve los que ya tiene. El alumno los ve
+ * en su panel.
  *
  * El formulario vive en `partes/`; la lista es `shared/ui/lista-contratos`,
  * la misma que ve el alumno.

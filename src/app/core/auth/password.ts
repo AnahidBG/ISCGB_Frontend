@@ -25,7 +25,7 @@ export interface RequisitoPassword {
  *
  * ⚠️ Esto es UX, no seguridad: valida lo que la persona escribe en su propio
  * navegador. La validación que vale es la del backend, que hoy no existe —
- * `crear-usuario-prueba` hashea cualquier cosa, incluso una cadena vacía.
+ * `establecer-password` solo pide que la contraseña no venga vacía.
  * Está pedido en el Notion de Sprint 2.
  */
 export const REQUISITOS_PASSWORD: readonly RequisitoPassword[] = [

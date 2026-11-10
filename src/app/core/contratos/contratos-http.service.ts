@@ -28,8 +28,8 @@ interface RespuestaApi {
 const TEXTO_FECHA_Y_HORA = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/;
 
 /**
- * Los contratos contra la API. Sigue el contrato que propuso el frontend: el
- * backend todavía no lo publicó y `app.config.ts` provee el mock.
+ * Adapter entre los endpoints reales de `api/ContratosAlumno` y los modelos
+ * que consume la interfaz.
  */
 @Injectable()
 export class ContratosHttpService extends ContratosService {
