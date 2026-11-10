@@ -28,6 +28,7 @@
           {{ materias().length }} {{ materias().length === 1 ? 'materia cargada' : 'materias cargadas' }}.
         </p>
         <app-formulario-nueva-materia
+          [cursos]="cursos()"
           [enviando]="creandoMateria()"
           [error]="errorMateria()"
           [exito]="exitoMateria()"

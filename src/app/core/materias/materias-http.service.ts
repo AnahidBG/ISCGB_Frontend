@@ -134,6 +134,21 @@ export class MateriasHttpService extends MateriasService {
     );
   }
 
+  listarCursos(): Observable<string[]> {
+    // Un arreglo plano de textos, sin `{ data }`.
+    return this.http.get<unknown[]>(RUTAS_API.cursosMateria).pipe(
+      map((cursos) =>
+        (cursos ?? [])
+          .map((curso) => (typeof curso === 'string' ? curso.trim() : ''))
+          .filter((curso) => curso !== ''),
+      ),
+      catchError((error: HttpErrorResponse) => {
+        console.error('Error al traer los cursos de las materias:', error);
+        return throwError(() => new Error(MENSAJE_ERROR_DATOS_ASIGNACION));
+      }),
+    );
+  }
+
   crearMateria(materia: NuevaMateria): Observable<string> {
     // `CargarMateriaDto` llama `NombreMateria` a lo que acá es `nombre`.
     const cuerpo = { nombreMateria: materia.nombre, carrera: materia.carrera, curso: materia.curso };

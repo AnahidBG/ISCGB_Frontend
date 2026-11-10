@@ -183,7 +183,18 @@ export const RUTAS_API = {
   /** Todas las comisiones, ordenadas por nombre. */
   comisionesDisponibles: `${URL_BASE_API}/api/Materias/comisiones-disponibles`,
 
-  /** Alta de una materia. Body: `CargarMateriaDto`. */
+  /**
+   * Los cursos (años) válidos de una materia, como lista de textos: `["Primer
+   * Año", "Segundo Año", "Tercer Año"]`. Es lo que va en el desplegable "Curso"
+   * del alta. Agregado el 10/11/2026.
+   */
+  cursosMateria: `${URL_BASE_API}/api/Materias/cursos`,
+
+  /**
+   * Alta de una materia. Body: `CargarMateriaDto`. Desde el 10/11/2026 el curso
+   * tiene que ser uno de `cursos` (si no, `400 { message }`): de él depende el
+   * límite de exámenes por día, que se cuenta por año y comisión.
+   */
   cargarMateria: `${URL_BASE_API}/api/Materias/cargar-materia`,
 
   /** Asigna una materia a un docente en una comisión. Body: `AsignarMateriaDto`. */

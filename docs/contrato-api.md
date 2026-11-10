@@ -1065,8 +1065,14 @@ asignaciones" usa todos menos `mis-materias`. Desde el 17/10/2026, `asignar`,
   `{ data: [{ idComision, nombreComision }] }`.
 - `POST /api/Materias/asignar`, con `{ idDocente, idMateria, idComision }`.
   Responde 400 si ya está asignada en esa comisión.
+- `GET /api/Materias/cursos` (agregado el 10/11/2026): arreglo plano de textos,
+  `["Primer Año", "Segundo Año", "Tercer Año"]`. Pide sesión, sin rol. Es el
+  desplegable "Curso" del alta de materia.
 - `POST /api/Materias/cargar-materia`, con `{ nombreMateria, carrera, curso }`.
-  Devuelve `{ message, idMateria }`, o 400 si el nombre se repite.
+  Devuelve `{ message, idMateria }`, o 400 si el nombre se repite. Desde el
+  10/11/2026 también responde 400 si el curso no es uno de `cursos`: lo
+  normaliza ("1° año" → "Primer Año") porque el límite de exámenes por día se
+  cuenta por año y comisión. Por eso el frontend no deja escribirlo.
 - `GET /api/Materias/mis-materias`, solo para el rol Alumno. Devuelve un
   arreglo plano, sin `{ data }`: `[{ idMateria, nombre, carrera, curso }]`, con
   las materias en las que el alumno está inscripto. Puede venir vacío, y con

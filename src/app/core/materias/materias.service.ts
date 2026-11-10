@@ -51,8 +51,18 @@ export abstract class MateriasService {
   abstract listarComisiones(): Observable<ComisionDisponible[]>;
 
   /**
+   * Los cursos (años) que acepta el alta de una materia, en el orden del
+   * backend: "Primer Año", "Segundo Año"... Van en un desplegable porque el
+   * límite de exámenes por día se cuenta por año y comisión, y un año escrito a
+   * mano ("1° año") el backend lo rechaza.
+   *
+   * Falla con `MENSAJE_ERROR_DATOS_ASIGNACION`.
+   */
+  abstract listarCursos(): Observable<string[]>;
+
+  /**
    * Da de alta una materia. Devuelve el mensaje de confirmación. Falla con el
-   * mensaje del backend si el nombre ya existe.
+   * mensaje del backend si el nombre ya existe o el curso no es válido.
    */
   abstract crearMateria(materia: NuevaMateria): Observable<string>;
 

@@ -52,6 +52,9 @@ const COMISIONES_DE_EJEMPLO: readonly ComisionDisponible[] = [
   { idComision: 2, nombre: 'Comisión B' },
 ];
 
+/** Los mismos que `CursosMateria.Validos` del backend. */
+const CURSOS_DE_EJEMPLO: readonly string[] = ['Primer Año', 'Segundo Año', 'Tercer Año'];
+
 const ALUMNOS_DE_EJEMPLO: readonly AlumnoDisponible[] = [
   { idAlumno: 1, nombreCompleto: 'Gómez, Juan (Legajo: 1203)' },
   { idAlumno: 2, nombreCompleto: 'Ruiz, Laura (Legajo: 1250)' },
@@ -59,8 +62,8 @@ const ALUMNOS_DE_EJEMPLO: readonly AlumnoDisponible[] = [
 
 /**
  * Imita las reglas de `MateriasController` que la pantalla tiene que saber
- * mostrar: nombre de materia repetido, asignación repetida e inscripción
- * repetida. Todo queda en memoria y se pierde al recargar.
+ * mostrar: curso que no es de la lista, nombre de materia repetido, asignación
+ * repetida e inscripción repetida. Todo queda en memoria y se pierde al recargar.
  */
 @Injectable()
 export class MateriasMockService extends MateriasService {
@@ -85,7 +88,14 @@ export class MateriasMockService extends MateriasService {
     return of([...COMISIONES_DE_EJEMPLO]).pipe(delay(DEMORA_SIMULADA_MS));
   }
 
+  listarCursos(): Observable<string[]> {
+    return of([...CURSOS_DE_EJEMPLO]).pipe(delay(DEMORA_SIMULADA_MS));
+  }
+
   crearMateria(materia: NuevaMateria): Observable<string> {
+    if (!CURSOS_DE_EJEMPLO.includes(materia.curso)) {
+      return this.fallar(`El curso no es válido. Opciones: ${CURSOS_DE_EJEMPLO.join(', ')}.`);
+    }
     const repetida = this.materias.some(
       (existente) => existente.nombre.toLowerCase() === materia.nombre.toLowerCase(),
     );

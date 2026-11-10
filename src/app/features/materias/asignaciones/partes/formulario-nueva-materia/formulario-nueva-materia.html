@@ -54,15 +54,22 @@
       <label for="materia-curso" class="text-sm font-medium text-texto">
         Curso <span aria-hidden="true" class="text-rechazado">*</span>
       </label>
-      <input
+      <select
         id="materia-curso"
-        type="text"
         formControlName="curso"
-        autocomplete="off"
         required
-        class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto placeholder:text-gris-marca focus:border-principal focus:outline-none"
-        placeholder="Ej. 1° año"
-      />
+        class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
+      >
+        <option value="">Elegí el curso</option>
+        @for (curso of cursos(); track curso) {
+          <option [value]="curso">{{ curso }}</option>
+        }
+      </select>
+      @if (cursos().length === 0) {
+        <span class="text-xs text-texto-suave">
+          El sistema no devolvió los cursos: recargá la página para reintentar.
+        </span>
+      }
       @if (errorDe('curso'); as mensaje) {
         <span role="alert" class="text-sm text-rechazado">{{ mensaje }}</span>
       }

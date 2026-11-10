@@ -204,10 +204,36 @@ describe('MateriasHttpService: alta de materias y asignaciones', () => {
     expect(comisiones).toEqual([{ idComision: 1, nombre: 'Comisión A' }]);
   });
 
+  it('trae los cursos válidos tal como los manda el backend, sin espacios de más', () => {
+    let cursos: unknown = null;
+    servicio.listarCursos().subscribe((c) => (cursos = c));
+
+    const pedido = backend.expectOne((p) => p.url.endsWith('/api/Materias/cursos'));
+    expect(pedido.request.method).toBe('GET');
+    pedido.flush(['Primer Año', ' Segundo Año ', '', 'Tercer Año']);
+
+    expect(cursos).toEqual(['Primer Año', 'Segundo Año', 'Tercer Año']);
+  });
+
+  it('si los cursos no llegan, falla con el mensaje de los datos de asignación', () => {
+    let mensaje = '';
+    servicio.listarCursos().subscribe({ error: (e: Error) => (mensaje = e.message) });
+
+    backend
+      .expectOne(RUTAS_API.cursosMateria)
+      .flush(null, { status: 500, statusText: 'Server Error' });
+
+    expect(mensaje).toBe(MENSAJE_ERROR_DATOS_ASIGNACION);
+  });
+
   it('el alta de materia manda CargarMateriaDto y devuelve el mensaje', () => {
     let mensaje = '';
     servicio
-      .crearMateria({ nombre: 'Didáctica General', carrera: 'Profesorado de Inglés', curso: '1°' })
+      .crearMateria({
+        nombre: 'Didáctica General',
+        carrera: 'Profesorado de Inglés',
+        curso: 'Primer Año',
+      })
       .subscribe((m) => (mensaje = m));
 
     const pedido = backend.expectOne(RUTAS_API.cargarMateria);
@@ -215,7 +241,7 @@ describe('MateriasHttpService: alta de materias y asignaciones', () => {
     expect(pedido.request.body).toEqual({
       nombreMateria: 'Didáctica General',
       carrera: 'Profesorado de Inglés',
-      curso: '1°',
+      curso: 'Primer Año',
     });
     pedido.flush({ message: 'Materia creada correctamente.', idMateria: 20 });
 
@@ -225,7 +251,7 @@ describe('MateriasHttpService: alta de materias y asignaciones', () => {
   it('una materia repetida muestra el mensaje del backend', () => {
     let mensaje = '';
     servicio
-      .crearMateria({ nombre: 'Pedagogía', carrera: 'X', curso: '1°' })
+      .crearMateria({ nombre: 'Pedagogía', carrera: 'X', curso: 'Primer Año' })
       .subscribe({ error: (e: Error) => (mensaje = e.message) });
 
     backend
