@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { DocenteDisponible } from '../../../../../core/materias/modelos/asignacion-materia';
 import { AlertaRechazo } from '../../../../../core/mesas/modelos/alerta-rechazo';
+import { RolMesa } from '../../../../../core/mesas/rol-mesa';
 import { fechaDeMesa } from '../../../../../core/mesas/textos-mesas';
 import { Boton } from '../../../../../shared/ui/boton/boton';
 
@@ -16,6 +17,8 @@ import { Boton } from '../../../../../shared/ui/boton/boton';
 export interface Reasignacion {
   alerta: AlertaRechazo;
   idDocente: number;
+  /** El lugar del tribunal que se cubre: el que dejó libre quien la rechazó. */
+  rol?: RolMesa;
 }
 
 /** Una alerta se identifica por la mesa y el docente que la rechazó. */
@@ -75,7 +78,7 @@ export class AlertasRechazo {
     if (idDocente === '' || this.procesando() !== null) {
       return;
     }
-    this.reasignar.emit({ alerta, idDocente: Number(idDocente) });
+    this.reasignar.emit({ alerta, idDocente: Number(idDocente), rol: alerta.rol });
   }
 
   protected alArchivar(alerta: AlertaRechazo): void {

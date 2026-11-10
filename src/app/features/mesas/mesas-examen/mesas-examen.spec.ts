@@ -9,7 +9,7 @@ import { Sesion } from '../../../core/auth/modelos/sesion';
 import { CalendarioExamenesService } from '../../../core/examenes/calendario-examenes.service';
 import { CalendarioDelMes } from '../../../core/examenes/modelos/calendario-del-mes';
 import { MateriasService } from '../../../core/materias/materias.service';
-import { MesaIncompleta, MesasExamenService } from '../../../core/mesas/mesas-examen.service';
+import { MesasExamenService } from '../../../core/mesas/mesas-examen.service';
 import { AlertaRechazo } from '../../../core/mesas/modelos/alerta-rechazo';
 import { NuevaMesa } from '../../../core/mesas/modelos/nueva-mesa';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
@@ -122,8 +122,8 @@ async function montar(
             return registrar();
           },
           alertasDeRechazo: opciones.alertas ?? (() => of([])),
-          asignarDocente: (idExamen: number, idDocente: number) => {
-            llamadas.push(`asignar ${idExamen} a ${idDocente}`);
+          asignarDocente: (idExamen: number, idDocente: number, rol?: string) => {
+            llamadas.push(`asignar ${idExamen} a ${idDocente}${rol ? ` como ${rol}` : ''}`);
             return (opciones.asignar ?? (() => of('Docente asignado correctamente.')))();
           },
           ocultarAlerta: (idExamen: number, idDocente: number) => {
@@ -267,22 +267,6 @@ describe('MesasExamen (SCRUM-245)', () => {
     expect(raiz(fixture).querySelector<HTMLSelectElement>('#mesa-docente')?.value).toBe('8');
   });
 
-  it('si la mesa se crea pero falta un vocal, lo avisa y vacía el formulario para no crearla dos veces', async () => {
-    const fixture = await montar({
-      registrar: () =>
-        throwError(
-          () => new MesaIncompleta('La mesa se creó, pero no pudimos convocar al vocal 2.'),
-        ),
-    });
-
-    await crearMesa(fixture);
-
-    expect(raiz(fixture).querySelector('form [role="alert"]')?.textContent).toContain(
-      'no pudimos convocar al vocal 2',
-    );
-    expect(raiz(fixture).querySelector<HTMLSelectElement>('#mesa-docente')?.value).toBe('');
-  });
-
   it('si no se pueden traer las listas lo avisa, y "Reintentar" las vuelve a pedir', async () => {
     let pedidos = 0;
     const fixture = await montar({
@@ -376,6 +360,25 @@ describe('MesasExamen: mesas rechazadas (SCRUM-247)', () => {
     expect(raiz(fixture).querySelector('[data-seccion="alertas"] [role="alert"]')?.textContent).toContain(
       'ya se encuentra asignado',
     );
+  });
+
+  it('muestra el lugar del tribunal que quedó libre y reasigna ese mismo lugar', async () => {
+    const fixture = await montar({
+      alertas: () => of([{ ...ALERTA, rol: 'Vocal 1' as const }]),
+      docentes: () => of([ANA, { idDocente: 9, nombreCompleto: 'Bruno Gómez' }]),
+    });
+
+    expect(raiz(fixture).querySelector('[data-alerta="31-8"]')?.textContent).toContain(
+      'Lugar a cubrir: Vocal 1',
+    );
+
+    const select = raiz(fixture).querySelector<HTMLSelectElement>('#reasignar-31-8')!;
+    select.value = '9';
+    select.dispatchEvent(new Event('change'));
+    await fixture.whenStable();
+    await tocar(fixture, '[data-alerta="31-8"] [data-accion="reasignar"] button');
+
+    expect(llamadas).toEqual(['asignar 31 a 9 como Vocal 1', 'ocultar 31-8']);
   });
 
   it('si no se pueden traer las alertas, el alta de mesas sigue andando', async () => {

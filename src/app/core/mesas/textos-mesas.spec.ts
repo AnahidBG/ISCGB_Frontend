@@ -68,4 +68,15 @@ describe('confirmacionDeRespuesta', () => {
         'Dirección y Secretaría reciben el aviso para reasignarla.',
     );
   });
+
+  it('con el lugar del tribunal lo nombra, y al aceptar avisa cuándo entra al calendario', () => {
+    expect(confirmacionDeRespuesta(mesa({ idExamen: 1, rol: 'Vocal 1' }), true, 'es-AR')).toBe(
+      'Aceptaste ser vocal 1 de la mesa de Redes del viernes 20 de noviembre, 09:00 h. ' +
+        'Aparece en el calendario cuando acepta todo el tribunal.',
+    );
+    expect(confirmacionDeRespuesta(mesa({ idExamen: 1, rol: 'Presidente' }), false, 'es-AR')).toBe(
+      'Rechazaste ser presidente de la mesa de Redes del viernes 20 de noviembre, 09:00 h. ' +
+        'Dirección y Secretaría reciben el aviso para convocar a otro docente.',
+    );
+  });
 });

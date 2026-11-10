@@ -43,6 +43,7 @@ export class MesasExamenMockService extends MesasExamenService {
       docente: 'Martín Morales',
       materia: 'Pedagogía',
       fecha: dentroDe(10, 10),
+      rol: 'Vocal 2',
     },
   ];
 
