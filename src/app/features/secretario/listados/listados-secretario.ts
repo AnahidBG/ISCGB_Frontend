@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import {
@@ -17,7 +17,7 @@ import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga'
 
 @Component({
   selector: 'app-listados-secretario',
-  imports: [EstructuraPanel, PantallaCarga],
+  imports: [EstructuraPanel, PantallaCarga, RouterLink],
   templateUrl: './listados-secretario.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -78,6 +78,15 @@ describe('enlacesPorSesion', () => {
     }
   });
 
+  it('"Nuevo Usuario" es de Dirección y Secretaría: el back les deja a los dos el alta', () => {
+    for (const rol of ['Director', 'Secretario'] as const) {
+      expect(urlsDe(rol)).toContain('/usuarios/nuevo');
+    }
+    for (const rol of ['Docente', 'Alumno'] as const) {
+      expect(urlsDe(rol)).not.toContain('/usuarios/nuevo');
+    }
+  });
+
   it('"Contratos de alumnos" es de Dirección y Secretaría (SCRUM-227)', () => {
     expect(urlsDe('Secretario')).toContain('/secretario/contratos');
     expect(urlsDe('Director')).toContain('/secretario/contratos');

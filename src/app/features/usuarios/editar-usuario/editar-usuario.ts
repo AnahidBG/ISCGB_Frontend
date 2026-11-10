@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
+import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { PerfilUsuario } from '../../../core/usuarios/modelos/perfil-usuario';
@@ -59,6 +60,9 @@ export class EditarUsuario {
   protected readonly notificaciones = this.campana.total;
   protected readonly notificacionesDetalle = this.campana.detalle;
   protected readonly enlaces = computed(() => enlacesPorSesion(this.sesion()));
+
+  /** El panel de quien está editando: Dirección o Secretaría, igual que en "Nuevo Usuario". */
+  protected readonly panel = computed(() => destinoSegunRoles(this.sesion()));
 
   private readonly idUsuario = Number(this.route.snapshot.paramMap.get('idUsuario'));
 
@@ -235,7 +239,7 @@ export class EditarUsuario {
   }
 
   protected volverAlPanel(): void {
-    this.router.navigate(['/director/panel']);
+    this.router.navigateByUrl(this.panel());
   }
 
   protected cerrarSesion(): void {

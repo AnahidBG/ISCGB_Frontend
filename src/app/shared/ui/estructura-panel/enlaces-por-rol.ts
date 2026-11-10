@@ -48,11 +48,10 @@ export function enlacesPorSesion(
     { etiqueta: 'Dashboard', url: destinoSegunRoles(sesion), icono: 'panel' },
   ];
 
-  if (tieneAlgunRol(sesion, [ROLES.director])) {
-    enlaces.push({ etiqueta: 'Nuevo Usuario', url: '/director/usuarios/nuevo', icono: 'usuarios' });
-  }
-
   if (tieneAlgunRol(sesion, [ROLES.director, ROLES.secretario])) {
+    // El alta, la edición y la baja son de los dos: `UsuariosAdmin` es
+    // `[Authorize(Roles = "Director,Secretario")]`.
+    enlaces.push({ etiqueta: 'Nuevo Usuario', url: '/usuarios/nuevo', icono: 'usuarios' });
     if (tieneAlgunRol(sesion, [ROLES.secretario])) {
       enlaces.push({
         etiqueta: 'Listado de personas',

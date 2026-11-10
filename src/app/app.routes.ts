@@ -84,23 +84,24 @@ export const routes: Routes = [
   },
   {
     // Alta de usuarios — Sprint 2, "Gestión de usuarios y roles" (SCRUM-16).
-    // Solo Director: ISCGB-PROJECT.md le da a ese rol el alta/baja de
-    // usuarios y roles. Pega contra `POST /api/UsuariosAdmin/alta` —
-    // ver docs/contrato-alta-usuario.md.
-    path: 'director/usuarios/nuevo',
+    // Dirección y Secretaría: `UsuariosAdminController` es
+    // `[Authorize(Roles = "Director,Secretario")]` y no limita qué roles asigna
+    // cada uno. Pega contra `POST /api/UsuariosAdmin/alta` — ver
+    // docs/contrato-alta-usuario.md.
+    path: 'usuarios/nuevo',
     title: 'Nuevo usuario · ISCGB',
-    canActivate: [authGuard, roleGuard(ROLES.director)],
+    canActivate: [authGuard, roleGuard(ROLES.director, ROLES.secretario)],
     loadComponent: () =>
-      import('./features/director/alta-usuario/alta-usuario').then((m) => m.AltaUsuario),
+      import('./features/usuarios/alta-usuario/alta-usuario').then((m) => m.AltaUsuario),
   },
   {
-    // Modificación y BAJA de usuarios — el complemento de "Nuevo Usuario".
-    // `PUT /api/UsuariosAdmin/modificar/{id}` y `.../baja/{id}`.
-    path: 'director/usuarios/:idUsuario/editar',
+    // Modificación y BAJA de usuarios — el complemento de "Nuevo Usuario", con
+    // los mismos roles. `PUT /api/UsuariosAdmin/modificar/{id}` y `.../baja/{id}`.
+    path: 'usuarios/:idUsuario/editar',
     title: 'Editar usuario · ISCGB',
-    canActivate: [authGuard, roleGuard(ROLES.director)],
+    canActivate: [authGuard, roleGuard(ROLES.director, ROLES.secretario)],
     loadComponent: () =>
-      import('./features/director/editar-usuario/editar-usuario').then((m) => m.EditarUsuario),
+      import('./features/usuarios/editar-usuario/editar-usuario').then((m) => m.EditarUsuario),
   },
   {
     // Documentos pendientes de revisión de todo el instituto. Datos de

@@ -3,7 +3,7 @@
   encabezado="titulo"
   tituloPagina="Nuevo Usuario"
   subtitulo="Dar de alta a una persona del instituto y asignarle su rol."
-  volverUrl="/director/panel"
+  [volverUrl]="panel()"
   [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
   [fotoUsuario]="sesion()?.fotoUrl ?? null"
   [emailUsuario]="sesion()?.email ?? ''"
