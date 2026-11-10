@@ -10,8 +10,6 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
-import { ROLES } from '../../../core/auth/modelos/rol';
-import { tieneAlgunRol } from '../../../core/auth/modelos/sesion';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { CalendarioExamenesService } from '../../../core/examenes/calendario-examenes.service';
 import { TipoExamen } from '../../../core/examenes/modelos/tipo-examen';
@@ -53,9 +51,9 @@ interface OpcionesDeMesa {
  *   · Nueva mesa: `POST /api/ConfiguracionCalendario/registrar-mesa`. El docente
  *     elegido queda convocado en "Pendiente" y lo ve en "Mis mesas de examen".
  *   · Mesas rechazadas: `GET /api/Configuracion/alertas-rechazos`. "Ya lo vi"
- *     archiva la alerta (`PUT .../ocultar-alerta-rechazo`). Dirección, además,
- *     puede convocar a otro docente (`POST .../asignar-docente`), y entonces la
- *     alerta se archiva sola. Secretaría no: el backend no se lo permite.
+ *     archiva la alerta (`PUT .../ocultar-alerta-rechazo`). También se puede
+ *     convocar a otro docente (`POST .../asignar-docente`), y entonces la alerta
+ *     se archiva sola.
  *
  * Las alertas se cargan aparte: si fallan, el alta de mesas sigue andando.
  * El formulario y la lista de alertas viven en `partes/`.
@@ -91,11 +89,6 @@ export class MesasExamen {
   protected readonly errorMesa = signal<string | null>(null);
   protected readonly exitoMesa = signal<string | null>(null);
   protected readonly reinicioMesa = signal(0);
-
-  /** Solo Dirección convoca a otro docente: `asignar-docente` no admite a Secretaría. */
-  protected readonly puedeReasignar = computed(() =>
-    tieneAlgunRol(this.sesion(), [ROLES.director]),
-  );
 
   protected readonly alertas = signal<AlertaRechazo[]>([]);
   protected readonly cargandoAlertas = signal(true);

@@ -228,15 +228,8 @@ describe('MesasExamen: mesas rechazadas (SCRUM-247)', () => {
     expect(alertas(fixture)).toEqual([]);
   });
 
-  it('Secretaría no ve "Reasignar": el backend no se lo permite', async () => {
+  it('Secretaría convoca a otro docente, sin el que la rechazó, y la alerta se archiva', async () => {
     const fixture = await montar({ alertas: () => of([ALERTA]) });
-
-    expect(raiz(fixture).querySelector('[data-accion="reasignar"]')).toBeNull();
-    expect(raiz(fixture).textContent).toContain('pedíselo a Dirección');
-  });
-
-  it('Dirección convoca a otro docente, sin el que la rechazó, y la alerta se archiva', async () => {
-    const fixture = await montar({ sesion: DIRECTOR, alertas: () => of([ALERTA]) });
     const select = raiz(fixture).querySelector<HTMLSelectElement>('#reasignar-31-8')!;
 
     // El único docente de la lista es el que la rechazó: no se ofrece.

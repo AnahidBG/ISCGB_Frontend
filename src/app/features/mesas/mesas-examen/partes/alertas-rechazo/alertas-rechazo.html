@@ -16,41 +16,35 @@
           <p class="mt-1 text-sm text-texto-suave">{{ fecha(alerta) }}</p>
         </div>
 
-        @if (puedeReasignar()) {
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
-            <p class="flex min-w-0 flex-1 flex-col gap-1.5">
-              <label [attr.for]="'reasignar-' + clave" class="text-sm font-medium text-texto">
-                Convocar a otro docente
-              </label>
-              <select
-                [id]="'reasignar-' + clave"
-                [value]="elegido(alerta)"
-                (change)="elegir(alerta, $any($event.target).value)"
-                class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
-              >
-                <option value="">Elegí un docente</option>
-                @for (docente of otrosDocentes(alerta); track docente.idDocente) {
-                  <option [value]="docente.idDocente">{{ docente.nombreCompleto }}</option>
-                }
-              </select>
-            </p>
-            <app-boton
-              data-accion="reasignar"
-              nivel="secundario"
-              [conFlecha]="false"
-              [deshabilitado]="ocupada || elegido(alerta) === ''"
-              [cargando]="procesando() === clave"
-              textoCargando="Convocando…"
-              (click)="alReasignar(alerta)"
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
+          <p class="flex min-w-0 flex-1 flex-col gap-1.5">
+            <label [attr.for]="'reasignar-' + clave" class="text-sm font-medium text-texto">
+              Convocar a otro docente
+            </label>
+            <select
+              [id]="'reasignar-' + clave"
+              [value]="elegido(alerta)"
+              (change)="elegir(alerta, $any($event.target).value)"
+              class="w-full rounded-xl border border-borde bg-superficie px-4 py-3 text-sm text-texto focus:border-principal focus:outline-none"
             >
-              Reasignar
-            </app-boton>
-          </div>
-        } @else {
-          <p class="text-xs text-texto-suave">
-            Para convocar a otro docente a esta mesa, pedíselo a Dirección.
+              <option value="">Elegí un docente</option>
+              @for (docente of otrosDocentes(alerta); track docente.idDocente) {
+                <option [value]="docente.idDocente">{{ docente.nombreCompleto }}</option>
+              }
+            </select>
           </p>
-        }
+          <app-boton
+            data-accion="reasignar"
+            nivel="secundario"
+            [conFlecha]="false"
+            [deshabilitado]="ocupada || elegido(alerta) === ''"
+            [cargando]="procesando() === clave"
+            textoCargando="Convocando…"
+            (click)="alReasignar(alerta)"
+          >
+            Reasignar
+          </app-boton>
+        </div>
 
         <div class="flex justify-end">
           <app-boton

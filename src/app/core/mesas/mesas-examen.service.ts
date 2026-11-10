@@ -29,7 +29,7 @@ export const MENSAJE_ERROR_OCULTAR_ALERTA =
  * Endpoints del backend (commit `d771acb`, 17/10/2026):
  *
  *   · `POST /api/ConfiguracionCalendario/registrar-mesa` → `registrarMesa` (Director, Secretario)
- *   · `POST /api/ConfiguracionCalendario/asignar-docente` → `asignarDocente` (Director, Administrador)
+ *   · `POST /api/ConfiguracionCalendario/asignar-docente` → `asignarDocente` (Director, Secretario)
  *   · `PUT /api/Docente/responder-asignacion` → `responderAsignacion` (Docente)
  *   · `GET /api/Configuracion/alertas-rechazos` → `alertasDeRechazo` (Director, Secretario)
  *   · `PUT /api/Configuracion/ocultar-alerta-rechazo` → `ocultarAlerta` (Director, Secretario)
@@ -51,8 +51,8 @@ export abstract class MesasExamenService {
    * Convoca a otro docente a una mesa que ya existe, por ejemplo después de un
    * rechazo. Devuelve el mensaje de confirmación del backend.
    *
-   * El backend solo se lo permite al rol Director (pide "Director,Administrador" y
-   * el rol Administrador no existe): Secretaría recibe 403.
+   * Lo pueden usar Dirección y Secretaría: hasta el 10/11/2026 el backend pedía
+   * "Director,Administrador" y Secretaría recibía 403.
    *
    * Falla con el mensaje del backend (ese docente ya está asignado), o con
    * `MENSAJE_ERROR_ASIGNAR_DOCENTE`.
