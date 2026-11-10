@@ -271,6 +271,9 @@ export const routes: Routes = [
     path: 'legajo/subir-documento',
     title: 'Subir documento · ISCGB',
     canActivate: [authGuard, roleGuard(ROLES.docente, ROLES.alumno)],
+    // Salir con un archivo elegido y sin subir avisa "Cargaste documentación
+    // nueva, debes Guardar para que se registre" (SCRUM-42 y SCRUM-113).
+    canDeactivate: [confirmarSalidaGuard],
     loadComponent: () =>
       import('./features/legajo/subir-documento/subir-documento').then(
         (m) => m.SubirDocumento,

@@ -203,4 +203,22 @@ class="rounded-2xl border border-borde bg-superficie p-5 sm:p-8"
       </form>
     }
   </div>
+
+  <!--
+    Aviso de salir sin guardar (SCRUM-42 y SCRUM-113). El título es el texto
+    exacto del requerimiento; la bajada aclara que "Guardar" es el botón
+    "Subir documento", que es como se llama en esta pantalla.
+  -->
+  @if (preguntandoSalida()) {
+    <app-dialogo-confirmacion
+      titulo="Cargaste documentación nueva, debes Guardar para que se registre"
+      textoConfirmar="Salir sin guardar"
+      textoCancelar="Volver y guardar"
+      (confirmar)="responderSalida(true)"
+      (cancelar)="responderSalida(false)"
+    >
+      El archivo que elegiste todavía no está en tu legajo: se registra cuando tocás
+      <strong>Subir documento</strong>. Si salís ahora, se descarta.
+    </app-dialogo-confirmacion>
+  }
 </app-estructura-panel>

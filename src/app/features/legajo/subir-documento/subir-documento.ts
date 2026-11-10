@@ -10,12 +10,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
+import { ConCambiosSinEnviar } from '../../../core/comun/confirmar-salida.guard';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
 import { LegajoService } from '../../../core/legajos/legajo.service';
 import { DocumentoRequerido } from '../../../core/legajos/modelos/documento-requerido';
 import { idRolDocumental } from '../../../core/legajos/rol-documental';
 import { tipoPedidoEn } from '../../../core/legajos/tipo-en-url';
+import { DialogoConfirmacion } from '../../../shared/ui/dialogo-confirmacion/dialogo-confirmacion';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Icono } from '../../../shared/ui/icono/icono';
@@ -64,16 +66,34 @@ import { ZonaArchivo } from '../../../shared/ui/zona-archivo/zona-archivo';
  * La validación de PDF que hace esta pantalla es SOLO por comodidad: avisa
  * antes de subir algo que va a fallar. La validación de verdad va del lado
  * del servidor, mirando el contenido del archivo — nunca confiar en lo que
- * manda el navegador (regla #1). Hoy el backend no la hace todavía; está
- * anotado en docs/verificacion-backend.md.
+ * manda el navegador (regla #1). Desde el 10/11/2026 el backend la hace por
+ * magic bytes (`Seguridad/ValidadorArchivos.cs`), aunque en legajos todavía
+ * acepta también JPG y PNG (CLAUDE.md, regla 1).
+ *
+ * ── Salir sin guardar (SCRUM-42 Docente, SCRUM-113 Alumno) ────────────────
+ * Si la persona eligió un archivo y se va sin tocar "Subir documento", el
+ * archivo no llega al legajo. Antes de dejarla ir se le avisa con el texto
+ * que pide el requerimiento: "Cargaste documentación nueva, debes Guardar
+ * para que se registre". Igual que en `EntregaPrograma`, son dos caminos:
+ *
+ *   · Navegar dentro de la app ("‹ Volver", "Cancelar", la barra lateral, la
+ *     campana, cerrar sesión) pasa por `confirmarSalidaGuard` → nuestro diálogo.
+ *   · Cerrar la pestaña o recargar no pasa por el router → `beforeunload`, con
+ *     el diálogo genérico del navegador (ninguno deja poner un texto propio).
+ *
+ * Lo que cuenta como "sin guardar" es solo el archivo: elegir el tipo o la
+ * fecha sin archivo no carga documentación, y preguntar ahí sería molestar.
  */
 @Component({
   selector: 'app-subir-documento',
-  imports: [EstructuraPanel, Icono, ZonaArchivo],
+  imports: [EstructuraPanel, Icono, ZonaArchivo, DialogoConfirmacion],
   templateUrl: './subir-documento.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '(window:beforeunload)': 'alSalirDelSitio($event)',
+  },
 })
-export class SubirDocumento {
+export class SubirDocumento implements ConCambiosSinEnviar {
   private readonly auth = inject(AuthService);
   private readonly campana = inject(CampanaService);
   private readonly legajos = inject(LegajoService);
@@ -147,9 +167,55 @@ export class SubirDocumento {
     () => this.idTipoElegido() !== null && this.archivo() !== null && !this.enviando(),
   );
 
+  // ── Salir sin guardar ─────────────────────────────────────────────────────
+
+  /**
+   * `true` si hay un archivo elegido que todavía no se subió. Mientras se está
+   * subiendo no cuenta: el pedido ya salió y termina aunque se cambie de
+   * pantalla, así que decirle "debes Guardar" sería falso.
+   */
+  private readonly hayAlgoSinGuardar = computed(
+    () => this.archivo() !== null && !this.exito() && !this.enviando(),
+  );
+
+  /** `true` mientras se muestra el aviso de "debes Guardar". */
+  protected readonly preguntandoSalida = signal(false);
+
+  /** Resuelve la navegación pendiente con la respuesta del diálogo. */
+  private resolverSalida: ((salir: boolean) => void) | null = null;
+
   constructor() {
     this.campana.refrescar();
     this.cargarTipos();
+  }
+
+  confirmarSalida(): boolean | Promise<boolean> {
+    if (!this.hayAlgoSinGuardar()) {
+      return true;
+    }
+
+    // Si ya había una pregunta abierta (por ejemplo, apretó "atrás" en el
+    // navegador con el diálogo a la vista), esa navegación quedó vieja: se
+    // cierra como "no salir" antes de abrir la nueva.
+    this.resolverSalida?.(false);
+
+    this.preguntandoSalida.set(true);
+    return new Promise<boolean>((resolver) => (this.resolverSalida = resolver));
+  }
+
+  protected responderSalida(salir: boolean): void {
+    this.preguntandoSalida.set(false);
+    this.resolverSalida?.(salir);
+    this.resolverSalida = null;
+  }
+
+  /** Cerrar la pestaña o recargar: le pide al navegador su diálogo de confirmación. */
+  protected alSalirDelSitio(evento: BeforeUnloadEvent): void {
+    if (this.hayAlgoSinGuardar()) {
+      evento.preventDefault();
+      // Chrome y Edge viejos solo muestran el diálogo si además se asigna esto.
+      evento.returnValue = '';
+    }
   }
 
   protected alElegirTipo(evento: Event): void {
@@ -215,8 +281,14 @@ export class SubirDocumento {
   }
 
   protected cerrarSesion(): void {
-    this.auth.cerrarSesion();
-    this.router.navigate(['/login']);
+    // Primero se navega y recién después se corta la sesión: si el guard
+    // pregunta y la persona elige quedarse a guardar, la navegación se cancela
+    // y la sesión tiene que seguir viva (mismo criterio que `EntregaPrograma`).
+    this.router.navigate(['/login']).then((salio) => {
+      if (salio) {
+        this.auth.cerrarSesion();
+      }
+    });
   }
 
   /** El input de fecha da "2026-08-27"; el backend espera una fecha completa. */

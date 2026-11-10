@@ -23,6 +23,7 @@ import { MENSAJE_SIN_REVISAR_LUGAR, motivoSinLugar } from '../../../core/mesas/l
 import { MesasExamenService } from '../../../core/mesas/mesas-examen.service';
 import { AlertaRechazo } from '../../../core/mesas/modelos/alerta-rechazo';
 import { NuevaMesa } from '../../../core/mesas/modelos/nueva-mesa';
+import { tipoDeLaMesa } from '../../../core/mesas/tipo-de-la-mesa';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
@@ -38,6 +39,11 @@ import { FormularioMesa } from './partes/formulario-mesa/formulario-mesa';
 interface OpcionesDeMesa {
   materias: MateriaDisponible[];
   comisiones: ComisionDisponible[];
+  /**
+   * Una mesa siempre es un final: no se elige el tipo. Trae solo "Mesa de
+   * examen" (`tipoDeLaMesa`, con el id de "Final"), o nada si la base no lo
+   * tiene, y entonces no se pueden crear mesas.
+   */
   tipos: TipoExamen[];
   docentes: DocenteDisponible[];
 }
@@ -206,7 +212,14 @@ export class MesasExamen {
       materias: this.materiasService.listarDisponibles(),
       comisiones: this.materiasService.listarComisiones(),
       docentes: this.materiasService.listarDocentes(),
-      tipos: this.examenes.tiposDeExamen(),
+      // De todos los tipos de la base (Parcial, Coloquio…) queda solo el de las
+      // mesas: Dirección y Secretaría no eligen el tipo, una mesa es un final.
+      tipos: this.examenes.tiposDeExamen().pipe(
+        map((tipos) => {
+          const tipo = tipoDeLaMesa(tipos);
+          return tipo === null ? [] : [tipo];
+        }),
+      ),
     })
       .pipe(takeUntilDestroyed(this.destruccion))
       .subscribe({

@@ -33,8 +33,8 @@ import {
 
 /**
  * El alta de una mesa de examen con el docente que la preside (SCRUM-245):
- * fecha, horario, materia, comisión, tipo de examen y docente. Todos son
- * obligatorios.
+ * fecha, horario, materia, comisión y docente. El tipo es siempre "Mesa de
+ * examen" y su id se asigna automáticamente.
  *
  * PRESENTACIONAL: recibe las listas del contenedor (`MesasExamen`) y emite la
  * mesa ya validada (`erroresDeNuevaMesa`). Los errores de cada campo aparecen
@@ -85,12 +85,23 @@ export class FormularioMesa {
 
   constructor() {
     effect(() => {
+      const idTipoExamen = this.idTipoFijo();
+      untracked(() => this.formulario.controls.idTipoExamen.setValue(idTipoExamen));
+    });
+
+    effect(() => {
       this.reinicio();
       untracked(() => {
         this.formulario.reset();
+        this.formulario.controls.idTipoExamen.setValue(this.idTipoFijo());
         this.seIntentoGuardar.set(false);
       });
     });
+  }
+
+  private idTipoFijo(): string {
+    const tipos = this.tipos();
+    return tipos.length === 1 ? String(tipos[0].idTipoExamen) : '';
   }
 
   private errores(): ErroresNuevaMesa {

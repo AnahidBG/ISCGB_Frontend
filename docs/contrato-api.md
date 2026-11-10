@@ -788,9 +788,11 @@ No verifica la comisión.
 Devuelve `200` con `[{ "idTipoExamen": 1, "nombre": "Parcial" }]`. Pide sesión y no
 recibe parámetros. Devuelve TODOS los de la base: en algunas hay "Recupetario" (así,
 con el error de tipeo), "Parcial Integrador Final" o "Coloquio", y desde el
-10/11/2026 el seeder agrega "Parcial", "Recuperatorio" y "Final" si faltan. El
-frontend los muestra tal cual vienen en "Mesas de examen", y en el modal del Docente
-solo los tres que acepta `registrar`. Si la respuesta no se puede leer (no es una
+10/11/2026 el seeder agrega "Parcial", "Recuperatorio" y "Final" si faltan. En
+"Mesas de examen" el tipo no se elige: una mesa es un final, así que se manda el id
+de "Final" y se muestra como "Mesa de examen" (`tipoDeLaMesa`, `core/mesas/`; si
+algún día la base tiene un tipo "Mesa de examen", se usa ese). En el modal del
+Docente se muestran solo los tres que acepta `registrar`. Si la respuesta no se puede leer (no es una
 lista, o un tipo no trae id o nombre) es un error.
 
 ### `GET /api/ConfiguracionCalendario/mis-materias-docente`
