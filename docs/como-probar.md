@@ -30,12 +30,9 @@ que existir antes.
 
 ### Los usuarios
 
-No hay usuarios cargados de antemano. El primero se crea desde Swagger con
-`POST /api/Auth/crear-usuario-prueba`, que lo deja con el rol Director:
-
-```json
-{ "dni": "11111111", "password": "Test1234" }
-```
+No hay usuarios cargados de antemano. El primero, con el rol Director, se carga
+directo en la base: `POST /api/Auth/crear-usuario-prueba` ya no existe (lo
+borró el back en `523d05b`).
 
 Los demás se dan de alta desde el sistema, con "Nuevo Usuario". Cada persona
 recibe un mail con el enlace para crear su contraseña.
@@ -153,8 +150,7 @@ No depende del backend: es un enlace al sistema académico del instituto.
 
 Para los cuatro roles, desde "Editar perfil" en el menú de la persona. Hace falta
 una persona con algunos datos de contacto cargados y otra sin ninguno; el alta de
-usuarios los pide todos, así que una cuenta sin datos se arma desde la base o con
-`POST /api/Auth/crear-usuario-prueba`. Para el caso del correo repetido, otra
+usuarios los pide todos, así que una cuenta sin datos se arma desde la base. Para el caso del correo repetido, otra
 persona con otro correo.
 
 - [ ] Abre en `/perfil`, con la pestaña "Mi perfil · ISCGB", el título "Mi perfil" y

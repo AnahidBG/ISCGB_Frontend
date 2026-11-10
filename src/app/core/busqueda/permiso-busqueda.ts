@@ -5,9 +5,8 @@ import { ROLES } from '../auth/modelos/rol';
  *
  * Los resultados incluyen nombre y DNI de cualquier persona del instituto y
  * los justificativos de todos — información que Docente y Alumno no tienen
- * por qué ver. El backend (`BuscadorController`) no tiene `[Authorize]`, así
- * que hoy esta es la única barrera, y es solo de interfaz: hay que pedirle al
- * backend `[Authorize(Roles = "Director,Secretario")]`.
+ * por qué ver. Desde el 10/11/2026 el backend (`BuscadorController`) también lo
+ * restringe a `Director,Secretario`: esto es la misma regla del lado de la interfaz.
  *
  * La misma lista protege la ruta `/buscar` en `app.routes.ts`.
  */

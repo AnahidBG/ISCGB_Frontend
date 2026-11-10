@@ -103,36 +103,38 @@ tiene la bandeja de solicitudes. El contrato está en
 
 ## Pendientes para el backend
 
-Por impacto. Revisada el 17/10/2026 contra el backend de ese día (commits `d771acb`
-y `2a39708`).
+Por impacto. Revisada el 10/11/2026 contra el backend de ese día (commits `523d05b`
+y `dbb76fa`).
 
-1. **`[Authorize(Roles = ...)]`** sigue faltando en Justificativos, en el resto de
-   Legajos (solo `auditar` lo tiene) y en `modificar` y `eliminar` del calendario,
-   que además no verifican que el examen sea del docente. Es la regla 5.
-2. **Mail al rechazar**, en `AuditarLegajo` y `AuditarJustificativo`. Es la
+1. **Mail al rechazar**, en `AuditarLegajo` y `AuditarJustificativo`. Es la
    regla 4.
-3. **Motivo en el rechazo de un justificativo.** `AuditarJustificativoDto` solo
+2. **Motivo en el rechazo de un justificativo.** `AuditarJustificativoDto` solo
    tiene el auditor y el estado.
-4. **`GET /api/Usuarios/{id}`** tiene que devolver CUIL, género, afiliación y
+3. **Solo PDF en Legajos.** Desde `523d05b` se valida el contenido, pero Legajos
+   acepta también JPG y PNG, y la regla 1 pide solo PDF.
+4. **Nadie aprueba sus propios documentos.** `auditar` no compara al auditor con
+   el dueño del documento. Es la regla 5.
+5. **`GET /api/Usuarios/{id}`** tiene que devolver CUIL, género, afiliación y
    `DirectorSuplente`. Sin el último, editar a un suplente sin volver a tildar
    la casilla le quita la suplencia.
-5. **Validar el PDF por contenido** (magic bytes `%PDF-`) en Legajos y
-   Justificativos. Hoy se mira el `ContentType`, o nada. Es la regla 1.
-6. **Avisos automáticos.** El worker compara contra todos los tipos de
-   documento y no contra los obligatorios del rol, y el `PUT` de la frecuencia
-   no tiene tope máximo. Detalle en `contrato-api.md`.
+6. **Avisos automáticos.** El `PUT` de la frecuencia no tiene tope máximo.
+   Detalle en `contrato-api.md`.
 7. **Calendario y mesas.** `del-mes` debería recibir año y mes; el límite es por
-   día y Jira dice por semana (SCRUM-187); `asignar-docente` pide el rol
-   `Administrador`, que no existe, y deja afuera a Secretaría; las mesas no mandan
-   el mail que anuncian. Detalle en `contrato-api.md`.
+   día y Jira dice por semana (SCRUM-187); las mesas no mandan el mail que
+   anuncian. Detalle en `contrato-api.md`.
 8. **Sello del certificado, a verificar.** Ahora es `sello.JPG`, pero el código lo
    busca en `wwwroot/images/` y en el repo está en `wwwRoot/Images/`. En Windows
    anda; en Linux y Docker las mayúsculas importan y el certificado respondería 500.
-9. `POST /api/Auth/crear-usuario-prueba` sigue expuesto sin autenticación.
-10. `Program.cs` llama a `DbSeeder.Inicializar(context)` sin `await`, pero es
-    `async Task`: corre suelto y el `try/catch` no atrapa sus errores.
 
-Ya resueltos: la contraseña inicial del alta, que ahora se crea desde un enlace
+Resueltos el 10/11/2026 (`523d05b` y `dbb76fa`): la sesión en todos los endpoints
+y los roles de Justificativos, Legajos, Usuarios y el buscador; que un Docente
+solo modifique o elimine los exámenes de sus materias; el contenido del archivo
+(magic bytes) en Legajos, Justificativos, reconocimiento de saberes y contratos;
+`asignar-docente` para Secretaría; el borrado de `crear-usuario-prueba`; el
+`await` de `DbSeeder.Inicializar`; el límite de intentos en login y recupero, y el
+worker de avisos, que ahora compara contra lo que se le pide al rol.
+
+Ya resueltos antes: la contraseña inicial del alta, que ahora se crea desde un enlace
 enviado por mail (y `establecer-password` tiene `[AllowAnonymous]`); las
 provincias, con `GET /api/Ubicaciones/paises`; la reactivación de cuentas; los
 endpoints de reconocimiento de saberes; el `[Authorize]` de
