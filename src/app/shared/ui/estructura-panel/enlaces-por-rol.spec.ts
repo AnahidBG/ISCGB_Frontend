@@ -39,11 +39,14 @@ describe('enlacesPorSesion', () => {
     }
   });
 
-  it('"Calendario de parciales" es del Docente y el Alumno ya no lo tiene', () => {
-    expect(etiquetasDe('Docente')).toContain('Calendario de parciales');
-    expect(urlsDe('Docente')).toContain('/calendario');
+  it('"Calendario de parciales" es del Docente y del Alumno, una sola vez si tiene los dos roles', () => {
+    for (const rol of ['Docente', 'Alumno'] as const) {
+      expect(etiquetasDe(rol)).toContain('Calendario de parciales');
+      expect(urlsDe(rol)).toContain('/calendario');
+    }
+    expect(urlsDe('Docente', 'Alumno').filter((url) => url === '/calendario')).toHaveLength(1);
 
-    for (const rol of ['Alumno', 'Secretario', 'Director'] as const) {
+    for (const rol of ['Secretario', 'Director'] as const) {
       expect(urlsDe(rol)).not.toContain('/calendario');
     }
   });

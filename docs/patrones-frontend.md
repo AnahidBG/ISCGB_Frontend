@@ -144,7 +144,7 @@ Ojo con una cosa: `index.html` tiene un script que repite la decisión de `tema.
 
 ## 3. Patrones para lo que viene
 
-**Calendario de exámenes parciales.** Hecho el 10/10/2026 (SCRUM-183): la pantalla muestra un mes con el estado de cada día y deja pasar de mes. Lo ven el Docente, el Secretario y el Director; el Alumno no. El Docente además registra parciales (SCRUM-186), explica por qué un día completo está bloqueado (SCRUM-185) y reprograma, elimina o arrastra un parcial ya cargado (SCRUM-184); contra la API real, esto último solo en el mes en curso, que es el único que lista el backend (`del-mes`, desde el 17/10/2026).
+**Calendario de exámenes parciales.** Hecho el 10/10/2026 (SCRUM-183): la pantalla muestra un mes con el estado de cada día y deja pasar de mes. Lo ven los cuatro roles; el Alumno, desde el 10/11/2026 y solo para consultar. El Docente además registra parciales (SCRUM-186), explica por qué un día completo está bloqueado (SCRUM-185) y reprograma, elimina o arrastra un parcial ya cargado (SCRUM-184); contra la API real, esto último solo en el mes en curso, que es el único que lista el backend (`del-mes`, desde el 17/10/2026).
 
 La regla es la del backend: hay un límite de parciales por día, único para todo el instituto, que define Secretaría Académica y hoy vale 2. No hay límite por comisión. En Jira el límite figura "por semana" y todavía no está definido, así que el período vive en una sola constante, `PERIODO_DEL_LIMITE` (`core/examenes/periodo-limite.ts`, hoy "día"), que usan todos los textos que lo nombran. Cambiarla solo cambia la redacción: quien aplica la regla es el backend.
 

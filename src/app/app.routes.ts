@@ -364,12 +364,16 @@ export const routes: Routes = [
   },
   {
     // Calendario de exámenes parciales — Sprint 3 (SCRUM-183): consulta del
-    // estado de cada día del mes. `GET /api/ConfiguracionCalendario/estado-mes`.
-    // Docente, Secretario y Director: el Alumno no lo ve. El backend no exige
-    // rol en ese endpoint, así que acá el `roleGuard` es lo único que lo limita.
+    // estado de cada día del mes. `GET /api/ConfiguracionCalendario/estado-mes`
+    // y `del-mes`, que piden sesión sin rol. Los cuatro roles: el Docente
+    // registra y mueve los parciales de sus materias, Secretaría y Dirección
+    // fijan el límite, y el Alumno solo consulta.
     path: 'calendario',
     title: 'Calendario de parciales · ISCGB',
-    canActivate: [authGuard, roleGuard(ROLES.docente, ROLES.secretario, ROLES.director)],
+    canActivate: [
+      authGuard,
+      roleGuard(ROLES.docente, ROLES.secretario, ROLES.director, ROLES.alumno),
+    ],
     loadComponent: () =>
       import('./features/calendario/calendario-examenes/calendario-examenes').then(
         (m) => m.CalendarioExamenes,

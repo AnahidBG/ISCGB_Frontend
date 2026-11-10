@@ -53,7 +53,7 @@ Las rutas, por rol:
 - Alumno: `/alumno/panel`, `/alumno/certificado/regular`, `/alumno/certificado/regular-con-horario`, `/alumno/reconocimiento-saberes` y `/alumno/contratos`.
 - Compartidas: `/legajo/subir-documento`, `/legajo/mis-documentos`, `/legajo/usuario/:idUsuario`, `/materias/asignaciones`, `/justificativos/cargar`, `/perfil` (Mi perfil: cada persona edita sus datos de contacto), `/configuracion` (cambio de contraseña con el enlace por mail) e `/inicio`.
 - Director y Secretario: `/usuarios/nuevo` y `/usuarios/:idUsuario/editar`, el alta, la edición y la baja de usuarios.
-- Docente, Secretario y Director: `/calendario`, el calendario de exámenes parciales. El Alumno no lo ve.
+- Los cuatro roles: `/calendario`, el calendario de exámenes parciales. El Docente registra y mueve los suyos, y el Alumno solo consulta.
 - Públicas: `/login`, `/crear-password` (mail de alta), `/recuperar-contrasena` y `/restablecer-password` (mail de recupero).
 
 ### Patrones de diseño
