@@ -317,6 +317,25 @@ describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
       ]);
     });
 
+    it('lee el lugar del docente en el tribunal (backend desde el 10/11/2026)', () => {
+      let mesas: MesaAsignada[] | undefined;
+      servicio.mesasAsignadas().subscribe((valor) => (mesas = valor));
+
+      backend.expectOne(RUTAS_API.misMesasAsignadas).flush([
+        {
+          idExamen: 1,
+          materia: 'Redes',
+          fecha: '2026-11-20T09:00:00',
+          rol: 'Vocal 1',
+          mensaje: 'Ha sido convocado como Vocal 1 a la mesa de Redes el día 20/11/2026 09:00',
+        },
+      ]);
+
+      expect(mesas).toEqual([
+        { idExamen: 1, materia: 'Redes', fecha: new Date(2026, 10, 20, 9, 0), rol: 'Vocal 1' },
+      ]);
+    });
+
     it('un usuario sin perfil de docente (404) no tiene mesas: no es un error', () => {
       let mesas: MesaAsignada[] | undefined;
       servicio.mesasAsignadas().subscribe((valor) => (mesas = valor));

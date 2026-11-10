@@ -35,8 +35,8 @@ export const MENSAJE_DOCENTE_REPETIDO = 'Ese docente ya está en el tribunal: el
  * Todos son obligatorios. La fecha no puede ser anterior a hoy y el horario
  * tiene que ser de 24 h: son las mismas reglas que el registro de un parcial
  * (`errorDeDia`, `errorDeHorario`), porque el backend no valida ninguna de las
- * dos. El tribunal son tres docentes distintos: el backend no deja convocar dos
- * veces al mismo, pero recién después de crear la mesa, y quedaría a medias.
+ * dos. El tribunal son tres docentes distintos: el backend también lo valida,
+ * pero así el error aparece en el campo antes de mandar nada.
  * Recibe `hoy` por parámetro para seguir siendo una función pura.
  */
 export function erroresDeNuevaMesa(valores: ValoresNuevaMesa, hoy: Date): ErroresNuevaMesa {

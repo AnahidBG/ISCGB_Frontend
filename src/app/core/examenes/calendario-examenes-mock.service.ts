@@ -309,8 +309,8 @@ export class CalendarioExamenesMockService extends CalendarioExamenesService {
       new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + dias, hora);
 
     const mesas: MesaAsignada[] = [
-      { idExamen: 1, materia: 'Redes', fecha: dentroDe(7, 9) },
-      { idExamen: 2, materia: 'Programación', fecha: dentroDe(14, 14) },
+      { idExamen: 1, materia: 'Redes', fecha: dentroDe(7, 9), rol: 'Presidente' },
+      { idExamen: 2, materia: 'Programación', fecha: dentroDe(14, 14), rol: 'Vocal 1' },
     ];
     return of(mesas).pipe(delay(DEMORA_SIMULADA_MS));
   }

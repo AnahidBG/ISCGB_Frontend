@@ -1,6 +1,7 @@
 import { DIAS_DE_LA_SEMANA } from '../examenes/calendario-mes';
 import { MesaAsignada } from '../examenes/modelos/mesa-asignada';
 import { AlertaRechazo } from '../mesas/modelos/alerta-rechazo';
+import { rolEnOracion } from '../mesas/rol-mesa';
 import { NotificacionPanel } from './modelos/notificacion-panel';
 
 /** A dónde lleva el aviso de una mesa: a donde el docente la acepta o la rechaza (SCRUM-246). */
@@ -56,7 +57,10 @@ export function notificacionesPorMesas(
     .filter((mesa) => mesa.fecha.getTime() >= inicioDeHoy)
     .sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
     .map((mesa) => ({
-      titulo: `Te asignaron a la mesa de ${mesa.materia}`,
+      titulo:
+        mesa.rol === undefined
+          ? `Te asignaron a la mesa de ${mesa.materia}`
+          : `Te convocaron como ${rolEnOracion(mesa.rol)} a la mesa de ${mesa.materia}`,
       detalle: fechaYHora(mesa.fecha),
       url: URL_MIS_MESAS,
       tono: 'pendiente' as const,
@@ -77,7 +81,10 @@ export function notificacionesPorMesasRechazadas(
   return [...alertas]
     .sort((a, b) => a.fecha.getTime() - b.fecha.getTime())
     .map((alerta) => ({
-      titulo: `${alerta.docente} rechazó la mesa de ${alerta.materia}`,
+      titulo:
+        alerta.rol === undefined
+          ? `${alerta.docente} rechazó la mesa de ${alerta.materia}`
+          : `${alerta.docente} (${rolEnOracion(alerta.rol)}) rechazó la mesa de ${alerta.materia}`,
       detalle: fechaYHora(alerta.fecha),
       url: URL_MESAS_EXAMEN,
       tono: 'rechazado' as const,

@@ -1,6 +1,6 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable, catchError, concatMap, from, last, map, switchMap, throwError } from 'rxjs';
+import { Observable, catchError, map, throwError } from 'rxjs';
 import { contextoDePedido } from '../carga/contexto-pedido';
 import { traducirRechazo } from '../comun/error-api';
 import { OpcionesPedido } from '../comun/opciones-pedido';
@@ -13,20 +13,26 @@ import {
   MENSAJE_ERROR_REGISTRAR_MESA,
   MENSAJE_ERROR_RESPONDER_MESA,
   MENSAJE_MESA_CREADA,
-  MesaIncompleta,
   MesasExamenService,
 } from './mesas-examen.service';
 import { AlertaRechazo } from './modelos/alerta-rechazo';
 import { NuevaMesa } from './modelos/nueva-mesa';
+import { RolMesa, aRolMesa } from './rol-mesa';
 
-/** El cuerpo del `POST .../registrar-mesa` (`RegistrarMesaDto`). */
+/**
+ * El cuerpo del `POST .../registrar-mesa` (`RegistrarMesaDto`): la mesa con su
+ * tribunal completo. El backend guarda el lugar de cada docente (`rol`:
+ * "Presidente", "Vocal 1", "Vocal 2") y les avisa a los tres.
+ */
 interface RegistrarMesaApi {
   /** Un `DateTime` de .NET, con hora y sin zona: "2026-11-20T09:00:00". */
   fecha: string;
   idMateria: number;
   idComision: number;
   idTipoExamen: number;
-  idDocente: number;
+  idPresidente: number;
+  idVocal1: number;
+  idVocal2: number;
 }
 
 /** Un elemento del `GET .../alertas-rechazos`. */
@@ -37,18 +43,15 @@ interface AlertaRechazoApi {
   materia: string;
   /** Un `DateTime` de .NET, con hora y sin zona. */
   fecha: string;
-  /** "Asignación rechazada. Requiere reasignar…": no se usa, el texto lo redacta el front. */
+  /** "Presidente", "Vocal 1" o "Vocal 2": el lugar que quedó libre (desde el 10/11/2026). */
+  rol?: string;
+  /** "El Vocal 1 rechazó la mesa…": no se usa, el texto lo redacta el front. */
   mensaje: string;
 }
 
 /** Lo que devuelven las escrituras en un 200. */
 interface RespuestaApi {
   message?: string;
-}
-
-/** El 200 de `registrar-mesa`: trae el id de la mesa nueva, para convocar a los vocales. */
-interface RespuestaRegistrarMesaApi extends RespuestaApi {
-  idExamen?: unknown;
 }
 
 /** Una fecha CON hora: "2026-11-20T09:00:00". */
@@ -66,10 +69,13 @@ export class MesasExamenHttpService extends MesasExamenService {
       idMateria: mesa.idMateria,
       idComision: mesa.idComision,
       idTipoExamen: mesa.idTipoExamen,
-      idDocente: mesa.idDocente,
+      idPresidente: mesa.idDocente,
+      idVocal1: mesa.idVocal1,
+      idVocal2: mesa.idVocal2,
     };
 
-    return this.http.post<RespuestaRegistrarMesaApi>(RUTAS_API.registrarMesaExamen, cuerpo).pipe(
+    return this.http.post<RespuestaApi>(RUTAS_API.registrarMesaExamen, cuerpo).pipe(
+      map((respuesta) => respuesta?.message?.trim() || MENSAJE_MESA_CREADA),
       catchError((error: HttpErrorResponse) =>
         throwError(
           () =>
@@ -78,52 +84,13 @@ export class MesasExamenHttpService extends MesasExamenService {
             ),
         ),
       ),
-      switchMap((respuesta) => this.convocarVocales(respuesta?.idExamen, mesa)),
     );
   }
 
-  /**
-   * Con la mesa ya creada (y quien la preside convocado), convoca a los dos
-   * vocales, uno detrás del otro. Si uno falla, no se sigue: la mesa existe igual,
-   * así que el error es `MesaIncompleta` y dice a quién falta convocar.
-   */
-  private convocarVocales(idExamen: unknown, mesa: NuevaMesa): Observable<string> {
-    if (!esId(idExamen)) {
-      return throwError(
-        () =>
-          new MesaIncompleta(
-            'La mesa se creó y se convocó a quien la preside, pero el servidor no devolvió ' +
-              'el número de la mesa y no pudimos convocar a los vocales.',
-          ),
-      );
-    }
-
-    const idMesa: number = idExamen;
-    // Si falla el vocal 1, el 2 no se llega a pedir: faltan los dos.
-    const vocales = [
-      { idDocente: mesa.idVocal1, faltan: 'a los vocales' },
-      { idDocente: mesa.idVocal2, faltan: 'al vocal 2' },
-    ];
-    return from(vocales).pipe(
-      concatMap(({ idDocente, faltan }) =>
-        this.asignarDocente(idMesa, idDocente).pipe(
-          catchError((fallo: Error) => {
-            // El genérico dice "Intentá de nuevo", y la mesa no se vuelve a crear: se omite.
-            const motivo =
-              fallo.message === MENSAJE_ERROR_ASIGNAR_DOCENTE ? '' : ` ${fallo.message}`;
-            return throwError(
-              () => new MesaIncompleta(`La mesa se creó, pero no pudimos convocar ${faltan}.${motivo}`),
-            );
-          }),
-        ),
-      ),
-      last(),
-      map(() => MENSAJE_MESA_CREADA),
-    );
-  }
-
-  asignarDocente(idExamen: number, idDocente: number): Observable<string> {
-    return this.http.post<RespuestaApi>(RUTAS_API.asignarDocenteAMesa, { idExamen, idDocente }).pipe(
+  asignarDocente(idExamen: number, idDocente: number, rol?: RolMesa): Observable<string> {
+    // Sin `rol`, el backend cubre el único lugar libre (o pide que se indique cuál).
+    const cuerpo = { idExamen, idDocente, ...(rol === undefined ? {} : { rol }) };
+    return this.http.post<RespuestaApi>(RUTAS_API.asignarDocenteAMesa, cuerpo).pipe(
       map((respuesta) => respuesta?.message?.trim() || 'Docente asignado a la mesa.'),
       catchError((error: HttpErrorResponse) =>
         throwError(
@@ -226,11 +193,13 @@ function aAlertaDeRechazo(entrada: unknown): AlertaRechazo | null {
     return null;
   }
 
+  const rol = aRolMesa(alerta.rol);
   return {
     idExamen: alerta.idExamen,
     idDocente: alerta.idDocente,
     docente: textoO(alerta.docente, 'Docente sin nombre cargado'),
     materia: textoO(alerta.materia, 'Materia sin nombre'),
     fecha,
+    ...(rol === null ? {} : { rol }),
   };
 }

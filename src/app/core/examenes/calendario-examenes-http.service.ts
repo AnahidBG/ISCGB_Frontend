@@ -24,6 +24,7 @@ import { CalendarioDelMes } from './modelos/calendario-del-mes';
 import { ExamenCalendario } from './modelos/examen-calendario';
 import { GrupoDeAlumnos } from './modelos/grupo-de-alumnos';
 import { MateriaDelDocente } from './modelos/materia-del-docente';
+import { aRolMesa } from '../mesas/rol-mesa';
 import { MesaAsignada } from './modelos/mesa-asignada';
 import { NuevoExamen } from './modelos/nuevo-examen';
 import { TipoExamen } from './modelos/tipo-examen';
@@ -70,7 +71,9 @@ interface MesaAsignadaApi {
   materia: string;
   /** Un `DateTime` de .NET, con hora y sin zona: "2026-11-20T09:00:00". */
   fecha: string;
-  /** "Ha sido asignado a la mesa de…": no se usa, el texto lo redacta el front. */
+  /** "Presidente", "Vocal 1" o "Vocal 2": su lugar en el tribunal (desde el 10/11/2026). */
+  rol?: string;
+  /** "Ha sido convocado como…": no se usa, el texto lo redacta el front. */
   mensaje: string;
 }
 
@@ -360,5 +363,11 @@ function aMesaAsignada(mesa: MesaAsignadaApi): MesaAsignada {
     throw new Error(`La fecha "${mesa.fecha}" no es válida.`);
   }
 
-  return { idExamen: mesa.idExamen, materia: mesa.materia, fecha };
+  const rol = aRolMesa(mesa.rol);
+  return {
+    idExamen: mesa.idExamen,
+    materia: mesa.materia,
+    fecha,
+    ...(rol === null ? {} : { rol }),
+  };
 }

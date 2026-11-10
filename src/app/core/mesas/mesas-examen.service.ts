@@ -2,6 +2,7 @@ import { Observable } from 'rxjs';
 import { OpcionesPedido } from '../comun/opciones-pedido';
 import { AlertaRechazo } from './modelos/alerta-rechazo';
 import { NuevaMesa } from './modelos/nueva-mesa';
+import { RolMesa } from './rol-mesa';
 
 export const MENSAJE_ERROR_REGISTRAR_MESA =
   'No pudimos crear la mesa de examen. Intentá de nuevo en un momento.';
@@ -19,19 +20,7 @@ export const MENSAJE_ERROR_OCULTAR_ALERTA =
   'No pudimos archivar el aviso. Intentá de nuevo en un momento.';
 
 export const MENSAJE_MESA_CREADA =
-  'Mesa creada. Convocamos a quien la preside y a los dos vocales: cada uno recibe el aviso para aceptarla o rechazarla.';
-
-/**
- * La mesa se creó, pero no se pudo convocar a todo el tribunal. No es un error
- * como los otros: la mesa ya existe, así que la pantalla vacía el formulario
- * para que no se cree dos veces, y muestra el mensaje.
- */
-export class MesaIncompleta extends Error {
-  constructor(mensaje: string) {
-    super(mensaje);
-    this.name = 'MesaIncompleta';
-  }
-}
+  'Mesa creada. A los tres docentes del tribunal les llega el aviso para aceptarla o rechazarla.';
 
 /**
  * Las mesas de examen (SCRUM-245, SCRUM-246 y SCRUM-247): Dirección o Secretaría
@@ -54,12 +43,12 @@ export class MesaIncompleta extends Error {
  */
 export abstract class MesasExamenService {
   /**
-   * Crea la mesa con quien la preside y después convoca a los dos vocales: los
-   * tres quedan con la asignación "Pendiente". Devuelve `MENSAJE_MESA_CREADA`.
+   * Crea la mesa con su tribunal en un solo pedido: presidente, vocal 1 y vocal 2
+   * quedan con la asignación "Pendiente" y su lugar (`rol`). La mesa aparece en
+   * el calendario cuando aceptan los tres. Devuelve el mensaje del backend.
    *
-   * Falla con el mensaje del backend cuando rechaza la mesa (el docente no
-   * existe, por ejemplo), o con `MENSAJE_ERROR_REGISTRAR_MESA`. Si la mesa se
-   * crea pero no se puede convocar a un vocal, falla con `MesaIncompleta`.
+   * Falla con el mensaje del backend cuando rechaza la mesa (un docente no
+   * existe o está dado de baja, por ejemplo), o con `MENSAJE_ERROR_REGISTRAR_MESA`.
    */
   abstract registrarMesa(mesa: NuevaMesa): Observable<string>;
 
@@ -73,7 +62,7 @@ export abstract class MesasExamenService {
    * Falla con el mensaje del backend (ese docente ya está asignado), o con
    * `MENSAJE_ERROR_ASIGNAR_DOCENTE`.
    */
-  abstract asignarDocente(idExamen: number, idDocente: number): Observable<string>;
+  abstract asignarDocente(idExamen: number, idDocente: number, rol?: RolMesa): Observable<string>;
 
   /**
    * El docente de la sesión acepta (`true`) o rechaza (`false`) la mesa a la que

@@ -11,7 +11,6 @@ import {
   MENSAJE_ERROR_REGISTRAR_MESA,
   MENSAJE_ERROR_RESPONDER_MESA,
   MENSAJE_MESA_CREADA,
-  MesaIncompleta,
 } from './mesas-examen.service';
 import { AlertaRechazo } from './modelos/alerta-rechazo';
 
@@ -52,7 +51,7 @@ describe('MesasExamenHttpService', () => {
       idVocal2: 10,
     };
 
-    it('manda `RegistrarMesaDto` con quien la preside y la fecha sin zona, y después convoca a los vocales', () => {
+    it('manda `RegistrarMesaDto` con el tribunal completo y la fecha sin zona, y devuelve el mensaje', () => {
       let mensaje = '';
       servicio.registrarMesa(mesa).subscribe((m) => (mensaje = m));
 
@@ -64,62 +63,22 @@ describe('MesasExamenHttpService', () => {
         idMateria: 4,
         idComision: 1,
         idTipoExamen: 3,
-        idDocente: 8,
+        idPresidente: 8,
+        idVocal1: 9,
+        idVocal2: 10,
       });
-      pedido.flush({ message: 'Mesa de examen registrada exitosamente.', idExamen: 31 });
+      pedido.flush({ message: 'Mesa de examen registrada. Se envió el aviso a los tres docentes del tribunal.', idExamen: 31 });
 
-      const vocal1 = backend.expectOne(RUTAS_API.asignarDocenteAMesa);
-      expect(vocal1.request.body).toEqual({ idExamen: 31, idDocente: 9 });
-      vocal1.flush({ message: 'Docente asignado correctamente.' });
+      expect(mensaje).toBe('Mesa de examen registrada. Se envió el aviso a los tres docentes del tribunal.');
+    });
 
-      const vocal2 = backend.expectOne(RUTAS_API.asignarDocenteAMesa);
-      expect(vocal2.request.body).toEqual({ idExamen: 31, idDocente: 10 });
-      vocal2.flush({ message: 'Docente asignado correctamente.' });
+    it('sin mensaje del backend confirma con el texto propio', () => {
+      let mensaje = '';
+      servicio.registrarMesa(mesa).subscribe((m) => (mensaje = m));
+
+      backend.expectOne(RUTAS_API.registrarMesaExamen).flush({ idExamen: 31 });
 
       expect(mensaje).toBe(MENSAJE_MESA_CREADA);
-    });
-
-    it('si no puede convocar al vocal 2, avisa que la mesa quedó creada', () => {
-      let fallo: unknown;
-      servicio.registrarMesa(mesa).subscribe({ error: (e: unknown) => (fallo = e) });
-
-      backend.expectOne(RUTAS_API.registrarMesaExamen).flush({ idExamen: 31 });
-      backend.expectOne(RUTAS_API.asignarDocenteAMesa).flush({ message: 'ok' });
-      backend
-        .expectOne(RUTAS_API.asignarDocenteAMesa)
-        .flush(
-          { message: 'El docente ya se encuentra asignado a esta mesa de examen.' },
-          { status: 400, statusText: 'Bad Request' },
-        );
-
-      expect(fallo).toBeInstanceOf(MesaIncompleta);
-      expect((fallo as Error).message).toBe(
-        'La mesa se creó, pero no pudimos convocar al vocal 2. ' +
-          'El docente ya se encuentra asignado a esta mesa de examen.',
-      );
-    });
-
-    it('si falla el vocal 1 no pide el 2, y no repite el "Intentá de nuevo" del genérico', () => {
-      let fallo: unknown;
-      servicio.registrarMesa(mesa).subscribe({ error: (e: unknown) => (fallo = e) });
-
-      backend.expectOne(RUTAS_API.registrarMesaExamen).flush({ idExamen: 31 });
-      backend
-        .expectOne(RUTAS_API.asignarDocenteAMesa)
-        .flush(null, { status: 500, statusText: 'Error' });
-
-      expect(fallo).toBeInstanceOf(MesaIncompleta);
-      expect((fallo as Error).message).toBe('La mesa se creó, pero no pudimos convocar a los vocales.');
-    });
-
-    it('sin el id de la mesa no puede convocar a los vocales, y lo avisa', () => {
-      let fallo: unknown;
-      servicio.registrarMesa(mesa).subscribe({ error: (e: unknown) => (fallo = e) });
-
-      backend.expectOne(RUTAS_API.registrarMesaExamen).flush({ message: 'Mesa registrada.' });
-
-      expect(fallo).toBeInstanceOf(MesaIncompleta);
-      expect((fallo as Error).message).toContain('no pudimos convocar a los vocales');
     });
 
     it('un 400 muestra el mensaje del backend', () => {
@@ -161,6 +120,14 @@ describe('MesasExamenHttpService', () => {
       pedido.flush({ message: 'Docente asignado correctamente. Se ha notificado al profesor.' });
 
       expect(mensaje).toBe('Docente asignado correctamente. Se ha notificado al profesor.');
+    });
+
+    it('con el lugar del tribunal lo manda en `rol`', () => {
+      servicio.asignarDocente(31, 9, 'Vocal 2').subscribe();
+
+      const pedido = backend.expectOne(RUTAS_API.asignarDocenteAMesa);
+      expect(pedido.request.body).toEqual({ idExamen: 31, idDocente: 9, rol: 'Vocal 2' });
+      pedido.flush({ message: 'Docente convocado como Vocal 2. Se le envió el aviso.' });
     });
 
     it('un docente ya asignado muestra el mensaje del backend', () => {
@@ -259,6 +226,25 @@ describe('MesasExamenHttpService', () => {
           fecha: new Date(2026, 10, 20, 9, 0),
         },
       ]);
+    });
+
+    it('lee el lugar del tribunal que quedó libre (backend desde el 10/11/2026)', () => {
+      let alertas: AlertaRechazo[] | undefined;
+      servicio.alertasDeRechazo().subscribe((valor) => (alertas = valor));
+
+      backend.expectOne(RUTAS_API.alertasRechazoMesas).flush([
+        {
+          idExamen: 31,
+          idDocente: 8,
+          docente: 'Ana Pérez',
+          materia: 'Redes',
+          fecha: '2026-11-20T09:00:00',
+          rol: 'Vocal 1',
+          mensaje: 'El Vocal 1 rechazó la mesa.',
+        },
+      ]);
+
+      expect(alertas?.[0].rol).toBe('Vocal 1');
     });
 
     it('en segundo plano el pedido lleva SIN_CARGA_GLOBAL', () => {

@@ -1,5 +1,6 @@
 import { formatDate } from '@angular/common';
 import { MesaAsignada } from '../examenes/modelos/mesa-asignada';
+import { rolEnOracion } from './rol-mesa';
 
 /**
  * Las mesas que el docente todavía puede responder: desde el inicio de HOY, de
@@ -38,6 +39,14 @@ export function cuandoEsLaMesa(fecha: Date, locale: string): string {
  */
 export function confirmacionDeRespuesta(mesa: MesaAsignada, acepta: boolean, locale: string): string {
   const cuando = cuandoEsLaMesa(mesa.fecha, locale);
+  if (mesa.rol !== undefined) {
+    // Con el tribunal (backend desde el 10/11/2026): la mesa entra al calendario
+    // cuando aceptan los tres.
+    const lugar = `ser ${rolEnOracion(mesa.rol)} de la mesa de ${mesa.materia} del ${cuando}`;
+    return acepta
+      ? `Aceptaste ${lugar}. Aparece en el calendario cuando acepta todo el tribunal.`
+      : `Rechazaste ${lugar}. Dirección y Secretaría reciben el aviso para convocar a otro docente.`;
+  }
   return acepta
     ? `Aceptaste la mesa de ${mesa.materia} del ${cuando}.`
     : `Rechazaste la mesa de ${mesa.materia} del ${cuando}. ` +

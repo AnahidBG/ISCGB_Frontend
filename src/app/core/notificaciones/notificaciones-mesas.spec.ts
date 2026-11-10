@@ -25,6 +25,12 @@ describe('notificacionesPorMesas', () => {
     ]);
   });
 
+  it('con el lugar del tribunal, el aviso dice como qué lo convocaron', () => {
+    expect(notificacionesPorMesas([mesa({ idExamen: 1, rol: 'Vocal 2' })], HOY)[0].titulo).toBe(
+      'Te convocaron como vocal 2 a la mesa de Redes',
+    );
+  });
+
   it('escribe el día y la hora con un formato fijo: domingo, ceros a la izquierda y 24 h', () => {
     const detalles = [new Date(2026, 10, 22, 18, 30), new Date(2027, 2, 5, 14, 5)].map(
       (fecha) => notificacionesPorMesas([mesa({ idExamen: 1, fecha })], HOY)[0].detalle,
@@ -92,6 +98,12 @@ describe('notificacionesPorMesasRechazadas (SCRUM-247)', () => {
         tono: 'rechazado',
       },
     ]);
+  });
+
+  it('con el lugar del tribunal, dice qué lugar quedó libre', () => {
+    expect(
+      notificacionesPorMesasRechazadas([alerta({ idExamen: 1, rol: 'Presidente' })])[0].titulo,
+    ).toBe('Ana Pérez (presidente) rechazó la mesa de Redes');
   });
 
   it('ordena de la más próxima a la más lejana y no descarta las que ya pasaron', () => {
