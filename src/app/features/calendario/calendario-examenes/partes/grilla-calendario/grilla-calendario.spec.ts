@@ -204,4 +204,51 @@ describe('GrillaCalendario', () => {
       (fixture.nativeElement as HTMLElement).querySelector('[data-destino="true"]'),
     ).toBeNull();
   });
+
+  describe('sin bloquear los días completos (el límite es por año y comisión)', () => {
+    it('un día completo que no pasó se elige como cualquier otro, sin avisar bloqueo', async () => {
+      const { fixture, elegidos, bloqueados } = await montar(true);
+      fixture.componentRef.setInput('bloquearCompletos', false);
+      await fixture.whenStable();
+
+      celda(fixture, '2026-10-20').click();
+      await teclear(fixture, '2026-10-20', 'Enter');
+
+      expect(elegidos.map((dia) => dia.fecha)).toEqual(['2026-10-20', '2026-10-20']);
+      expect(bloqueados).toEqual([]);
+      expect(celda(fixture, '2026-10-20').getAttribute('aria-disabled')).toBeNull();
+      // Se sigue leyendo como completo: el aviso del límite no se esconde.
+      expect(celda(fixture, '2026-10-20').getAttribute('aria-label')).toContain('completo');
+    });
+
+    it('uno completo que ya pasó sigue sin poder elegirse', async () => {
+      const { fixture, elegidos } = await montar(true);
+      fixture.componentRef.setInput('bloquearCompletos', false);
+      await fixture.whenStable();
+
+      celda(fixture, '2026-10-07').click();
+
+      expect(elegidos).toEqual([]);
+      expect(celda(fixture, '2026-10-07').getAttribute('aria-disabled')).toBe('true');
+    });
+
+    it('un parcial se puede soltar en un día completo que no pasó', async () => {
+      const { fixture, movidos } = await montar(true);
+      fixture.componentRef.setInput('bloquearCompletos', false);
+      fixture.componentRef.setInput('examenes', [PARCIAL_DEL_21]);
+      fixture.componentRef.setInput('arrastrables', new Set([PARCIAL_DEL_21.idExamen]));
+      await fixture.whenStable();
+
+      (fixture.nativeElement as HTMLElement)
+        .querySelector('[draggable="true"]')!
+        .dispatchEvent(new Event('dragstart', { bubbles: true }));
+      await fixture.whenStable();
+      celda(fixture, '2026-10-20').dispatchEvent(
+        new Event('drop', { bubbles: true, cancelable: true }),
+      );
+      await fixture.whenStable();
+
+      expect(movidos.map((movimiento) => movimiento.dia.fecha)).toEqual(['2026-10-20']);
+    });
+  });
 });

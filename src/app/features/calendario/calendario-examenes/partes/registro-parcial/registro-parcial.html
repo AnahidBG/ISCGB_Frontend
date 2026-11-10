@@ -27,6 +27,12 @@
       Todavía no hay tipos de examen cargados. Consultá en Secretaría.
     </p>
   } @else {
+    @if (diaCompleto()) {
+      <p role="note" class="mb-4 rounded-lg bg-pendiente/10 px-3 py-2.5 text-sm text-texto">
+        Ese día, algún año y comisión ya tiene el máximo de exámenes. Si es el de la materia
+        que elijas, el sistema no te va a dejar registrarlo y te lo va a decir al guardar.
+      </p>
+    }
     <app-formulario-parcial
       [dia]="dia()"
       [hoy]="hoy()"

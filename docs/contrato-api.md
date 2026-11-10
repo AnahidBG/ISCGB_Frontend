@@ -663,6 +663,9 @@ antes (`estadoDelDia`).
 grupo cuando lo hay. Lo usa "Mesas de examen" para revisar el día de la mesa. La
 grilla de `/calendario` lo pide sin grupo, así que para el Docente un día
 "completo" quiere decir que algún año y comisión llegó, no necesariamente el suyo.
+Por eso desde el 10/11/2026 el Docente lo puede elegir igual (y soltar ahí un
+parcial): el modal avisa, y si el grupo de la materia no tiene lugar el `400` de
+`registrar` o `modificar` lo dice.
 
 Una entrada de `diasOcupados` que no se puede leer (una fecha inválida, o una
 cantidad que no es un entero de 0 para arriba) se descarta y ese día queda

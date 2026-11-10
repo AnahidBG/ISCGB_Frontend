@@ -1,8 +1,6 @@
 import { registerLocaleData } from '@angular/common';
 import localeEsAr from '@angular/common/locales/es-AR';
-import { PERIODO_DEL_LIMITE } from './periodo-limite';
 import {
-  avisoDeFechaBloqueada,
   avisoDeParcialRegistrado,
   diaEnPalabras,
   errorDeDia,
@@ -82,14 +80,5 @@ describe('textos del día', () => {
     expect(avisoDeParcialRegistrado('2026-10-13', '09:00', 'es-AR')).toBe(
       'Parcial registrado para el martes 13 de octubre a las 09:00.',
     );
-  });
-
-  it('el aviso de fecha bloqueada nombra el día, toma el período y dice que el límite es por año y comisión', () => {
-    expect(avisoDeFechaBloqueada('2026-10-18', 'es-AR')).toEqual({
-      titulo: '18 de octubre · Fecha bloqueada',
-      texto:
-        `Algún año y comisión ya tiene ese día el máximo de parciales por ${PERIODO_DEL_LIMITE}. ` +
-        'Elegí otra fecha.',
-    });
   });
 });

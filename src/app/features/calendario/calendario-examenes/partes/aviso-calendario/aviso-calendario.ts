@@ -3,7 +3,7 @@ import { AvisoDelCalendario } from '../../../../../core/examenes/modelos/aviso-c
 
 /**
  * La franja roja suave de arriba de la grilla, con el borde izquierdo rojo: un
- * título ("18 de octubre · Fecha bloqueada") y debajo el motivo.
+ * título ("No se pudo mover el parcial") y debajo el motivo.
  *
  * Presentacional (Mediator, `docs/patrones-frontend.md` §2.5): no decide cuándo
  * aparece ni cuándo se va, solo dibuja el aviso que recibe. Es un `role="alert"`:

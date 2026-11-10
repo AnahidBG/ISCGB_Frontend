@@ -55,11 +55,7 @@ import {
 } from '../../../core/examenes/modificacion-examen';
 import { parcialesGestionables } from '../../../core/examenes/parciales-gestionables';
 import { tiposQueRegistraElDocente } from '../../../core/examenes/tipos-del-docente';
-import {
-  avisoDeFechaBloqueada,
-  avisoDeParcialRegistrado,
-  textoFechaYHora,
-} from '../../../core/examenes/registro-examen';
+import { avisoDeParcialRegistrado, textoFechaYHora } from '../../../core/examenes/registro-examen';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { SiRol } from '../../../shared/directivas/si-rol/si-rol';
 import { Boton } from '../../../shared/ui/boton/boton';
@@ -127,18 +123,20 @@ const EN_SEGUNDO_PLANO: OpcionesPedido = { enSegundoPlano: true };
  * y baja.
  *
  * Muestra un mes a la vez, con el estado de cada día: libre, con parciales o
- * completo. El límite de parciales es uno solo, para todo el instituto, y lo
- * define Secretaría. Lo ven el Docente, el Secretario y el Director (`GET
+ * completo. El límite de parciales lo define Secretaría y, desde el 10/11/2026, se
+ * cuenta por año y comisión: un día "completo" es uno en el que ALGÚN grupo llegó.
+ * Lo ven el Docente, el Secretario y el Director (`GET
  * /api/ConfiguracionCalendario/estado-mes`); Secretario y Director además tienen
  * el enlace para cambiar el límite.
  *
- * El Docente además puede elegir un día disponible para registrar un parcial: se
+ * El Docente además puede elegir un día que no pasó para registrar un parcial: se
  * abre el modal "Registrar parcial" (`POST /api/ConfiguracionCalendario/registrar`).
- * Si el backend lo rechaza (el día ya alcanzó el límite) su mensaje se muestra en
+ * También uno completo, porque la grilla no sabe de qué año y comisión va a ser el
+ * parcial; el modal avisa que el día está completo para algún grupo. El que bloquea
+ * es el backend (SCRUM-185): si el grupo no tiene lugar, su mensaje se muestra en
  * el formulario y el modal queda abierto para elegir otra fecha; si sale bien se
  * avisa y se vuelve a pedir el mes, sin tapar la grilla, para que el día cambie de
- * color. Un día completo, en cambio, no abre nada: explica arriba de la grilla que
- * la fecha está bloqueada (SCRUM-185).
+ * color.
  *
  * Con un parcial ya cargado (SCRUM-184) el Docente puede tocarlo, para abrir
  * "Modificar parcial" y cambiar su fecha y horario (`PUT .../modificar/{id}`) o
@@ -299,6 +297,16 @@ export class CalendarioExamenes {
   /** El día elegido para registrar un parcial, "2026-10-13", o `null` con el modal cerrado. */
   protected readonly diaARegistrar = signal<string | null>(null);
 
+  /**
+   * Si el día elegido figura completo (algún año y comisión llegó al límite). Se
+   * registra igual, y el modal lo avisa: si es el grupo de la materia, el backend
+   * lo rechaza al guardar.
+   */
+  protected readonly diaARegistrarCompleto = computed(() => {
+    const fecha = this.diaARegistrar();
+    return this.calendario()?.dias.some((dia) => dia.fecha === fecha && dia.estado === 'completo') ?? false;
+  });
+
   /** Cada `next` pide las materias del docente y los tipos de examen: abrir el modal y "Reintentar". */
   private readonly pedidoDeOpciones = new Subject<void>();
 
@@ -341,8 +349,8 @@ export class CalendarioExamenes {
   protected readonly aviso = signal<string | null>(null);
 
   /**
-   * El aviso rojo de arriba de la grilla: una fecha bloqueada, o un parcial que el
-   * backend no dejó mover. Se va al cambiar de mes y al abrir cualquier modal.
+   * El aviso rojo de arriba de la grilla: un examen que no se puede tocar, o uno que
+   * el backend no dejó mover. Se va al cambiar de mes y al abrir cualquier modal.
    */
   protected readonly alerta = signal<AvisoDelCalendario | null>(null);
 
@@ -381,12 +389,6 @@ export class CalendarioExamenes {
   private limpiarAvisos(): void {
     this.aviso.set(null);
     this.alerta.set(null);
-  }
-
-  /** Explica por qué no se puede elegir un día completo, sin abrir nada. */
-  protected mostrarFechaBloqueada(dia: DiaCalendario): void {
-    this.aviso.set(null);
-    this.alerta.set(avisoDeFechaBloqueada(dia.fecha, this.locale));
   }
 
   /** Abre el modal para registrar un parcial en el día elegido. */

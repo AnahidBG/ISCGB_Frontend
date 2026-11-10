@@ -93,7 +93,8 @@ const CLASES_BASE_CELDA =
  * se marcan con `aria-disabled`; siguen en el recorrido del teclado para que un
  * lector de pantalla pueda leer por qué. Un día completo que todavía no pasó,
  * al activarlo (clic, Enter o Espacio), emite `diaBloqueado`: quien usa la grilla
- * decide cómo explicarlo.
+ * decide cómo explicarlo. Con `bloquearCompletos` en `false`, en cambio, ese día
+ * se elige y recibe parciales como cualquier otro.
  *
  * Arrastrar: un parcial de `arrastrables` que no pasó se agarra y se suelta en
  * otro día que lo admita (de este mes, no pasado ni completo, y distinto del que
@@ -126,6 +127,15 @@ export class GrillaCalendario {
 
   /** Habilita elegir un día. Deshabilitada por defecto. */
   readonly seleccionable = input<boolean>(false);
+
+  /**
+   * Con `false`, un día completo que no pasó se elige y recibe parciales como
+   * cualquier otro, y nunca emite `diaBloqueado`. Es para cuando "completo" no
+   * dice si hay lugar para lo que se va a cargar: desde el 10/11/2026 el límite es
+   * por año y comisión, y una grilla sin grupo marca completo un día si ALGÚN
+   * grupo llegó. Ahí el que bloquea es el backend, al guardar. Por defecto, `true`.
+   */
+  readonly bloquearCompletos = input<boolean>(true);
 
   /** Los parciales que se pueden arrastrar a otro día, por su id. Por defecto, ninguno. */
   readonly arrastrables = input<ReadonlySet<number>>(new Set());
@@ -166,22 +176,26 @@ export class GrillaCalendario {
       examenesPorFecha.set(examen.fecha, [...(examenesPorFecha.get(examen.fecha) ?? []), examen]);
     }
     const permitido = this.seleccionable();
+    const bloquea = this.bloquearCompletos();
     const enElAire = this.examenArrastrado();
 
     return semanasDelMes(this.mes(), this.dias(), this.hoy()).map((semana) =>
-      semana.map((celda): CeldaVisible => ({
-        ...celda,
-        examenes: examenesPorFecha.get(celda.fecha) ?? [],
-        descripcion: descripcionDelDia(celda, this.locale),
-        puedeElegirse: permitido && celda.elegible && celda.dia !== null,
-        estaBloqueado:
-          permitido && celda.delMes && !celda.esPasado && celda.dia?.estado === 'completo',
-        esDestinoDelArrastre:
-          enElAire !== null &&
-          celda.elegible &&
-          celda.dia !== null &&
-          celda.fecha !== enElAire.fecha,
-      })),
+      semana.map((celda): CeldaVisible => {
+        const vigente = celda.delMes && !celda.esPasado;
+        const completo = celda.dia?.estado === 'completo';
+        // Sin bloquear los completos, alcanza con que sea del mes y no haya pasado.
+        const elegible = celda.elegible || (!bloquea && vigente);
+        return {
+          ...celda,
+          elegible,
+          examenes: examenesPorFecha.get(celda.fecha) ?? [],
+          descripcion: descripcionDelDia(celda, this.locale),
+          puedeElegirse: permitido && elegible && celda.dia !== null,
+          estaBloqueado: permitido && bloquea && vigente && completo,
+          esDestinoDelArrastre:
+            enElAire !== null && elegible && celda.dia !== null && celda.fecha !== enElAire.fecha,
+        };
+      }),
     );
   });
 

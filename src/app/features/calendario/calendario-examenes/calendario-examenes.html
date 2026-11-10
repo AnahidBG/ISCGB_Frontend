@@ -61,8 +61,10 @@
 
         Elegir un día, modificar un parcial y arrastrarlo son cosas del Docente: para
         los demás el calendario es de consulta. El Docente solo arrastra los parciales
-        que cargó él (`gestionables`, por `puedeModificar`). Un día completo no se elige, pero explica por
-        qué (el aviso de arriba), y lo mismo un parcial que no es suyo.
+        que cargó él (`gestionables`, por `puedeModificar`); con uno que no es suyo
+        explica por qué en el aviso de arriba. Un día completo se elige igual
+        (`bloquearCompletos` en false): el límite es por año y comisión, y la grilla
+        no sabe de qué grupo va a ser el parcial. El que bloquea es el backend.
       -->
       <div class="mt-4">
         @if (alerta(); as alertaActual) {
@@ -78,17 +80,18 @@
           [hoy]="hoy"
           [plantillaCelda]="plantillaDia"
           [seleccionable]="puedeRegistrar()"
+          [bloquearCompletos]="false"
           [arrastrables]="gestionables()"
           (diaSeleccionado)="abrirRegistro($event)"
-          (diaBloqueado)="mostrarFechaBloqueada($event)"
           (examenSeleccionado)="abrirModificacion($event)"
           (examenMovido)="moverParcial($event)"
         />
       </div>
 
       <p *siRol="rolesQueRegistran" class="mt-4 text-sm text-texto-suave">
-        Elegí un día disponible para registrar un parcial. Los días completos y las fechas pasadas
-        no admiten registros.
+        Elegí un día para registrar un parcial. Las fechas pasadas no admiten registros. En un
+        día completo, algún año y comisión ya llegó al límite: si es el de tu materia, el
+        sistema te lo dice al guardar.
       </p>
 
       <p class="mt-4 flex flex-wrap items-start gap-x-2 gap-y-1 text-sm text-texto-suave">
@@ -108,6 +111,7 @@
   @if (diaARegistrar(); as dia) {
     <app-registro-parcial
       [dia]="dia"
+      [diaCompleto]="diaARegistrarCompleto()"
       [hoy]="hoy"
       [carga]="opciones()"
       [guardando]="registrando()"
