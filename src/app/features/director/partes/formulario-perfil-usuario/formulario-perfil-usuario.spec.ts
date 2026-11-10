@@ -115,6 +115,21 @@ describe('FormularioPerfilUsuario', () => {
     expect(tildados.sort()).toEqual(['Director', 'Docente']);
   });
 
+  it('en edición deja corregir el DNI y lo emite limpio', async () => {
+    fixture = TestBed.createComponent(FormularioPerfilUsuario);
+    componente = fixture.componentInstance;
+    fixture.componentRef.setInput('modo', 'edicion');
+    fixture.componentRef.setInput('perfilInicial', { dni: '12345678' });
+    fixture.componentInstance.guardar.subscribe((perfil) => (emitido = perfil));
+    await fixture.whenStable();
+
+    expect(componente.formulario.controls.dni.enabled).toBe(true);
+    completar({ dni: '12.345.679', cuil: '27-12345679-9' });
+    componente.enviar();
+
+    expect(emitido?.dni).toBe('12345679');
+  });
+
   it('exige los campos que el backend marca como obligatorios', () => {
     completar({ afiliacionEmergencia: '   ' });
     componente.enviar();
