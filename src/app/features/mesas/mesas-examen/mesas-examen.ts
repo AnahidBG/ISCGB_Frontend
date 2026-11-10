@@ -8,7 +8,7 @@ import {
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
-import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
+import { catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { CalendarioExamenesService } from '../../../core/examenes/calendario-examenes.service';
@@ -19,6 +19,7 @@ import {
   DocenteDisponible,
 } from '../../../core/materias/modelos/asignacion-materia';
 import { MateriaDisponible } from '../../../core/materias/modelos/materia-disponible';
+import { MENSAJE_SIN_REVISAR_LUGAR, motivoSinLugar } from '../../../core/mesas/lugar-en-el-dia';
 import { MesasExamenService } from '../../../core/mesas/mesas-examen.service';
 import { AlertaRechazo } from '../../../core/mesas/modelos/alerta-rechazo';
 import { NuevaMesa } from '../../../core/mesas/modelos/nueva-mesa';
@@ -50,6 +51,8 @@ interface OpcionesDeMesa {
  *
  *   · Nueva mesa: `POST /api/ConfiguracionCalendario/registrar-mesa`. El docente
  *     elegido queda convocado en "Pendiente" y lo ve en "Mis mesas de examen".
+ *     Antes se revisa el día con `calendarioDelMes`: la mesa cuenta para el límite
+ *     de parciales y el backend no lo valida al registrarla (`motivoSinLugar`).
  *   · Mesas rechazadas: `GET /api/Configuracion/alertas-rechazos`. "Ya lo vi"
  *     archiva la alerta (`PUT .../ocultar-alerta-rechazo`). También se puede
  *     convocar a otro docente (`POST .../asignar-docente`), y entonces la alerta
@@ -225,9 +228,20 @@ export class MesasExamen {
     this.errorMesa.set(null);
     this.exitoMesa.set(null);
 
-    this.mesas
-      .registrarMesa(mesa)
-      .pipe(takeUntilDestroyed(this.destruccion))
+    // `dia` es "2026-11-20": de ahí salen el año y el mes que hay que revisar.
+    const [anio, mes] = mesa.dia.split('-').map(Number);
+    this.examenes
+      .calendarioDelMes(anio, mes)
+      .pipe(
+        catchError(() => throwError(() => new Error(MENSAJE_SIN_REVISAR_LUGAR))),
+        switchMap((calendario) => {
+          const motivo = motivoSinLugar(calendario, mesa.dia);
+          return motivo === null
+            ? this.mesas.registrarMesa(mesa)
+            : throwError(() => new Error(motivo));
+        }),
+        takeUntilDestroyed(this.destruccion),
+      )
       .subscribe({
         next: (mensaje) => {
           this.creando.set(false);

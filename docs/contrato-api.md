@@ -950,6 +950,14 @@ igual los pendientes del instituto.
 - No hay un endpoint que liste las mesas creadas ni sus asignaciones: después de
   crearla, la mesa solo se ve en el calendario del mes en curso (`del-mes`) y en la
   campana del docente.
+- `registrar-mesa` no valida el límite de parciales del día, aunque la mesa se
+  guarda en `Examenes` y `estado-mes` la cuenta. Así, un día con 2 parciales y
+  límite 2 podía quedar con 3. Las mesas cuentan para el límite (lo definió Milena el
+  10/11/2026): el front revisa el día con `calendarioDelMes` antes de mandarla
+  (`motivoSinLugar`, `core/mesas/lugar-en-el-dia.ts`) y no la arma en un día
+  completo. Si no puede revisarlo, no la manda. Falta que el back llame a
+  `SuperaLimiteDiarioAsync` en `registrar-mesa`. `PUT limite-parciales` tampoco
+  revisa lo cargado: si se baja el límite, los días que ya lo superaban quedan así.
 
 ## Suplencias docentes
 
