@@ -619,7 +619,6 @@ No está roto: no existe.
   Secretaría desde "Editar usuario", que sí los precarga.
 - Cambiar la contraseña escribiendo la actual: el backend no tiene ese endpoint.
   "Configuración" manda el enlace de recupero al correo de la sesión.
-- El mail al rechazar un documento o un justificativo.
 - Del calendario de parciales, con el backend real, abrir, reprogramar, eliminar o
   arrastrar un parcial ya cargado: las pantallas están, pero el backend no tiene un
   listado de exámenes, así que la grilla no muestra la materia de cada parcial ni

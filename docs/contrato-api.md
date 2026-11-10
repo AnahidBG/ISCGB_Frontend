@@ -448,7 +448,9 @@ nunca ausente. Responde `200`:
 ```
 
 Los errores son `404` si el legajo no existe y `400` si el auditor no es válido,
-los dos con `{ "message": "…" }`. El endpoint no manda mails.
+los dos con `{ "message": "…" }`. Desde el 10/11/2026 (`bd7b565`), al pasar a
+`Rechazado` le manda un mail a la persona con el `comentario` como motivo
+(`EnviarAvisoRechazoAsync`). Si el mail falla, la auditoría queda guardada igual.
 
 Cómo lo usa la pantalla:
 

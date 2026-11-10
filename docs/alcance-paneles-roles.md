@@ -49,9 +49,9 @@ Hoy la revisión está en el legajo de cada persona
 (`/legajo/usuario/:idUsuario`), al que se llega desde Control de Legajos. Usa
 `PUT /api/Legajos/auditar/{idLegajo}` y exige un motivo para rechazar.
 
-**El backend todavía no manda el mail de rechazo** que pide la regla de negocio
-4: `AuditarLegajo` guarda el estado, el comentario, el auditor y la casilla
-"Presentado físicamente", y nada más.
+Desde el 10/11/2026 (`bd7b565`) el backend manda el mail de rechazo que pide la
+regla de negocio 4: al pasar un documento a "Rechazado", `AuditarLegajo` le avisa a
+la persona con el comentario como motivo. Lo mismo hace `AuditarJustificativo`.
 
 ## `LegajoService`
 
