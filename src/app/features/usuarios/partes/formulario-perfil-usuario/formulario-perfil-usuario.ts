@@ -15,7 +15,12 @@ import { map } from 'rxjs';
 import { esDniValido, formatearDni, normalizarDni } from '../../../../core/auth/dni';
 import { ROLES, Rol } from '../../../../core/auth/modelos/rol';
 import { aFechaSola, desdeFechaSola } from '../../../../core/comun/fechas';
-import { cuilCoincideConDni, esCuilValido, normalizarCuil } from '../../../../core/usuarios/cuil';
+import {
+  cuilCoincideConDni,
+  esCuilValido,
+  formatearCuil,
+  normalizarCuil,
+} from '../../../../core/usuarios/cuil';
 import {
   OPCIONES_DE_GENERO,
   OPCIONES_DE_ROL,
@@ -23,8 +28,11 @@ import {
 } from '../../../../core/usuarios/modelos/perfil-usuario';
 import { Provincia } from '../../../../core/usuarios/modelos/provincia';
 
-/** Los datos con los que arranca el formulario en "Editar Usuario". Todo es opcional. */
-export type PerfilInicial = Partial<PerfilUsuario>;
+/**
+ * Los datos con los que arranca el formulario en "Editar Usuario". Todo es
+ * opcional. `legajo` es el N.° guardado: solo se muestra, no se edita.
+ */
+export type PerfilInicial = Partial<PerfilUsuario> & { legajo?: string | null };
 
 /** Campos de texto obligatorios, con el mensaje que se muestra si quedan vacíos. */
 const OBLIGATORIOS = {
@@ -168,8 +176,17 @@ export class FormularioPerfilUsuario implements OnInit {
     { initialValue: [] as Rol[] },
   );
 
-  /** "Que se autocomplete legajo con DNI": el backend usa el DNI como N.° de legajo. */
+  /**
+   * "Que se autocomplete legajo con DNI": el backend usa el DNI como N.° de
+   * legajo. En edición, si el legajo guardado no es el DNI es porque se cargó a
+   * mano, y el backend lo respeta aunque se corrija el DNI: se muestra ese.
+   */
   protected readonly numeroLegajo = computed(() => {
+    const inicial = this.perfilInicial();
+    const guardado = inicial?.legajo?.trim() ?? '';
+    if (guardado !== '' && guardado !== normalizarDni(inicial?.dni ?? '')) {
+      return guardado;
+    }
     const dni = normalizarDni(this.dniEscrito());
     return dni === '' ? '—' : formatearDni(dni);
   });
@@ -202,7 +219,7 @@ export class FormularioPerfilUsuario implements OnInit {
         nombre: inicial.nombre ?? '',
         apellido: inicial.apellido ?? '',
         dni: inicial.dni ? formatearDni(inicial.dni) : '',
-        cuil: inicial.cuil ?? '',
+        cuil: inicial.cuil ? formatearCuil(inicial.cuil) : '',
         email: inicial.email ?? '',
         genero: inicial.genero ?? '',
         direccion: inicial.direccion ?? '',

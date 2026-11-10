@@ -31,6 +31,11 @@ const DETALLE: UsuarioDetalle = {
   idProvincia: 55,
   fechaNac: null,
   estadoUsuario: true,
+  cuil: '27123456780',
+  genero: 'Femenino',
+  afiliacionEmergencia: 'APROSS',
+  esDirectorSuplente: true,
+  legajo: null,
   // Dos roles a propósito: el backend reemplaza TODOS los roles al modificar,
   // así que el formulario tiene que arrancar con los dos tildados.
   roles: ['Director', 'Docente'],
@@ -107,6 +112,22 @@ describe('EditarUsuario', () => {
     ).componentInstance as FormularioPerfilUsuario;
 
     expect(hijo.perfilInicial()?.roles).toEqual(['Director', 'Docente']);
+  });
+
+  it('le pasa al formulario el CUIL, el género, la afiliación y la suplencia guardados', async () => {
+    const fixture = TestBed.createComponent(EditarUsuario);
+    await fixture.whenStable();
+    const hijo = fixture.debugElement.query(
+      (d) => d.componentInstance instanceof FormularioPerfilUsuario,
+    ).componentInstance as FormularioPerfilUsuario;
+
+    expect(hijo.perfilInicial()).toMatchObject({
+      cuil: '27123456780',
+      genero: 'Femenino',
+      afiliacionEmergencia: 'APROSS',
+      esDirectorSuplente: true,
+      legajo: null,
+    });
   });
 
   it('si el pedido de provincias falla, el formulario lo muestra y sigue visible', async () => {

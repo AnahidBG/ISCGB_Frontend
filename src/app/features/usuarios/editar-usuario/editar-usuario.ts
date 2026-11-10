@@ -34,11 +34,9 @@ import {
  *     quedan (criterio de aceptación, SCRUM-135/143).
  *   · Reactivación: `PUT /api/UsuariosAdmin/alta/{id}`.
  *
- * ⚠️ Limitación del backend que la pantalla dice en voz alta en vez de
- * esconder (ver docs/contrato-api.md): el GET no devuelve CUIL, género,
- * afiliación ni si es director suplente, así que esos campos se vuelven a
- * cargar al editar. El login sí los devuelve, pero solo de quien inicia
- * sesión, no de la persona que se está editando.
+ * Desde el 10/11/2026 el GET devuelve también CUIL, género, afiliación, si es
+ * director suplente y el N.° de legajo: la precarga es completa y no hay que
+ * volver a cargar nada al editar.
  */
 @Component({
   selector: 'app-editar-usuario',
@@ -108,6 +106,11 @@ export class EditarUsuario {
       fechaNacimiento: usuario.fechaNac,
       contactoEmergencia: usuario.contactoEmergencia ?? '',
       telefonoEmergencia: usuario.telefonoEmergencia ?? '',
+      cuil: usuario.cuil ?? '',
+      genero: usuario.genero ?? '',
+      afiliacionEmergencia: usuario.afiliacionEmergencia ?? '',
+      esDirectorSuplente: usuario.esDirectorSuplente,
+      legajo: usuario.legajo,
       roles: [...usuario.roles],
     };
   });

@@ -37,6 +37,11 @@ const DETALLE: UsuarioDetalle = {
   idProvincia: 31,
   fechaNac: null,
   estadoUsuario: true,
+  cuil: null,
+  genero: null,
+  afiliacionEmergencia: null,
+  esDirectorSuplente: false,
+  legajo: null,
   roles: ['Director', 'Docente'],
   rolesConId: [
     { idRol: 1, nombreRol: 'Director' },

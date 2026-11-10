@@ -249,10 +249,21 @@ Responde `200` con `{ "message": "Datos del perfil actualizados correctamente." 
 - Por acá no se cambian el nombre, el apellido, el DNI ni los roles. Eso lo hace
   Dirección con `PUT /api/UsuariosAdmin/modificar/{id}`.
 
-`genero` y `afiliacionEmergencia` se pueden escribir pero no leer:
-`GET /api/Usuarios/{id}` no los devuelve (el login sí, pero solo los de quien
-inicia sesión, y `Sesion` no los guarda). Por eso la pantalla no los ofrece: no
-podría precargarlos, y pedirlos de cero obligaría a reescribir lo que ya estaba.
+`genero` y `afiliacionEmergencia` no están en la pantalla. Hasta el 10/11/2026
+`GET /api/Usuarios/{id}` no los devolvía y no se podían precargar. Desde
+`d60d93c` sí los devuelve (ver abajo), así que "Mi perfil" ya podría ofrecerlos:
+queda para cuando se pida.
+
+### `GET /api/Usuarios/{id}`
+
+Lo puede pedir la propia persona, o Director y Secretario. Desde el 10/11/2026
+(`d60d93c`) trae, además de los datos de contacto y los roles, lo que carga el
+alta: `cuil`, `genero`, `afiliacionEmergencia`, `esDirectorSuplente` (si alguno
+de sus perfiles de docente lo es) y `legajo` (del perfil de alumno, `null` si no
+es alumno). "Editar usuario" los precarga, así que ya no hay que volver a
+cargar el CUIL ni volver a tildar la suplencia. El legajo se muestra tal cual si
+no es el DNI: es un número cargado a mano y el backend lo respeta aunque se
+corrija el DNI.
 
 Cómo lo usa el frontend, en `/perfil`:
 

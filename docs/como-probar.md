@@ -613,9 +613,10 @@ mirando si la llamada salió y qué contestó.
 No está roto: no existe.
 
 - El buscador de la barra superior está deshabilitado.
-- Editar en "Mi perfil" el género y la afiliación de emergencia: el backend los
-  acepta, pero `GET /api/Usuarios/{id}` no los devuelve, y la pantalla no los
-  ofrece. El nombre, el apellido, el DNI y los roles los cambia Dirección.
+- Editar en "Mi perfil" el género y la afiliación de emergencia: desde el
+  10/11/2026 `GET /api/Usuarios/{id}` los devuelve, pero la pantalla todavía no
+  los ofrece. El nombre, el apellido, el DNI y los roles los cambia Dirección o
+  Secretaría desde "Editar usuario", que sí los precarga.
 - Cambiar la contraseña escribiendo la actual: el backend no tiene ese endpoint.
   "Configuración" manda el enlace de recupero al correo de la sesión.
 - El mail al rechazar un documento o un justificativo.

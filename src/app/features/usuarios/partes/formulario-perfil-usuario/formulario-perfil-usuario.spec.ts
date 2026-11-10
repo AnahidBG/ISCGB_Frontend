@@ -143,6 +143,56 @@ describe('FormularioPerfilUsuario', () => {
     expect(componente.numeroLegajo()).toBe('12.345.678');
   });
 
+  describe('en edición, con lo que devuelve el GET desde el 10/11/2026', () => {
+    async function editar(perfilInicial: Record<string, unknown>): Promise<void> {
+      fixture = TestBed.createComponent(FormularioPerfilUsuario);
+      componente = fixture.componentInstance;
+      fixture.componentRef.setInput('modo', 'edicion');
+      fixture.componentRef.setInput('perfilInicial', perfilInicial);
+      await fixture.whenStable();
+    }
+
+    it('precarga el CUIL con guiones, el género, la afiliación y si es suplente', async () => {
+      await editar({
+        dni: '12345678',
+        cuil: '27123456780',
+        genero: 'Femenino',
+        afiliacionEmergencia: 'APROSS',
+        roles: ['Docente'],
+        esDirectorSuplente: true,
+      });
+
+      expect(componente.formulario.getRawValue()).toMatchObject({
+        cuil: '27-12345678-0',
+        genero: 'Femenino',
+        afiliacionEmergencia: 'APROSS',
+        esDirectorSuplente: true,
+      });
+    });
+
+    it('ya no pide volver a cargar el CUIL ni avisa que no sabe si es suplente', async () => {
+      await editar({ dni: '12345678', cuil: '27123456780', roles: ['Docente'] });
+
+      const texto = (fixture.nativeElement as HTMLElement).textContent;
+      expect(texto).not.toContain('todavía no devuelve el CUIL');
+      expect(texto).not.toContain('todavía no informa si esta persona ya es suplente');
+    });
+
+    it('un legajo cargado a mano (distinto del DNI) se muestra tal cual', async () => {
+      await editar({ dni: '12345678', legajo: '1203', roles: ['Alumno'] });
+      componente.formulario.controls.dni.setValue('12.345.679');
+
+      expect(componente.numeroLegajo()).toBe('1203');
+    });
+
+    it('un legajo que es el DNI sigue al DNI si se corrige, como hace el backend', async () => {
+      await editar({ dni: '12345678', legajo: '12345678', roles: ['Alumno'] });
+      componente.formulario.controls.dni.setValue('12.345.679');
+
+      expect(componente.numeroLegajo()).toBe('12.345.679');
+    });
+  });
+
   describe('desplegable de provincias', () => {
     function select(): HTMLSelectElement {
       return (fixture.nativeElement as HTMLElement).querySelector('#idProvincia')!;
