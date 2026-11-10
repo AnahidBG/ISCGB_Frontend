@@ -7,6 +7,7 @@ import { Observable, of, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Sesion } from '../../../core/auth/modelos/sesion';
 import { CalendarioExamenesService } from '../../../core/examenes/calendario-examenes.service';
+import { CalendarioDelMes } from '../../../core/examenes/modelos/calendario-del-mes';
 import { MateriasService } from '../../../core/materias/materias.service';
 import { MesasExamenService } from '../../../core/mesas/mesas-examen.service';
 import { AlertaRechazo } from '../../../core/mesas/modelos/alerta-rechazo';
@@ -53,6 +54,7 @@ async function montar(
   opciones: {
     sesion?: Sesion;
     materias?: () => Observable<{ idMateria: number; nombre: string }[]>;
+    calendario?: () => Observable<CalendarioDelMes>;
     registrar?: () => Observable<string>;
     alertas?: () => Observable<AlertaRechazo[]>;
     asignar?: () => Observable<string>;
@@ -85,7 +87,10 @@ async function montar(
       },
       {
         provide: CalendarioExamenesService,
-        useValue: { tiposDeExamen: () => of([{ idTipoExamen: 3, nombre: 'Final' }]) },
+        useValue: {
+          tiposDeExamen: () => of([{ idTipoExamen: 3, nombre: 'Final' }]),
+          calendarioDelMes: opciones.calendario ?? (() => of({ limite: 2, dias: [] })),
+        },
       },
       {
         provide: MesasExamenService,
@@ -167,6 +172,21 @@ describe('MesasExamen (SCRUM-245)', () => {
       'Mesa de examen registrada exitosamente.',
     );
     expect(raiz(fixture).querySelector<HTMLSelectElement>('#mesa-docente')?.value).toBe('');
+  });
+
+  it('no manda la mesa si ese día ya está completo, y explica por qué', async () => {
+    const dia = diaFuturo();
+    const fixture = await montar({
+      calendario: () =>
+        of({ limite: 2, dias: [{ fecha: dia, cantidad: 2, limite: 2, estado: 'completo' }] }),
+    });
+
+    await crearMesa(fixture, dia);
+
+    expect(creadas).toEqual([]);
+    expect(raiz(fixture).querySelector('form [role="alert"]')?.textContent).toContain(
+      'Ese día ya alcanzó el límite de 2 parciales por día',
+    );
   });
 
   it('si el backend la rechaza muestra su mensaje', async () => {
