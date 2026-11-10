@@ -135,6 +135,12 @@ export function enlacesPorSesion(
       url: '/alumno/reconocimiento-saberes',
       icono: 'legajo',
     });
+    // Los contratos que le cargaron, como el de la beca (SCRUM-227).
+    enlaces.push({
+      etiqueta: 'Mis contratos',
+      url: '/alumno/contratos',
+      icono: 'documento',
+    });
   }
 
   // Sin `else`, a propósito: una sesión Director+Docente (el caso real de

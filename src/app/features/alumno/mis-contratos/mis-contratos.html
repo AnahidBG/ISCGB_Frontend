@@ -1,0 +1,40 @@
+<app-estructura-panel
+  [enlaces]="enlaces()"
+  encabezado="titulo"
+  tituloPagina="Mis contratos"
+  subtitulo="Los contratos firmados que te cargó el instituto, como el de la beca."
+  [nombreUsuario]="sesion()?.nombreCompleto ?? ''"
+  [fotoUsuario]="sesion()?.fotoUrl ?? null"
+  [emailUsuario]="sesion()?.email ?? ''"
+  [rolPrincipal]="rolPrincipal()"
+  [notificaciones]="notificaciones()"
+  [notificacionesDetalle]="notificacionesDetalle()"
+  (cerrarSesion)="cerrarSesion()"
+>
+  @let estado = carga();
+  @if (estado.fase === 'cargando') {
+    <app-pantalla-carga tamano="md" mensaje="Cargando tus contratos…" />
+  } @else if (estado.fase === 'error') {
+    <p role="alert" class="rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+      {{ estado.mensaje }}
+      <button type="button" class="ml-2 underline" (click)="reintentar()">Reintentar</button>
+    </p>
+  } @else {
+    <section
+      data-seccion="contratos"
+      class="max-w-3xl rounded-2xl border border-borde bg-superficie p-5 sm:p-6"
+    >
+      @if (errorDescarga(); as mensaje) {
+        <p role="alert" class="mb-4 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
+          {{ mensaje }}
+        </p>
+      }
+      <app-lista-contratos
+        [contratos]="estado.contratos"
+        [descargando]="descargando()"
+        textoVacio="Todavía no te cargaron ningún contrato."
+        (descargar)="descargar($event)"
+      />
+    </section>
+  }
+</app-estructura-panel>

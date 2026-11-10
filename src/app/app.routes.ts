@@ -353,6 +353,16 @@ export const routes: Routes = [
       ),
   },
   {
+    // Los contratos que le cargaron al alumno, para verlos y descargarlos
+    // (SCRUM-227). `GET /api/ContratosAlumno/mis-contratos`. Solo Alumno: Dirección
+    // y Secretaría los ven por alumno en /secretario/contratos.
+    path: 'alumno/contratos',
+    title: 'Mis contratos · ISCGB',
+    canActivate: [authGuard, roleGuard(ROLES.alumno)],
+    loadComponent: () =>
+      import('./features/alumno/mis-contratos/mis-contratos').then((m) => m.MisContratos),
+  },
+  {
     // Calendario de exámenes parciales — Sprint 3 (SCRUM-183): consulta del
     // estado de cada día del mes. `GET /api/ConfiguracionCalendario/estado-mes`.
     // Docente, Secretario y Director: el Alumno no lo ve. El backend no exige

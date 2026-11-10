@@ -95,6 +95,17 @@ describe('enlacesPorSesion', () => {
     }
   });
 
+  it('"Mis contratos" es solo del Alumno, después de "Reconocimiento de saberes" (SCRUM-227)', () => {
+    const delAlumno = urlsDe('Alumno');
+
+    expect(delAlumno.indexOf('/alumno/contratos')).toBe(
+      delAlumno.indexOf('/alumno/reconocimiento-saberes') + 1,
+    );
+    for (const rol of ['Docente', 'Secretario', 'Director'] as const) {
+      expect(urlsDe(rol)).not.toContain('/alumno/contratos');
+    }
+  });
+
   it('"Libro de temas" es solo del Docente, después de "Mis mesas de examen" (SCRUM-232)', () => {
     const delDocente = urlsDe('Docente');
 
