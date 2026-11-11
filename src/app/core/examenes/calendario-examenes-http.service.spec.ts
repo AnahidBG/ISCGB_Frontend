@@ -64,6 +64,18 @@ describe('CalendarioExamenesHttpService (SCRUM-183)', () => {
     pedido.flush({ limiteDiario: 2, diasOcupados: [] });
   });
 
+  it('con solo la materia pide el mes de todo ese año, sin `idComision` (las mesas de examen)', () => {
+    servicio.calendarioDelMes(2026, 10, undefined, { idMateria: 4 }).subscribe();
+
+    const pedido = backend.expectOne(
+      (p) =>
+        p.url.includes('/api/ConfiguracionCalendario/estado-mes') &&
+        p.urlWithParams.includes('anio=2026&mes=10&idMateria=4'),
+    );
+    expect(pedido.request.urlWithParams).not.toContain('idComision');
+    pedido.flush({ limiteDiario: 2, diasOcupados: [] });
+  });
+
   it('adapta la respuesta: todos los días del mes, con su estado, sin correr la fecha un día', () => {
     let calendario: CalendarioDelMes | undefined;
     servicio.calendarioDelMes(2026, 10).subscribe((valor) => (calendario = valor));

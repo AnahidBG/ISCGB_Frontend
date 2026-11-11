@@ -56,8 +56,8 @@ const TRIBUNAL = [
 
 /** Las mesas que se mandaron a crear, en orden. */
 let creadas: NuevaMesa[];
-/** El año y comisión con que se revisó el lugar del día, en orden. */
-let gruposRevisados: ({ idMateria: number; idComision: number } | undefined)[];
+/** El grupo con que se revisó el lugar del día, en orden. */
+let gruposRevisados: ({ idMateria: number; idComision?: number } | undefined)[];
 /** Lo que se pidió sobre las alertas, en orden. */
 let llamadas: string[];
 
@@ -66,7 +66,6 @@ async function montar(
     sesion?: Sesion;
     materias?: () => Observable<{ idMateria: number; nombre: string }[]>;
     docentes?: () => Observable<{ idDocente: number; nombreCompleto: string }[]>;
-    tipos?: () => Observable<{ idTipoExamen: number; nombre: string }[]>;
     calendario?: () => Observable<CalendarioDelMes>;
     registrar?: () => Observable<string>;
     alertas?: () => Observable<AlertaRechazo[]>;
@@ -92,22 +91,22 @@ async function montar(
         useValue: { total: signal(0), detalle: signal<NotificacionPanel[]>([]), refrescar: () => {} },
       },
       {
+        // Sin `listarComisiones`: la mesa es para todas las comisiones, no se piden.
         provide: MateriasService,
         useValue: {
           listarDisponibles: opciones.materias ?? (() => of([{ idMateria: 4, nombre: 'Redes' }])),
-          listarComisiones: () => of([{ idComision: 1, nombre: 'Comisión A' }]),
           listarDocentes: opciones.docentes ?? (() => of(TRIBUNAL)),
         },
       },
       {
+        // Sin `tiposDeExamen`: el backend registra la mesa siempre como "Mesa de Examen".
         provide: CalendarioExamenesService,
         useValue: {
-          tiposDeExamen: opciones.tipos ?? (() => of([{ idTipoExamen: 3, nombre: 'Final' }])),
           calendarioDelMes: (
             anio: number,
             mes: number,
             _opciones: unknown,
-            grupo?: { idMateria: number; idComision: number },
+            grupo?: { idMateria: number; idComision?: number },
           ) => {
             gruposRevisados.push(grupo);
             return (opciones.calendario ?? (() => of({ limite: 2, dias: [] })))();
@@ -157,7 +156,6 @@ async function crearMesa(fixture: ComponentFixture<MesasExamen>, dia = diaFuturo
     'mesa-dia': dia,
     'mesa-horario': '09:00',
     'mesa-materia': '4',
-    'mesa-comision': '1',
     'mesa-docente': '8',
     'mesa-vocal-1': '9',
     'mesa-vocal-2': '10',
@@ -172,38 +170,22 @@ async function crearMesa(fixture: ComponentFixture<MesasExamen>, dia = diaFuturo
 }
 
 describe('MesasExamen (SCRUM-245)', () => {
-  it('arma los desplegables con las materias, comisiones, tipos y docentes', async () => {
+  it('arma los desplegables con las materias y los docentes', async () => {
     const fixture = await montar();
 
     const texto = (id: string) => raiz(fixture).querySelector(`#${id}`)?.textContent ?? '';
     expect(texto('mesa-materia')).toContain('Redes');
-    expect(texto('mesa-comision')).toContain('Comisión A');
-    expect(raiz(fixture).querySelector<HTMLInputElement>('#mesa-tipo')?.value).toBe(
-      'Mesa de examen',
-    );
     expect(texto('mesa-docente')).toContain('Ana Pérez');
   });
 
-  it('no se puede elegir el tipo: la mesa siempre se registra como "Mesa de examen"', async () => {
-    const fixture = await montar({
-      tipos: () =>
-        of([
-          { idTipoExamen: 1, nombre: 'Parcial' },
-          { idTipoExamen: 3, nombre: 'Final' },
-          { idTipoExamen: 4, nombre: 'Coloquio' },
-        ]),
-    });
+  it('no pide comisión ni tipo: la mesa es de la materia para todas sus comisiones', async () => {
+    const fixture = await montar();
 
-    const tipo = raiz(fixture).querySelector<HTMLInputElement>('#mesa-tipo');
-    expect(tipo?.value).toBe('Mesa de examen');
-    expect(tipo?.readOnly).toBe(true);
-    expect(raiz(fixture).querySelector('#mesa-tipo select')).toBeNull();
-  });
-
-  it('si la base no tiene el tipo "Final", avisa que no se pueden crear mesas', async () => {
-    const fixture = await montar({ tipos: () => of([{ idTipoExamen: 4, nombre: 'Coloquio' }]) });
-
-    expect(raiz(fixture).textContent).toContain('No está cargado el tipo de examen "Final"');
+    expect(raiz(fixture).querySelector('#mesa-comision')).toBeNull();
+    expect(raiz(fixture).querySelector('#mesa-tipo')).toBeNull();
+    expect(raiz(fixture).querySelector<HTMLButtonElement>('form button[type="submit"]')?.disabled).toBe(
+      false,
+    );
   });
 
   it('crea la mesa, confirma con el mensaje del backend y deja el formulario vacío', async () => {
@@ -217,8 +199,6 @@ describe('MesasExamen (SCRUM-245)', () => {
         dia,
         horario: '09:00',
         idMateria: 4,
-        idComision: 1,
-        idTipoExamen: 3,
         idDocente: 8,
         idVocal1: 9,
         idVocal2: 10,
@@ -241,16 +221,16 @@ describe('MesasExamen (SCRUM-245)', () => {
 
     expect(creadas).toEqual([]);
     expect(raiz(fixture).querySelector('form [role="alert"]')?.textContent).toContain(
-      'Ese año y comisión ya tienen ese día el límite de 2 parciales por día',
+      'Alguna comisión de ese año ya tiene ese día el límite de 2 parciales por día',
     );
   });
 
-  it('revisa el lugar del día para el año y la comisión de la mesa, no para todo el instituto', async () => {
+  it('revisa el lugar del día para todo el año de la materia (solo `idMateria`), no para todo el instituto', async () => {
     const fixture = await montar();
 
     await crearMesa(fixture);
 
-    expect(gruposRevisados).toEqual([{ idMateria: 4, idComision: 1 }]);
+    expect(gruposRevisados).toEqual([{ idMateria: 4 }]);
   });
 
   it('si el backend la rechaza muestra su mensaje', async () => {

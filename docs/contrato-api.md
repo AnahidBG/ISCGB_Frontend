@@ -788,12 +788,12 @@ No verifica la comisión.
 Devuelve `200` con `[{ "idTipoExamen": 1, "nombre": "Parcial" }]`. Pide sesión y no
 recibe parámetros. Devuelve TODOS los de la base: en algunas hay "Recupetario" (así,
 con el error de tipeo), "Parcial Integrador Final" o "Coloquio", y desde el
-10/11/2026 el seeder agrega "Parcial", "Recuperatorio" y "Final" si faltan. En
-"Mesas de examen" el tipo no se elige: una mesa es un final, así que se manda el id
-de "Final" y se muestra como "Mesa de examen" (`tipoDeLaMesa`, `core/mesas/`; si
-algún día la base tiene un tipo "Mesa de examen", se usa ese). En el modal del
-Docente se muestran solo los tres que acepta `registrar`. Si la respuesta no se puede leer (no es una
-lista, o un tipo no trae id o nombre) es un error.
+10/11/2026 el seeder agrega "Parcial", "Recuperatorio", "Final" y "Mesa de Examen"
+si faltan. En el modal del Docente se muestran solo los tres que acepta `registrar`;
+"Mesa de Examen" se excluye porque ese endpoint lo rechaza con `400`. En "Mesas de
+examen" no se elige ni se manda el tipo: el backend fija "Mesa de Examen". Si la
+respuesta no se puede leer (no es una lista, o un tipo no trae id o nombre) es un
+error.
 
 ### `GET /api/ConfiguracionCalendario/mis-materias-docente`
 
@@ -963,19 +963,20 @@ un dominio aparte del calendario.
 Con `[Authorize(Roles = "Director,Secretario")]`. Recibe `RegistrarMesaDto`:
 
 ```json
-{ "fecha": "2026-11-20T09:00:00", "idMateria": 4, "idComision": 1, "idTipoExamen": 3, "idDocente": 8 }
+{ "fecha": "2026-11-20T09:00:00", "idMateria": 4, "idPresidente": 8, "idVocal1": 9, "idVocal2": 10 }
 ```
 
-Crea el examen y la asignación del docente en `Pendiente`, en una transacción.
-Responde `200` con `{ message, idExamen }`, `400` con
-`{ "message": "El docente seleccionado no existe." }` y `500` con un mensaje si
-falla el guardado. No valida la fecha. Desde el 10/11/2026 respeta el límite del
-día para el año y la comisión de la mesa (`400` "No se puede registrar la mesa: ese
-año y comisión ya tienen el máximo…") y le manda un mail al docente convocado.
+La mesa es para todas las comisiones de la materia y siempre queda con tipo "Mesa
+de Examen"; `idComision` e `idTipoExamen` son anulables e ignorados por el backend.
+Crea el examen y las asignaciones del presidente y los dos vocales en `Pendiente`,
+en una transacción. Responde `200` con `{ message, idExamen }`, `400` si algún
+docente no existe, el tribunal repite a alguien o el día ya no tiene lugar, y `500`
+si falla el guardado. No valida la fecha. La mesa ocupa un lugar en cada comisión
+de su año.
 
 El frontend lo usa en "Mesas de examen" (`/mesas-examen`, Director y Secretario).
-`erroresDeNuevaMesa` (`core/mesas/nueva-mesa.ts`) exige todo, fecha desde hoy y
-horario de 24 h, y `textoFechaYHora` arma la fecha sin zona.
+`erroresDeNuevaMesa` (`core/mesas/nueva-mesa.ts`) exige la materia y el tribunal,
+fecha desde hoy y horario de 24 h, y `textoFechaYHora` arma la fecha sin zona.
 
 ### `POST /api/ConfiguracionCalendario/asignar-docente`
 
@@ -1034,11 +1035,10 @@ igual los pendientes del instituto.
   ya lo superaban quedan así.
 
 Resuelto el 10/11/2026 (`bd7b565`): `registrar-mesa` valida el límite del día (por
-año y comisión) y `registrar-mesa` y `asignar-docente` mandan el mail al docente.
-Las mesas cuentan para el límite (lo definió Milena el 10/11/2026): el front igual
-revisa el día con `calendarioDelMes` para el año y la comisión de la mesa antes de
-mandarla (`motivoSinLugar`, `core/mesas/lugar-en-el-dia.ts`), y si no puede
-revisarlo no la manda.
+año y comisión) y avisa por mail al tribunal. Las mesas cuentan para el límite: el
+front revisa el día con `calendarioDelMes` enviando solo `idMateria` para consultar
+el año entero antes de mandarla (`motivoSinLugar`, `core/mesas/lugar-en-el-dia.ts`),
+y si no puede revisarlo no la manda.
 
 ## Suplencias docentes
 

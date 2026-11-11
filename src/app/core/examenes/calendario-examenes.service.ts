@@ -70,8 +70,10 @@ export abstract class CalendarioExamenesService {
    *
    * El límite es por año y comisión (desde el 10/11/2026). Con `grupo`, cada día
    * cuenta solo los exámenes de ese año y comisión, y "completo" quiere decir que
-   * ESE grupo no tiene lugar. Sin `grupo`, un día es "completo" si algún grupo
-   * llegó al límite, y la cantidad es la de todo el día.
+   * ESE grupo no tiene lugar. Con un `grupo` sin comisión (una mesa de examen, que
+   * es del año entero), "completo" quiere decir que alguna comisión de ese año no
+   * tiene lugar. Sin `grupo`, un día es "completo" si algún grupo llegó al
+   * límite, y la cantidad es la de todo el día.
    *
    * `opciones.enSegundoPlano`: la pantalla ya muestra su propia espera, que no
    * tape todo con el velo global.

@@ -11,11 +11,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { aFechaSola } from '../../../../../core/comun/fechas';
-import { TipoExamen } from '../../../../../core/examenes/modelos/tipo-examen';
-import {
-  ComisionDisponible,
-  DocenteDisponible,
-} from '../../../../../core/materias/modelos/asignacion-materia';
+import { DocenteDisponible } from '../../../../../core/materias/modelos/asignacion-materia';
 import { MateriaDisponible } from '../../../../../core/materias/modelos/materia-disponible';
 import { NuevaMesa } from '../../../../../core/mesas/modelos/nueva-mesa';
 import {
@@ -33,8 +29,10 @@ import {
 
 /**
  * El alta de una mesa de examen con su tribunal (SCRUM-245): fecha, horario,
- * materia, comisión, el docente que la preside y los vocales 1 y 2. El tipo es
- * siempre "Mesa de examen" y su id se asigna automáticamente.
+ * materia, el docente que la preside y los vocales 1 y 2.
+ *
+ * No pide comisión ni tipo: desde el 10/11/2026 la mesa es de la materia para
+ * todas sus comisiones, y el backend la guarda siempre como "Mesa de Examen".
  *
  * PRESENTACIONAL: recibe las listas del contenedor (`MesasExamen`) y emite la
  * mesa ya validada (`erroresDeNuevaMesa`). Los errores de cada campo aparecen
@@ -50,8 +48,6 @@ export class FormularioMesa {
   private readonly fb = inject(FormBuilder);
 
   readonly materias = input<readonly MateriaDisponible[]>([]);
-  readonly comisiones = input<readonly ComisionDisponible[]>([]);
-  readonly tipos = input<readonly TipoExamen[]>([]);
   readonly docentes = input<readonly DocenteDisponible[]>([]);
 
   /** El día de hoy: la fecha no puede ser anterior. */
@@ -78,8 +74,6 @@ export class FormularioMesa {
     dia: '',
     horario: '',
     idMateria: '',
-    idComision: '',
-    idTipoExamen: '',
     idDocente: '',
     idVocal1: '',
     idVocal2: '',
@@ -87,23 +81,12 @@ export class FormularioMesa {
 
   constructor() {
     effect(() => {
-      const idTipoExamen = this.idTipoFijo();
-      untracked(() => this.formulario.controls.idTipoExamen.setValue(idTipoExamen));
-    });
-
-    effect(() => {
       this.reinicio();
       untracked(() => {
         this.formulario.reset();
-        this.formulario.controls.idTipoExamen.setValue(this.idTipoFijo());
         this.seIntentoGuardar.set(false);
       });
     });
-  }
-
-  private idTipoFijo(): string {
-    const tipos = this.tipos();
-    return tipos.length === 1 ? String(tipos[0].idTipoExamen) : '';
   }
 
   private errores(): ErroresNuevaMesa {

@@ -57,7 +57,7 @@
     </section>
 
     @if (cargando()) {
-      <app-pantalla-carga tamano="md" mensaje="Cargando materias, comisiones y docentes…" />
+      <app-pantalla-carga tamano="md" mensaje="Cargando materias y docentes…" />
     } @else if (opciones(); as listas) {
       <section class="rounded-2xl border border-borde bg-superficie p-5 sm:p-6">
         <h2 class="text-base font-semibold text-texto">Nueva mesa de examen</h2>
@@ -65,16 +65,8 @@
           Quien la preside y los dos vocales reciben el aviso, y cada uno confirma si puede estar.
           Si alguno la rechaza, aparece en "Mesas rechazadas".
         </p>
-        @if (listas.tipos.length === 0) {
-          <p role="alert" class="mb-5 rounded-xl bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
-            No está cargado el tipo de examen "Final" en la base, así que todavía no se pueden
-            crear mesas. Hay que pedírselo a backend.
-          </p>
-        }
         <app-formulario-mesa
           [materias]="listas.materias"
-          [comisiones]="listas.comisiones"
-          [tipos]="listas.tipos"
           [docentes]="listas.docentes"
           [hoy]="hoy"
           [enviando]="creando()"
