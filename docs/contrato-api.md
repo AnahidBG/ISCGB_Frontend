@@ -847,8 +847,9 @@ Responde `200` con `{ "message": "La fecha del examen se ha modificado correctam
 - Pide sesión. Desde el 10/11/2026 (`bd7b565`) un Docente solo puede con el Parcial,
   Recuperatorio o Final que cargó él (`PuedeGestionarExamenAsync`); con otro
   responde `403` sin body. Director y Secretario pueden con todos. No valida que la
-  fecha no sea pasada. El frontend cuida la fecha (`errorDeDia`) y solo deja abrir y
-  arrastrar los que `del-mes` marca con `puedeModificar` (`parcialesGestionables`).
+  fecha no sea pasada. El frontend cuida la fecha (`errorDeDia`) y deja abrir el
+  modal y arrastrar cualquier examen que `del-mes` marque con `puedeModificar`
+  (`parcialesGestionables`), tanto para Director y Secretario como para el Docente.
   Con otro explica por qué no, sin llamar al backend. Antes cruzaba `del-mes` con
   `mis-materias-docente` por el nombre de la materia, que era la regla de `523d05b`.
 - Cómo lo usa el frontend: `CalendarioExamenesService.reprogramarExamen(idExamen,

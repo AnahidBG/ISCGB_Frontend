@@ -23,7 +23,7 @@ import { CalendarioExamenes } from './calendario-examenes';
 
 registerLocaleData(localeEsAr);
 
-function sesionDe(rol: 'Docente' | 'Secretario'): Sesion {
+function sesionDe(rol: 'Docente' | 'Secretario' | 'Director'): Sesion {
   return {
     token: 't',
     idUsuario: 3,
@@ -649,6 +649,38 @@ describe('CalendarioExamenes (SCRUM-183)', () => {
         () => of([PARCIAL_DEL_13]),
         servicio,
       );
+
+    it.each(['Secretario', 'Director'] as const)(
+      '%s puede abrir el modal cuando el backend marca el examen como modificable',
+      async (rol) => {
+        const fixture = await montarConUnParcial();
+        sesion.set(sesionDe(rol));
+        await fixture.whenStable();
+
+        await abrirParcial(fixture, '2026-10-13');
+
+        expect(dialogo(fixture)?.querySelector('h2')?.textContent).toContain('Modificar parcial');
+      },
+    );
+
+    it.each(['Secretario', 'Director'] as const)(
+      '%s no abre el modal cuando el backend no habilita el examen',
+      async (rol) => {
+        const fixture = await montar(
+          () => of(OCTUBRE),
+          () => of([{ ...PARCIAL_DEL_13, puedeModificar: false }]),
+        );
+        sesion.set(sesionDe(rol));
+        await fixture.whenStable();
+
+        await abrirParcial(fixture, '2026-10-13');
+
+        expect(dialogo(fixture)).toBeNull();
+        expect(raiz(fixture).querySelector('app-aviso-calendario')?.textContent).toContain(
+          'El backend no habilitó la modificación de este examen.',
+        );
+      },
+    );
 
     it('al tocar un parcial abre "Modificar parcial" con su resumen y fecha y hora precargadas, y Guardar espera un cambio', async () => {
       const fixture = await montarConUnParcial();
