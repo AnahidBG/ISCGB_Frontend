@@ -12,8 +12,6 @@ const COMPLETOS: ValoresNuevaMesa = {
   dia: '2026-11-20',
   horario: '09:00',
   idMateria: '4',
-  idComision: '1',
-  idTipoExamen: '3',
   idDocente: '8',
   idVocal1: '9',
   idVocal2: '10',
@@ -24,7 +22,7 @@ describe('erroresDeNuevaMesa', () => {
     expect(erroresDeNuevaMesa(COMPLETOS, HOY)).toEqual({});
   });
 
-  it('cada campo vacío tiene su mensaje', () => {
+  it('cada campo vacío tiene su mensaje, y no se piden ni comisión ni tipo', () => {
     const vacios = Object.fromEntries(
       Object.keys(COMPLETOS).map((campo) => [campo, '']),
     ) as ValoresNuevaMesa;
@@ -33,8 +31,6 @@ describe('erroresDeNuevaMesa', () => {
       dia: 'Elegí la fecha de la mesa.',
       horario: 'Ingresá el horario de la mesa.',
       idMateria: 'Elegí la materia.',
-      idComision: 'Elegí la comisión.',
-      idTipoExamen: 'Elegí el tipo de examen.',
       idDocente: 'Elegí el docente que la preside.',
       idVocal1: 'Elegí el vocal 1.',
       idVocal2: 'Elegí el vocal 2.',
@@ -74,8 +70,6 @@ describe('aNuevaMesa', () => {
       dia: '2026-11-20',
       horario: '09:00',
       idMateria: 4,
-      idComision: 1,
-      idTipoExamen: 3,
       idDocente: 8,
       idVocal1: 9,
       idVocal2: 10,

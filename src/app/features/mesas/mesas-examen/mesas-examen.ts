@@ -12,18 +12,13 @@ import { catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import { CalendarioExamenesService } from '../../../core/examenes/calendario-examenes.service';
-import { TipoExamen } from '../../../core/examenes/modelos/tipo-examen';
 import { MateriasService } from '../../../core/materias/materias.service';
-import {
-  ComisionDisponible,
-  DocenteDisponible,
-} from '../../../core/materias/modelos/asignacion-materia';
+import { DocenteDisponible } from '../../../core/materias/modelos/asignacion-materia';
 import { MateriaDisponible } from '../../../core/materias/modelos/materia-disponible';
 import { MENSAJE_SIN_REVISAR_LUGAR, motivoSinLugar } from '../../../core/mesas/lugar-en-el-dia';
 import { MesasExamenService } from '../../../core/mesas/mesas-examen.service';
 import { AlertaRechazo } from '../../../core/mesas/modelos/alerta-rechazo';
 import { NuevaMesa } from '../../../core/mesas/modelos/nueva-mesa';
-import { tipoDeLaMesa } from '../../../core/mesas/tipo-de-la-mesa';
 import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
@@ -35,33 +30,29 @@ import {
 } from './partes/alertas-rechazo/alertas-rechazo';
 import { FormularioMesa } from './partes/formulario-mesa/formulario-mesa';
 
-/** Las listas que necesita el alta de una mesa. */
+/**
+ * Las listas que necesita el alta de una mesa. Sin comisiones ni tipos: la mesa
+ * es para todas las comisiones de la materia y siempre "Mesa de Examen".
+ */
 interface OpcionesDeMesa {
   materias: MateriaDisponible[];
-  comisiones: ComisionDisponible[];
-  /**
-   * Una mesa siempre es un final: no se elige el tipo. Trae solo "Mesa de
-   * examen" (`tipoDeLaMesa`, con el id de "Final"), o nada si la base no lo
-   * tiene, y entonces no se pueden crear mesas.
-   */
-  tipos: TipoExamen[];
   docentes: DocenteDisponible[];
 }
 
 /**
  * Mesas de examen — Dirección y Secretaría (SCRUM-245 y SCRUM-247).
  *
- * CONTENEDOR: trae las materias, las comisiones y los docentes
- * (`MateriasService`) y los tipos de examen (`CalendarioExamenesService`), y
- * habla con `MesasExamenService`:
+ * CONTENEDOR: trae las materias y los docentes (`MateriasService`), revisa el
+ * día con `CalendarioExamenesService` y habla con `MesasExamenService`:
  *
  *   · Nueva mesa: `POST /api/ConfiguracionCalendario/registrar-mesa` con el
  *     tribunal completo (presidente, vocal 1 y vocal 2). Los tres quedan
  *     convocados en "Pendiente" y la ven en "Mis mesas de examen"; la mesa
  *     aparece en el calendario cuando aceptan los tres.
- *     Antes se revisa el día con `calendarioDelMes` para el año y la comisión de
- *     la mesa: cuenta para el límite, que es por grupo (`motivoSinLugar`). Desde el
- *     10/11/2026 el backend también lo valida y responde 400 con su motivo.
+ *     Antes se revisa el día con `calendarioDelMes` para todo el año de la
+ *     materia (solo `idMateria`): la mesa ocupa un lugar en cada comisión, así
+ *     que entra si ninguna llegó al límite (`motivoSinLugar`). El backend
+ *     también lo valida y responde 400 con su motivo.
  *   · Mesas rechazadas: `GET /api/Configuracion/alertas-rechazos`. "Ya lo vi"
  *     archiva la alerta (`PUT .../ocultar-alerta-rechazo`). También se puede
  *     convocar a otro docente (`POST .../asignar-docente`), y entonces la alerta
@@ -212,16 +203,7 @@ export class MesasExamen {
     this.errorCarga.set(null);
     forkJoin({
       materias: this.materiasService.listarDisponibles(),
-      comisiones: this.materiasService.listarComisiones(),
       docentes: this.materiasService.listarDocentes(),
-      // De todos los tipos de la base (Parcial, Coloquio…) queda solo el de las
-      // mesas: Dirección y Secretaría no eligen el tipo, una mesa es un final.
-      tipos: this.examenes.tiposDeExamen().pipe(
-        map((tipos) => {
-          const tipo = tipoDeLaMesa(tipos);
-          return tipo === null ? [] : [tipo];
-        }),
-      ),
     })
       .pipe(takeUntilDestroyed(this.destruccion))
       .subscribe({
@@ -244,14 +226,11 @@ export class MesasExamen {
     this.errorMesa.set(null);
     this.exitoMesa.set(null);
 
-    // `dia` es "2026-11-20": de ahí salen el año y el mes que hay que revisar. El
-    // límite es por año y comisión: se revisa el grupo de la mesa.
+    // `dia` es "2026-11-20": de ahí salen el año y el mes que hay que revisar. La
+    // mesa es de todo el año de la materia: se revisa sin comisión.
     const [anio, mes] = mesa.dia.split('-').map(Number);
     this.examenes
-      .calendarioDelMes(anio, mes, undefined, {
-        idMateria: mesa.idMateria,
-        idComision: mesa.idComision,
-      })
+      .calendarioDelMes(anio, mes, undefined, { idMateria: mesa.idMateria })
       .pipe(
         catchError(() => throwError(() => new Error(MENSAJE_SIN_REVISAR_LUGAR))),
         switchMap((calendario) => {

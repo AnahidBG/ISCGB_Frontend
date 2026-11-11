@@ -10,10 +10,10 @@ describe('motivoSinLugar', () => {
     ],
   };
 
-  it('un día completo no tiene lugar: dice el límite, que es por año y comisión, y que las mesas cuentan', () => {
+  it('un día completo no tiene lugar: la mesa es de todo el año, así que alcanza con una comisión llena', () => {
     expect(motivoSinLugar(calendario, '2026-11-20')).toBe(
-      'Ese año y comisión ya tienen ese día el límite de 2 parciales por día, y las mesas de ' +
-        'examen también cuentan. Elegí otra fecha.',
+      'Alguna comisión de ese año ya tiene ese día el límite de 2 parciales por día, y la mesa ' +
+        'ocupa un lugar en todas. Elegí otra fecha.',
     );
   });
 

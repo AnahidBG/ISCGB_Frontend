@@ -23,13 +23,14 @@ import { RolMesa, aRolMesa } from './rol-mesa';
  * El cuerpo del `POST .../registrar-mesa` (`RegistrarMesaDto`): la mesa con su
  * tribunal completo. El backend guarda el lugar de cada docente (`rol`:
  * "Presidente", "Vocal 1", "Vocal 2") y les avisa a los tres.
+ *
+ * Sin `idComision` ni `idTipoExamen`: el DTO todavía los acepta, pero los ignora
+ * (la mesa es para todas las comisiones y siempre "Mesa de Examen").
  */
 interface RegistrarMesaApi {
   /** Un `DateTime` de .NET, con hora y sin zona: "2026-11-20T09:00:00". */
   fecha: string;
   idMateria: number;
-  idComision: number;
-  idTipoExamen: number;
   idPresidente: number;
   idVocal1: number;
   idVocal2: number;
@@ -67,8 +68,6 @@ export class MesasExamenHttpService extends MesasExamenService {
     const cuerpo: RegistrarMesaApi = {
       fecha: textoFechaYHora(mesa.dia, mesa.horario),
       idMateria: mesa.idMateria,
-      idComision: mesa.idComision,
-      idTipoExamen: mesa.idTipoExamen,
       idPresidente: mesa.idDocente,
       idVocal1: mesa.idVocal1,
       idVocal2: mesa.idVocal2,

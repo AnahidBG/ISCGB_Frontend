@@ -261,15 +261,18 @@ export const RUTAS_API = {
    *
    * Desde el 10/11/2026 el límite es por año y comisión. Con `grupo` (la materia
    * y la comisión que se están por cargar) cada día cuenta solo ese grupo; sin
-   * él, un día figura lleno si algún grupo llegó al límite.
+   * él, un día figura lleno si algún grupo llegó al límite. Con la materia sola
+   * (una mesa de examen, que es para todas las comisiones) cuentan los exámenes
+   * de ese año, y el día figura lleno si alguna de sus comisiones llegó al límite.
    */
   estadoMesCalendario: (
     anio: number,
     mes: number,
-    grupo?: { idMateria: number; idComision: number },
+    grupo?: { idMateria: number; idComision?: number },
   ) =>
     `${URL_BASE_API}/api/ConfiguracionCalendario/estado-mes?anio=${anio}&mes=${mes}` +
-    (grupo ? `&idMateria=${grupo.idMateria}&idComision=${grupo.idComision}` : ''),
+    (grupo ? `&idMateria=${grupo.idMateria}` : '') +
+    (grupo?.idComision === undefined ? '' : `&idComision=${grupo.idComision}`),
 
   /**
    * Cambia el límite de exámenes por día. Body: `{ nuevoLimite }`. Solo se
@@ -340,10 +343,14 @@ export const RUTAS_API = {
   // Viven en tres controladores: `ConfiguracionCalendario`, `Docente` y `Configuracion`.
 
   /**
-   * Crea la mesa y convoca a su docente, en una transacción. Body: `{ fecha,
-   * idMateria, idComision, idTipoExamen, idDocente }`, con `fecha` como `DateTime`
-   * sin zona y con hora. Solo `Director` y `Secretario`. Responde `200 { message,
-   * idExamen }`, `400 { message }` si el docente no existe y `500 { message }`.
+   * Crea la mesa y convoca a su tribunal, en una transacción. Body: `{ fecha,
+   * idMateria, idPresidente, idVocal1, idVocal2 }`, con `fecha` como `DateTime`
+   * sin zona y con hora. Desde el 10/11/2026 la mesa es para todas las comisiones
+   * de la materia y siempre del tipo "Mesa de Examen": el backend ignora
+   * `idComision` e `idTipoExamen`, así que no se mandan. Solo `Director` y
+   * `Secretario`. Responde `200 { message, idExamen }`, `400 { message }` (un
+   * docente no existe, el tribunal repite a alguien, el día no tiene lugar) y
+   * `500 { message }`.
    */
   registrarMesaExamen: `${URL_BASE_API}/api/ConfiguracionCalendario/registrar-mesa`,
 

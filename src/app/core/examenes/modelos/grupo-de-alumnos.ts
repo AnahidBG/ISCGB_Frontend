@@ -5,5 +5,10 @@
  */
 export interface GrupoDeAlumnos {
   idMateria: number;
-  idComision: number;
+  /**
+   * Sin comisión, el grupo es el año entero: es el caso de las mesas de examen,
+   * que son para todas las comisiones de la materia. Entonces un día figura
+   * lleno si ALGUNA comisión de ese año llegó al límite.
+   */
+  idComision?: number;
 }

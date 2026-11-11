@@ -14,6 +14,15 @@ describe('tiposQueRegistraElDocente', () => {
     expect(tiposQueRegistraElDocente(tipos).map((tipo) => tipo.idTipoExamen)).toEqual([1, 5, 6]);
   });
 
+  it('no ofrece "Mesa de Examen": es de Dirección y Secretaría, y `registrar` lo rechaza con 400', () => {
+    const tipos = [
+      { idTipoExamen: 1, nombre: 'Parcial' },
+      { idTipoExamen: 7, nombre: 'Mesa de Examen' },
+    ];
+
+    expect(tiposQueRegistraElDocente(tipos).map((tipo) => tipo.nombre)).toEqual(['Parcial']);
+  });
+
   it('sin ninguno de esos tres queda vacío', () => {
     expect(tiposQueRegistraElDocente([{ idTipoExamen: 4, nombre: 'Coloquio' }])).toEqual([]);
   });

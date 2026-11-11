@@ -44,14 +44,12 @@ describe('MesasExamenHttpService', () => {
       dia: '2026-11-20',
       horario: '09:00',
       idMateria: 4,
-      idComision: 1,
-      idTipoExamen: 3,
       idDocente: 8,
       idVocal1: 9,
       idVocal2: 10,
     };
 
-    it('manda `RegistrarMesaDto` con el tribunal completo y la fecha sin zona, y devuelve el mensaje', () => {
+    it('manda `RegistrarMesaDto` con el tribunal completo y la fecha sin zona, sin comisión ni tipo, y devuelve el mensaje', () => {
       let mensaje = '';
       servicio.registrarMesa(mesa).subscribe((m) => (mensaje = m));
 
@@ -61,8 +59,6 @@ describe('MesasExamenHttpService', () => {
       expect(pedido.request.body).toEqual({
         fecha: '2026-11-20T09:00:00',
         idMateria: 4,
-        idComision: 1,
-        idTipoExamen: 3,
         idPresidente: 8,
         idVocal1: 9,
         idVocal2: 10,

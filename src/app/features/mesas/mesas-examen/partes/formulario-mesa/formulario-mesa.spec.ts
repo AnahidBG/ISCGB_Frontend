@@ -14,8 +14,6 @@ describe('FormularioMesa (SCRUM-245)', () => {
     fixture.componentInstance.guardar.subscribe((mesa) => (emitida = mesa));
     fixture.componentRef.setInput('hoy', new Date(2026, 9, 10));
     fixture.componentRef.setInput('materias', [{ idMateria: 4, nombre: 'Redes' }]);
-    fixture.componentRef.setInput('comisiones', [{ idComision: 1, nombre: 'Comisión A' }]);
-    fixture.componentRef.setInput('tipos', [{ idTipoExamen: 3, nombre: 'Final' }]);
     fixture.componentRef.setInput('docentes', [
       { idDocente: 8, nombreCompleto: 'Ana Pérez' },
       { idDocente: 9, nombreCompleto: 'Bruno Gómez' },
@@ -43,7 +41,6 @@ describe('FormularioMesa (SCRUM-245)', () => {
     completar('mesa-dia', '2026-11-20');
     completar('mesa-horario', '09:00');
     completar('mesa-materia', '4');
-    completar('mesa-comision', '1');
     completar('mesa-docente', '8');
     completar('mesa-vocal-1', '9');
     completar('mesa-vocal-2', '10');
@@ -57,8 +54,6 @@ describe('FormularioMesa (SCRUM-245)', () => {
       dia: '2026-11-20',
       horario: '09:00',
       idMateria: 4,
-      idComision: 1,
-      idTipoExamen: 3,
       idDocente: 8,
       idVocal1: 9,
       idVocal2: 10,
@@ -74,12 +69,12 @@ describe('FormularioMesa (SCRUM-245)', () => {
     expect(raiz().textContent).toContain(MENSAJE_DOCENTE_REPETIDO);
   });
 
-  it('muestra el tipo fijo y no ofrece un selector', () => {
-    const tipo = raiz().querySelector<HTMLInputElement>('#mesa-tipo');
-
-    expect(tipo?.value).toBe('Mesa de examen');
-    expect(tipo?.readOnly).toBe(true);
-    expect(raiz().querySelector('#mesa-tipo select')).toBeNull();
+  it('no pide comisión ni tipo: la mesa es de la materia para todas sus comisiones', () => {
+    expect(raiz().querySelector('#mesa-comision')).toBeNull();
+    expect(raiz().querySelector('#mesa-tipo')).toBeNull();
+    expect(raiz().querySelector('#ayuda-mesa-materia')?.textContent).toContain(
+      'todas las comisiones',
+    );
   });
 
   it('vacío no emite y muestra qué falta', async () => {

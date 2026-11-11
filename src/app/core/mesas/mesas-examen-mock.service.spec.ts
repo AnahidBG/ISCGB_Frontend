@@ -46,8 +46,6 @@ describe('MesasExamenMockService', () => {
       dia: '2026-11-20',
       horario: '09:00',
       idMateria: 1,
-      idComision: 1,
-      idTipoExamen: 1,
       idDocente: 99,
       idVocal1: 1,
       idVocal2: 2,
