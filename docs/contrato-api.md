@@ -186,8 +186,9 @@ en `http://localhost:4200`.
 
 ## Gestión de usuarios
 
-El Director crea, edita, desactiva y reactiva cuentas. Desactivar es una baja
-lógica: la fila queda con `estadoUsuario = false` y sigue en el listado.
+Director y Secretario pueden crear, editar, desactivar y reactivar cuentas.
+Desactivar es una baja lógica: la fila queda con `estadoUsuario = false` y
+sigue en el listado.
 
 - `POST /api/UsuariosAdmin/alta` crea la cuenta con un `CargaUsuarioDto`.
 - `PUT /api/UsuariosAdmin/modificar/{id}` actualiza el perfil completo con el
