@@ -111,6 +111,12 @@ const AVISO_PARCIAL_AJENO: AvisoDelCalendario = {
     'recuperatorios y finales). Las mesas de examen las maneja Dirección o Secretaría.',
 };
 
+/** Respaldo ante un examen que el backend no marcó como modificable para un rol administrativo. */
+const AVISO_EXAMEN_NO_MODIFICABLE: AvisoDelCalendario = {
+  titulo: 'No se puede modificar este examen',
+  texto: 'El backend no habilitó la modificación de este examen.',
+};
+
 /**
  * La pantalla ya muestra su propia espera dentro de la tarjeta: al pasar de mes
  * no tiene que taparse todo con el velo global. Lo mismo vale para el modal de
@@ -138,12 +144,13 @@ const EN_SEGUNDO_PLANO: OpcionesPedido = { enSegundoPlano: true };
  * avisa y se vuelve a pedir el mes, sin tapar la grilla, para que el día cambie de
  * color.
  *
- * Con un parcial ya cargado (SCRUM-184) el Docente puede tocarlo, para abrir
- * "Modificar parcial" y cambiar su fecha y horario (`PUT .../modificar/{id}`) o
- * eliminarlo, con confirmación (`DELETE .../eliminar/{id}`), o arrastrarlo a otro
- * día con el mouse, que conserva el horario. Solo los que el backend marca con
- * `puedeModificar` (los que cargó él, `parcialesGestionables`): con los demás
- * responde 403, así que al tocarlos se explica por qué no y no se arrastran.
+ * Con un examen ya cargado, se puede tocar para abrir "Modificar parcial" y
+ * cambiar su fecha y horario (`PUT .../modificar/{id}`) o eliminarlo, con
+ * confirmación (`DELETE .../eliminar/{id}`). También se puede arrastrar a otro
+ * día con el mouse, que conserva el horario. En los tres casos se respeta
+ * `puedeModificar`, que el backend decide por usuario: Director y Secretario
+ * pueden con todos; el Docente, solo con los que cargó. Con los demás el
+ * backend responde 403, así que no se abre el modal ni se arrastran.
  * Con la API real la grilla
  * lista los parciales del mes en curso (`GET .../del-mes`); en los otros meses
  * solo se ve el estado de cada día, porque el backend no los lista.
@@ -287,8 +294,8 @@ export class CalendarioExamenes {
   });
 
   /**
-   * Los parciales del mes que el Docente puede modificar, mover o eliminar, por su
-   * id. Lo dice el backend en cada examen (`puedeModificar`).
+   * Los exámenes del mes que se pueden modificar, mover o eliminar, por su id.
+   * Lo dice el backend en cada examen (`puedeModificar`).
    */
   protected readonly gestionables = computed(() =>
     parcialesGestionables(this.calendario()?.examenes ?? []),
@@ -437,16 +444,16 @@ export class CalendarioExamenes {
   }
 
   /**
-   * Abre el modal para modificar o eliminar el parcial que se tocó. Es cosa del
-   * Docente, y solo con los que cargó él: con otro explica por qué no.
+   * Abre el modal solo si el backend marcó el examen como modificable para esta
+   * sesión. Para el Docente eso limita la acción a los que cargó él; Director y
+   * Secretario pueden abrir los que el backend habilita.
    */
   protected abrirModificacion(examen: ExamenCalendario): void {
-    if (!this.puedeRegistrar()) {
-      return;
-    }
     this.limpiarAvisos();
     if (!this.gestionables().has(examen.idExamen)) {
-      this.alerta.set(AVISO_PARCIAL_AJENO);
+      this.alerta.set(
+        this.puedeRegistrar() ? AVISO_PARCIAL_AJENO : AVISO_EXAMEN_NO_MODIFICABLE,
+      );
       return;
     }
     this.errorModificacion.set(null);

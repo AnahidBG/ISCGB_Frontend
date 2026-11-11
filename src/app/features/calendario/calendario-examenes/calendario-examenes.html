@@ -59,10 +59,11 @@
         El aspecto de cada celda es el del Figma: lo dibuja `app-resumen-dia`
         adentro de la celda que arma la grilla.
 
-        Elegir un día, modificar un parcial y arrastrarlo son cosas del Docente: para
-        los demás el calendario es de consulta. El Docente solo arrastra los parciales
-        que cargó él (`gestionables`, por `puedeModificar`); con uno que no es suyo
-        explica por qué en el aviso de arriba. Un día completo se elige igual
+        Elegir un día para registrar un parcial es cosa del Docente. Tocar un examen
+        abre su modal de modificación solo si el backend lo marcó como modificable:
+        Director y Secretario pueden con todos, y el Docente solo con los que cargó
+        él (`gestionables`, por `puedeModificar`). También se arrastran solo los
+        exámenes que el backend habilitó. Un día completo se elige igual
         (`bloquearCompletos` en false): el límite es por año y comisión, y la grilla
         no sabe de qué grupo va a ser el parcial. El que bloquea es el backend.
       -->
