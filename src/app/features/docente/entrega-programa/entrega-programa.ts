@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
@@ -59,6 +67,7 @@ export class EntregaPrograma implements ConCambiosSinEnviar {
   private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
   private readonly programasMateria = inject(ProgramasMateriaService);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
 
@@ -185,34 +194,40 @@ export class EntregaPrograma implements ConCambiosSinEnviar {
     this.errorContexto.set(null);
     this.noEsDocente.set(false);
 
-    this.programasMateria.obtenerContextoDocente(idUsuario).subscribe({
-      next: (contexto) => {
-        this.contexto.set(contexto);
-        this.noEsDocente.set(contexto === null);
-        this.cargandoContexto.set(false);
-      },
-      error: (fallo: Error) => {
-        this.errorContexto.set(fallo.message);
-        this.cargandoContexto.set(false);
-      },
-    });
+    this.programasMateria
+      .obtenerContextoDocente(idUsuario)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (contexto) => {
+          this.contexto.set(contexto);
+          this.noEsDocente.set(contexto === null);
+          this.cargandoContexto.set(false);
+        },
+        error: (fallo: Error) => {
+          this.errorContexto.set(fallo.message);
+          this.cargandoContexto.set(false);
+        },
+      });
   }
 
   protected manejarEnvio(programa: ProgramaMateria): void {
     this.enviando.set(true);
     this.error.set(null);
 
-    this.programasMateria.enviarPrograma(programa).subscribe({
-      next: (idPrograma) => {
-        this.enviando.set(false);
-        this.idPrograma.set(idPrograma);
-        this.enviadoConExito.set(true);
-      },
-      error: (fallo: Error) => {
-        this.enviando.set(false);
-        this.error.set(fallo.message);
-      },
-    });
+    this.programasMateria
+      .enviarPrograma(programa)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (idPrograma) => {
+          this.enviando.set(false);
+          this.idPrograma.set(idPrograma);
+          this.enviadoConExito.set(true);
+        },
+        error: (fallo: Error) => {
+          this.enviando.set(false);
+          this.error.set(fallo.message);
+        },
+      });
   }
 
   protected descargarPdf(): void {
@@ -224,16 +239,19 @@ export class EntregaPrograma implements ConCambiosSinEnviar {
     this.descargandoPdf.set(true);
     this.errorPdf.set(null);
 
-    this.programasMateria.descargarPdf(id).subscribe({
-      next: (archivo) => {
-        this.descargandoPdf.set(false);
-        descargarArchivo(archivo, `Programa_Materia_${id}.pdf`);
-      },
-      error: (fallo: Error) => {
-        this.descargandoPdf.set(false);
-        this.errorPdf.set(fallo.message);
-      },
-    });
+    this.programasMateria
+      .descargarPdf(id)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (archivo) => {
+          this.descargandoPdf.set(false);
+          descargarArchivo(archivo, `Programa_Materia_${id}.pdf`);
+        },
+        error: (fallo: Error) => {
+          this.descargandoPdf.set(false);
+          this.errorPdf.set(fallo.message);
+        },
+      });
   }
 
   /** Vuelve a mostrar el formulario para cargar otro programa. */

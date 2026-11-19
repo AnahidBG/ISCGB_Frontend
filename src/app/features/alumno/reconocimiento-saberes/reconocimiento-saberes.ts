@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
@@ -50,6 +58,7 @@ export class ReconocimientoSaberes {
   private readonly servicio = inject(ReconocimientoSaberesService);
   private readonly materiasService = inject(MateriasService);
   private readonly router = inject(Router);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
@@ -143,6 +152,7 @@ export class ReconocimientoSaberes {
         programaPdf: programa,
         analiticoPdf: analitico,
       })
+      .pipe(takeUntilDestroyed(this.destruccion))
       .subscribe({
         next: (mensaje) => {
           this.enviando.set(false);
@@ -171,16 +181,19 @@ export class ReconocimientoSaberes {
         this.cargandoMaterias.set(false);
       },
     });*/ //ESTO VA EN PANTALLA DE ADMINISTRACIÓN DE MATERIAS
-    this.materiasService.listarMisMaterias().subscribe({
-      next: (materias) => {
-        this.materias.set(materias);
-        this.cargandoMaterias.set(false);
-      },
-      error: (fallo: Error) => {
-        this.errorMaterias.set(fallo.message);
-        this.cargandoMaterias.set(false);
-      },
-    });
+    this.materiasService
+      .listarMisMaterias()
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (materias) => {
+          this.materias.set(materias);
+          this.cargandoMaterias.set(false);
+        },
+        error: (fallo: Error) => {
+          this.errorMaterias.set(fallo.message);
+          this.cargandoMaterias.set(false);
+        },
+      });
   }
 
   protected cerrarSesion(): void {

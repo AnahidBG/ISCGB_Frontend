@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { formatearDni } from '../../../core/auth/dni';
@@ -49,6 +57,7 @@ export class CertificadoRegular {
   private readonly certificados = inject(CertificadosService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
@@ -98,18 +107,21 @@ export class CertificadoRegular {
     this.error.set(null);
     this.generado.set(false);
 
-    this.certificados.descargar(this.variante).subscribe({
-      next: (archivo) => {
-        const sufijo = this.conHorario ? '_Horario' : '';
-        descargarArchivo(archivo, `Certificado_Alumno_Regular${sufijo}_${sesion.dni}.pdf`);
-        this.generado.set(true);
-        this.generando.set(false);
-      },
-      error: (fallo: Error) => {
-        this.error.set(fallo.message);
-        this.generando.set(false);
-      },
-    });
+    this.certificados
+      .descargar(this.variante)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (archivo) => {
+          const sufijo = this.conHorario ? '_Horario' : '';
+          descargarArchivo(archivo, `Certificado_Alumno_Regular${sufijo}_${sesion.dni}.pdf`);
+          this.generado.set(true);
+          this.generando.set(false);
+        },
+        error: (fallo: Error) => {
+          this.error.set(fallo.message);
+          this.generando.set(false);
+        },
+      });
   }
 
   protected volverAlPanel(): void {

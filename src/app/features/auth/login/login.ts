@@ -1,5 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { PARAMETRO_SESION_VENCIDA } from '../../../core/auth/auth.guard';
@@ -38,6 +38,7 @@ export class Login {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly destruccion = inject(DestroyRef);
 
   /**
    * `true` cuando se llegó acá porque el token venció (lo manda `authGuard`
@@ -59,15 +60,18 @@ export class Login {
     this.cargando.set(true);
     this.error.set(null);
 
-    this.auth.iniciarSesion(credenciales).subscribe({
-      next: (sesion) => {
-        this.cargando.set(false);
-        this.router.navigate([destinoSegunRoles(sesion)]);
-      },
-      error: (fallo: Error) => {
-        this.cargando.set(false);
-        this.error.set(fallo.message);
-      },
-    });
+    this.auth
+      .iniciarSesion(credenciales)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (sesion) => {
+          this.cargando.set(false);
+          this.router.navigate([destinoSegunRoles(sesion)]);
+        },
+        error: (fallo: Error) => {
+          this.cargando.set(false);
+          this.error.set(fallo.message);
+        },
+      });
   }
 }

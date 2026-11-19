@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { formatearDni } from '../../../core/auth/dni';
@@ -50,6 +58,7 @@ export class SolicitudesReconocimiento {
   private readonly campana = inject(CampanaService);
   private readonly reconocimiento = inject(ReconocimientoSaberesService);
   private readonly router = inject(Router);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
@@ -80,16 +89,19 @@ export class SolicitudesReconocimiento {
     this.cargando.set(true);
     this.error.set(null);
 
-    this.reconocimiento.listarPendientes().subscribe({
-      next: (solicitudes) => {
-        this.solicitudes.set(solicitudes);
-        this.cargando.set(false);
-      },
-      error: (fallo: Error) => {
-        this.error.set(fallo.message);
-        this.cargando.set(false);
-      },
-    });
+    this.reconocimiento
+      .listarPendientes()
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (solicitudes) => {
+          this.solicitudes.set(solicitudes);
+          this.cargando.set(false);
+        },
+        error: (fallo: Error) => {
+          this.error.set(fallo.message);
+          this.cargando.set(false);
+        },
+      });
   }
 
   protected dni(solicitud: SolicitudPendiente): string {
@@ -110,16 +122,19 @@ export class SolicitudesReconocimiento {
     const archivo = ADJUNTOS.find((a) => a.adjunto === adjunto)?.archivo ?? adjunto;
     const nombre = `Reconocimiento_${aNombreDeArchivo(solicitud.alumno)}_${archivo}.pdf`;
 
-    this.reconocimiento.descargarAdjunto(solicitud.idSolicitud, adjunto).subscribe({
-      next: (pdf) => {
-        this.descargando.set(null);
-        descargarArchivo(pdf, nombre);
-      },
-      error: (fallo: Error) => {
-        this.descargando.set(null);
-        this.errorDescarga.set({ idSolicitud: solicitud.idSolicitud, mensaje: fallo.message });
-      },
-    });
+    this.reconocimiento
+      .descargarAdjunto(solicitud.idSolicitud, adjunto)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (pdf) => {
+          this.descargando.set(null);
+          descargarArchivo(pdf, nombre);
+        },
+        error: (fallo: Error) => {
+          this.descargando.set(null);
+          this.errorDescarga.set({ idSolicitud: solicitud.idSolicitud, mensaje: fallo.message });
+        },
+      });
   }
 
   protected cerrarSesion(): void {

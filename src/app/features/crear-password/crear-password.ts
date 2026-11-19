@@ -1,5 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { map } from 'rxjs';
 import { AuthService, MENSAJE_ENLACE_INVALIDO } from '../../core/auth/auth.service';
@@ -46,6 +53,7 @@ const REQUISITOS_OMITIDOS: readonly string[] = ['sin-dni'];
 export class CrearPassword {
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly requisitosOmitidos = REQUISITOS_OMITIDOS;
   protected readonly mensajeEnlaceInvalido = MENSAJE_ENLACE_INVALIDO;
@@ -119,21 +127,24 @@ export class CrearPassword {
     this.enviando.set(true);
     this.errorEnvio.set(null);
 
-    this.auth.establecerPassword(this.token(), this.password()).subscribe({
-      next: () => {
-        this.enviando.set(false);
-        this.exito.set(true);
-      },
-      error: (fallo: Error) => {
-        this.enviando.set(false);
+    this.auth
+      .establecerPassword(this.token(), this.password())
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: () => {
+          this.enviando.set(false);
+          this.exito.set(true);
+        },
+        error: (fallo: Error) => {
+          this.enviando.set(false);
 
-        if (fallo.message === MENSAJE_ENLACE_INVALIDO) {
-          this.enlaceRechazado.set(true);
-          return;
-        }
-        // Conexión o falla genérica: se conserva lo escrito para reintentar.
-        this.errorEnvio.set(fallo.message);
-      },
-    });
+          if (fallo.message === MENSAJE_ENLACE_INVALIDO) {
+            this.enlaceRechazado.set(true);
+            return;
+          }
+          // Conexión o falla genérica: se conserva lo escrito para reintentar.
+          this.errorEnvio.set(fallo.message);
+        },
+      });
   }
 }

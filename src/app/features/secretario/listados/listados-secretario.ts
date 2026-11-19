@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
@@ -26,6 +34,7 @@ export class ListadosSecretario {
   private readonly usuariosService = inject(UsuariosService);
   private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
@@ -56,16 +65,19 @@ export class ListadosSecretario {
   protected cargar(): void {
     this.cargando.set(true);
     this.error.set(null);
-    this.usuariosService.listar().subscribe({
-      next: (usuarios) => {
-        this.usuarios.set(usuarios);
-        this.cargando.set(false);
-      },
-      error: () => {
-        this.error.set('No pudimos traer el listado de alumnos y docentes.');
-        this.cargando.set(false);
-      },
-    });
+    this.usuariosService
+      .listar()
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (usuarios) => {
+          this.usuarios.set(usuarios);
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.error.set('No pudimos traer el listado de alumnos y docentes.');
+          this.cargando.set(false);
+        },
+      });
   }
 
   protected cambiarTexto(valor: string): void {
