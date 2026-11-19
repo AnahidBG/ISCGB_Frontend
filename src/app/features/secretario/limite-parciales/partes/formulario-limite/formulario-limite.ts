@@ -6,6 +6,7 @@ import {
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn } from '@angular/forms';
 import {
@@ -69,10 +70,14 @@ export class FormularioLimite {
   constructor() {
     // El límite vigente llega por `input()` y cambia al guardar: el formulario
     // arranca de ahí cada vez. Es un `effect` porque el formulario reactivo no
-    // es un signal y hay que escribirle.
+    // es un signal y hay que escribirle. Solo `limiteActual` lo dispara: lo que
+    // se escribe va en `untracked`.
     effect(() => {
-      this.formulario.reset({ limite: this.limiteActual() });
-      this.seIntentoGuardar.set(false);
+      const limite = this.limiteActual();
+      untracked(() => {
+        this.formulario.reset({ limite });
+        this.seIntentoGuardar.set(false);
+      });
     });
   }
 

@@ -7,6 +7,7 @@ import {
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, ValidatorFn } from '@angular/forms';
 import {
@@ -69,10 +70,14 @@ export class FormularioFrecuencia {
   constructor() {
     // La frecuencia vigente llega por `input()` y cambia al guardar: el
     // formulario arranca de ahí cada vez. Es un `effect` porque el formulario
-    // reactivo no es un signal y hay que escribirle.
+    // reactivo no es un signal y hay que escribirle. Solo `diasActuales` lo
+    // dispara: lo que se escribe va en `untracked`.
     effect(() => {
-      this.formulario.reset({ dias: this.diasActuales() });
-      this.seIntentoGuardar.set(false);
+      const dias = this.diasActuales();
+      untracked(() => {
+        this.formulario.reset({ dias });
+        this.seIntentoGuardar.set(false);
+      });
     });
   }
 

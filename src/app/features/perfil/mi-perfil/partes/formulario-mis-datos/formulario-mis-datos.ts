@@ -7,6 +7,7 @@ import {
   input,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
@@ -194,10 +195,14 @@ export class FormularioMisDatos {
   constructor() {
     // Lo guardado llega por `input()` y cambia al guardar: el formulario arranca de ahí
     // cada vez. Es un `effect` porque el formulario reactivo no es un signal y hay que
-    // escribirle.
+    // escribirle. Solo `datosGuardados` lo dispara: lo que se escribe va en
+    // `untracked`, para que el `valueChanges` del reset no le sume dependencias.
     effect(() => {
-      this.formulario.reset(aValores(this.datosGuardados()));
-      this.seIntentoGuardar.set(false);
+      const valores = aValores(this.datosGuardados());
+      untracked(() => {
+        this.formulario.reset(valores);
+        this.seIntentoGuardar.set(false);
+      });
     });
   }
 
