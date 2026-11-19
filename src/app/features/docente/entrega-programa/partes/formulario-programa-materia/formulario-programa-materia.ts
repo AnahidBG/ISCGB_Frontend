@@ -1,12 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  EventEmitter,
-  Output,
-  inject,
-  input,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import {
   FormArray,
@@ -102,13 +94,13 @@ export class FormularioProgramaMateria {
   /** Nombre y apellido de quien firma, para la ficha. Sale de la sesión. */
   readonly nombreDocente = input<string>('');
 
-  @Output() readonly enviarPrograma = new EventEmitter<ProgramaMateria>();
+  readonly enviarPrograma = output<ProgramaMateria>();
 
   /**
    * `true` en cuanto la persona carga algo. El contenedor lo usa para
    * preguntar antes de dejarla salir sin enviar.
    */
-  @Output() readonly cambiosSinEnviar = new EventEmitter<boolean>();
+  readonly cambiosSinEnviar = output<boolean>();
 
   protected readonly opcionesCondicion = OPCIONES_CONDICION;
   protected readonly opcionesFormatoCurricular = OPCIONES_FORMATO_CURRICULAR;

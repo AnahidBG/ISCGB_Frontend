@@ -1,3 +1,4 @@
+import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -19,7 +20,7 @@ import { Boton } from '../../shared/ui/boton/boton';
  */
 @Component({
   selector: 'app-inicio',
-  imports: [Boton],
+  imports: [Boton, NgOptimizedImage],
   templateUrl: './inicio.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

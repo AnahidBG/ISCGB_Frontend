@@ -1,3 +1,4 @@
+import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, signal } from '@angular/core';
 import { Boton } from '../boton/boton';
 
@@ -31,7 +32,7 @@ export const NAVEGACION_INSTITUCIONAL: EnlaceNavegacion[] = [
  */
 @Component({
   selector: 'app-encabezado',
-  imports: [Boton],
+  imports: [Boton, NgOptimizedImage],
   templateUrl: './encabezado.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
