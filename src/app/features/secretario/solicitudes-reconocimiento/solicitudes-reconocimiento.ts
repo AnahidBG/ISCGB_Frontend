@@ -6,8 +6,9 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { formatearDni } from '../../../core/auth/dni';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
@@ -17,7 +18,10 @@ import {
   AdjuntoReconocimiento,
   SolicitudPendiente,
 } from '../../../core/reconocimiento-saberes/modelos/solicitud-pendiente';
-import { ReconocimientoSaberesService } from '../../../core/reconocimiento-saberes/reconocimiento-saberes.service';
+import {
+  MENSAJE_ERROR_SOLICITUDES,
+  ReconocimientoSaberesService,
+} from '../../../core/reconocimiento-saberes/reconocimiento-saberes.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { Icono } from '../../../shared/ui/icono/icono';
@@ -28,6 +32,14 @@ const ADJUNTOS: readonly { adjunto: AdjuntoReconocimiento; etiqueta: string; arc
   { adjunto: 'programa', etiqueta: 'Programa', archivo: 'Programa' },
   { adjunto: 'analitico', etiqueta: 'Analítico', archivo: 'Analitico' },
 ];
+
+/** El pedido de la bandeja, con su fase (mismo criterio que `LegajoPropio`). */
+type CargaSolicitudes =
+  | { fase: 'cargando' }
+  | { fase: 'error'; mensaje: string }
+  | { fase: 'listo'; solicitudes: SolicitudPendiente[] };
+
+const CARGANDO: CargaSolicitudes = { fase: 'cargando' };
 
 /**
  * Solicitudes de reconocimiento de saberes — la bandeja de Secretaría
@@ -70,9 +82,39 @@ export class SolicitudesReconocimiento {
 
   protected readonly adjuntos = ADJUNTOS;
 
-  protected readonly solicitudes = signal<SolicitudPendiente[]>([]);
-  protected readonly cargando = signal(true);
-  protected readonly error = signal<string | null>(null);
+  /** Cada `next` vuelve a pedir la bandeja: es el "Reintentar". */
+  private readonly reintento = new Subject<void>();
+
+  /** Lo que espera a Secretaría. Un fallo es una fase, no una excepción. */
+  protected readonly carga = toSignal(
+    this.reintento.pipe(
+      startWith(undefined),
+      switchMap(() =>
+        this.reconocimiento.listarPendientes().pipe(
+          map((solicitudes): CargaSolicitudes => ({ fase: 'listo', solicitudes })),
+          catchError((fallo: unknown) =>
+            of<CargaSolicitudes>({
+              fase: 'error',
+              mensaje: fallo instanceof Error ? fallo.message : MENSAJE_ERROR_SOLICITUDES,
+            }),
+          ),
+          startWith(CARGANDO),
+        ),
+      ),
+    ),
+    { initialValue: CARGANDO },
+  );
+
+  /** Vacía mientras carga o si falló: la lista dice "no hay" y el error va arriba. */
+  protected readonly solicitudes = computed(() => {
+    const carga = this.carga();
+    return carga.fase === 'listo' ? carga.solicitudes : [];
+  });
+
+  protected readonly errorCarga = computed(() => {
+    const carga = this.carga();
+    return carga.fase === 'error' ? carga.mensaje : null;
+  });
 
   /** `"{idSolicitud}-{adjunto}"` del PDF que se está bajando, para bloquear solo ese botón. */
   protected readonly descargando = signal<string | null>(null);
@@ -82,26 +124,10 @@ export class SolicitudesReconocimiento {
 
   constructor() {
     this.campana.refrescar();
-    this.cargar();
   }
 
-  protected cargar(): void {
-    this.cargando.set(true);
-    this.error.set(null);
-
-    this.reconocimiento
-      .listarPendientes()
-      .pipe(takeUntilDestroyed(this.destruccion))
-      .subscribe({
-        next: (solicitudes) => {
-          this.solicitudes.set(solicitudes);
-          this.cargando.set(false);
-        },
-        error: (fallo: Error) => {
-          this.error.set(fallo.message);
-          this.cargando.set(false);
-        },
-      });
+  protected recargar(): void {
+    this.reintento.next();
   }
 
   protected dni(solicitud: SolicitudPendiente): string {
