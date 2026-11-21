@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { CargaService } from './core/carga/carga.service';
 import { CargadorGlobal } from './core/carga/cargador-global';
@@ -20,6 +20,7 @@ const DURACION_SPLASH_ARRANQUE_MS = 1100;
   imports: [RouterOutlet, CargadorGlobal],
   templateUrl: './app.html',
   styleUrl: './app.scss',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class App {
   protected readonly title = signal('iscgb-frontend');

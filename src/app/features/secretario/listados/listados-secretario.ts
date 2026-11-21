@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
+import { Subject, catchError, map, of, startWith, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
 import {
@@ -14,6 +16,16 @@ import { CampanaService } from '../../../core/notificaciones/campana.service';
 import { enlacesPorSesion } from '../../../shared/ui/estructura-panel/enlaces-por-rol';
 import { EstructuraPanel } from '../../../shared/ui/estructura-panel/estructura-panel';
 import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga';
+
+/** El pedido del listado, con su fase (mismo criterio que `LegajoPropio`). */
+type CargaUsuarios =
+  | { fase: 'cargando' }
+  | { fase: 'error'; mensaje: string }
+  | { fase: 'listo'; usuarios: UsuarioInstitucional[] };
+
+const CARGANDO: CargaUsuarios = { fase: 'cargando' };
+
+const MENSAJE_ERROR_LISTADO = 'No pudimos traer el listado de alumnos y docentes.';
 
 @Component({
   selector: 'app-listados-secretario',
@@ -36,36 +48,49 @@ export class ListadosSecretario {
   protected readonly texto = signal('');
   protected readonly rol = signal<FiltroRolUsuario>('todos');
   protected readonly estado = signal<FiltroEstadoUsuario>('activos');
-  protected readonly cargando = signal(true);
-  protected readonly error = signal<string | null>(null);
-  private readonly usuarios = signal<UsuarioInstitucional[]>([]);
 
-  protected readonly listado = computed(() =>
-    filtrarUsuarios(this.usuarios(), {
+  /** Cada `next` vuelve a pedir el listado: es el "Reintentar". */
+  private readonly reintento = new Subject<void>();
+
+  /**
+   * Las personas del instituto. Un fallo es una fase, no una excepción, y
+   * `switchMap` descarta un pedido viejo si se reintenta antes de que vuelva.
+   */
+  protected readonly carga = toSignal(
+    this.reintento.pipe(
+      startWith(undefined),
+      switchMap(() =>
+        this.usuariosService.listar().pipe(
+          map((usuarios): CargaUsuarios => ({ fase: 'listo', usuarios })),
+          catchError(() => of<CargaUsuarios>({ fase: 'error', mensaje: MENSAJE_ERROR_LISTADO })),
+          startWith(CARGANDO),
+        ),
+      ),
+    ),
+    { initialValue: CARGANDO },
+  );
+
+  protected readonly errorCarga = computed(() => {
+    const carga = this.carga();
+    return carga.fase === 'error' ? carga.mensaje : null;
+  });
+
+  protected readonly listado = computed(() => {
+    const carga = this.carga();
+    const usuarios = carga.fase === 'listo' ? carga.usuarios : [];
+    return filtrarUsuarios(usuarios, {
       texto: this.texto(),
       rol: this.rol(),
       estado: this.estado(),
-    }).filter((usuario) => usuario.roles.some((rol) => ROLES_LISTADO_SECRETARIO.includes(rol))),
-  );
+    }).filter((usuario) => usuario.roles.some((rol) => ROLES_LISTADO_SECRETARIO.includes(rol)));
+  });
 
   constructor() {
-    this.cargar();
     this.campana.refrescar();
   }
 
-  protected cargar(): void {
-    this.cargando.set(true);
-    this.error.set(null);
-    this.usuariosService.listar().subscribe({
-      next: (usuarios) => {
-        this.usuarios.set(usuarios);
-        this.cargando.set(false);
-      },
-      error: () => {
-        this.error.set('No pudimos traer el listado de alumnos y docentes.');
-        this.cargando.set(false);
-      },
-    });
+  protected recargar(): void {
+    this.reintento.next();
   }
 
   protected cambiarTexto(valor: string): void {

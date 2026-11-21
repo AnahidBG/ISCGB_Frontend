@@ -11,10 +11,10 @@
   [notificacionesDetalle]="notificacionesDetalle()"
   (cerrarSesion)="cerrarSesion()"
 >
-  @if (error(); as mensaje) {
+  @if (errorCarga(); as mensaje) {
     <div role="alert" class="mb-6 rounded-lg bg-rechazado/10 px-4 py-3 text-sm text-rechazado">
       {{ mensaje }}
-      <button type="button" class="ml-2 underline" (click)="cargar()">Reintentar</button>
+      <button type="button" class="ml-2 underline" (click)="recargar()">Reintentar</button>
     </div>
   }
 
@@ -27,7 +27,7 @@
         </span>
       </div>
 
-      @if (cargando()) {
+      @if (carga().fase === 'cargando') {
         <app-pantalla-carga tamano="md" mensaje="Cargando solicitudes…" />
       } @else {
         <ul class="mt-4 divide-y divide-borde">

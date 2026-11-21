@@ -1,12 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
   inject,
   linkedSignal,
   signal,
 } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
@@ -99,6 +100,7 @@ export class SubirDocumento implements ConCambiosSinEnviar {
   private readonly legajos = inject(LegajoService);
   private readonly router = inject(Router);
   private readonly ruta = inject(ActivatedRoute);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
 
@@ -256,6 +258,7 @@ export class SubirDocumento implements ConCambiosSinEnviar {
         fechaVencimiento: this.fechaAEnviar(),
         archivo: elegido,
       })
+      .pipe(takeUntilDestroyed(this.destruccion))
       .subscribe({
         next: () => {
           this.enviando.set(false);
@@ -315,15 +318,18 @@ export class SubirDocumento implements ConCambiosSinEnviar {
       return;
     }
 
-    this.legajos.documentosRequeridos(idRol).subscribe({
-      next: (tipos) => {
-        this.tiposDisponibles.set(tipos);
-        this.cargandoTipos.set(false);
-      },
-      error: (fallo: Error) => {
-        this.error.set(fallo.message);
-        this.cargandoTipos.set(false);
-      },
-    });
+    this.legajos
+      .documentosRequeridos(idRol)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (tipos) => {
+          this.tiposDisponibles.set(tipos);
+          this.cargandoTipos.set(false);
+        },
+        error: (fallo: Error) => {
+          this.error.set(fallo.message);
+          this.cargandoTipos.set(false);
+        },
+      });
   }
 }

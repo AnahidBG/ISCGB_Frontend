@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
@@ -45,6 +53,7 @@ export class AltaUsuario {
   private readonly campana = inject(CampanaService);
   private readonly usuarios = inject(UsuariosService);
   private readonly router = inject(Router);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
 
@@ -75,16 +84,19 @@ export class AltaUsuario {
 
   constructor() {
     this.campana.refrescar();
-    this.usuarios.listarProvincias().subscribe({
-      next: (provincias) => {
-        this.provincias.set(provincias);
-        this.cargandoProvincias.set(false);
-      },
-      error: () => {
-        this.falloProvincias.set(true);
-        this.cargandoProvincias.set(false);
-      },
-    });
+    this.usuarios
+      .listarProvincias()
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (provincias) => {
+          this.provincias.set(provincias);
+          this.cargandoProvincias.set(false);
+        },
+        error: () => {
+          this.falloProvincias.set(true);
+          this.cargandoProvincias.set(false);
+        },
+      });
   }
 
   protected crear(perfil: PerfilUsuario): void {
@@ -94,16 +106,19 @@ export class AltaUsuario {
     this.enviando.set(true);
     this.error.set(null);
 
-    this.usuarios.crear(perfil).subscribe({
-      next: (mensaje) => {
-        this.enviando.set(false);
-        this.recienCreado.set({ nombre: `${perfil.nombre} ${perfil.apellido}`, mensaje });
-      },
-      error: (fallo: Error) => {
-        this.enviando.set(false);
-        this.error.set(fallo.message);
-      },
-    });
+    this.usuarios
+      .crear(perfil)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (mensaje) => {
+          this.enviando.set(false);
+          this.recienCreado.set({ nombre: `${perfil.nombre} ${perfil.apellido}`, mensaje });
+        },
+        error: (fallo: Error) => {
+          this.enviando.set(false);
+          this.error.set(fallo.message);
+        },
+      });
   }
 
   /** Vuelve a mostrar el formulario vacío para cargar a la persona siguiente. */

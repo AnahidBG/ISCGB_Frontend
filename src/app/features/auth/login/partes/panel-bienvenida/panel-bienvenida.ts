@@ -1,3 +1,4 @@
+import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 /**
@@ -10,6 +11,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
  */
 @Component({
   selector: 'app-panel-bienvenida',
+  imports: [NgOptimizedImage],
   templateUrl: './panel-bienvenida.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

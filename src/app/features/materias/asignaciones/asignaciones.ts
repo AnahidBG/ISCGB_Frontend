@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -55,6 +63,7 @@ export class Asignaciones {
   private readonly campana = inject(CampanaService);
   private readonly materiasService = inject(MateriasService);
   private readonly router = inject(Router);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
@@ -99,20 +108,22 @@ export class Asignaciones {
       docentes: this.materiasService.listarDocentes(),
       comisiones: this.materiasService.listarComisiones(),
       alumnos: this.materiasService.listarAlumnos(),
-    }).subscribe({
-      next: ({ materias, cursos, docentes, comisiones, alumnos }) => {
-        this.materias.set(materias);
-        this.cursos.set(cursos);
-        this.docentes.set(docentes);
-        this.comisiones.set(comisiones);
-        this.alumnos.set(alumnos);
-        this.cargando.set(false);
-      },
-      error: (fallo: Error) => {
-        this.errorCarga.set(fallo.message);
-        this.cargando.set(false);
-      },
-    });
+    })
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: ({ materias, cursos, docentes, comisiones, alumnos }) => {
+          this.materias.set(materias);
+          this.cursos.set(cursos);
+          this.docentes.set(docentes);
+          this.comisiones.set(comisiones);
+          this.alumnos.set(alumnos);
+          this.cargando.set(false);
+        },
+        error: (fallo: Error) => {
+          this.errorCarga.set(fallo.message);
+          this.cargando.set(false);
+        },
+      });
   }
 
   protected crearMateria(materia: NuevaMateria): void {
@@ -123,20 +134,26 @@ export class Asignaciones {
     this.errorMateria.set(null);
     this.exitoMateria.set(null);
 
-    this.materiasService.crearMateria(materia).subscribe({
-      next: (mensaje) => {
-        this.creandoMateria.set(false);
-        this.exitoMateria.set(`${mensaje} "${materia.nombre}" ya se puede asignar.`);
-        this.reinicioMateria.update((n) => n + 1);
-        this.materiasService.listarDisponibles().subscribe({
-          next: (materias) => this.materias.set(materias),
-        });
-      },
-      error: (fallo: Error) => {
-        this.creandoMateria.set(false);
-        this.errorMateria.set(fallo.message);
-      },
-    });
+    this.materiasService
+      .crearMateria(materia)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (mensaje) => {
+          this.creandoMateria.set(false);
+          this.exitoMateria.set(`${mensaje} "${materia.nombre}" ya se puede asignar.`);
+          this.reinicioMateria.update((n) => n + 1);
+          this.materiasService
+            .listarDisponibles()
+            .pipe(takeUntilDestroyed(this.destruccion))
+            .subscribe({
+              next: (materias) => this.materias.set(materias),
+            });
+        },
+        error: (fallo: Error) => {
+          this.creandoMateria.set(false);
+          this.errorMateria.set(fallo.message);
+        },
+      });
   }
 
   protected asignar(asignacion: AsignacionMateria): void {
@@ -147,17 +164,20 @@ export class Asignaciones {
     this.errorAsignacion.set(null);
     this.exitoAsignacion.set(null);
 
-    this.materiasService.asignar(asignacion).subscribe({
-      next: (mensaje) => {
-        this.asignando.set(false);
-        this.exitoAsignacion.set(mensaje);
-        this.reinicioAsignacion.update((n) => n + 1);
-      },
-      error: (fallo: Error) => {
-        this.asignando.set(false);
-        this.errorAsignacion.set(fallo.message);
-      },
-    });
+    this.materiasService
+      .asignar(asignacion)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (mensaje) => {
+          this.asignando.set(false);
+          this.exitoAsignacion.set(mensaje);
+          this.reinicioAsignacion.update((n) => n + 1);
+        },
+        error: (fallo: Error) => {
+          this.asignando.set(false);
+          this.errorAsignacion.set(fallo.message);
+        },
+      });
   }
 
   protected inscribir(inscripcion: InscripcionAlumno): void {
@@ -168,17 +188,20 @@ export class Asignaciones {
     this.errorInscripcion.set(null);
     this.exitoInscripcion.set(null);
 
-    this.materiasService.inscribirAlumno(inscripcion).subscribe({
-      next: (mensaje) => {
-        this.inscribiendo.set(false);
-        this.exitoInscripcion.set(mensaje);
-        this.reinicioInscripcion.update((n) => n + 1);
-      },
-      error: (fallo: Error) => {
-        this.inscribiendo.set(false);
-        this.errorInscripcion.set(fallo.message);
-      },
-    });
+    this.materiasService
+      .inscribirAlumno(inscripcion)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (mensaje) => {
+          this.inscribiendo.set(false);
+          this.exitoInscripcion.set(mensaje);
+          this.reinicioInscripcion.update((n) => n + 1);
+        },
+        error: (fallo: Error) => {
+          this.inscribiendo.set(false);
+          this.errorInscripcion.set(fallo.message);
+        },
+      });
   }
 
   protected cerrarSesion(): void {

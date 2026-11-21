@@ -117,4 +117,21 @@ describe('SolicitudesReconocimiento', () => {
     expect(texto(fixture)).toContain('No pudimos traer las solicitudes.');
     expect(texto(fixture)).toContain('Reintentar');
   });
+
+  it('reintentar vuelve a pedir la lista y, si responde, la muestra', async () => {
+    let pedidos = 0;
+    const fixture = await montar(() =>
+      ++pedidos === 1 ? throwError(() => new Error('No pudimos traer las solicitudes.')) : of(SOLICITUDES),
+    );
+
+    const reintentar = Array.from(
+      (fixture.nativeElement as HTMLElement).querySelectorAll('button'),
+    ).find((b) => b.textContent?.trim() === 'Reintentar')!;
+    reintentar.click();
+    await fixture.whenStable();
+
+    expect(pedidos).toBe(2);
+    expect(texto(fixture)).toContain('Gómez, María');
+    expect(texto(fixture)).not.toContain('No pudimos traer las solicitudes.');
+  });
 });

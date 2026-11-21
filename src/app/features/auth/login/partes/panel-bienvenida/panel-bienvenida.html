@@ -27,22 +27,29 @@
 
     object-cover recorta la foto para llenar el espacio sin deformarla, como
     hace el "rellenar" de Figma.
+
+    Va con NgOptimizedImage (ngSrc): es la imagen más grande de la primera
+    pantalla, el LCP del login. Con priority el navegador la pide con
+    prioridad alta y sin lazy; con fill ocupa todo el panel, que ya es
+    relative, así que no hace falta inventarle un ancho y un alto.
   -->
   <img
-    src="imagenes/instituto-aula.png"
+    ngSrc="imagenes/instituto-aula.png"
     alt=""
-    class="pointer-events-none absolute inset-0 h-full w-full object-cover blur-[2px] lg:blur-none"
+    fill
+    priority
+    class="pointer-events-none object-cover blur-[2px] lg:blur-none"
   />
 
   <!-- Velo de color. aria-hidden porque es decoración, no información. -->
-  <span 
+  <span
     aria-hidden="true"
     class="pointer-events-none absolute inset-0 bg-gradient-to-br from-principal-solido/95 via-principal-solido/90 to-principal-oscuro/95"
   ></span>
 
-  <!-- Marca -->
+  <!-- Marca. priority porque está arriba de todo en la primera pantalla. -->
   <p class="relative flex items-center gap-3">
-    <img src="imagenes/logo-iscgb.svg" alt="" width="44" height="44" class="h-11 w-11" />
+    <img ngSrc="imagenes/logo-iscgb.svg" alt="" width="44" height="44" priority class="h-11 w-11" />
     <span class="text-2xl font-semibold tracking-wide">ISCGB</span>
   </p>
 

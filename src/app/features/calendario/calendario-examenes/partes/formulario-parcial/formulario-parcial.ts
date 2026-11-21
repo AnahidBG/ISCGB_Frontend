@@ -9,6 +9,7 @@ import {
   input,
   output,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
@@ -94,8 +95,12 @@ export class FormularioParcial {
 
   constructor() {
     // La fecha arranca en el día elegido. Es un `effect` porque el formulario
-    // reactivo no es un signal y hay que escribirle.
-    effect(() => this.formulario.controls.fecha.setValue(this.dia()));
+    // reactivo no es un signal y hay que escribirle. Solo `dia` lo dispara: lo
+    // que se escribe va en `untracked`.
+    effect(() => {
+      const dia = this.dia();
+      untracked(() => this.formulario.controls.fecha.setValue(dia));
+    });
 
     // El foco pasa al primer campo apenas se dibuja el formulario.
     afterNextRender(() => this.campoMateria().nativeElement.focus());

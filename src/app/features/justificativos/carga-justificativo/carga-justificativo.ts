@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { rolPrincipalDe } from '../../../core/auth/rol-principal';
@@ -39,6 +47,7 @@ export class CargaJustificativo {
   private readonly campana = inject(CampanaService);
   private readonly justificativos = inject(JustificativosService);
   private readonly router = inject(Router);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly tipos = TIPOS_INASISTENCIA;
@@ -165,6 +174,7 @@ export class CargaJustificativo {
         fechaInasistenciaFin: aFecha(this.fechaFin() || this.fechaInicio()),
         documentoPdf: this.archivo(),
       })
+      .pipe(takeUntilDestroyed(this.destruccion))
       .subscribe({
         next: (mensaje) => {
           this.enviando.set(false);

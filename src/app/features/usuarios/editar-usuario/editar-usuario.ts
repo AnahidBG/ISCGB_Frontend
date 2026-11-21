@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { destinoSegunRoles } from '../../../core/auth/destino-por-rol';
@@ -50,6 +58,7 @@ export class EditarUsuario {
   private readonly usuarios = inject(UsuariosService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
@@ -129,16 +138,19 @@ export class EditarUsuario {
   }
 
   private cargarProvincias(): void {
-    this.usuarios.listarProvincias().subscribe({
-      next: (provincias) => {
-        this.provincias.set(provincias);
-        this.cargandoProvincias.set(false);
-      },
-      error: () => {
-        this.falloProvincias.set(true);
-        this.cargandoProvincias.set(false);
-      },
-    });
+    this.usuarios
+      .listarProvincias()
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (provincias) => {
+          this.provincias.set(provincias);
+          this.cargandoProvincias.set(false);
+        },
+        error: () => {
+          this.falloProvincias.set(true);
+          this.cargandoProvincias.set(false);
+        },
+      });
   }
 
   private cargarUsuario(): void {
@@ -148,18 +160,21 @@ export class EditarUsuario {
       return;
     }
 
-    this.usuarios.obtener(this.idUsuario).subscribe({
-      next: (usuario) => {
-        this.usuario.set(usuario);
-        this.cargando.set(false);
-      },
-      error: () => {
-        this.errorCarga.set(
-          'No pudimos traer los datos de esta persona. Intentá de nuevo en un momento.',
-        );
-        this.cargando.set(false);
-      },
-    });
+    this.usuarios
+      .obtener(this.idUsuario)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (usuario) => {
+          this.usuario.set(usuario);
+          this.cargando.set(false);
+        },
+        error: () => {
+          this.errorCarga.set(
+            'No pudimos traer los datos de esta persona. Intentá de nuevo en un momento.',
+          );
+          this.cargando.set(false);
+        },
+      });
   }
 
   protected guardar(perfil: PerfilUsuario): void {
@@ -170,16 +185,19 @@ export class EditarUsuario {
     this.error.set(null);
     this.mensajeExito.set(null);
 
-    this.usuarios.actualizar(this.idUsuario, perfil).subscribe({
-      next: (mensaje) => {
-        this.enviando.set(false);
-        this.mensajeExito.set(mensaje);
-      },
-      error: (fallo: Error) => {
-        this.enviando.set(false);
-        this.error.set(fallo.message);
-      },
-    });
+    this.usuarios
+      .actualizar(this.idUsuario, perfil)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (mensaje) => {
+          this.enviando.set(false);
+          this.mensajeExito.set(mensaje);
+        },
+        error: (fallo: Error) => {
+          this.enviando.set(false);
+          this.error.set(fallo.message);
+        },
+      });
   }
 
   protected pedirConfirmacionBaja(): void {
@@ -198,18 +216,21 @@ export class EditarUsuario {
     this.dandoDeBaja.set(true);
     this.errorBaja.set(null);
 
-    this.usuarios.darDeBaja(this.idUsuario).subscribe({
-      next: (mensaje) => {
-        this.dandoDeBaja.set(false);
-        this.confirmandoBaja.set(false);
-        this.mensajeBaja.set(mensaje);
-        this.usuario.update((u) => (u === null ? u : { ...u, estadoUsuario: false }));
-      },
-      error: (fallo: Error) => {
-        this.dandoDeBaja.set(false);
-        this.errorBaja.set(fallo.message);
-      },
-    });
+    this.usuarios
+      .darDeBaja(this.idUsuario)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (mensaje) => {
+          this.dandoDeBaja.set(false);
+          this.confirmandoBaja.set(false);
+          this.mensajeBaja.set(mensaje);
+          this.usuario.update((u) => (u === null ? u : { ...u, estadoUsuario: false }));
+        },
+        error: (fallo: Error) => {
+          this.dandoDeBaja.set(false);
+          this.errorBaja.set(fallo.message);
+        },
+      });
   }
 
   protected pedirConfirmacionReactivacion(): void {
@@ -228,17 +249,20 @@ export class EditarUsuario {
     this.reactivando.set(true);
     this.errorReactivacion.set(null);
 
-    this.usuarios.reactivar(this.idUsuario).subscribe({
-      next: () => {
-        this.reactivando.set(false);
-        this.confirmandoReactivacion.set(false);
-        this.usuario.update((u) => (u === null ? u : { ...u, estadoUsuario: true }));
-      },
-      error: (fallo: Error) => {
-        this.reactivando.set(false);
-        this.errorReactivacion.set(fallo.message);
-      },
-    });
+    this.usuarios
+      .reactivar(this.idUsuario)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: () => {
+          this.reactivando.set(false);
+          this.confirmandoReactivacion.set(false);
+          this.usuario.update((u) => (u === null ? u : { ...u, estadoUsuario: true }));
+        },
+        error: (fallo: Error) => {
+          this.reactivando.set(false);
+          this.errorReactivacion.set(fallo.message);
+        },
+      });
   }
 
   protected volverAlPanel(): void {

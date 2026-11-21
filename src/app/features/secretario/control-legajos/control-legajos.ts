@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -72,6 +80,7 @@ export class ControlLegajos {
   private readonly usuariosService = inject(UsuariosService);
   private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
 
@@ -188,17 +197,19 @@ export class ControlLegajos {
       usuarios: this.usuariosService
         .listar()
         .pipe(catchError(() => of<UsuarioInstitucional[] | null>(null))),
-    }).subscribe({
-      next: ({ resumen, usuarios }) => {
-        this.resumen.set(conRoles(resumen, usuarios));
-        this.rolesDisponibles.set(usuarios !== null);
-        this.cargando.set(false);
-      },
-      error: (fallo: Error) => {
-        this.error.set(fallo.message);
-        this.cargando.set(false);
-      },
-    });
+    })
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: ({ resumen, usuarios }) => {
+          this.resumen.set(conRoles(resumen, usuarios));
+          this.rolesDisponibles.set(usuarios !== null);
+          this.cargando.set(false);
+        },
+        error: (fallo: Error) => {
+          this.error.set(fallo.message);
+          this.cargando.set(false);
+        },
+      });
   }
 
   protected readonly iniciales = inicialesDe;

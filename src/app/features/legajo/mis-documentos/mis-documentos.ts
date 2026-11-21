@@ -1,6 +1,13 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { toObservable, toSignal } from '@angular/core/rxjs-interop';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, map, of, switchAll, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth/auth.service';
@@ -116,6 +123,7 @@ export class MisDocumentos {
   private readonly campana = inject(CampanaService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly sesion = this.auth.sesion;
   protected readonly rolPrincipal = computed(() => rolPrincipalDe(this.sesion()));
@@ -605,27 +613,30 @@ export class MisDocumentos {
     this.marcarGuardando(idLegajo, true);
     this.errorAuditoria.set(null);
 
-    this.legajos.auditar(idLegajo, veredicto, idAuditor, comentario, presentadoFisico).subscribe({
-      next: () => {
-        this.aplicarVeredictoLocal(idLegajo, veredicto, comentario, presentadoFisico);
-        this.quitarEntrega(idLegajo);
-        // Aprobar o rechazar cambia lo que espera revisión: la campana se entera.
-        // Guardar solo la casilla de un documento ya revisado no lo cambia.
-        if (fila?.estado !== veredicto) {
-          this.campana.refrescar();
-        }
-      },
-      error: (fallo: Error) => {
-        this.errorAuditoria.set(fallo.message);
-        this.marcarGuardando(idLegajo, false);
-        // Con veredicto la tilde se guardaba sola: si falla, vuelve a lo que
-        // había. Sin veredicto es un borrador y se conserva para reintentar.
-        if (teniaVeredicto) {
+    this.legajos
+      .auditar(idLegajo, veredicto, idAuditor, comentario, presentadoFisico)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: () => {
+          this.aplicarVeredictoLocal(idLegajo, veredicto, comentario, presentadoFisico);
           this.quitarEntrega(idLegajo);
-        }
-      },
-      complete: () => this.marcarGuardando(idLegajo, false),
-    });
+          // Aprobar o rechazar cambia lo que espera revisión: la campana se entera.
+          // Guardar solo la casilla de un documento ya revisado no lo cambia.
+          if (fila?.estado !== veredicto) {
+            this.campana.refrescar();
+          }
+        },
+        error: (fallo: Error) => {
+          this.errorAuditoria.set(fallo.message);
+          this.marcarGuardando(idLegajo, false);
+          // Con veredicto la tilde se guardaba sola: si falla, vuelve a lo que
+          // había. Sin veredicto es un borrador y se conserva para reintentar.
+          if (teniaVeredicto) {
+            this.quitarEntrega(idLegajo);
+          }
+        },
+        complete: () => this.marcarGuardando(idLegajo, false),
+      });
   }
 
   /**

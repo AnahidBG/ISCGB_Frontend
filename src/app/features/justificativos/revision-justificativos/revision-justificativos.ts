@@ -1,5 +1,6 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { urlArchivoSubido } from '../../../core/configuracion/api';
 import {
   AuditoriaJustificativo,
@@ -39,6 +40,7 @@ import { PantallaCarga } from '../../../shared/ui/pantalla-carga/pantalla-carga'
 export class RevisionJustificativos {
   private readonly justificativos = inject(JustificativosService);
   private readonly campana = inject(CampanaService);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly pendientes = signal<JustificativoPendiente[]>([]);
   protected readonly cargando = signal(true);
@@ -68,16 +70,19 @@ export class RevisionJustificativos {
     this.cargando.set(true);
     this.error.set(null);
 
-    this.justificativos.listarPendientes().subscribe({
-      next: (lista) => {
-        this.pendientes.set(lista);
-        this.cargando.set(false);
-      },
-      error: (fallo: Error) => {
-        this.error.set(fallo.message);
-        this.cargando.set(false);
-      },
-    });
+    this.justificativos
+      .listarPendientes()
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: (lista) => {
+          this.pendientes.set(lista);
+          this.cargando.set(false);
+        },
+        error: (fallo: Error) => {
+          this.error.set(fallo.message);
+          this.cargando.set(false);
+        },
+      });
   }
 
   protected aprobar(justificativo: JustificativoPendiente): void {
@@ -106,27 +111,30 @@ export class RevisionJustificativos {
     this.guardando.set(justificativo.idJustificativo);
     this.error.set(null);
 
-    this.justificativos.auditar(justificativo.idJustificativo, auditoria).subscribe({
-      next: () => {
-        // Se saca de la lista en vez de volver a pedirla: el endpoint solo
-        // devuelve pendientes, así que este ya no estaría. Evita un viaje
-        // de ida y vuelta y que la lista parpadee.
-        this.pendientes.update((lista) =>
-          lista.filter((j) => j.idJustificativo !== justificativo.idJustificativo),
-        );
-        this.ultimoResuelto.set({
-          nombre: justificativo.nombreDocente,
-          veredicto: auditoria.veredicto,
-        });
-        this.guardando.set(null);
-        this.cancelarRechazo();
-        // Resolver uno baja el número de la campana.
-        this.campana.refrescar();
-      },
-      error: (fallo: Error) => {
-        this.error.set(fallo.message);
-        this.guardando.set(null);
-      },
-    });
+    this.justificativos
+      .auditar(justificativo.idJustificativo, auditoria)
+      .pipe(takeUntilDestroyed(this.destruccion))
+      .subscribe({
+        next: () => {
+          // Se saca de la lista en vez de volver a pedirla: el endpoint solo
+          // devuelve pendientes, así que este ya no estaría. Evita un viaje
+          // de ida y vuelta y que la lista parpadee.
+          this.pendientes.update((lista) =>
+            lista.filter((j) => j.idJustificativo !== justificativo.idJustificativo),
+          );
+          this.ultimoResuelto.set({
+            nombre: justificativo.nombreDocente,
+            veredicto: auditoria.veredicto,
+          });
+          this.guardando.set(null);
+          this.cancelarRechazo();
+          // Resolver uno baja el número de la campana.
+          this.campana.refrescar();
+        },
+        error: (fallo: Error) => {
+          this.error.set(fallo.message);
+          this.guardando.set(null);
+        },
+      });
   }
 }
